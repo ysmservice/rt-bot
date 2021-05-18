@@ -2,12 +2,15 @@
 
 import discord
 
+from .type_manager import TypeManager
+
 from multiprocessing import Pool, Manager
 import asyncio
 
 
 class Worker():
     def listening_event(self, queue):
+        loop = asyncio.new_event_loop()
         while True:
             current_queue = queue.get(True)
             # キューが回ってきたらイベントを処理する。
@@ -16,10 +19,13 @@ class Worker():
                 if event_type == "stop_worker":
                     break
                 if event_type == "on_message":
-                    print(data["content"])
+                    pass
+
+    async def send(self, channel_id: int, *args, **kwargs):
+        pass
 
 
-class RTShardClient(discord.AutoShardedClient):
+class RTShardClient(discord.AutoShardedClient, TypeManager):
     def __init__(self, *args, **kwargs):
         # ログ出力を準備する。
         self._print = ((lambda title, text: print("[" + title + "]", text))
@@ -49,15 +55,7 @@ class RTShardClient(discord.AutoShardedClient):
         self._print(self.TITLE, "Error on worker! : " + str(e))
 
     async def on_message(self, message):
-        data = {
-            "guild": message.guild,
-            "channel": message.channel,
-            "author": message.author.name,
-            "content": message.content,
-            "clean_content": message.clean_content
-        }
-
-        self.queue.put(["on_message", data])
+        self.queue.put(["on_message", self.message_to_dict(message)])
 
     def __del__(self):
         self.pool.close()
