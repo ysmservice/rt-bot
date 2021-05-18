@@ -2,17 +2,15 @@
 
 import discord
 
-from multiprocessing import Pool, Queue
+from multiprocessing import Pool, Manager
 import asyncio
 
 
 class Worker():
     def listening_event(self, queue):
-        print(1)
         while True:
             current_queue = queue.get(True)
             # キューが回ってきたらイベントを処理する。
-            print(current_queue)
             if current_queue:
                 event_type, data = current_queue
                 if event_type == "stop_worker":
@@ -22,32 +20,38 @@ class Worker():
 
 
 class RTShardClient(discord.AutoShardedClient):
-    def __init__(self, default_worker_count: int,
-                  max_worker: int,  *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         # ログ出力を準備する。
         self._print = ((lambda title, text: print("[" + title + "]", text))
                         if kwargs.get("log", False)
                         else lambda title, text: (title, text))
+        self.TITLE = "RT - Process Pool"
+
         # workerを動かす。
-        self._print("RT - Process Pool", "Process Pool is setting now!")
-        self.pool = Pool(max_worker)
-        self.queue = Queue()
-        for i in range(default_worker_count):
+        self._print(self.TITLE, "Setting now!")
+        self.pool = Pool(kwargs.get("max_worker"))
+        self.manager = Manager()
+        self.queue = self.manager.Queue()
+
+        for i in range(kwargs.get("default_worker_count", 5)):
             self._print(
-                "RT - Process Pool",
-                f"Process Pool is setting worker {i}."
-            )
+                self.TITLE, f"Setting worker {i}...")
             target_worker = Worker()
-            self.pool.apply_async(target_worker.listening_event,
-                                     args=(self.queue,))
-        self._print("RT - Process Pool", "Process Pool setting done!")
+            self.pool.apply_async(
+                target_worker.listening_event,
+                (self.queue,), error_callback=self.on_error_worker
+            )
+        self._print(self.TITLE, "Done!")
 
         super().__init__(*args, **kwargs)
 
+    def on_error_worker(self, e):
+        self._print(self.TITLE, "Error on worker! : " + str(e))
+
     async def on_message(self, message):
         data = {
-            "guild.name": message.guild.name,
-            "channel.name": message.channel.name,
+            "guild": message.guild,
+            "channel": message.channel,
             "author": message.author.name,
             "content": message.content,
             "clean_content": message.clean_content
