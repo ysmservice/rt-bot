@@ -10,10 +10,17 @@ class TypeManager():
             "id": channel.id
         }
 
-    def member_to_dict(self, user):
+    def user_to_dict(self, user):
         return {
             "name": user.name,
             "id": user.id
+        }
+
+    def member_to_dict(self, member):
+        return {
+            "name": member.name,
+            "guild": self.guild_to_dict(member.guild),
+            "id": member.id
         }
 
     def guild_to_dict(self, guild):

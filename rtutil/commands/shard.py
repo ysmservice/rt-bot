@@ -2,7 +2,7 @@
 
 import discord
 
-from .type_manager import TypeManager
+from .events import *
 
 from multiprocessing import Pool, Manager
 from threading import Thread
@@ -40,8 +40,6 @@ class Worker():
 
 class RTShardClient(discord.AutoShardedClient):
     def __init__(self, *args, **kwargs):
-        self.tm = TypeManager()
-
         # ログ出力を準備する。
         self._print = ((lambda title, text: print("[" + title + "]", text))
                         if kwargs.get("log", False)
@@ -50,6 +48,7 @@ class RTShardClient(discord.AutoShardedClient):
         self._print("RT - Client", "Now setting...")
         self._print("RT - Client", "You can print some log by client._print().")
 
+        self.events = {}
         super().__init__(*args, **kwargs)
 
         # Worker作成の偈準備をする。
@@ -72,7 +71,7 @@ class RTShardClient(discord.AutoShardedClient):
             target_worker = Worker()
             self.pool.apply_async(
                 target_worker.listening_event,
-                (self.queue, self.callback), error_callback=self.on_error_worker
+                (self, self.queue, self.callback), error_callback=self.on_error_worker
             )
         self._print(self.TITLE, "Done!")
 
@@ -91,7 +90,7 @@ class RTShardClient(discord.AutoShardedClient):
             self.threads.append(thread)
         self._print("RT - Callback Threads", "Done!")
 
-        self._print("RT - Client", "Setting now!")
+        add_event_hook(self, self.queue)
 
     def run_callback(self, callback):
         while True:
@@ -139,9 +138,9 @@ class RTShardClient(discord.AutoShardedClient):
             raise TypeError("登録するイベントはコルーチンにする必要があります。")
         # イベントを登録する。
         if coro.__name__ in self.events:
-            self.events[coro.__name__] = [coro]
-        else:
             self.events[coro.__name__].append(coro)
+        else:
+            self.events[coro.__name__] = [coro]
         self._print("RT - Event Manager", "Event registered.")
 
         return coro
@@ -156,9 +155,6 @@ class RTShardClient(discord.AutoShardedClient):
             del self.events[coro.__name__]
         else:
             raise TypeError("そのイベントはまだ登録されていません。")
-
-    async def on_message(self, message):
-        self.queue.put(["on_message", self.tm.message_to_dict(message)])
 
     def __del__(self):
         if not self.is_closed():
