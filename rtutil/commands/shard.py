@@ -55,6 +55,7 @@ class RTShardClient(discord.AutoShardedClient):
         # Worker作成の偈準備をする。
         self._print(self.TITLE, "Process worker setting now!")
         self.max_worker = kwargs.get("max_worker", cpu_count())
+        self.default_worker_count = kwargs.get("default_worker_count", 5)
         self.pool = Pool(self.max_worker)
         self.manager = Manager()
         # イベント通知用のQueueを作成する。
@@ -65,7 +66,7 @@ class RTShardClient(discord.AutoShardedClient):
         self.closed_worker = 0
 
         # Workerを動かす。
-        for i in range(kwargs.get("default_worker_count", 5)):
+        for i in range(self.default_worker_count):
             self._print(
                 self.TITLE, f"Setting worker {i}...")
             target_worker = Worker()
@@ -118,7 +119,7 @@ class RTShardClient(discord.AutoShardedClient):
             if self.is_closed():
                 # もしWorkerが全員終了したならこのCallback Workerをストップする。
                 # もしWorkerがまだ全員終了していないなら終了通知をする。
-                if self.closed_worker == self.max_worker:
+                if self.closed_worker == self.default_worker_count:
                     break
                 else:
                     self.queue.put(["closed", None])
