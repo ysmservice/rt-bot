@@ -14,7 +14,7 @@ TITLES = {
 }
 
 
-class RTShardClient(discord.AutoShardedClient):
+class RTShardClient(discord.AutoShardedBot):
     def __init__(self, *args, **kwargs):
         # 独自のkwargsを取得しておく。
         self.worker_count = kwargs.get("worker_count", cpu_count() * 2 + 1)
