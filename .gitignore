@@ -1,0 +1,11 @@
+__pycache__
+
+*.md
+*.json
+*.crt
+*.key
+*.sublime-project
+*.sublime-workspace
+tmp
+log
+pypi
