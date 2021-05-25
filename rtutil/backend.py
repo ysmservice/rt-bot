@@ -110,7 +110,7 @@ class RTShardClient(discord.AutoShardedClient):
 
     async def on_message(self, message):
         data = {
-            "channel": message.channel,
+            "cache": {"message": message},
             "data": {
                 "type": "on_message",
                 "content": message.content
