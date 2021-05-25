@@ -34,6 +34,7 @@ class TextChannel(BaseChannel):
         await self.ws.send(dumps({"type": "discord_iter", "data": data}))
         while True:
             data = loads(await self.ws.recv())
+            await self.ws.send(dumps({"type": "ok", "data": {}}))
             if data["type"] == "ok":
                 break
             yield Message(self.ws, data["data"])
