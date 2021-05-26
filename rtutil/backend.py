@@ -8,8 +8,7 @@ from ujson import loads, dumps
 import websockets
 import asyncio
 import logging
-
-from .d import DiscordFunctions
+import sys
 
 
 class RTShardClient(discord.AutoShardedClient):
@@ -22,13 +21,22 @@ class RTShardClient(discord.AutoShardedClient):
         self.logger = logging.getLogger("RT - Client")
         super().__init__(*args, **kwargs)
 
-        self.dfs = DiscordFunctions(self)
+        # Event Injection
+        for parser_name in self._connections.parsers:
+            parser_name_lower = parser_name.lower()
+            setattr(self, parser_name_lower, self.on_some_event_template)
+            self._connections.parsers[parser_name] = getattr(self, parser_name_lower)
+
+        # Setup worker
         self.queue = asyncio.Queue()
         self.logger.info("Creating websockets server.")
         server = websockets.serve(self.worker, "localhost", "3000")
         loop = asyncio.get_event_loop()
         loop.run_until_complete(server)
         self.logger.info("Started websockets server!")
+
+    def on_some_event_template(self, data):
+        asyncio.create_task(self.queue.put({"data": {"type": sys._getframe().f_code.co_name, "data": data}})
 
     async def worker(self, ws, path):
         while True:

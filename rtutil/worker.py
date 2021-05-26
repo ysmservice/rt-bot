@@ -5,10 +5,11 @@ from ujson import loads, dumps
 from traceback import format_exc
 import logging
 import asyncio
+import discord
 
 
-class Worker():
-    def __init__(self, loop=None, logging_level=logging.DEBUG):
+class Worker(discord.Client):
+    def __init__(self, token, loop=None, logging_level=logging.DEBUG):
         self.queue = asyncio.Queue()
         self.loop = loop if loop else asyncio.get_event_loop()
         self.events = {}
@@ -19,6 +20,8 @@ class Worker():
             format="[%(name)s][%(levelname)s] %(message)s"
         )
         self.logger = logging.getLogger("RT - Worker")
+
+        super().__init__()
 
     def run(self):
         self.loop.run_until_complete(self.worker())
