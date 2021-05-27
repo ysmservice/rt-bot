@@ -1,4 +1,3 @@
-
 # RT - Shard
 
 import discord
@@ -22,10 +21,10 @@ class RTShardClient(discord.AutoShardedClient):
         super().__init__(*args, **kwargs)
 
         # Event Injection
-        for parser_name in self._connections.parsers:
+        for parser_name in self._connection.parsers:
             parser_name_lower = parser_name.lower()
             setattr(self, parser_name_lower, self.on_some_event_template)
-            self._connections.parsers[parser_name] = getattr(self, parser_name_lower)
+            self._connection.parsers[parser_name] = getattr(self, parser_name_lower)
 
         # Setup worker
         self.queue = asyncio.Queue()
@@ -36,7 +35,7 @@ class RTShardClient(discord.AutoShardedClient):
         self.logger.info("Started websockets server!")
 
     def on_some_event_template(self, data):
-        asyncio.create_task(self.queue.put({"data": {"type": sys._getframe().f_code.co_name, "data": data}})
+        asyncio.create_task(self.queue.put({"data": {"type": sys._getframe().f_code.co_name, "data": data}}))
 
     async def worker(self, ws, path):
         while True:

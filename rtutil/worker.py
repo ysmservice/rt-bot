@@ -9,7 +9,7 @@ import discord
 
 
 class Worker(discord.Client):
-    def __init__(self, token, loop=None, logging_level=logging.DEBUG):
+    def __init__(self, loop=None, logging_level=logging.DEBUG):
         self.queue = asyncio.Queue()
         self.loop = loop if loop else asyncio.get_event_loop()
         self.events = {}
@@ -49,8 +49,9 @@ class Worker(discord.Client):
 
                     # 処理をする。
                     try:
+                        print(data)
                         # イベントが登録されてるならそれを実行する。
-                        if data["type"] in self.events:
+                        if data["type"] in self.events and 1 == 2:
                             data["callback_template"] = callback_data
                             self.logger.debug(self.events)
                             for coro in self.events[data["type"]]:

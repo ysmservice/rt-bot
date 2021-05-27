@@ -19,4 +19,5 @@ async def on_ready():
     print("Connected")
 
 
+print("Connecting...")
 client.run(client.data["token"])
