@@ -4,13 +4,22 @@ import discord
 
 from traceback import format_exc
 from ujson import loads, dumps
+from copy import copy
 import websockets
 import asyncio
 import logging
-import sys
+
+from .driver import DiscordDriver
 
 
-class RTShardClient(discord.AutoShardedClient):
+ON_SOME_EVENT = """def !event_type!(data):
+    event_type = '!event_type!'
+    data = {"type": event_type, "data": data}
+    asyncio.create_task(self.queue.put(data))
+    self.default_parsers[event_type.upper()](data['data'])"""
+
+
+class RTShardFrameWork(discord.AutoShardedClient):
     def __init__(self, *args, logging_level=logging.DEBUG, **kwargs):
         # ログの出力を設定する。
         logging.basicConfig(
@@ -18,13 +27,18 @@ class RTShardClient(discord.AutoShardedClient):
             format="[%(name)s][%(levelname)s] %(message)s"
         )
         self.logger = logging.getLogger("RT - Client")
+
+        # その他色々設定する。
         super().__init__(*args, **kwargs)
+        self.driver = DiscordDriver(self)
 
         # Event Injection
+        self.default_parsers = copy(self._connection.parsers)
         for parser_name in self._connection.parsers:
-            parser_name_lower = parser_name.lower()
-            setattr(self, parser_name_lower, self.on_some_event_template)
-            self._connection.parsers[parser_name] = getattr(self, parser_name_lower)
+            parser_name_lowered = parser_name.lower()
+            exec(ON_SOME_EVENT.replace("!event_type!", parser_name_lowered))
+            self._connection.parsers[parser_name] = eval(parser_name_lowered)
+        globals()["self"] = self
 
         # Setup worker
         self.queue = asyncio.Queue()
@@ -33,9 +47,6 @@ class RTShardClient(discord.AutoShardedClient):
         loop = asyncio.get_event_loop()
         loop.run_until_complete(server)
         self.logger.info("Started websockets server!")
-
-    def on_some_event_template(self, data):
-        asyncio.create_task(self.queue.put({"data": {"type": sys._getframe().f_code.co_name, "data": data}}))
 
     async def worker(self, ws, path):
         while True:
@@ -46,7 +57,7 @@ class RTShardClient(discord.AutoShardedClient):
             # イベントでそのイベントでのWorkerとの通信が始まる。
             data = {
                 "type": "start",
-                "data": queue["data"]
+                "data": queue
             }
             # Workerにイベント内容を伝える。
             await ws.send(dumps(data))
@@ -73,11 +84,29 @@ class RTShardClient(discord.AutoShardedClient):
                     }
                     try:
                         if data["type"] == "discord":
+                            func = getattr(
+                                self.driver, data["data"]["type"], None)
+                            args = data["data"].get("args", [])
+                            kwargs = data["data"].get("kwargs", {})
+                            if func:
+                                # ドライバー処理する。
+                                # このシステムは実行を動的にする。
+                                # その動的にするときに使うものを定義するためのものがドライバーです。
+                                if asyncio.iscoroutinefunction(func):
+                                    await func(*args, **kwargs)
+                                else:
+                                    func(*args, **kwargs)
+                            else:
+                                # 上に書いてある動的に実行するやつです。
+                                coro = eval(data["data"]["coro"])( # noqa
+                                    *args, **kwargs)
+                                exec(
+                                    "asyncio.create_task(coro)",
+                                    globals(), self.driver.box
+                                )
                             if data["data"]["type"] == "send":
                                 message = await queue["channel"].send(
-                                    *data["data"].get("args", {}),
-                                    **data["data"].get("kwargs", {})
-                                )
+                                    *args, **kwargs)
                                 i = message.id
                                 callback_data["data"]["message_id"] = i
                         elif data["type"] == "end":
@@ -114,13 +143,3 @@ class RTShardClient(discord.AutoShardedClient):
             await ws.send(dumps(callback_data))
 
             self.logger.info("End event communication.")
-
-    async def on_message(self, message):
-        data = {
-            "cache": {"message": message},
-            "data": {
-                "type": "on_message",
-                "content": message.content
-            }
-        }
-        await self.queue.put(data)

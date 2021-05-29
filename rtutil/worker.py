@@ -8,11 +8,14 @@ import asyncio
 import discord
 
 
-class Worker(discord.Client):
-    def __init__(self, loop=None, logging_level=logging.DEBUG):
+class Worker():
+    def __init__(self, prefixes, loop=None, logging_level=logging.DEBUG):
+        self.prefixes = prefixes
         self.queue = asyncio.Queue()
         self.loop = loop if loop else asyncio.get_event_loop()
         self.events = {}
+        self.commands = {}
+        self.ws = None
 
         # ログ出力の設定をする。
         logging.basicConfig(
@@ -20,6 +23,9 @@ class Worker(discord.Client):
             format="[%(name)s][%(levelname)s] %(message)s"
         )
         self.logger = logging.getLogger("RT - Worker")
+
+        # コマンドフレームワークのコマンドを走らせるためにon_messageイベントを登録しておく。
+        self.add_event(self.on_message, "create_message")
 
         super().__init__()
 
@@ -31,6 +37,7 @@ class Worker(discord.Client):
         # 親のDiscordからのイベントを受け取るmain.pyと通信をする。
         # イベントを受け取ったらそのイベントでの通信を開始する。
         async with connect("ws://localhost:3000") as ws:
+            self.ws = ws
             self.logger.info("Start worker.")
             while True:
                 self.logger.info("Waiting data...")
@@ -49,13 +56,12 @@ class Worker(discord.Client):
 
                     # 処理をする。
                     try:
-                        print(data)
                         # イベントが登録されてるならそれを実行する。
-                        if data["type"] in self.events and 1 == 2:
-                            data["callback_template"] = callback_data
-                            self.logger.debug(self.events)
+                        if data["type"] in self.events:
+                            new_data = data["data"]
+                            new_data["callback_template"] = callback_data
                             for coro in self.events[data["type"]]:
-                                await coro(ws, data)
+                                await coro(ws, new_data)
                     except Exception:
                         error = format_exc()
                     else:
@@ -83,8 +89,14 @@ class Worker(discord.Client):
                         break
                 self.logger.info("End event communication.")
 
-    def event(self, coro, event_name=None):
+    def event(self, event_name=None):
         # イベント登録用のデコレ―タ。
+        def _event(coro):
+            self.add_event(coro, event_name)
+        return _event
+
+    def add_event(self, coro, event_name=None):
+        # イベント登録用の関数。
         if not asyncio.iscoroutinefunction(coro):
             raise TypeError("登録するイベントはコルーチンである必要があります。")
         event_name = event_name if event_name else coro.__name__
@@ -94,7 +106,7 @@ class Worker(discord.Client):
         self.logger.info(f"Added event {event_name}.")
 
     def remove_event(self, coro, event_name=None):
-        # イベント削除用。
+        # イベント削除用の関数。
         if not asyncio.iscoroutinefunction(coro):
             raise TypeError("登録するイベントはコルーチンである必要があります。")
         event_name = event_name if event_name else coro.__name__
@@ -107,6 +119,41 @@ class Worker(discord.Client):
                     self.logger.info(f"Removed event {event_name}.")
                     return
         raise ValueError("そのコルーチンはイベントとして登録されていません。")
+
+    def command(self, command_name=None):
+        # コマンド登録用のデコレ―タ。
+        def _command(coro):
+            self.add_command(coro, command_name)
+        return _command
+
+    def add_command(self, coro, command_name=None):
+        # コマンド登録用の関数。
+        if not asyncio.iscoroutinefunction(coro):
+            raise TypeError("登録するコマンドはコルーチンである必要があります。")
+        command_name = command_name if command_name else coro.__name__
+        self.commands[command_name] = coro
+        self.logger.info(f"Added command {command_name}")
+
+    def remove_command(self, coro, command_name=None):
+        # コマンド削除用の関数。
+        command_name = command_name if command_name else coro.__name__
+        if (not asyncio.iscoroutinefunction(coro)
+                or command_name not in self.commands):
+            raise TypeError("削除するコマンドはコルーチンである必要があります。")
+        del self.commands[command_name]
+        self.logger.info(f"Added command {command_name}")
+
+    async def process_commands(self, ws, data):
+        if data["content"].startswith(self.prefixes):
+            for command_name in self.commands:
+                for prefix in self.prefixes:
+                    if data["content"].startswith(prefix + command_name):
+                        asyncio.create_task(self.commands[command_name](
+                            ws, data))
+                        return
+
+    async def on_message(self, ws, data):
+        await self.process_commands(ws, data)
 
 
 if __name__ == "__main__":

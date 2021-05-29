@@ -7,7 +7,7 @@ import rtutil
 print("Now loading...")
 
 
-client = rtutil.RTShardClient()
+client = rtutil.RTShardFrameWork()
 
 
 with open("data.json", "r") as f:
