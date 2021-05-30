@@ -8,7 +8,7 @@ worker = rtutil.Worker("r2!")
 
 
 @worker.command()
-async def test(self, ws, data):
+async def test(ws, data):
     print("hi")
 
 

@@ -9,8 +9,6 @@ import websockets
 import asyncio
 import logging
 
-from .driver import DiscordDriver
-
 
 ON_SOME_EVENT = """def !event_type!(data):
     event_type = '!event_type!'
@@ -30,7 +28,6 @@ class RTShardFrameWork(discord.AutoShardedClient):
 
         # その他色々設定する。
         super().__init__(*args, **kwargs)
-        self.driver = DiscordDriver(self)
 
         # Event Injection
         self.default_parsers = copy(self._connection.parsers)
@@ -84,26 +81,8 @@ class RTShardFrameWork(discord.AutoShardedClient):
                     }
                     try:
                         if data["type"] == "discord":
-                            func = getattr(
-                                self.driver, data["data"]["type"], None)
                             args = data["data"].get("args", [])
                             kwargs = data["data"].get("kwargs", {})
-                            if func:
-                                # ドライバー処理する。
-                                # このシステムは実行を動的にする。
-                                # その動的にするときに使うものを定義するためのものがドライバーです。
-                                if asyncio.iscoroutinefunction(func):
-                                    await func(*args, **kwargs)
-                                else:
-                                    func(*args, **kwargs)
-                            else:
-                                # 上に書いてある動的に実行するやつです。
-                                coro = eval(data["data"]["coro"])( # noqa
-                                    *args, **kwargs)
-                                exec(
-                                    "asyncio.create_task(coro)",
-                                    globals(), self.driver.box
-                                )
                             if data["data"]["type"] == "send":
                                 message = await queue["channel"].send(
                                     *args, **kwargs)
@@ -129,11 +108,12 @@ class RTShardFrameWork(discord.AutoShardedClient):
 
             # エラー落ちによるイベントの通信でコールバックチャンネルがあるなら通知しておく。
             if error:
-                if queue["channel"]:
-                    content = "すみませんが処理中にエラーが発生したようです。"
-                    if isinstance(error, str):
-                        content += "\n```\n" + error + "\n```"
-                    await queue["channel"].send(content)
+                if isinstance(error, str):
+                    self.logger.debug(error)
+                    channel = self.get_channel(842744343911596062)
+                    content = "\n```\n" + error + "\n```"
+                    content = "すみませんが処理中にエラーが発生したようです。" + content
+                    await channel.send(content)
 
             # 通信を終わらせたという合図を送信する。
             callback_data = {

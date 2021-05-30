@@ -10,12 +10,21 @@ import discord
 
 class Worker():
     def __init__(self, prefixes, loop=None, logging_level=logging.DEBUG):
-        self.prefixes = prefixes
         self.queue = asyncio.Queue()
         self.loop = loop if loop else asyncio.get_event_loop()
         self.events = {}
         self.commands = {}
         self.ws = None
+
+        # プリフィックスを設定する。
+        if isinstance(prefixes, list):
+            self.prefixes = tuple(prefixes)
+        elif isinstance(prefixes, tuple):
+            self.prefixes = prefixes
+        elif isinstance(prefixes, str):
+            self.prefixes = (prefixes,)
+        else:
+            raise TypeError("プリフィックスはタプルかリストか文字列にする必要があります。")
 
         # ログ出力の設定をする。
         logging.basicConfig(
@@ -25,20 +34,24 @@ class Worker():
         self.logger = logging.getLogger("RT - Worker")
 
         # コマンドフレームワークのコマンドを走らせるためにon_messageイベントを登録しておく。
-        self.add_event(self.on_message, "create_message")
+        self.add_event(self.on_message, "message_create")
 
         super().__init__()
 
     def run(self):
         self.loop.run_until_complete(self.worker())
 
+    async def close(self):
+        await self.ws.close()
+
     async def worker(self):
         self.logger.info("Connecting to websocket...")
         # 親のDiscordからのイベントを受け取るmain.pyと通信をする。
         # イベントを受け取ったらそのイベントでの通信を開始する。
-        async with connect("ws://localhost:3000") as ws:
-            self.ws = ws
-            self.logger.info("Start worker.")
+        ws = await connect("ws://localhost:3000")
+        self.ws = ws
+        self.logger.info("Start worker.")
+        try:
             while True:
                 self.logger.info("Waiting data...")
 
@@ -88,6 +101,10 @@ class Worker():
                     if data["type"] == "end":
                         break
                 self.logger.info("End event communication.")
+        except KeyboardInterrupt:
+            pass
+        finally:
+            await self.close()
 
     def event(self, event_name=None):
         # イベント登録用のデコレ―タ。
@@ -144,6 +161,7 @@ class Worker():
         self.logger.info(f"Added command {command_name}")
 
     async def process_commands(self, ws, data):
+        # コマンドを走らせる。
         if data["content"].startswith(self.prefixes):
             for command_name in self.commands:
                 for prefix in self.prefixes:
