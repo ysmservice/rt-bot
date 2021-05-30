@@ -1,44 +1,60 @@
-
 # RT - Shard
 
 import discord
 
 from traceback import format_exc
 from ujson import loads, dumps
+from copy import copy
 import websockets
 import asyncio
+import logging
 
-from .d import DiscordFunctions
+
+ON_SOME_EVENT = """def !event_type!(data):
+    event_type = '!event_type!'
+    data = {"type": event_type, "data": data}
+    asyncio.create_task(self.queue.put(data))
+    self.default_parsers[event_type.upper()](data['data'])"""
 
 
-class RTShardClient(discord.AutoShardedClient):
-    def __init__(self, *args, **kwargs):
+class RTShardFrameWork(discord.AutoShardedClient):
+    def __init__(self, *args, logging_level=logging.DEBUG, **kwargs):
         # ログの出力を設定する。
-        self.TITLES = {
-            "rw": "RT - Websocket",
-            "rc": "RT - Client"
-        }
-        """
-        self._print = ((lambda title, text:
-                       print(f"[{self.TITLES[title]}] {text}"))
-                       if self.print_log else lambda title, text: "")
-        """
+        logging.basicConfig(
+            level=logging_level,
+            format="[%(name)s][%(levelname)s] %(message)s"
+        )
+        self.logger = logging.getLogger("RT - Client")
+
+        # その他色々設定する。
         super().__init__(*args, **kwargs)
 
-        self.dfs = DiscordFunctions(self)
+        # Event Injection
+        self.default_parsers = copy(self._connection.parsers)
+        for parser_name in self._connection.parsers:
+            parser_name_lowered = parser_name.lower()
+            exec(ON_SOME_EVENT.replace("!event_type!", parser_name_lowered))
+            self._connection.parsers[parser_name] = eval(parser_name_lowered)
+        globals()["self"] = self
+
+        # Setup worker
         self.queue = asyncio.Queue()
+        self.logger.info("Creating websockets server.")
         server = websockets.serve(self.worker, "localhost", "3000")
         loop = asyncio.get_event_loop()
         loop.run_until_complete(server)
+        self.logger.info("Started websockets server!")
 
     async def worker(self, ws, path):
         while True:
+            self.logger.info("Waiting event...")
             queue = await self.queue.get()
+            self.logger.info("Received event!")
 
             # イベントでそのイベントでのWorkerとの通信が始まる。
             data = {
                 "type": "start",
-                "data": queue["data"]
+                "data": queue
             }
             # Workerにイベント内容を伝える。
             await ws.send(dumps(data))
@@ -48,8 +64,10 @@ class RTShardClient(discord.AutoShardedClient):
             # Start -> worker do task -> worker want to send message to discord
             # -> Websocket server do -> callback to worker -> worker say end
             error = False
+            self.logger.info("Start event communication.")
             while True:
                 # Workerからのコールバックを待つ。
+                self.logger.info("Waiting worker callback...")
                 try:
                     data = loads(await asyncio.wait_for(ws.recv(), timeout=5))
                 except asyncio.TimeoutError:
@@ -63,11 +81,11 @@ class RTShardClient(discord.AutoShardedClient):
                     }
                     try:
                         if data["type"] == "discord":
+                            args = data["data"].get("args", [])
+                            kwargs = data["data"].get("kwargs", {})
                             if data["data"]["type"] == "send":
                                 message = await queue["channel"].send(
-                                    *data["data"].get("args", {}),
-                                    **data["data"].get("kwargs", {})
-                                )
+                                    *args, **kwargs)
                                 i = message.id
                                 callback_data["data"]["message_id"] = i
                         elif data["type"] == "end":
@@ -77,7 +95,7 @@ class RTShardClient(discord.AutoShardedClient):
                         else:
                             # もしコールバックがエラーかtypeが不明だったらこのイベントでの通信を終わらす。
                             error = (data["data"]["content"]
-                                     if data.get("error") else "エラー不明")
+                                     if data["type"] == "error" else "エラー不明")
                             print(error)
                             break
                     except Exception:
@@ -90,11 +108,12 @@ class RTShardClient(discord.AutoShardedClient):
 
             # エラー落ちによるイベントの通信でコールバックチャンネルがあるなら通知しておく。
             if error:
-                if queue["channel"]:
-                    content = "すみませんが処理中にエラーが発生したようです。"
-                    if isinstance(error, str):
-                        content += "\n```\n" + error + "\n```"
-                    await queue["channel"].send(content)
+                if isinstance(error, str):
+                    self.logger.debug(error)
+                    channel = self.get_channel(842744343911596062)
+                    content = "\n```\n" + error + "\n```"
+                    content = "すみませんが処理中にエラーが発生したようです。" + content
+                    await channel.send(content)
 
             # 通信を終わらせたという合図を送信する。
             callback_data = {
@@ -103,12 +122,4 @@ class RTShardClient(discord.AutoShardedClient):
             }
             await ws.send(dumps(callback_data))
 
-    async def on_message(self, message):
-        data = {
-            "channel": message.channel,
-            "data": {
-                "type": "on_message",
-                "content": message.content
-            }
-        }
-        await self.queue.put(data)
+            self.logger.info("End event communication.")
