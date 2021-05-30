@@ -7,6 +7,8 @@ import logging
 import asyncio
 import discord
 
+from .converter import add_converter
+
 
 class Worker():
     def __init__(self, prefixes, loop=None, logging_level=logging.DEBUG):
@@ -140,6 +142,7 @@ class Worker():
     def command(self, command_name=None):
         # コマンド登録用のデコレ―タ。
         def _command(coro):
+            # converter.pyにあるやつでコンバーターをコマンドのコルーチンに追加する。
             self.add_command(coro, command_name)
         return _command
 
@@ -165,13 +168,36 @@ class Worker():
         if data["content"].startswith(self.prefixes):
             for command_name in self.commands:
                 for prefix in self.prefixes:
-                    if data["content"].startswith(prefix + command_name):
-                        asyncio.create_task(self.commands[command_name](
-                            ws, data))
-                        return
+                    start = prefix + command_name
+                    if data["content"].startswith(start):
+                        # コマンドの準備をする。
+                        # 引数を取り出してからコンバーターをコマンドのプログラムにつけて実行する。
+                        args = self.parse_args(
+                            data["content"].replace(start, ""))
+                        cmd = add_converter(
+                            self.commands[command_name], ws, data, None, *args)
+                        asyncio.create_task(cmd)
+                        return command_name
 
     async def on_message(self, ws, data):
         await self.process_commands(ws, data)
+
+    def parse_args(self, content: str) -> list:
+        # 引数を取り出す。
+        args, raw_arg = [], ""
+        now_split_char = False
+        for c in content:
+            if c in (" ", "　", "\t", "\n") and not now_split_char:
+                if raw_arg:
+                    args.append(raw_arg)
+                    raw_arg = ""
+            elif c in ("'", '"'):
+                now_split_char = False if now_split_char else True
+            else:
+                raw_arg += c
+        if raw_arg:
+            args.append(raw_arg)
+        return args
 
 
 if __name__ == "__main__":
