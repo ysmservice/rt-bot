@@ -2,6 +2,7 @@
 
 from inspect import signature, _empty
 import discord
+import asyncio
 
 
 # コンバーターをコルーチンに設定してその設定済みコルーチンを返す関数。
@@ -17,7 +18,7 @@ class Converter:
         self.args, self.kwargs = args, kwargs
         self.coro = coro
 
-        self.builtins = dir(__buildins__)
+        self.builtins = dir(__builtins__)
         self.sig = signature(coro)
         self.another_convert = {
             bool: self.convert_bool
@@ -91,4 +92,5 @@ class Converter:
 
 
 class DiscordConverters:
-    async def convert_member()
+    async def convert_member():
+        pass
