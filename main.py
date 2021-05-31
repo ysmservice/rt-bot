@@ -7,17 +7,17 @@ import rtutil
 print("Now loading...")
 
 
-client = rtutil.RTShardFrameWork()
+bot = rtutil.RTShardFrameWork()
 
 
 with open("data.json", "r") as f:
-    client.data = load(f)
+    bot.data = load(f)
 
 
-@client.event
+@bot.event
 async def on_ready():
     print("Connected")
 
 
 print("Connecting...")
-client.run(client.data["token"])
+bot.run(bot.data["token"])
