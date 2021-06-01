@@ -17,9 +17,8 @@ class Cog(metaclass=CogMeta):
 
     def listener(self, name=None):
         def decorator(function):
-            if not inspect.iscoroutine(coro):
+            if not inspect.iscoroutine(function):
                 raise TypeError("登録する関数はコルーチンにする必要があります。")
-            name = name if name else coro.__name__
-            self.function.__listener = name
+            function.__listener = function.__name__
             return function
         return decorator
