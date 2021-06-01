@@ -1,6 +1,6 @@
 # RT - Converter
 
-from inspect import signature, _empty
+import inspect
 import discord
 import asyncio
 
@@ -19,7 +19,7 @@ class Converter:
         self.coro = coro
 
         self.builtins = dir(__builtins__)
-        self.sig = signature(coro)
+        self.sig = inspect.signature(coro)
         self.another_convert = {
             bool: self.convert_bool
         }
@@ -57,7 +57,7 @@ class Converter:
     async def convert(self, data, ctx, arg, target_type):
         # コンバーターの変換するための関数。
         # もし引数にアノテーションが設定されているなら型変換を行う。
-        if target_type is not _empty:
+        if not isinstance(target_type, inspect.empty):
             # discord.pyの型だったらDiscord用のもので変換する。
             # 違う型だったらその型を使って変換を行う。
             # discord.pyの型をtypeに入れるとabc.ABCMetaになるのを利用してdiscord.pyの型か確認する。
