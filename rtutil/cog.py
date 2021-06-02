@@ -3,22 +3,26 @@
 import inspect
 
 
-class CogMeta(type):
+class Cog(type):
     def __new__(cls, name, bases, attrs):
-        super().__init__(cls, name, bases, attrs)
-        return cls
+        self = super().__new__(cls, name, bases, attrs)
 
-
-class Cog(metaclass=CogMeta):
-    def __new__(cls, *args, **kwargs):
-        self = super().__new__(cls)
+        for key, value in attr.items():
+            if inspect.iscoroutine(value):
+                event_name = getattr(value, "__listener", None)
+                if event_name:
+                    self.bot.add_event(value, event_name)
 
         return self
 
-    def listener(self, name=None):
+    @classmethod
+    def listener(cls, name=None):
         def decorator(function):
             if not inspect.iscoroutine(function):
                 raise TypeError("登録する関数はコルーチンにする必要があります。")
             function.__listener = function.__name__
             return function
         return decorator
+
+    @classmethod
+    def commands
