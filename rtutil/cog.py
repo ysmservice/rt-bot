@@ -7,7 +7,7 @@ class Cog(type):
     def __new__(cls, name, bases, attrs):
         self = super().__new__(cls, name, bases, attrs)
 
-        for key, value in attr.items():
+        for key, value in attrs.items():
             if inspect.iscoroutine(value):
                 event_name = getattr(value, "__listener", None)
                 command = getattr(value, "__command", None)
@@ -15,7 +15,15 @@ class Cog(type):
                     self.bot.add_event(value, event_name)
                 elif command:
                     args, kwargs = command
-                    self.bot.add_command(value, *args, **kwargs)
+                    if args:
+                        name = args[0]
+                        args = args[1:]
+                    else:
+                        name = value.__name__
+                    self.bot.add_command(
+                        value, *args,
+                        command_name=name, **kwargs)
+                    self.commands.append(value)
 
         return self
 

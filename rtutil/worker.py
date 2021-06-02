@@ -1,11 +1,11 @@
 # RT - Worker
 
+from importlib import import_module
+from traceback import format_exc
 from websockets import connect
 from ujson import loads, dumps
-from traceback import format_exc
 import logging
 import asyncio
-import discord
 
 from .converter import add_converter
 
@@ -16,6 +16,8 @@ class Worker():
         self.loop = loop if loop else asyncio.get_event_loop()
         self.events = {}
         self.commands = {}
+        self.extensions = {}
+        self.cogs = {}
         self.ws = None
 
         # プリフィックスを設定する。
@@ -198,6 +200,29 @@ class Worker():
         if raw_arg:
             args.append(raw_arg)
         return args
+
+    def get_filename(self):
+        return __name__
+
+    def add_cog(self, cog_class):
+        setattr(cog_class, "get_filename", self.get_filename)
+        self.cogs[cog_class.__name__] = {
+            "__name__": cog_class.get_filename(),
+            "cog": cog_class
+        }
+
+    def remove_cog(self, name):
+        del self.cogs[name]
+
+    def load_extension(self, path):
+        self.extensions[path] = import_module(path)
+        return self.extensions[path].setup(self.bot)
+
+    def unload_extension(self, path):
+        for key in self.cogs:
+            if self.cogs[key]["__name__"] == path:
+                del self.cogs[key]
+        del self.extensions[path]
 
 
 if __name__ == "__main__":

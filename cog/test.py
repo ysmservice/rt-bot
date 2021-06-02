@@ -3,7 +3,7 @@
 import rtutil
 
 
-class Test(rtutil.Cog):
+class Test(metaclass=rtutil.Cog):
     def __init__(self, bot):
         self.bot = bot
 
