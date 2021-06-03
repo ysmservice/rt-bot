@@ -156,14 +156,12 @@ class Worker():
         self.commands[command_name] = coro
         self.logger.info(f"Added command {command_name}")
 
-    def remove_command(self, coro, command_name=None):
+    def remove_command(self, command_name):
         # コマンド削除用の関数。
-        command_name = command_name if command_name else coro.__name__
-        if (not asyncio.iscoroutinefunction(coro)
-                or command_name not in self.commands):
-            raise TypeError("削除するコマンドはコルーチンである必要があります。")
+        if asyncio.iscoroutine(command_name):
+            command_name = command_name.__name__
         del self.commands[command_name]
-        self.logger.info(f"Added command {command_name}")
+        self.logger.info(f"Removed command {command_name}")
 
     async def process_commands(self, ws, data):
         # コマンドを走らせる。
@@ -201,28 +199,48 @@ class Worker():
             args.append(raw_arg)
         return args
 
-    def get_filename(self):
-        return __name__
-
     def add_cog(self, cog_class):
-        setattr(cog_class, "get_filename", self.get_filename)
-        self.cogs[cog_class.__name__] = {
-            "__name__": cog_class.get_filename(),
-            "cog": cog_class
-        }
+        # コグを追加する。
+        name = cog_class.__class__.__name__
+        self.cogs[name] = cog_class
+        self.logger.info("Added cog " + name)
 
     def remove_cog(self, name):
-        del self.cogs[name]
+        # コグを削除する。
+        # この時コグで登録されたコマンドを削除しておく。
+        if name in self.cogs:
+            for command_name in self.commands:
+                cog_name = getattr(
+                    "__cog_name", "ThisIsNotCogYeahAndImTasuren")
+                if cog_name == name:
+                    self.remove_command(command_name)
+            del self.cogs[name]
 
     def load_extension(self, path):
+        # エクステンションのロードをする。
+        path = path.replace("/", ".").replace(".py", "")
         self.extensions[path] = import_module(path)
-        return self.extensions[path].setup(self.bot)
+        return self.extensions[path].setup(self)
 
     def unload_extension(self, path):
+        # エクステンションのアンロードをする。
+        # アンロードする前にコグを外しておく。
         for key in self.cogs:
-            if self.cogs[key]["__name__"] == path:
-                del self.cogs[key]
+            if self.cogs[key].get_filename() == path:
+                self.remove_cog(key)
         del self.extensions[path]
+
+    def reload_extension(self, path):
+        # エクステンションをリロードする。
+        self.unload_extension(path)
+        self.load_extension(path)
+
+    def reload_all_extensions(self):
+        # 全てのエクステンションをリロードする。
+        for path in [path for path in self.extensions]:
+            # 内包表記でわざわざリストにしているのは反復中にself.extensionsに変更が入るから。
+            self.unload_extension(path)
+            self.load_extension(path)
 
 
 if __name__ == "__main__":
