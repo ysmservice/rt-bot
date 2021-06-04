@@ -8,6 +8,7 @@ import logging
 import asyncio
 
 from .converter import add_converter
+import .discord_requests as discord_requests
 
 
 class Worker():
@@ -214,6 +215,9 @@ class Worker():
                     "__cog_name", "ThisIsNotCogYeahAndImTasuren")
                 if cog_name == name:
                     self.remove_command(command_name)
+            cog_unload = getattr(self.cogs[name], "cog_unload", None)
+            if cog_unload:
+                cog_unload()
             del self.cogs[name]
 
     def load_extension(self, path):
