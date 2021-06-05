@@ -8,7 +8,7 @@ import logging
 import asyncio
 
 from .converter import add_converter
-from .errors import NotConnected
+from .errors import NotConnected, NotFound
 
 
 def if_connected(function):
@@ -17,10 +17,12 @@ def if_connected(function):
             await function(*args, **kwargs)
         else:
             raise NotConnected("まだWebSocketに接続できていないので処理を実行できません。")
+    return _function
 
 
 class Worker:
-    def __init__(self, prefixes, loop=None, logging_level=logging.DEBUG):
+    def __init__(self, prefixes, loop=None, logging_level=logging.DEBUG,
+                 print_cog_name=False):
         self.queue = asyncio.Queue()
         self.loop = loop if loop else asyncio.get_event_loop()
         self.events = {}
@@ -87,7 +89,7 @@ class Worker:
                             new_data = data["data"]
                             new_data["callback_template"] = callback_data
                             for coro in self.events[data["type"]]:
-                                await coro(ws, new_data)
+                                asyncio.create_task(coro(ws, new_data))
                     except Exception:
                         error = format_exc()
                     else:
@@ -165,6 +167,14 @@ class Worker:
             data["data"]["wait"] = wait
             del kwargs["wait"]
         await self.ws.send(dumps(data))
+        return loads(await self.ws.recv())
+
+    async def _wait_until_ready(self):
+        while not self.ws:
+            pass
+
+    async def wait_until_ready(self, timeout=None):
+        await asyncio.wait_for(self._wait_until_ready(), timeout=timeout)
 
     def command(self, command_name=None):
         # コマンド登録用のデコレ―タ。
@@ -243,25 +253,35 @@ class Worker:
             if cog_unload:
                 cog_unload()
             del self.cogs[name]
+            self.logger.info("Removed cog " + name)
+        else:
+            raise NotFound(f"{name}というコグが見つからないためコグの削除ができません。")
 
     def load_extension(self, path):
         # エクステンションのロードをする。
         path = path.replace("/", ".").replace(".py", "")
         self.extensions[path] = import_module(path)
-        return self.extensions[path].setup(self)
+        return_data = self.extensions[path].setup(self)
+        self.logger.info("Loaded extension " + path)
+        return return_data
 
     def unload_extension(self, path):
         # エクステンションのアンロードをする。
         # アンロードする前にコグを外しておく。
-        for key in self.cogs:
-            if self.cogs[key].get_filename() == path:
-                self.remove_cog(key)
-        del self.extensions[path]
+        if path in self.extensions:
+            for key in self.cogs:
+                if self.cogs[key].get_filename() == path:
+                    self.remove_cog(key)
+            del self.extensions[path]
+            self.logger.info("Unloaded extension " + path)
+        else:
+            raise NotFound(f"{path}のエクステンションが見つからないためアンロードすることができません。")
 
     def reload_extension(self, path):
         # エクステンションをリロードする。
         self.unload_extension(path)
         self.load_extension(path)
+        self.logger.info("Reloaded extension " + path)
 
     def reload_all_extensions(self):
         # 全てのエクステンションをリロードする。
@@ -269,6 +289,7 @@ class Worker:
             # 内包表記でわざわざリストにしているのは反復中にself.extensionsに変更が入るから。
             self.unload_extension(path)
             self.load_extension(path)
+        self.logger.info("Reloaded all extensions")
 
 
 if __name__ == "__main__":

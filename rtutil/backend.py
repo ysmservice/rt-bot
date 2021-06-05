@@ -9,7 +9,7 @@ import websockets
 import asyncio
 import logging
 
-from .discord_requests import Requests
+from .discord_requests import DiscordRequests
 
 
 ON_SOME_EVENT = """def !event_type!(data):
@@ -31,6 +31,7 @@ class RTShardFrameWork(discord.AutoShardedClient):
 
         # その他色々設定する。
         super().__init__(*args, **kwargs)
+        self.requests = DiscordRequests(self)
 
         # Event Injection
         self.default_parsers = copy(self._connection.parsers)
@@ -88,7 +89,7 @@ class RTShardFrameWork(discord.AutoShardedClient):
                             args = data["data"].get("args", [])
                             kwargs = data["data"].get("kwargs", {})
                             do_wait = data["data"].get("wait", True)
-                            coro = getattr(Requests,
+                            coro = getattr(self.requests,
                                            data["data"]["type"],
                                            None)
                             if do_wait:

@@ -16,7 +16,7 @@ class Cog(type):
         # 確認したら登録してあげる。
         for key, value in attrs.items():
             # コルーチンだけチェックする。
-            if asyncio.iscoroutine(value):
+            if asyncio.iscoroutinefunction(value):
                 # ここでコマンドかイベントリスナーの名前をあったら取得する。
                 event_name = getattr(value, "__listener", None)
                 command = getattr(value, "__command", None)
@@ -39,7 +39,7 @@ class Cog(type):
     @classmethod
     def listener(cls, name=None, **kwargs):
         def decorator(function):
-            if not asyncio.iscoroutine(function):
+            if not asyncio.iscoroutinefunction(function):
                 raise TypeError("登録する関数はコルーチンにする必要があります。")
             function.__listener = (name if name else function.__name__,
                                    kwargs)
@@ -50,7 +50,7 @@ class Cog(type):
     @classmethod
     def command(cls, command_name=None, **kwargs):
         def decorator(function):
-            if not asyncio.iscoroutine(function):
+            if not asyncio.iscoroutinefunction(function):
                 raise TypeError("登録する関数はコルーチンにする必要があります。")
             function.__command = (command_name
                                   if command_name else function.__name__,

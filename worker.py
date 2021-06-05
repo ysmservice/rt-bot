@@ -4,7 +4,7 @@ import rtutil
 
 
 worker = rtutil.Worker("r2!")
-worker.load_extension("cog.test")
+worker.load_extension("cog.bot_general")
 
 
 @worker.command()

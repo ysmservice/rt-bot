@@ -20,9 +20,13 @@ class BotGeneral(metaclass=rtutil.Cog):
     @tasks.loop(seconds=120)
     async def status_updater(self):
         if self.now_status:
-            setting_word, self.now_status = len(self.bot.users), 0
+            setting_word, self.now_status = len(
+                await self.worker.discord("users", get_length=True, wait=True)
+                ), 0
         else:
-            setting_word, self.now_status = len(self.bot.guilds), 1
+            setting_word, self.now_status = len(
+                await self.worker.discord("guilds", get_length=True, wait=True)
+                ), 1
         status_text = STATUS_BASE[self.now_status].format(setting_word)
         await self.worker.discord(
             "change_presense", activity_base=((status_text,),), status="idle")
