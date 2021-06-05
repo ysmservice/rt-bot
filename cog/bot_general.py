@@ -24,7 +24,8 @@ class BotGeneral(metaclass=rtutil.Cog):
         else:
             setting_word, self.now_status = len(self.bot.guilds), 1
         status_text = STATUS_BASE[self.now_status].format(setting_word)
-        self.worker.change_presense()
+        await self.worker.discord(
+            "change_presense", activity_base=((status_text,),), status="idle")
 
     def cog_unload(self):
         self.status_updater.stop()

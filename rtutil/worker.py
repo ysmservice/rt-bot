@@ -8,10 +8,18 @@ import logging
 import asyncio
 
 from .converter import add_converter
-import .discord_requests as discord_requests
+from .errors import NotConnected
 
 
-class Worker():
+def if_connected(function):
+    async def _function(self, *args, **kwargs):
+        if self.ws:
+            await function(*args, **kwargs)
+        else:
+            raise NotConnected("まだWebSocketに接続できていないので処理を実行できません。")
+
+
+class Worker:
     def __init__(self, prefixes, loop=None, logging_level=logging.DEBUG):
         self.queue = asyncio.Queue()
         self.loop = loop if loop else asyncio.get_event_loop()
@@ -141,6 +149,22 @@ class Worker():
                     self.logger.info(f"Removed event {event_name}.")
                     return
         raise ValueError("そのコルーチンはイベントとして登録されていません。")
+
+    @if_connected
+    async def discord(self, event_type: str, *args, **kwargs):
+        # Discordに何かリクエストしてもらう。
+        data = {
+            "type": "discord",
+            "data": {
+                "args": args,
+                "kwargs": kwargs
+            }
+        }
+        if "wait" in kwargs:
+            wait = kwargs["wait"]
+            data["data"]["wait"] = wait
+            del kwargs["wait"]
+        await self.ws.send(dumps(data))
 
     def command(self, command_name=None):
         # コマンド登録用のデコレ―タ。

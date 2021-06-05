@@ -9,6 +9,8 @@ import websockets
 import asyncio
 import logging
 
+from .discord_requests import Requests
+
 
 ON_SOME_EVENT = """def !event_type!(data):
     event_type = '!event_type!'
@@ -18,7 +20,8 @@ ON_SOME_EVENT = """def !event_type!(data):
 
 
 class RTShardFrameWork(discord.AutoShardedClient):
-    def __init__(self, *args, logging_level=logging.DEBUG, **kwargs):
+    def __init__(self, *args, logging_level=logging.DEBUG,
+                 port=3000, **kwargs):
         # ログの出力を設定する。
         logging.basicConfig(
             level=logging_level,
@@ -37,10 +40,10 @@ class RTShardFrameWork(discord.AutoShardedClient):
             self._connection.parsers[parser_name] = eval(parser_name_lowered)
         globals()["self"] = self
 
-        # Setup worker
+        # Workerの初期設定をする。
         self.queue = asyncio.Queue()
         self.logger.info("Creating websockets server.")
-        server = websockets.serve(self.worker, "localhost", "3000")
+        server = websockets.serve(self.worker, "localhost", str(port))
         loop = asyncio.get_event_loop()
         loop.run_until_complete(server)
         self.logger.info("Started websockets server!")
@@ -81,13 +84,19 @@ class RTShardFrameWork(discord.AutoShardedClient):
                     }
                     try:
                         if data["type"] == "discord":
+                            # Discordに何かリクエストするやつ。
                             args = data["data"].get("args", [])
                             kwargs = data["data"].get("kwargs", {})
-                            if data["data"]["type"] == "send":
-                                message = await queue["channel"].send(
+                            do_wait = data["data"].get("wait", True)
+                            coro = getattr(Requests,
+                                           data["data"]["type"],
+                                           None)
+                            if do_wait:
+                                callback_data["data"] = asyncio.create_task(
+                                    coro(*args, **kwargs))
+                            else:
+                                callback_data["data"] = await coro(
                                     *args, **kwargs)
-                                i = message.id
-                                callback_data["data"]["message_id"] = i
                         elif data["type"] == "end":
                             # もしこのイベントでの通信を終わりたいと言われたら終わる。
                             # 上二も同じものがあるがこれは仕様です。
