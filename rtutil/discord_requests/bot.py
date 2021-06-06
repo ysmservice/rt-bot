@@ -10,6 +10,7 @@ class DiscordRequests:
 
     def emoji(self, emoji) -> dict:
         data = {
+            "string": str(emoji),
             "name": emoji.name,
             "id": emoji.id,
             "require_colons": emoji.require_colons,
@@ -51,15 +52,64 @@ class DiscordRequests:
         }
         return data
 
-    def author(self, author) -> dict:
-        return self.user(author)
+    def member(self, member) -> dict:
+        data = self.user(member)
+        data["nickname"] = member.nickname
+        return data
+
+    def channel(self, channel) -> dict:
+        data = {
+            "name": channel.name,
+            "id": channel.id,
+            "guild": self.guild(channel.guild)
+        }
+        return data
+
+    def text_channel(self, channel) -> dict:
+        new_data = {
+            "type": "text",
+            "nsfw": channel.nsfw
+        }
+        data = self.channel(channel)
+        data.update(new_data)
+        return data
+
+    def voice_channel(self, channel) -> dict:
+        new_data = {
+            "type": "voice"
+        }
+        data = self.channel(channel)
+        data.update(new_data)
+        return data
+
+    def role(self, role) -> dict:
+        data = {
+            "name": role.name,
+            "id": role.id,
+            "color": role.color
+        }
+        return role
 
     def guild(self, guild) -> dict:
         data = {
             "name": guild.name,
             "id": guild.id,
-            "emojis": [self.emoji(emoji) for emoji in guild.emojis]
+            "roles": [self.role(role) for role in guild.roles]
+            "emojis": [self.emoji(emoji) for emoji in guild.emojis],
+            "members": [self.member(member) for member in member],
+            "channels": [(self.text_channel(channel)
+                           if isinstance(channel, discord.TextChannel)
+                           else self.voice_channel(channel))
+                          for channel in guild.channels]
         }
+        text_channels, voice_channels = [], []
+        for channel in data["channels"]:
+            if channel["type"] == "text":
+                text_channels.append(channel)
+            else:
+                voice_channels.append(channel)
+        data["text_channels"] = text_channels
+        data["voice_channels"] = voice_channels
         return data
 
     def channel(self, channel) -> dict:
@@ -73,6 +123,17 @@ class DiscordRequests:
         data = {}
         data.update(self.channel(channel))
         return data
+
+    def get_guild(self, guild_id):
+        return self.guild(self.bot.get_guild(guild_id))
+
+    def get_channel(self, channel_id):
+        channel = self.bot.get_channel(channel_id)
+        if channel:
+            if isinstance(channel, discord.TextChannel):
+                return self.text_channel(channel)
+            else:
+                return self.voice_channel(channel)
 
     def somes(self, datas, converter, get_length: bool):
         return (len(datas) if get_length else

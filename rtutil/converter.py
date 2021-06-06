@@ -3,6 +3,7 @@
 import inspect
 import discord
 import asyncio
+from .utils import *
 
 
 # コンバーターをコルーチンに設定してその設定済みコルーチンを返す関数。
@@ -87,10 +88,40 @@ class Converter:
             return False
 
     async def discord_converter(self, data, ctx, arg, target_type):
-        # 作りかけ
+        if isinstance(target_type, discord.Member):
+            arg = self.convert_member(data, ctx, arg)
+        elif isinstance(target_type, discord.Role):
+            arg = self.convert_role(data, ctx, arg)
+        elif isinstance(target_type, discord.TextChannel):
+            arg = self.convert_text_channel(data, ctx, arg)
+        elif isinstance(target_type, discord.VoiceChannel):
+            arg = self.convert_voice_channel(data, ctx, arg)
         return arg
 
+    async def convert_some_mention(self, data, ctx, arg, target_type, key, exts):
+        # メンション用のコンバーター。
+        # ここで登場するcc_intとgetはrtutil/utils.pyにある。
+        _id = cc_int(arg)
+        if _id or ("<" == arg[0] and ">" in arg[-1]):
+            if not _id:
+                # もしIDじゃないなくメンションっぽかったらIDを取り出す。
+                _id = arg.replace("<", "").replace(">", "")
+                for ext in exts:
+                    _id = _id.replace(ext, "")
+                _id = int(_id)
+            return get(data["guild"][key], id=_id)
+        else:
+            # 名前から取り出す。
+            return get(data["guild"][key], name=arg)
 
-class DiscordConverters:
-    async def convert_member():
-        pass
+    async def convert_member(self, data, ctx, arg):
+        return self.convert_some_mention(data, ctx, arg, target_type, "members", ("!",))
+
+    async def convert_role(self, data, ctx, arg):
+        return self.convert_some_mention(data, ctx, arg, target_type, "roles", ("@", "&"))
+
+    async def convert_text_channel(self, data, ctx, arg):
+        return self.convert_some_mention(data, ctx, arg, target_type, "text_channels", ("#",))
+
+    async def convert_voice_channel(self, data, ctx, arg):
+        return self.convert_some_mention(data, ctx, arg, target_type, "voice_channels", (,))

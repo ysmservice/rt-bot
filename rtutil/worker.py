@@ -88,6 +88,14 @@ class Worker:
                         if data["type"] in self.events:
                             new_data = data["data"]
                             new_data["callback_template"] = callback_data
+                            # guildなどの取得できるのなら取得しておく。
+                            guild_id = new_data.get("guild_id")
+                            if guild_id:
+                                new_data["guild"] = await self.discord("get_guild", guild_id, wait=True)
+                            channel_id = new_data.get("channel_id")
+                            if channel_id:
+                                new_data["channel"] = await self.discord("get_channel", channel_id, wait=True)
+                            # イベントの実行をする。
                             for coro in self.events[data["type"]]:
                                 asyncio.create_task(coro(ws, new_data))
                     except Exception:

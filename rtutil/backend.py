@@ -93,7 +93,7 @@ class RTShardFrameWork(discord.AutoShardedClient):
                                            data["data"]["type"],
                                            None)
                             if do_wait:
-                                callback_data["data"] = asyncio.create_task(
+                                asyncio.create_task(
                                     coro(*args, **kwargs))
                             else:
                                 callback_data["data"] = await coro(
