@@ -14,7 +14,7 @@ from .errors import NotConnected, NotFound
 def if_connected(function):
     async def _function(self, *args, **kwargs):
         if self.ws:
-            await function(*args, **kwargs)
+            await function(self, *args, **kwargs)
         else:
             raise NotConnected("まだWebSocketに接続できていないので処理を実行できません。")
     return _function
@@ -22,7 +22,9 @@ def if_connected(function):
 
 class Worker:
     def __init__(self, prefixes, loop=None, logging_level=logging.DEBUG,
-                 print_cog_name=False):
+                 print_extension_name=False, ignore_me=True):
+        self.print_extension_name = print_extension_name
+        self.ignore_me = ignore_me
         self.queue = asyncio.Queue()
         self.loop = loop if loop else asyncio.get_event_loop()
         self.events = {}
@@ -30,6 +32,7 @@ class Worker:
         self.extensions = {}
         self.cogs = {}
         self.ws = None
+        self._ready = asyncio.Event()
 
         # プリフィックスを設定する。
         if isinstance(prefixes, list):
@@ -65,6 +68,7 @@ class Worker:
         # イベントを受け取ったらそのイベントでの通信を開始する。
         ws = await connect("ws://localhost:3000")
         self.ws = ws
+        self._ready.set()
         self.logger.info("Start worker.")
         try:
             while True:
@@ -86,18 +90,26 @@ class Worker:
                     try:
                         # イベントが登録されてるならそれを実行する。
                         if data["type"] in self.events:
-                            new_data = data["data"]
-                            new_data["callback_template"] = callback_data
-                            # guildなどの取得できるのなら取得しておく。
-                            guild_id = new_data.get("guild_id")
-                            if guild_id:
-                                new_data["guild"] = await self.discord("get_guild", guild_id, wait=True)
-                            channel_id = new_data.get("channel_id")
-                            if channel_id:
-                                new_data["channel"] = await self.discord("get_channel", channel_id, wait=True)
-                            # イベントの実行をする。
-                            for coro in self.events[data["type"]]:
-                                asyncio.create_task(coro(ws, new_data))
+                            do = True
+                            if (data["type"] == "create_message"
+                                    and self.ignore_me):
+                                if data["data"]["author"]["id"] == data["me"]:
+                                    do = False
+                            if do:
+                                new_data = data["data"]
+                                new_data["callback_template"] = callback_data
+                                # guildなどの取得できるのなら取得しておく。
+                                guild_id = new_data.get("guild_id")
+                                if guild_id:
+                                    new_data["guild"] = await self.discord(
+                                        "get_guild", guild_id, wait=True)
+                                channel_id = new_data.get("channel_id")
+                                if channel_id:
+                                    new_data["channel"] = await self.discord(
+                                        "get_channel", channel_id, wait=True)
+                                # イベントの実行をする。
+                                for coro in self.events[data["type"]]:
+                                    asyncio.create_task(coro(ws, new_data))
                     except Exception:
                         error = format_exc()
                     else:
@@ -177,12 +189,8 @@ class Worker:
         await self.ws.send(dumps(data))
         return loads(await self.ws.recv())
 
-    async def _wait_until_ready(self):
-        while not self.ws:
-            pass
-
-    async def wait_until_ready(self, timeout=None):
-        await asyncio.wait_for(self._wait_until_ready(), timeout=timeout)
+    async def wait_until_ready(self):
+        await self._ready.wait()
 
     def command(self, command_name=None):
         # コマンド登録用のデコレ―タ。
@@ -270,7 +278,12 @@ class Worker:
         path = path.replace("/", ".").replace(".py", "")
         self.extensions[path] = import_module(path)
         return_data = self.extensions[path].setup(self)
-        self.logger.info("Loaded extension " + path)
+        text = "Loaded extension " + path
+        if self.print_extension_name:
+            if isinstance(self.print_extension_name, str):
+                text = self.print_extension_name + path
+            print(text)
+        self.logger.info(text)
         return return_data
 
     def unload_extension(self, path):

@@ -3,7 +3,7 @@
 import inspect
 import discord
 import asyncio
-from .utils import *
+from .utils import cc_int, get
 
 
 # コンバーターをコルーチンに設定してその設定済みコルーチンを返す関数。
@@ -98,7 +98,7 @@ class Converter:
             arg = self.convert_voice_channel(data, ctx, arg)
         return arg
 
-    async def convert_some_mention(self, data, ctx, arg, target_type, key, exts):
+    async def convert_some_mention(self, data, ctx, arg, key, exts):
         # メンション用のコンバーター。
         # ここで登場するcc_intとgetはrtutil/utils.pyにある。
         _id = cc_int(arg)
@@ -115,13 +115,17 @@ class Converter:
             return get(data["guild"][key], name=arg)
 
     async def convert_member(self, data, ctx, arg):
-        return self.convert_some_mention(data, ctx, arg, target_type, "members", ("!",))
+        return self.convert_some_mention(
+            data, ctx, arg, "members", ("!",))
 
     async def convert_role(self, data, ctx, arg):
-        return self.convert_some_mention(data, ctx, arg, target_type, "roles", ("@", "&"))
+        return self.convert_some_mention(
+            data, ctx, arg, "roles", ("@", "&"))
 
     async def convert_text_channel(self, data, ctx, arg):
-        return self.convert_some_mention(data, ctx, arg, target_type, "text_channels", ("#",))
+        return self.convert_some_mention(
+            data, ctx, arg, "text_channels", ("#",))
 
     async def convert_voice_channel(self, data, ctx, arg):
-        return self.convert_some_mention(data, ctx, arg, target_type, "voice_channels", (,))
+        return self.convert_some_mention(
+            data, ctx, arg, "voice_channels", ())

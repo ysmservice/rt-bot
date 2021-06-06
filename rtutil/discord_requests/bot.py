@@ -65,6 +65,11 @@ class DiscordRequests:
         }
         return data
 
+    def dm_channel(self, channel):
+        data = {}
+        data.update(self.channel(channel))
+        return data
+
     def text_channel(self, channel) -> dict:
         new_data = {
             "type": "text",
@@ -88,19 +93,19 @@ class DiscordRequests:
             "id": role.id,
             "color": role.color
         }
-        return role
+        return data
 
     def guild(self, guild) -> dict:
         data = {
             "name": guild.name,
             "id": guild.id,
-            "roles": [self.role(role) for role in guild.roles]
+            "roles": [self.role(role) for role in guild.roles],
             "emojis": [self.emoji(emoji) for emoji in guild.emojis],
-            "members": [self.member(member) for member in member],
+            "members": [self.member(member) for member in guild.members],
             "channels": [(self.text_channel(channel)
-                           if isinstance(channel, discord.TextChannel)
-                           else self.voice_channel(channel))
-                          for channel in guild.channels]
+                          if isinstance(channel, discord.TextChannel)
+                          else self.voice_channel(channel))
+                         for channel in guild.channels]
         }
         text_channels, voice_channels = [], []
         for channel in data["channels"]:
@@ -112,22 +117,10 @@ class DiscordRequests:
         data["voice_channels"] = voice_channels
         return data
 
-    def channel(self, channel) -> dict:
-        data = {
-            "name": channel.name,
-            "id": channel.id
-        }
-        return data
-
-    def dm_channel(self, channel):
-        data = {}
-        data.update(self.channel(channel))
-        return data
-
-    def get_guild(self, guild_id):
+    async def get_guild(self, guild_id):
         return self.guild(self.bot.get_guild(guild_id))
 
-    def get_channel(self, channel_id):
+    async def get_channel(self, channel_id):
         channel = self.bot.get_channel(channel_id)
         if channel:
             if isinstance(channel, discord.TextChannel):
@@ -135,14 +128,17 @@ class DiscordRequests:
             else:
                 return self.voice_channel(channel)
 
+    async def get_bot_id(self):
+        return self.bot.user.id
+
     def somes(self, datas, converter, get_length: bool):
         return (len(datas) if get_length else
                 [converter(data) for data in datas])
 
-    def users(self, get_length: bool = False):
+    async def users(self, get_length: bool = False):
         return self.somes(self.bot.users, self.user, get_length)
 
-    def guilds(self, get_length: bool = False):
+    async def guilds(self, get_length: bool = False):
         return self.somes(self.bot.guilds, self.guild, get_length)
 
     def to_args_kwargs(args) -> tuple:

@@ -58,7 +58,8 @@ class RTShardFrameWork(discord.AutoShardedClient):
             # イベントでそのイベントでのWorkerとの通信が始まる。
             data = {
                 "type": "start",
-                "data": queue
+                "data": queue,
+                "me": self.user.id
             }
             # Workerにイベント内容を伝える。
             await ws.send(dumps(data))
@@ -93,11 +94,11 @@ class RTShardFrameWork(discord.AutoShardedClient):
                                            data["data"]["type"],
                                            None)
                             if do_wait:
-                                asyncio.create_task(
-                                    coro(*args, **kwargs))
-                            else:
                                 callback_data["data"] = await coro(
                                     *args, **kwargs)
+                            else:
+                                asyncio.create_task(
+                                    coro(*args, **kwargs))
                         elif data["type"] == "end":
                             # もしこのイベントでの通信を終わりたいと言われたら終わる。
                             # 上二も同じものがあるがこれは仕様です。
