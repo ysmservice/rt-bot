@@ -4,7 +4,8 @@ from importlib import import_module
 from traceback import format_exc
 from websockets import connect
 from ujson import loads, dumps
-from threading import Thread
+from random import randint
+from time import time
 import logging
 import asyncio
 
@@ -33,6 +34,8 @@ class Worker:
         self.extensions = {}
         self.cogs = {}
         self.ws = None
+        self._request = asyncio.Event()
+        self._event = asyncio.Event()
         self._ready = asyncio.Event()
 
         # プリフィックスを設定する。
@@ -57,90 +60,68 @@ class Worker:
 
         super().__init__()
 
-    def run(self, host=("localhost", "localhost"), port=(3000, 3001)):
-        self.request_ws = await connect(f"ws://{host[1]}:{port[1]}")
-        self.loop.run_until_complete(self.worker(host[0], port[0]))
+    def run(self):
+        self.loop.run_until_complete(self.worker())
 
     async def close(self):
         await self.ws.close()
 
-    async def worker(self, host, port):
+    def make_session_id(self) -> str:
+        base = str(time())
+        for _ in range(5):
+            base += str(range(0, 9))
+        return base
+
+    async def worker(self):
         self.logger.info("Connecting to websocket...")
         # 親のDiscordからのイベントを受け取るmain.pyと通信をする。
         # イベントを受け取ったらそのイベントでの通信を開始する。
-        ws = await connect(f"ws://{localhost}:{port}")
+        ws = await connect("ws://localhost:3000")
         self.ws = ws
         self._ready.set()
         self.logger.info("Start worker.")
-        try:
-            while True:
-                self.logger.info("Waiting data...")
-
-                # イベントがくるまで待機する。
-                data = loads(await ws.recv())
-                data = data["data"]
-
-                # イベントでの通信を開始する。
-                self.logger.info("Start event communication.")
-                while True:
-                    callback_data = {
-                        "type": "end",
-                        "data": {}
-                    }
-
-                    # 処理をする。
-                    try:
-                        # イベントが登録されてるならそれを実行する。
-                        if data["type"] in self.events:
-                            do = True
-                            if (data["type"] == "create_message"
-                                    and self.ignore_me):
-                                if data["data"]["author"]["id"] == data["me"]:
-                                    do = False
-                            if do:
-                                new_data = data["data"]
-                                new_data["callback_template"] = callback_data
-                                # guildなどの取得できるのなら取得しておく。
-                                guild_id = new_data.get("guild_id")
-                                if guild_id:
-                                    new_data["guild"] = await self.discord(
-                                        "get_guild", guild_id, wait=True)
-                                channel_id = new_data.get("channel_id")
-                                if channel_id:
-                                    new_data["channel"] = await self.discord(
-                                        "get_channel", channel_id, wait=True)
-                                # イベントの実行をする。
-                                for coro in self.events[data["type"]]:
-                                    asyncio.create_task(coro(ws, new_data))
-                    except Exception:
-                        error = format_exc()
-                    else:
-                        error = False
-
-                    callback_data = {
-                        "type": "end",
-                        "data": {}
-                    }
-
-                    # もしエラーが発生しているならエラー落ちしたと伝える。
-                    if error:
-                        callback_data["type"] = "error"
-                        callback_data["data"]["content"] = (
-                            error if error else "エラー不明")
-
-                    # Discordと通信をしてもらったりするためコールバックを送信する。
-                    # または通信終了のコールバックを送る。
-                    await ws.send(dumps(callback_data))
-
-                    # コールバックを受け取る。
-                    data = loads(await ws.recv())
-                    if data["type"] == "end":
-                        break
-                self.logger.info("End event communication.")
-        except KeyboardInterrupt:
-            pass
-        finally:
-            await self.close()
+        while True:
+            # リクエストが終わるまで待つ。
+            await self._request.wait()
+            # リクエストができないようにする。
+            self._event.clear()
+            try:
+                data = loads(await asyncio.wait_for(ws.recv(), timeout=0.01))
+            except asyncio.TimeoutError:
+                pass
+            else:
+                # イベント呼び出しならそれ専用のことをする。
+                callback_data = {
+                    "type": "ok",
+                    "data": {}
+                }
+                try:
+                    if (data["data"]["type"] in self.events
+                            and data["type"] == "start"):
+                        # 登録されているイベントを呼び出すものならそのイベントを呼び出す。
+                        new_data = data["data"]
+                        new_data["callback_template"] = callback_data
+                        # guildなどの取得できるのなら取得しておく。
+                        guild_id = new_data.get("guild_id")
+                        if guild_id:
+                            new_data["guild"] = await self.discord(
+                                "get_guild", guild_id, wait=True)
+                        channel_id = new_data.get("channel_id")
+                        if channel_id:
+                            new_data["channel"] = await self.discord(
+                                "get_channel", channel_id, wait=True)
+                        # イベントの実行をする。
+                        for coro in self.events[data["type"]]:
+                            asyncio.create_task(coro(ws, new_data))
+                except Exception:
+                    error = format_exc()
+                    callback_data["type"] = "error"
+                    callback_data["data"] = error
+                    print("\nException in worker:" + error)
+                # コールバックを返却する。
+                await ws.send(dumps(callback_data))
+            # リクエストができるようにする。
+            self._event.set()
 
     def event(self, event_name=None):
         # イベント登録用のデコレ―タ。
@@ -176,6 +157,8 @@ class Worker:
     @if_connected
     async def discord(self, event_type: str, *args, **kwargs):
         # Discordに何かリクエストしてもらう。
+        await self._event.wait()
+        self._request.clear()
         data = {
             "type": "discord",
             "data": {
@@ -187,8 +170,12 @@ class Worker:
             wait = kwargs["wait"]
             data["data"]["wait"] = wait
             del kwargs["wait"]
-        await self.request_ws.send(dumps(data))
-        return loads(await self.request_ws.recv())
+        await self.ws.send(dumps(data))
+        data = loads(await self.ws.recv())
+        self._request.set()
+        if data["type"] == "error":
+            raise Exception("\n", data["data"])
+        return data
 
     async def wait_until_ready(self):
         await self._ready.wait()
