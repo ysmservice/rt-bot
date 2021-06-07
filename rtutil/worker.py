@@ -4,6 +4,7 @@ from importlib import import_module
 from traceback import format_exc
 from websockets import connect
 from ujson import loads, dumps
+from threading import Thread
 import logging
 import asyncio
 
@@ -56,17 +57,18 @@ class Worker:
 
         super().__init__()
 
-    def run(self):
-        self.loop.run_until_complete(self.worker())
+    def run(self, host=("localhost", "localhost"), port=(3000, 3001)):
+        self.request_ws = await connect(f"ws://{host[1]}:{port[1]}")
+        self.loop.run_until_complete(self.worker(host[0], port[0]))
 
     async def close(self):
         await self.ws.close()
 
-    async def worker(self):
+    async def worker(self, host, port):
         self.logger.info("Connecting to websocket...")
         # 親のDiscordからのイベントを受け取るmain.pyと通信をする。
         # イベントを受け取ったらそのイベントでの通信を開始する。
-        ws = await connect("ws://localhost:3000")
+        ws = await connect(f"ws://{localhost}:{port}")
         self.ws = ws
         self._ready.set()
         self.logger.info("Start worker.")
@@ -123,9 +125,8 @@ class Worker:
                     # もしエラーが発生しているならエラー落ちしたと伝える。
                     if error:
                         callback_data["type"] = "error"
-                        callback_data["data"]["content"] = (error
-                                                            if error
-                                                            else "エラー不明")
+                        callback_data["data"]["content"] = (
+                            error if error else "エラー不明")
 
                     # Discordと通信をしてもらったりするためコールバックを送信する。
                     # または通信終了のコールバックを送る。
@@ -186,8 +187,8 @@ class Worker:
             wait = kwargs["wait"]
             data["data"]["wait"] = wait
             del kwargs["wait"]
-        await self.ws.send(dumps(data))
-        return loads(await self.ws.recv())
+        await self.request_ws.send(dumps(data))
+        return loads(await self.request_ws.recv())
 
     async def wait_until_ready(self):
         await self._ready.wait()

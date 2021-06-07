@@ -4,8 +4,7 @@ import discord
 
 from traceback import format_exc
 from ujson import loads, dumps
-from random import randint
-from time import time
+from threading import Thread
 from copy import copy
 import websockets
 import asyncio
@@ -23,7 +22,7 @@ ON_SOME_EVENT = """def !event_type!(data):
 
 class RTShardFrameWork(discord.AutoShardedClient):
     def __init__(self, *args, logging_level=logging.DEBUG,
-                 port=3000, **kwargs):
+                 port=(3000, 3001), **kwargs):
         # ログの出力を設定する。
         logging.basicConfig(
             level=logging_level,
@@ -44,12 +43,19 @@ class RTShardFrameWork(discord.AutoShardedClient):
         globals()["self"] = self
 
         # Workerの初期設定をする。
-        self.queue = asyncio.Queue()
         self.logger.info("Creating websockets server.")
-        server = websockets.serve(self.worker, "localhost", str(port))
+        self.wrw_loop = asyncio.new_event_loop()
+        self.wrw = Thread(target=self.prepare_websocket, args=(self.wrw_loop,), name="Worker Request Websocket")
+        self.wrw.start()
+        self.queue = asyncio.Queue()
+        self.wrw_loop.call_soon_threadsafe(websockets.serve, *(self.worker_request, "localhost", str(port[0])))
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(server)
+        loop.run_until_complete(websockets.serve(self.worker, "localhost", str(port[1])))
         self.logger.info("Started websockets server!")
+
+    def prepare_websocket(self, loop):
+        asyncio.set_event_loop(loop)
+        loop.run_forever()
 
     async def do_requests(self, data):
         # 依頼されたリクエストを処理する。。
@@ -154,7 +160,7 @@ class RTShardFrameWork(discord.AutoShardedClient):
             # エラー落ちによるイベントの通信でコールバックチャンネルがあるなら通知しておく。
             if error:
                 if isinstance(error, str):
-                    self.logger.debug(error)
+                    self.logger.error(error)
                     channel = self.get_channel(842744343911596062)
                     content = "\n```\n" + error + "\n```"
                     content = "すみませんが処理中にエラーが発生したようです。" + content
