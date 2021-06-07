@@ -4,6 +4,8 @@ import discord
 
 from traceback import format_exc
 from ujson import loads, dumps
+from random import randint
+from time import time
 from copy import copy
 import websockets
 import asyncio
@@ -49,6 +51,50 @@ class RTShardFrameWork(discord.AutoShardedClient):
         loop.run_until_complete(server)
         self.logger.info("Started websockets server!")
 
+    async def do_requests(self, data):
+        # 依頼されたリクエストを処理する。。
+        callback_data = {
+            "type": "ok",
+            "key": data["key"],
+            "data": None
+        }
+        args = data["data"].get("args", [])
+        kwargs = data["data"].get("kwargs", {})
+        do_wait = data["data"].get("wait", True)
+        try:
+            coro = getattr(self.requests, data["data"]["type"])
+        except Exception:
+            # エラー時はコールバックにエラー内容を書き込んでおく。
+            callback_data["data"] = format_exc()
+            callback_data["type"] = "error"
+        else:
+            # 実行する。
+            if do_wait:
+                callback_data["data"] = await coro(
+                    *args, **kwargs)
+            else:
+                asyncio.create_task(
+                    coro(*args, **kwargs))
+
+        # コールバックの取得のためのキューリストにコールバックを追加する。
+        return callback_data
+
+    async def worker_request(self, ws, path):
+        # workerからのリクエストをリクエストキューに入れるためのwebsocket。
+        self.request_ws = ws
+        LOG_TITLE = "(Worker Request Thread) "
+        while True:
+            self.logger.info(LOG_TITLE + "Waiting worker's request...")
+            data = loads(await ws.recv())
+            self.logger.info(LOG_TITLE + "Received worker's request!")
+
+            self.logger.info(LOG_TITLE + "Do worker's request.")
+            if data["type"] == "discord":
+                callback_data = await self.do_request(data)
+
+            self.logger.info(LOG_TITLE + "Send callback_data to worker.")
+            await ws.send(dumps(callback_data))
+
     async def worker(self, ws, path):
         while True:
             self.logger.info("Waiting event...")
@@ -86,19 +132,7 @@ class RTShardFrameWork(discord.AutoShardedClient):
                     }
                     try:
                         if data["type"] == "discord":
-                            # Discordに何かリクエストするやつ。
-                            args = data["data"].get("args", [])
-                            kwargs = data["data"].get("kwargs", {})
-                            do_wait = data["data"].get("wait", True)
-                            coro = getattr(self.requests,
-                                           data["data"]["type"],
-                                           None)
-                            if do_wait:
-                                callback_data["data"] = await coro(
-                                    *args, **kwargs)
-                            else:
-                                asyncio.create_task(
-                                    coro(*args, **kwargs))
+                            pass
                         elif data["type"] == "end":
                             # もしこのイベントでの通信を終わりたいと言われたら終わる。
                             # 上二も同じものがあるがこれは仕様です。
