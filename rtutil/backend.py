@@ -4,7 +4,10 @@ import discord
 
 from traceback import format_exc
 from ujson import loads, dumps
+<<<<<<< HEAD
 from threading import Thread
+=======
+>>>>>>> parent of ce7c1c4... toriaezu
 from copy import copy
 import websockets
 import asyncio
@@ -53,6 +56,7 @@ class RTShardFrameWork(discord.AutoShardedClient):
         loop.run_until_complete(websockets.serve(self.worker, "localhost", str(port[1])))
         self.logger.info("Started websockets server!")
 
+<<<<<<< HEAD
     def prepare_websocket(self, loop):
         asyncio.set_event_loop(loop)
         loop.run_forever()
@@ -101,6 +105,8 @@ class RTShardFrameWork(discord.AutoShardedClient):
             self.logger.info(LOG_TITLE + "Send callback_data to worker.")
             await ws.send(dumps(callback_data))
 
+=======
+>>>>>>> parent of ce7c1c4... toriaezu
     async def worker(self, ws, path):
         while True:
             self.logger.info("Waiting event...")
@@ -138,7 +144,19 @@ class RTShardFrameWork(discord.AutoShardedClient):
                     }
                     try:
                         if data["type"] == "discord":
-                            pass
+                            # Discordに何かリクエストするやつ。
+                            args = data["data"].get("args", [])
+                            kwargs = data["data"].get("kwargs", {})
+                            do_wait = data["data"].get("wait", True)
+                            coro = getattr(self.requests,
+                                           data["data"]["type"],
+                                           None)
+                            if do_wait:
+                                callback_data["data"] = await coro(
+                                    *args, **kwargs)
+                            else:
+                                asyncio.create_task(
+                                    coro(*args, **kwargs))
                         elif data["type"] == "end":
                             # もしこのイベントでの通信を終わりたいと言われたら終わる。
                             # 上二も同じものがあるがこれは仕様です。
