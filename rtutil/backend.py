@@ -15,6 +15,12 @@ from .discord_requests import DiscordRequests
 ON_SOME_EVENT = """def !event_type!(data):
     event_type = '!event_type!'
     data = {"type": event_type, "data": data}
+    guild_id = data["data"].get("guild_id")
+    if guild_id:
+        data["data"]["guild"] = self.requests.get_guild_noasync(guild_id)
+    channel_id = data["data"].get("channel_id")
+    if channel_id:
+        data["data"]["channel"] = self.requests.get_channel_noasync(channel_id)
     asyncio.create_task(self.queue.put(data))
     self.default_parsers[event_type.upper()](data['data'])"""
 
@@ -51,49 +57,56 @@ class RTShardFrameWork(discord.AutoShardedClient):
 
     async def worker(self, ws, path):
         while True:
-            queue = self.queue.get_nowait()
-            if isinstance(queue, asyncio.QueueEmpty):
-                try:
-                    data = await asyncio.wait_for(ws.recv(), timeout=0.01)
-                except asyncio.TimeoutError:
-                    continue
-                else:
-                    # Workerに何かリクエストされた場合はそれを実行する。
-                    callback_data = {
-                        "type": "ok",
-                        "data": None
-                    }
-                    if data["type"] == "discord":
-                        # Discordに何かリクエストするやつ。
-                        args = data["data"].get("args", [])
-                        kwargs = data["data"].get("kwargs", {})
-                        do_wait = data["data"].get("wait", True)
-                        try:
-                            coro = getattr(self.requests, data["data"]["type"])
-                        except AttributeError:
-                            callback_data["type"] = "ok but error"
-                            callback_data["data"] = (f"{data['data']['type']}"
-                                                     + "が見つかりませんでした。")
-                        else:
-                            try:
-                                if do_wait:
-                                    callback_data["data"] = await coro(
-                                        *args, **kwargs)
-                                else:
-                                    asyncio.create_task(
-                                        coro(*args, **kwargs))
-                            except Exception:
-                                callback_data["type"] = "error"
-                                callback_data["data"] = format_exc()
-                        # コールバックを送信する。
-                        await ws.send(dumps(callback_data))
+            try:
+                queue = self.queue.get_nowait()
+            except asyncio.QueueEmpty:
+                pass
             else:
                 # もしイベントが呼び出されたらイベントをWorkerに伝える。
+                self.logger.info("Received event.")
                 data = {
                     "type": "start",
                     "data": queue,
                     "me": self.user.id
                 }
-                await ws.send(dumps(data))
-                loads(await ws.recv())
+                data = dumps(data)
+                await ws.send(data)
+                self.logger.debug("  Backend > " + data)
+                self.logger.info("Sended event to worker!")
                 self.queue.task_done()
+            try:
+                data = loads(await asyncio.wait_for(ws.recv(), timeout=0.01))
+            except asyncio.TimeoutError:
+                pass
+            except websockets.exceptions.ConnectionClosedOK:
+                pass
+            else:
+                # Workerに何かリクエストされた場合はそれを実行する。
+                callback_data = {
+                    "type": "ok",
+                    "data": None
+                }
+                if data["type"] == "discord":
+                    # Discordに何かリクエストするやつ。
+                    args = data["data"].get("args", [])
+                    kwargs = data["data"].get("kwargs", {})
+                    do_wait = data["data"].get("wait", True)
+                    try:
+                        coro = getattr(self.requests, data["data"]["type"])
+                    except AttributeError:
+                        callback_data["type"] = "error"
+                        callback_data["data"] = f"{data['data']['type']}が見つかりませんでした。"
+                    else:
+                        try:
+                            if do_wait:
+                                callback_data["data"] = await coro(
+                                    *args, **kwargs)
+                            else:
+                                asyncio.create_task(
+                                    coro(*args, **kwargs))
+                        except Exception:
+                            callback_data["type"] = "error"
+                            callback_data["data"] = format_exc()
+                    # コールバックを送信する。
+                    await ws.send(dumps(callback_data))
+            await asyncio.sleep(0.01)

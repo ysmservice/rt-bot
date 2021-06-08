@@ -96,37 +96,45 @@ class DiscordRequests:
         return data
 
     def guild(self, guild) -> dict:
-        data = {
-            "name": guild.name,
-            "id": guild.id,
-            "roles": [self.role(role) for role in guild.roles],
-            "emojis": [self.emoji(emoji) for emoji in guild.emojis],
-            "members": [self.member(member) for member in guild.members],
-            "channels": [(self.text_channel(channel)
-                          if isinstance(channel, discord.TextChannel)
-                          else self.voice_channel(channel))
-                         for channel in guild.channels]
-        }
-        text_channels, voice_channels = [], []
-        for channel in data["channels"]:
-            if channel["type"] == "text":
-                text_channels.append(channel)
-            else:
-                voice_channels.append(channel)
-        data["text_channels"] = text_channels
-        data["voice_channels"] = voice_channels
+        data = {}
+        if guild:
+            data = {
+                "name": guild.name,
+                "id": guild.id,
+                "roles": [self.role(role) for role in guild.roles],
+                "emojis": [self.emoji(emoji) for emoji in guild.emojis],
+                "members": [self.member(member) for member in guild.members],
+                "channels": [(self.text_channel(channel)
+                              if isinstance(channel, discord.TextChannel)
+                              else self.voice_channel(channel))
+                             for channel in guild.channels]
+            }
+            text_channels, voice_channels = [], []
+            for channel in data["channels"]:
+                if channel["type"] == "text":
+                    text_channels.append(channel)
+                else:
+                    voice_channels.append(channel)
+            data["text_channels"] = text_channels
+            data["voice_channels"] = voice_channels
         return data
 
-    async def get_guild(self, guild_id):
+    def get_guild_noasync(self, guild_id: int) -> dict:
         return self.guild(self.bot.get_guild(guild_id))
 
-    async def get_channel(self, channel_id):
+    async def get_guild(self, guild_id: int) -> dict:
+        return self.get_guild_noasync(guild_id)
+
+    def get_channel_noasync(self, channel_id: int) -> dict:
         channel = self.bot.get_channel(channel_id)
         if channel:
             if isinstance(channel, discord.TextChannel):
                 return self.text_channel(channel)
             else:
                 return self.voice_channel(channel)
+
+    async def get_channel(self, channel_id: int) -> dict:
+        return self.get_channel_noasync(channel_id)
 
     async def get_bot_id(self):
         return self.bot.user.id
@@ -141,11 +149,11 @@ class DiscordRequests:
     async def guilds(self, get_length: bool = False):
         return self.somes(self.bot.guilds, self.guild, get_length)
 
-    def to_args_kwargs(args) -> tuple:
+    def to_args_kwargs(self, args) -> tuple:
         if len(args) == 0:
             return (), {}
         elif len(args) == 1:
-            return args[0]
+            return args[0], {}
         else:
             return args[0], args[1]
 
@@ -158,5 +166,5 @@ class DiscordRequests:
             raise TypeError("引数のstatusは文字列の必要があります。")
         args, kwargs = self.to_args_kwargs(activity)
         activity = eval("discord." + activity_base)(*args, **kwargs)
-        await self.bot.change_presense(
+        await self.bot.change_presence(
             activity=activity, status=status, afk=afk)

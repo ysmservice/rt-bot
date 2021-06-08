@@ -16,7 +16,7 @@ from .errors import NotConnected, NotFound
 def if_connected(function):
     async def _function(self, *args, **kwargs):
         if self.ws:
-            await function(self, *args, **kwargs)
+            return await function(self, *args, **kwargs)
         else:
             raise NotConnected("まだWebSocketに接続できていないので処理を実行できません。")
     return _function
@@ -33,10 +33,12 @@ class Worker:
         self.commands = {}
         self.extensions = {}
         self.cogs = {}
+
         self.ws = None
-        self._request = asyncio.Event()
         self._event = asyncio.Event()
+        self._request = asyncio.Event()
         self._ready = asyncio.Event()
+        self._request_queue_count = 0
 
         # プリフィックスを設定する。
         if isinstance(prefixes, list):
@@ -53,7 +55,7 @@ class Worker:
             level=logging_level,
             format="[%(name)s][%(levelname)s] %(message)s"
         )
-        self.logger = logging.getLogger("RT - Worker")
+        self.logger = logging.getLogger("rt.worker")
 
         # コマンドフレームワークのコマンドを走らせるためにon_messageイベントを登録しておく。
         self.add_event(self.on_message, "message_create")
@@ -61,10 +63,19 @@ class Worker:
         super().__init__()
 
     def run(self):
-        self.loop.run_until_complete(self.worker())
+        self.logger.info("Starting worker...")
+        try:
+            self.loop.run_until_complete(self.worker())
+        except KeyboardInterrupt:
+            self.logger.info("Closing worker...")
+            self.loop.run_until_complete(self.close())
+            self.logger.info("  Websocket is closed.")
+        self.loop.stop()
+        self.logger.info("  Loop is closed.")
+        self.logger.info("Worker is closed by user KeyboardInterrupt!")
 
     async def close(self):
-        await self.ws.close()
+        await self.ws.close(reason="Don't worry, It is true end!")
 
     def make_session_id(self) -> str:
         base = str(time())
@@ -79,18 +90,15 @@ class Worker:
         ws = await connect("ws://localhost:3000")
         self.ws = ws
         self._ready.set()
-        self.logger.info("Start worker.")
+        self.logger.info("Started worker.")
         while True:
-            # リクエストが終わるまで待つ。
-            await self._request.wait()
-            # リクエストができないようにする。
-            self._event.clear()
             try:
                 data = loads(await asyncio.wait_for(ws.recv(), timeout=0.01))
             except asyncio.TimeoutError:
                 pass
             else:
                 # イベント呼び出しならそれ専用のことをする。
+                self.logger.info("Received event.")
                 callback_data = {
                     "type": "ok",
                     "data": {}
@@ -99,29 +107,60 @@ class Worker:
                     if (data["data"]["type"] in self.events
                             and data["type"] == "start"):
                         # 登録されているイベントを呼び出すものならそのイベントを呼び出す。
-                        new_data = data["data"]
+                        new_data = data["data"]["data"]
                         new_data["callback_template"] = callback_data
-                        # guildなどの取得できるのなら取得しておく。
-                        guild_id = new_data.get("guild_id")
-                        if guild_id:
-                            new_data["guild"] = await self.discord(
-                                "get_guild", guild_id, wait=True)
-                        channel_id = new_data.get("channel_id")
-                        if channel_id:
-                            new_data["channel"] = await self.discord(
-                                "get_channel", channel_id, wait=True)
                         # イベントの実行をする。
-                        for coro in self.events[data["type"]]:
+                        self.logger.info(f"  Runnning {data['data']['type']} events...")
+                        for coro in self.events[data["data"]["type"]]:
+                            self.logger.info(f"    {coro.__name__}")
                             asyncio.create_task(coro(ws, new_data))
+                        self.logger.info("Runned events.")
                 except Exception:
                     error = format_exc()
                     callback_data["type"] = "error"
                     callback_data["data"] = error
-                    print("\nException in worker:" + error)
-                # コールバックを返却する。
-                await ws.send(dumps(callback_data))
-            # リクエストができるようにする。
+                    self.logger.error("Exception in event:\n" + error)
+            if self._request_queue_count != 0:
+                self._request.clear()
             self._event.set()
+            await self._request.wait()
+            await asyncio.sleep(0.01)
+
+    @if_connected
+    async def discord(self, event_type: str, *args, wait=True, **kwargs):
+        self.logger.info(f"Requesting {event_type} ...")
+        self._request_queue_count += 1
+        await self._event.wait()
+        # Discordに何かリクエストしてもらう。
+        self.logger.info("  Sending request to backend...")
+        data = {
+            "type": "discord",
+            "data": {
+                "type": event_type,
+                "args": args,
+                "kwargs": kwargs
+            }
+        }
+        if "wait" in kwargs:
+            wait = kwargs["wait"]
+            data["data"]["wait"] = wait
+            del kwargs["wait"]
+        await self.ws.send(dumps(data))
+        self.logger.info("    Sended request.")
+        data = loads(await self.ws.recv())
+        self.logger.info("  Received request callback.")
+        self.logger.debug("    Worker < " + str(data))
+        if data["type"] == "error":
+            raise Exception(" in request:\n" + data["data"])
+            self.logger.error("The request failed.")
+        self._request.set()
+        self._event.clear()
+        self._request_queue_count -= 1
+        self.logger.info("Requested " + event_type + "!")
+        return data["data"]
+
+    async def wait_until_ready(self):
+        await self._ready.wait()
 
     def event(self, event_name=None):
         # イベント登録用のデコレ―タ。
@@ -153,32 +192,6 @@ class Worker:
                     self.logger.info(f"Removed event {event_name}.")
                     return
         raise ValueError("そのコルーチンはイベントとして登録されていません。")
-
-    @if_connected
-    async def discord(self, event_type: str, *args, **kwargs):
-        # Discordに何かリクエストしてもらう。
-        await self._event.wait()
-        self._request.clear()
-        data = {
-            "type": "discord",
-            "data": {
-                "args": args,
-                "kwargs": kwargs
-            }
-        }
-        if "wait" in kwargs:
-            wait = kwargs["wait"]
-            data["data"]["wait"] = wait
-            del kwargs["wait"]
-        await self.ws.send(dumps(data))
-        data = loads(await self.ws.recv())
-        self._request.set()
-        if data["type"] == "error":
-            raise Exception("\n", data["data"])
-        return data
-
-    async def wait_until_ready(self):
-        await self._ready.wait()
 
     def command(self, command_name=None):
         # コマンド登録用のデコレ―タ。

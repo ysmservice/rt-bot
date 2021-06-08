@@ -3,6 +3,8 @@
 import rtutil
 from discord.ext import tasks
 
+from logging import getLogger
+
 
 TEAM_MEMBERS = """<:yaakiyu:731263096454119464> Yaakiyu [SERVER](https://discord.gg/wAkahzZ)
 <:takkun:731263181586169857> Takkun#1643 [SERVER](https://discord.gg/VX7ceJw)
@@ -15,24 +17,24 @@ class BotGeneral(metaclass=rtutil.Cog):
     def __init__(self, worker):
         self.worker = worker
         self.now_status = 0
+        self.logger = getLogger("rt.worker.BotGeneral")
         self.status_updater.start()
 
     @tasks.loop(seconds=120)
     async def status_updater(self):
-        print("あああああああああああああああ1")
         await self.worker.wait_until_ready()
-        print("あああああああああああああああ2")
         if self.now_status:
-            setting_word, self.now_status = len(
-                await self.worker.discord("users", get_length=True, wait=True)
-                ), 0
+            setting_word = await self.worker.discord(
+                "users", get_length=True, wait=True)
+            self.now_status = 0
         else:
-            setting_word, self.now_status = len(
-                await self.worker.discord("guilds", get_length=True, wait=True)
-                ), 1
+            setting_word = await self.worker.discord(
+                "guilds", get_length=True, wait=True)
+            self.now_status = 1
         status_text = STATUS_BASE[self.now_status].format(setting_word)
         await self.worker.discord(
-            "change_presense", activity_base=((status_text,),), status="idle")
+            "change_presence", activity=((status_text,),), status="idle")
+        self.logger.info("Updated status presence.")
 
     def cog_unload(self):
         self.status_updater.stop()
