@@ -23,9 +23,7 @@ class BotGeneral(metaclass=rtutil.Cog):
     @tasks.loop(seconds=120)
     async def status_updater(self):
         await self.worker.wait_until_ready()
-        if await self.worker.number() != 0:
-            self.status_updater.stop()
-        else:
+        if (await self.worker.number())["index"] != 0:
             if self.now_status:
                 setting_word = await self.worker.discord(
                     "users", get_length=True, wait=True)

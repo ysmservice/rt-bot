@@ -10,6 +10,7 @@ import asyncio
 import logging
 
 from .discord_requests import DiscordRequests
+from .utils import make_session_id
 
 
 ON_SOME_EVENT = """def !event_type!(data):
@@ -37,8 +38,8 @@ class RTShardFrameWork(discord.AutoShardedClient):
 
         # その他色々設定する。
         super().__init__(*args, **kwargs)
-        self.workers = []
-        self.requests = DiscordRequests(self)
+        self.workers: List[int] = []
+        self.requests: DiscordRequests = DiscordRequests(self)
 
         # Event Injection
         self.logger.info("Injecting the event queue putters to discord.py ...")
@@ -60,10 +61,7 @@ class RTShardFrameWork(discord.AutoShardedClient):
         self.logger.info("Complete!")
 
     async def worker(self, ws, path):
-        if self.workers:
-            number = self.workers[-1] + 1
-        else:
-            number = 0
+        number = make_session_id()
         self.workers.append(number)
         while True:
             try:
@@ -103,11 +101,15 @@ class RTShardFrameWork(discord.AutoShardedClient):
                     try:
                         coro = getattr(self.requests, data["data"]["type"])
                     except AttributeError:
-                        if data["data"]["type"] == "get_worker_number":
-                            callback_data["data"] = number
+                        event_type = data['data']['type']
+                        if event_type == "get_worker_number":
+                            callback_data["data"] = {
+                                "id": number,
+                                "index": self.workers.index(number)
+                            }
                         else:
                             callback_data["type"] = "error"
-                            callback_data["data"] = f"{data['data']['type']}が見つかりませんでした。"
+                            callback_data["data"] = f"{event_type}が見つかりませんでした。"
                     else:
                         try:
                             if do_wait:

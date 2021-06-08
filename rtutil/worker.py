@@ -4,8 +4,6 @@ from importlib import import_module
 from traceback import format_exc
 from websockets import connect
 from ujson import loads, dumps
-from random import randint
-from time import time
 import logging
 import asyncio
 
@@ -23,8 +21,36 @@ def if_connected(function):
 
 
 class Worker:
-    def __init__(self, prefixes, loop=None, logging_level=logging.DEBUG,
+    def __init__(self, prefixes, *, loop=None, logging_level=logging.ERROR,
                  print_extension_name=False, ignore_me=True):
+        """
+        Workerのインスタンスを作成します。
+
+        Parameters
+        ----------
+        prefixes: Union[str, Tuple[str], List[str]]
+            Botが反応するコマンドの接頭詞です。
+            接頭詞の例：prefixes="rt!" -> rt!help に反応する。
+            tupleかリストを使うことで複数の接頭詞を設定することができます。
+        loop: asyncio.ProactorEventLoop = None
+            使うイベントループを指定することができます。
+            デフォルトではasyncio.get_event_loop()によって取得されます。
+            普通に使う場合は指定しなくてもよいです。
+        logging_level: int = logging.ERROR
+            loggingのレベルを設定します。
+            デフォルトではlogging.ERRORになっています。
+            普通は変えなくても良いです。
+        print_extension_name: Union[bool, str] = False
+            エクステンションのロード時にロードしたエクステンションの名前をprintするかです。
+            文字列を入れるとその文字列 + 名前でprintされます。
+        ignore_me: bool = True
+            自分(Bot自身)のメッセージを無視するかどうかです。
+
+        Returns
+        -------
+        Worker
+            Workerのインスタンス。
+        """
         self.print_extension_name = print_extension_name
         self.ignore_me = ignore_me
 
@@ -65,6 +91,10 @@ class Worker:
         super().__init__()
 
     def run(self):
+        """
+        Workerを起動させます。
+        引数などはありません。
+        """
         self.logger.info("Starting worker...")
         try:
             self.loop.run_until_complete(self.worker())
@@ -77,15 +107,23 @@ class Worker:
         self.logger.info("Worker is closed by user KeyboardInterrupt!")
 
     async def close(self):
+        """
+        Workerを正常に停止させます。
+        """
+        self.logger.info("Closing worker...")
         await self.ws.close(reason="Don't worry, It is true end!")
-
-    def make_session_id(self) -> str:
-        base = str(time())
-        for _ in range(5):
-            base += str(range(0, 9))
-        return base
+        self.logger.info("  Websocket is closed.")
+        self.loop.stop()
+        self.logger.info("  Loop is closed.")
+        self.logger.info("Worker is closed by user KeyboardInterrupt!")
 
     async def worker(self):
+        """
+        Workerのプログラムです。
+        普通はこれを呼びだしません。
+        なのでこの説明は無視してかまいません。
+        Workerを動かす際はこれを呼び出すのではなくWorker.runを呼び出してください。
+        """
         self.logger.info("Connecting to websocket...")
         # 親のDiscordからのイベントを受け取るmain.pyと通信をする。
         # イベントを受け取ったらそのイベントでの通信を開始する。
@@ -106,13 +144,14 @@ class Worker:
                     "data": {}
                 }
                 try:
-                    if (data["data"]["type"] in self.events
+                    event_type = data['data']['type']
+                    if (event_type in self.events
                             and data["type"] == "start"):
                         # 登録されているイベントを呼び出すものならそのイベントを呼び出す。
                         new_data = data["data"]["data"]
                         new_data["callback_template"] = callback_data
                         # イベントの実行をする。
-                        self.logger.info(f"  Runnning {data['data']['type']} events...")
+                        self.logger.info(f"  Runnning {event_type} events...")
                         for coro in self.events[data["data"]["type"]]:
                             self.logger.info(f"    {coro.__name__}")
                             asyncio.create_task(coro(ws, new_data))
@@ -127,6 +166,32 @@ class Worker:
             self._event.set()
             await self._request.wait()
             await asyncio.sleep(0.01)
+
+    @if_connected
+    async def me(self, n: int = 0) -> bool:
+        """
+        指定した番号が動いてるWorkerの番号と一致するか確かめます。
+        1つだけのWorkerにだけやらせたい処理などに使えます。
+        discord.ext.tasksと兼用する際などを使う際が特に便利です。
+
+        Examples
+        --------
+        # 動いてるWorkerが0番目のWorkerか確認する。
+        if await worker.me(0):
+            # 0番目のWorkerのみにやらせたい処理。
+            # いわば1つのWorkerにのみやらせたい処理。
+
+        Parameters
+        ----------
+        n: int = 0
+            Workerがn番目に動いているか確認します。
+
+        Returns
+        -------
+        n_is_worker_index: bool
+            Workerがn番目に動いているかを示すbool値。
+        """
+        return (await self.number())["index"] == n
 
     @if_connected
     async def number(self) -> int:

@@ -1,6 +1,15 @@
 # RT - Utils
 
-import discord
+from random import randint
+from time import time
+
+
+# Session ID Maker
+def make_session_id(n: int = 5) -> str:
+    base = str(time())
+    for _ in range(n):
+        base += str(randint(0, 9))
+    return base
 
 
 def get(objects, **kwargs):

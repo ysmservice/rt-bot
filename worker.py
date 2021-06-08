@@ -1,9 +1,10 @@
 # RT - Worker Program
 
+import logging
 import rtutil
 
 
-worker = rtutil.Worker("r2!")
+worker = rtutil.Worker("r2!", logging_level=logging.DEBUG)
 worker.load_extension("cog.bot_general")
 
 
