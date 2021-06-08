@@ -23,21 +23,25 @@ class BotGeneral(metaclass=rtutil.Cog):
     @tasks.loop(seconds=120)
     async def status_updater(self):
         await self.worker.wait_until_ready()
-        if self.now_status:
-            setting_word = await self.worker.discord(
-                "users", get_length=True, wait=True)
-            self.now_status = 0
+        if await self.worker.number() != 0:
+            self.status_updater.stop()
         else:
-            setting_word = await self.worker.discord(
-                "guilds", get_length=True, wait=True)
-            self.now_status = 1
-        status_text = STATUS_BASE[self.now_status].format(setting_word)
-        await self.worker.discord(
-            "change_presence", activity=((status_text,),), status="idle")
-        self.logger.info("Updated status presence.")
+            if self.now_status:
+                setting_word = await self.worker.discord(
+                    "users", get_length=True, wait=True)
+                self.now_status = 0
+            else:
+                setting_word = await self.worker.discord(
+                    "guilds", get_length=True, wait=True)
+                self.now_status = 1
+            status_text = STATUS_BASE[self.now_status].format(setting_word)
+            await self.worker.discord(
+                "change_presence", activity=((status_text,),), status="idle")
+            self.logger.info("Updated status presence.")
 
     def cog_unload(self):
-        self.status_updater.stop()
+        if self.worker.number == 0:
+            self.status_updater.stop()
 
 
 def setup(worker):

@@ -33,19 +33,23 @@ class RTShardFrameWork(discord.AutoShardedClient):
             level=logging_level,
             format="[%(name)s][%(levelname)s] %(message)s"
         )
-        self.logger = logging.getLogger("RT - Client")
+        self.logger = logging.getLogger("rt.backend")
 
         # その他色々設定する。
         super().__init__(*args, **kwargs)
+        self.workers = []
         self.requests = DiscordRequests(self)
 
         # Event Injection
+        self.logger.info("Injecting the event queue putters to discord.py ...")
         self.default_parsers = copy(self._connection.parsers)
         for parser_name in self._connection.parsers:
+            self.logger.info("  " + parser_name)
             parser_name_lowered = parser_name.lower()
             exec(ON_SOME_EVENT.replace("!event_type!", parser_name_lowered))
             self._connection.parsers[parser_name] = eval(parser_name_lowered)
         globals()["self"] = self
+        self.logger.info("Injected putters")
 
         # Workerの初期設定をする。
         self.queue = asyncio.Queue()
@@ -53,9 +57,14 @@ class RTShardFrameWork(discord.AutoShardedClient):
         server = websockets.serve(self.worker, "localhost", str(port))
         loop = asyncio.get_event_loop()
         loop.run_until_complete(server)
-        self.logger.info("Started websockets server!")
+        self.logger.info("Complete!")
 
     async def worker(self, ws, path):
+        if self.workers:
+            number = self.workers[-1] + 1
+        else:
+            number = 0
+        self.workers.append(number)
         while True:
             try:
                 queue = self.queue.get_nowait()
@@ -86,7 +95,7 @@ class RTShardFrameWork(discord.AutoShardedClient):
                     "type": "ok",
                     "data": None
                 }
-                if data["type"] == "discord":
+                if data["type"] == "request":
                     # Discordに何かリクエストするやつ。
                     args = data["data"].get("args", [])
                     kwargs = data["data"].get("kwargs", {})
@@ -94,8 +103,11 @@ class RTShardFrameWork(discord.AutoShardedClient):
                     try:
                         coro = getattr(self.requests, data["data"]["type"])
                     except AttributeError:
-                        callback_data["type"] = "error"
-                        callback_data["data"] = f"{data['data']['type']}が見つかりませんでした。"
+                        if data["data"]["type"] == "get_worker_number":
+                            callback_data["data"] = number
+                        else:
+                            callback_data["type"] = "error"
+                            callback_data["data"] = f"{data['data']['type']}が見つかりませんでした。"
                     else:
                         try:
                             if do_wait:
@@ -110,3 +122,4 @@ class RTShardFrameWork(discord.AutoShardedClient):
                     # コールバックを送信する。
                     await ws.send(dumps(callback_data))
             await asyncio.sleep(0.01)
+        self.workers.remove(number)

@@ -27,14 +27,16 @@ class Worker:
                  print_extension_name=False, ignore_me=True):
         self.print_extension_name = print_extension_name
         self.ignore_me = ignore_me
-        self.queue = asyncio.Queue()
+
         self.loop = loop if loop else asyncio.get_event_loop()
         self.events = {}
         self.commands = {}
-        self.extensions = {}
         self.cogs = {}
+        self.extensions = {}
 
         self.ws = None
+        self._number = None
+        self.queue = asyncio.Queue()
         self._event = asyncio.Event()
         self._request = asyncio.Event()
         self._ready = asyncio.Event()
@@ -127,6 +129,12 @@ class Worker:
             await asyncio.sleep(0.01)
 
     @if_connected
+    async def number(self) -> int:
+        if not self._number:
+            self._number = await self.discord("get_worker_number")
+        return self._number
+
+    @if_connected
     async def discord(self, event_type: str, *args, wait=True, **kwargs):
         self.logger.info(f"Requesting {event_type} ...")
         self._request_queue_count += 1
@@ -134,7 +142,7 @@ class Worker:
         # Discordに何かリクエストしてもらう。
         self.logger.info("  Sending request to backend...")
         data = {
-            "type": "discord",
+            "type": "request",
             "data": {
                 "type": event_type,
                 "args": args,
