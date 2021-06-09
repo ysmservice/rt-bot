@@ -1,4 +1,4 @@
-# RT - Shard
+# RT - Shard 
 
 import discord
 
@@ -9,117 +9,140 @@ import websockets
 import asyncio
 import logging
 
+from .discord_requests import DiscordRequests
+from .utils import make_session_id
+
 
 ON_SOME_EVENT = """def !event_type!(data):
     event_type = '!event_type!'
     data = {"type": event_type, "data": data}
+    guild_id = data["data"].get("guild_id")
+    if guild_id:
+        data["data"]["guild"] = self.requests.get_guild_noasync(guild_id)
+    channel_id = data["data"].get("channel_id")
+    if channel_id:
+        data["data"]["channel"] = self.requests.get_channel_noasync(channel_id)
     asyncio.create_task(self.queue.put(data))
-    self.default_parsers[event_type.upper()](data['data'])"""
+    self._default_parsers[event_type.upper()](data['data'])"""
 
 
-class RTShardFrameWork(discord.AutoShardedClient):
-    def __init__(self, *args, logging_level=logging.DEBUG, **kwargs):
+class RTBackend(discord.AutoShardedClient):
+    """
+    Workerとの通信をするバックエンドのクラスです。
+
+    Parameters
+    ----------
+    *args : tuple, optional
+        親クラスのdiscord.AutoShardedClientに渡す引数です。
+    logging_level : int, default logging.ERROR
+        loggingのレベルです。
+    port : int, default 3000
+        Workerとの通信に使うWebsocketのポートです。
+    **kwargs : dict, optional
+        親クラスのdiscord.AutoShardedClientに渡すキーワード引数です。
+
+    Attributes
+    ----------
+    logger
+        loggingのloggerです。
+    worker : list
+        つないでいるWorkerのIDのリストです。
+    """
+    def __init__(self, *args, logging_level=logging.ERROR,
+                 port=3000, **kwargs):
         # ログの出力を設定する。
         logging.basicConfig(
             level=logging_level,
             format="[%(name)s][%(levelname)s] %(message)s"
         )
-        self.logger = logging.getLogger("RT - Client")
+        self.logger = logging.getLogger("rt.backend")
 
         # その他色々設定する。
         super().__init__(*args, **kwargs)
+        self.workers = []
+        self.requests = DiscordRequests(self)
 
         # Event Injection
-        self.default_parsers = copy(self._connection.parsers)
+        self.logger.info("Injecting the event queue putters to discord.py ...")
+        self._default_parsers = copy(self._connection.parsers)
         for parser_name in self._connection.parsers:
+            self.logger.info("  " + parser_name)
             parser_name_lowered = parser_name.lower()
             exec(ON_SOME_EVENT.replace("!event_type!", parser_name_lowered))
             self._connection.parsers[parser_name] = eval(parser_name_lowered)
         globals()["self"] = self
+        self.logger.info("Injected putters")
 
-        # Setup worker
+        # Workerの初期設定をする。
         self.queue = asyncio.Queue()
         self.logger.info("Creating websockets server.")
-        server = websockets.serve(self.worker, "localhost", "3000")
+        server = websockets.serve(self._worker, "localhost", str(port))
         loop = asyncio.get_event_loop()
         loop.run_until_complete(server)
-        self.logger.info("Started websockets server!")
+        self.logger.info("Complete!")
 
-    async def worker(self, ws, path):
+    async def _worker(self, ws, path):
+        number = make_session_id()
+        self.workers.append(number)
         while True:
-            self.logger.info("Waiting event...")
-            queue = await self.queue.get()
-            self.logger.info("Received event!")
-
-            # イベントでそのイベントでのWorkerとの通信が始まる。
-            data = {
-                "type": "start",
-                "data": queue
-            }
-            # Workerにイベント内容を伝える。
-            await ws.send(dumps(data))
-
-            # このイベントでの通信を開始する。
-            # 通信する理由はDiscordを操作することがあった際に簡単にするためです。
-            # Start -> worker do task -> worker want to send message to discord
-            # -> Websocket server do -> callback to worker -> worker say end
-            error = False
-            self.logger.info("Start event communication.")
-            while True:
-                # Workerからのコールバックを待つ。
-                self.logger.info("Waiting worker callback...")
-                try:
-                    data = loads(await asyncio.wait_for(ws.recv(), timeout=5))
-                except asyncio.TimeoutError:
-                    # もしWorkerからコールバックが来ない場合はイベントでのWorkerとの通信を終了する。
-                    error = True
-                else:
-                    # Workerから何をしてほしいか受け取ったらその通りにやってあげる。
-                    callback_data = {
-                        "type": "ok",
-                        "data": {}
-                    }
+            try:
+                queue = self.queue.get_nowait()
+            except asyncio.QueueEmpty:
+                pass
+            else:
+                # もしイベントが呼び出されたらイベントをWorkerに伝える。
+                self.logger.info("Received event.")
+                data = {
+                    "type": "start",
+                    "data": queue,
+                    "me": self.user.id
+                }
+                data = dumps(data)
+                await ws.send(data)
+                self.logger.debug("  Backend > " + data)
+                self.logger.info("Sended event to worker!")
+                self.queue.task_done()
+            try:
+                data = loads(await asyncio.wait_for(ws.recv(), timeout=0.01))
+            except asyncio.TimeoutError:
+                pass
+            except websockets.exceptions.ConnectionClosedOK:
+                pass
+            else:
+                # Workerに何かリクエストされた場合はそれを実行する。
+                callback_data = {
+                    "type": "ok",
+                    "data": None
+                }
+                if data["type"] == "request":
+                    # Discordに何かリクエストするやつ。
+                    args = data["data"].get("args", [])
+                    kwargs = data["data"].get("kwargs", {})
+                    do_wait = data["data"].get("wait", True)
                     try:
-                        if data["type"] == "discord":
-                            args = data["data"].get("args", [])
-                            kwargs = data["data"].get("kwargs", {})
-                            if data["data"]["type"] == "send":
-                                message = await queue["channel"].send(
-                                    *args, **kwargs)
-                                i = message.id
-                                callback_data["data"]["message_id"] = i
-                        elif data["type"] == "end":
-                            # もしこのイベントでの通信を終わりたいと言われたら終わる。
-                            # 上二も同じものがあるがこれは仕様です。
-                            break
+                        coro = getattr(self.requests, data["data"]["type"])
+                    except AttributeError:
+                        event_type = data['data']['type']
+                        if event_type == "get_worker_number":
+                            callback_data["data"] = {
+                                "id": number,
+                                "index": self.workers.index(number)
+                            }
                         else:
-                            # もしコールバックがエラーかtypeが不明だったらこのイベントでの通信を終わらす。
-                            error = (data["data"]["content"]
-                                     if data["type"] == "error" else "エラー不明")
-                            print(error)
-                            break
-                    except Exception:
-                        error = format_exc()
-                        print(error)
-                        break
-
-                    # コールバックを送る。
+                            callback_data["type"] = "error"
+                            callback_data["data"] = f"{event_type}が見つかりませんでした。"
+                    else:
+                        try:
+                            if do_wait:
+                                callback_data["data"] = await coro(
+                                    *args, **kwargs)
+                            else:
+                                asyncio.create_task(
+                                    coro(*args, **kwargs))
+                        except Exception:
+                            callback_data["type"] = "error"
+                            callback_data["data"] = format_exc()
+                    # コールバックを送信する。
                     await ws.send(dumps(callback_data))
-
-            # エラー落ちによるイベントの通信でコールバックチャンネルがあるなら通知しておく。
-            if error:
-                if isinstance(error, str):
-                    self.logger.debug(error)
-                    channel = self.get_channel(842744343911596062)
-                    content = "\n```\n" + error + "\n```"
-                    content = "すみませんが処理中にエラーが発生したようです。" + content
-                    await channel.send(content)
-
-            # 通信を終わらせたという合図を送信する。
-            callback_data = {
-                "type": "end",
-                "data": {}
-            }
-            await ws.send(dumps(callback_data))
-
-            self.logger.info("End event communication.")
+            await asyncio.sleep(0.01)
+        self.workers.remove(number)

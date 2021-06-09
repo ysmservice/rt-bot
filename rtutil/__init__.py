@@ -1,4 +1,8 @@
 # RT - Util
 
-from .backend import *
-from .worker import *
+from discord import * # noqa
+from .backend import * # noqa
+from .worker import * # noqa
+from .cog import * # noqa
+from .utils import * # noqa
+from .errors import * # noqa

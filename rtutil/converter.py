@@ -1,7 +1,9 @@
 # RT - Converter
 
-from inspect import signature, _empty
+import inspect
 import discord
+import asyncio
+from .utils import cc_int, get
 
 
 # コンバーターをコルーチンに設定してその設定済みコルーチンを返す関数。
@@ -17,8 +19,8 @@ class Converter:
         self.args, self.kwargs = args, kwargs
         self.coro = coro
 
-        self.builtins = dir(__buildins__)
-        self.sig = signature(coro)
+        self.builtins = dir(__builtins__)
+        self.sig = inspect.signature(coro)
         self.another_convert = {
             bool: self.convert_bool
         }
@@ -56,7 +58,7 @@ class Converter:
     async def convert(self, data, ctx, arg, target_type):
         # コンバーターの変換するための関数。
         # もし引数にアノテーションが設定されているなら型変換を行う。
-        if target_type is not _empty:
+        if not isinstance(target_type, inspect.empty):
             # discord.pyの型だったらDiscord用のもので変換する。
             # 違う型だったらその型を使って変換を行う。
             # discord.pyの型をtypeに入れるとabc.ABCMetaになるのを利用してdiscord.pyの型か確認する。
@@ -86,9 +88,44 @@ class Converter:
             return False
 
     async def discord_converter(self, data, ctx, arg, target_type):
-        # 作りかけ
+        if isinstance(target_type, discord.Member):
+            arg = self.convert_member(data, ctx, arg)
+        elif isinstance(target_type, discord.Role):
+            arg = self.convert_role(data, ctx, arg)
+        elif isinstance(target_type, discord.TextChannel):
+            arg = self.convert_text_channel(data, ctx, arg)
+        elif isinstance(target_type, discord.VoiceChannel):
+            arg = self.convert_voice_channel(data, ctx, arg)
         return arg
 
+    async def convert_some_mention(self, data, ctx, arg, key, exts):
+        # メンション用のコンバーター。
+        # ここで登場するcc_intとgetはrtutil/utils.pyにある。
+        _id = cc_int(arg)
+        if _id or ("<" == arg[0] and ">" in arg[-1]):
+            if not _id:
+                # もしIDじゃないなくメンションっぽかったらIDを取り出す。
+                _id = arg.replace("<", "").replace(">", "")
+                for ext in exts:
+                    _id = _id.replace(ext, "")
+                _id = int(_id)
+            return get(data["guild"][key], id=_id)
+        else:
+            # 名前から取り出す。
+            return get(data["guild"][key], name=arg)
 
-class DiscordConverters:
-    async def convert_member()
+    async def convert_member(self, data, ctx, arg):
+        return self.convert_some_mention(
+            data, ctx, arg, "members", ("!",))
+
+    async def convert_role(self, data, ctx, arg):
+        return self.convert_some_mention(
+            data, ctx, arg, "roles", ("@", "&"))
+
+    async def convert_text_channel(self, data, ctx, arg):
+        return self.convert_some_mention(
+            data, ctx, arg, "text_channels", ("#",))
+
+    async def convert_voice_channel(self, data, ctx, arg):
+        return self.convert_some_mention(
+            data, ctx, arg, "voice_channels", ())
