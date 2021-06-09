@@ -234,7 +234,7 @@ class Worker:
         rtutil.NotConnected
             Websocketの準備ができてない際に発生します。
         """
-        return self._number = await self.discord("get_worker_number")
+        return await self.discord("get_worker_number")
 
     @if_connected
     async def discord(self, event_type: str, *args, wait=True, **kwargs):
