@@ -4,8 +4,14 @@ import logging
 import rtutil
 
 
-worker = rtutil.Worker("r2!", logging_level=logging.DEBUG)
-worker.load_extension("cog.bot_general")
+test = True
+if test:
+    prefixes = ("r2!", "R2!", "#2 ", ".2 ")
+else:
+    prefixes = ("rt!", "RT!", "#t ", "#T ", ".t ", ".T ")
+
+
+worker = rtutil.Worker(prefixes, logging_level=logging.DEBUG)
 
 
 @worker.command()

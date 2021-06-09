@@ -1,3 +1,4 @@
 ujson
 discord.py
 websockets
+sanic

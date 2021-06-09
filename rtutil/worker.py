@@ -1,5 +1,6 @@
 # RT - Worker
 
+from typing import Union, Tuple, List
 from importlib import import_module
 from traceback import format_exc
 from websockets import connect
@@ -60,8 +61,9 @@ class Worker:
     prefixes : tuple
         Botの接頭詞のタプルです。
     """
-    def __init__(self, prefixes, *, loop=None, logging_level=logging.ERROR,
-                 print_extension_name=False, ignore_me=True):
+    def __init__(self, prefixes: Union[List[str], Tuple[str], str], *,
+                 loop=None, logging_level: int = logging.ERROR,
+                 print_extension_name: bool = False, ignore_me: bool = True):
         self.print_extension_name = print_extension_name
         self.ignore_me = ignore_me
 
@@ -389,12 +391,28 @@ class Worker:
             raise TypeError("削除するイベントはコルーチンである必要があります。")
         event_name = event_name if event_name else coro.__name__
         if event_name in self.events:
+            i = -1
             for check_coro in self.events[event_name]:
+                i += 1
                 if check_coro == coro:
                     del self.events[event_name][i]
                     self.logger.info(f"Removed event {event_name}.")
                     return
         raise ValueError("そのコルーチンはイベントとして登録されていません。")
+
+    def run_event(self, event_name: str, data: dict):
+        """
+        イベントを実行します。
+
+        Parameters
+        ----------
+        event_name : str
+            実行するイベントの名前です。
+        data : dict
+            イベントに渡すデータです。
+        """
+        for coro in self.events.get(event_name, []):
+            asyncio.create_task(coro(self.ws, data))
 
     def command(self, command_name: str = None):
         """
@@ -436,28 +454,44 @@ class Worker:
         async def help(ws, data, ctx):
             await ctx.send("yey")
         add_command(help)
+
+        Notes
+        -----
+        これを実行すると独自イベントの`on_command_add`が呼び出されます。
+        これの引数であるdataには`{"coro": coro, "name": command_name}`が渡されます。
         """
         # コマンド登録用の関数。
         if not asyncio.iscoroutinefunction(coro):
             raise TypeError("登録するコマンドはコルーチンである必要があります。")
         command_name = command_name if command_name else coro.__name__
         self.commands[command_name] = coro
+        # コマンド作成イベントを実行する。
+        self.run_event(
+            "on_command_add", {"coro": coro, "name": command_name})
         self.logger.info(f"Added command {command_name}")
 
-    def remove_command(self, command_name: str):
+    def remove_command(self, command_name):
         """
         add_commandの逆です。
         コマンドを名前指定で削除します。
 
         Parameters
         -----------
-        command_name : str
+        command_name : Union[str, Callable]
             削除するコマンドの名前を入れます。
+            コマンドとして登録されているコルーチンを入れた場合は、そのコルーチンの名前が使われます。
+
+        Notes
+        -----
+        これを実行すると独自イベントの`on_command_remove`が呼び出されます。
+        これの引数であるdataには`{"name": command_name}`が渡されます。
         """
         # コマンド削除用の関数。
         if asyncio.iscoroutine(command_name):
             command_name = command_name.__name__
         del self.commands[command_name]
+        self.run_event(
+            "on_command_remove", {"name": command_name})
         self.logger.info(f"Removed command {command_name}")
 
     async def process_commands(self, ws, data: dict):

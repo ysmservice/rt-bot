@@ -2,6 +2,13 @@
 
 import discord
 
+from sanic.response import file, html, json, redirect
+from sanic.exceptions import abort
+from sanic import Sanic
+
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+from flask_misaka import Misaka
+
 from traceback import format_exc
 from ujson import loads, dumps
 from copy import copy
@@ -146,3 +153,23 @@ class RTBackend(discord.AutoShardedClient):
                     await ws.send(dumps(callback_data))
             await asyncio.sleep(0.01)
         self.workers.remove(number)
+
+
+class RTSanicServer:
+    """
+    Sanicを使用したウェブサーバーです。
+
+    Parameters
+    ----------
+    name : str, default __name__
+        ウェブサーバーの名前です。
+
+    Attributes
+    ----------
+    app : sanic.Sanic
+        Sanicです。
+    """
+    def __init__(self, name: str = __name__):
+        self.app = Sanic(name)
+
+    def run(self, host: str = "0.0.0.0", port: int = 8080)
