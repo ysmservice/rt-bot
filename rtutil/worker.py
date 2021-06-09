@@ -45,7 +45,7 @@ class Worker:
         自分(Bot自身)のメッセージを無視するかどうかです。
 
     Attributes
-    -----------
+    ----------
     events : Dict[str, List[Callable]]
         登録されているイベント一覧の辞書です。
     commands : Dict[str, Callable]
@@ -59,11 +59,6 @@ class Worker:
         DiscordからのイベントをBackendから受け取ったりなどしたりします。
     prefixes : tuple
         Botの接頭詞のタプルです。
-
-    Returns
-    -------
-    Worker
-        Workerのインスタンス。
     """
     def __init__(self, prefixes, *, loop=None, logging_level=logging.ERROR,
                  print_extension_name=False, ignore_me=True):

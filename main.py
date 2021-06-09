@@ -7,7 +7,7 @@ import rtutil
 print("Now loading...")
 
 
-bot = rtutil.RTShardFrameWork()
+bot = rtutil.RTBackend()
 
 
 with open("data.json", "r") as f:

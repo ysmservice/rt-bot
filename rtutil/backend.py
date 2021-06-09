@@ -23,11 +23,32 @@ ON_SOME_EVENT = """def !event_type!(data):
     if channel_id:
         data["data"]["channel"] = self.requests.get_channel_noasync(channel_id)
     asyncio.create_task(self.queue.put(data))
-    self.default_parsers[event_type.upper()](data['data'])"""
+    self._default_parsers[event_type.upper()](data['data'])"""
 
 
-class RTShardFrameWork(discord.AutoShardedClient):
-    def __init__(self, *args, logging_level=logging.DEBUG,
+class RTBackend(discord.AutoShardedClient):
+    """
+    Workerとの通信をするバックエンドのクラスです。
+
+    Parameters
+    ----------
+    *args : tuple, optional
+        親クラスのdiscord.AutoShardedClientに渡す引数です。
+    logging_level : int, default logging.ERROR
+        loggingのレベルです。
+    port : int, default 3000
+        Workerとの通信に使うWebsocketのポートです。
+    **kwargs : dict, optional
+        親クラスのdiscord.AutoShardedClientに渡すキーワード引数です。
+
+    Attributes
+    ----------
+    logger
+        loggingのloggerです。
+    worker : list
+        つないでいるWorkerのIDのリストです。
+    """
+    def __init__(self, *args, logging_level=logging.ERROR,
                  port=3000, **kwargs):
         # ログの出力を設定する。
         logging.basicConfig(
@@ -38,12 +59,12 @@ class RTShardFrameWork(discord.AutoShardedClient):
 
         # その他色々設定する。
         super().__init__(*args, **kwargs)
-        self.workers: List[int] = []
-        self.requests: DiscordRequests = DiscordRequests(self)
+        self.workers = []
+        self.requests = DiscordRequests(self)
 
         # Event Injection
         self.logger.info("Injecting the event queue putters to discord.py ...")
-        self.default_parsers = copy(self._connection.parsers)
+        self._default_parsers = copy(self._connection.parsers)
         for parser_name in self._connection.parsers:
             self.logger.info("  " + parser_name)
             parser_name_lowered = parser_name.lower()
@@ -55,12 +76,12 @@ class RTShardFrameWork(discord.AutoShardedClient):
         # Workerの初期設定をする。
         self.queue = asyncio.Queue()
         self.logger.info("Creating websockets server.")
-        server = websockets.serve(self.worker, "localhost", str(port))
+        server = websockets.serve(self._worker, "localhost", str(port))
         loop = asyncio.get_event_loop()
         loop.run_until_complete(server)
         self.logger.info("Complete!")
 
-    async def worker(self, ws, path):
+    async def _worker(self, ws, path):
         number = make_session_id()
         self.workers.append(number)
         while True:
