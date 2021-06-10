@@ -2,8 +2,17 @@
 
 import discord
 
+from sanic.response import file, html, json, redirect
+from sanic.exceptions import abort
+from sanic import Sanic
+
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+from flask_misaka import Misaka
+
+from typing import Union, Tuple, List
 from traceback import format_exc
 from ujson import loads, dumps
+from os.path import exists
 from copy import copy
 import websockets
 import asyncio
@@ -48,8 +57,8 @@ class RTBackend(discord.AutoShardedClient):
     worker : list
         つないでいるWorkerのIDのリストです。
     """
-    def __init__(self, *args, logging_level=logging.ERROR,
-                 port=3000, **kwargs):
+    def __init__(self, *args, logging_level: int = logging.ERROR,
+                 port: int = 3000, **kwargs):
         # ログの出力を設定する。
         logging.basicConfig(
             level=logging_level,
@@ -146,3 +155,132 @@ class RTBackend(discord.AutoShardedClient):
                     await ws.send(dumps(callback_data))
             await asyncio.sleep(0.01)
         self.workers.remove(number)
+
+
+    async def
+
+
+class RTSanicServer(Sanic):
+    """
+    Sanicを使用したウェブサーバーです。
+
+    Parameters
+    ----------
+    name : str, default __name__
+        ウェブサーバーの名前です。
+
+    Attributes
+    ----------
+    app : sanic.Sanic
+        Sanicです。
+    """
+
+    DEFAULT_EXTS = (".html", ".xml", ".tpl")
+
+    def __init__(self, ws_host: str, ws_port: int, *args, name: str = __name__,
+                  support_exts: Union[List[str], Tuple[str]] = DEFAULT_EXTS,
+                  folder: str = "templates",
+                  flask_misaka: dict = {"autolink": True, "wrap": True},
+                  **kwargs):
+        super().__init__(name)
+        self.events = []
+
+        # Jinja2 Template Engine, Flask-Misaka
+        self.env = Environment(
+            loader=FileSystemLoader("static/website/html"),
+            autoescape=select_autoescape(support_exts),
+            enable_async=True
+        )
+        self.env.filters.setdefault(
+            "markdown", Misaka(autolink=True, wrap=True).render)
+
+        # 通信の準備をする。
+        self.ws, self._ready = None, asyncio.Event()
+        self.queue = asyncio.Queue()
+        self.worker_count = 0
+        self.support_exts = support_exts
+        self.__setup_route(ws_host, ws_port)
+
+    def event(self, coro, event_name: str = None):
+        """
+        WebServerのイベント登録用のデコレータです。
+
+        Parameters
+        -----------
+        coro : Callable
+            登録するイベントのコルーチンです。　
+        event_name : str, default None
+            登録するイベントの種類です。
+        """
+        def _decorator(coro):
+            self.add_event(coro, event_name=event_name)
+            return coro
+        return _decorator
+
+    def add_event(self, coro, event_name: str = None):
+        """
+        WebServerのイベント登録用関数です。
+        イベント例：`on_before_return`
+
+        Parameters
+        -----------
+        coro : Callable
+            登録するイベントのコルーチンです。　
+        event_name : str, default None
+            登録するイベントの種類です。
+        """
+        coro.__event_name = event_name if event_name else coro.__name__
+        self.events.append(coro)
+
+    async def template(self, tpl, **kwargs):
+        """
+        Jinja2テンプレートエンジンです。
+
+        Parameters
+        -----------
+        tpl : str
+            使うテンプレート(ファイル)のパスです。
+        **kwargs : dict, default {}
+            テンプレートで交換するものを入れます。
+        """
+        template = self.env.get_template(tpl)
+        content = await template.render_async(kwargs)
+        return html(content)
+
+    def __setup_route(self, host: str, port: int):
+        @self.websocket("/webserver")
+        async def backend(request, ws):
+            self.ws = ws
+            if not self.worker_count:
+                self._ready.set()
+            self.worker_count += 1
+            while True:
+                data = await self.queue.get()
+                await ws.send(dumps(data))
+            self.worker_count -= 1
+            if not self.worker_count:
+                self._ready.clear()
+
+        @self.route("/<path:path>")
+        async def return_file(self, request, path: str):
+            if path.endswith(self.support_exts):
+                if exists(path):
+                    return await self.template(path)
+                else:
+                    return abort(404)
+            else:
+                data = {
+                    "content_type": request.content_type,
+                    "ip": request.ip,
+                    "host": request.host,
+                    "port": request.port,
+                    "url": request.url,
+                    "uri": path
+                }
+                self.queue.put(data)
+
+    async def wait_until_ready(self):
+        """
+        Websocketのサーバーに一つでもWorkerが接続している状態になるまで待ちます。
+        """
+        await self._ready.wait()
