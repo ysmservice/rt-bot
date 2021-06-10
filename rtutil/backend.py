@@ -178,10 +178,10 @@ class RTSanicServer(Sanic):
     DEFAULT_EXTS = (".html", ".xml", ".tpl")
 
     def __init__(self, ws_host: str, ws_port: int, *args, name: str = __name__,
-                  support_exts: Union[List[str], Tuple[str]] = DEFAULT_EXTS,
-                  folder: str = "templates",
-                  flask_misaka: dict = {"autolink": True, "wrap": True},
-                  **kwargs):
+                 support_exts: Union[List[str], Tuple[str]] = DEFAULT_EXTS,
+                 folder: str = "templates",
+                 flask_misaka: dict = {"autolink": True, "wrap": True},
+                 **kwargs):
         super().__init__(name)
         self.events = []
 
@@ -254,9 +254,9 @@ class RTSanicServer(Sanic):
             if not self.worker_count:
                 self._ready.set()
             self.worker_count += 1
+            # Workerとのwebserver用の通信をする。
             while True:
-                data = await self.queue.get()
-                await ws.send(dumps(data))
+                await asyncio.sleep(0.01)
             self.worker_count -= 1
             if not self.worker_count:
                 self._ready.clear()
@@ -270,14 +270,18 @@ class RTSanicServer(Sanic):
                     return abort(404)
             else:
                 data = {
-                    "content_type": request.content_type,
-                    "ip": request.ip,
-                    "host": request.host,
-                    "port": request.port,
-                    "url": request.url,
-                    "uri": path
+                    "type": "access"
+                    "data": {
+                        "content_type": request.content_type,
+                        "ip": request.ip,
+                        "host": request.host,
+                        "port": request.port,
+                        "url": request.url,
+                        "uri": path
+                    }
                 }
-                self.queue.put(data)
+                await self.ws.send(dumps(data))
+                callback = loads(await ws.recv())
 
     async def wait_until_ready(self):
         """

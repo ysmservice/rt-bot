@@ -21,7 +21,7 @@ def if_connected(function):
     return _function
 
 
-class Worker:
+class Worker(WebManager):
     """
     Workerのインスタンスを作成します。
 
@@ -79,6 +79,7 @@ class Worker:
         self._event = asyncio.Event()
         self._request = asyncio.Event()
         self._ready = asyncio.Event()
+        self._web_ready = asyncio.Event()
         self._request_queue_count = 0
 
         # プリフィックスを設定する。
@@ -103,14 +104,29 @@ class Worker:
 
         super().__init__()
 
-    def run(self):
+    def run(self, web: bool = False,
+            host: str = "ws://localhost/webserver", port: int = 80):
         """
         Workerを起動させます。
-        引数などはありません。
+
+        Parameters
+        ----------
+        web : bool, default False
+            RTSanicServerを動かしている場合のみ使用してください。
+            これはWebServerと連携するかどうかです。
+        host : str, default "ws://localhost/webserver"
+            RTSanicServerのWebsocketに設定しているhostを入れてください。
+            特にhostを設定していない場合はデフォルトのままで大丈夫です。
+        port : int, default 80
+            RTSanicServerのWebsocketに設定しているportを入れてください。
+            特にportを設定していない場合はデフォルトのままで大丈夫です。
         """
         self.logger.info("Starting worker...")
+        self.loop.create_task(self.worker())
+        if web:
+            self.loop.create_task(self.webserver(host, port))
         try:
-            self.loop.run_until_complete(self.worker())
+            self.loop.run_forever()
         except KeyboardInterrupt:
             self.logger.info("Closing worker...")
             self.loop.run_until_complete(self.close())
@@ -130,6 +146,117 @@ class Worker:
         self.logger.info("  Loop is closed.")
         self.logger.info("Worker is closed by user KeyboardInterrupt!")
 
+    async def webserver(self, host: str, port: int):
+        """
+        RTSanicServerと通信をするプログラムです。
+        普通はこれを呼び出しません。
+        なのでこの説明は無視してもかまいません。
+        これを呼び出す場合はrunをキーワード引数にweb=Trueと設定して実行してください。
+
+        See Also
+        --------
+        run : Workerを起動させます。
+        """
+        self.web_logger = logging.getLogger("rt.web")
+        self.web_logger.info("Connecting to RTSanicServer websocekt...")
+        ws = await connect(host)
+        self.web_ws = ws
+        self._web_ready.set()
+        while True:
+            self.web_logger.info("  Waiting event...")
+            data = loads(await ws.recv())
+            self.web_logger.info("  Received event!\n  Sending callback.")
+            callback = {
+                "type": "end",
+                "data": self.run_event(data["type"], data)
+            }
+            await ws.send(dumps(callback))
+            self.web_logger.info("Finished event.")
+
+    def run_route(self, uri: str, data: dict):
+        """
+        指定されたuriのルーティングを実行します。
+
+        Parameters
+        ----------
+        uri : str
+            実行するルーティングのuriです。
+        data : dict
+            ルーティングに渡すデータです。
+        """
+
+    def route(self, coro, uri: str = "/"):
+        """
+        ルーティングを設定しURLとコルーチンを紐づけるデコレ―タです。
+
+        Parameters
+        ----------
+        coro : Callable
+            紐づけるコルーチンです。
+        uri : str, default "/"
+            ルーティングで設定するuriです。
+
+        Examples
+        --------
+        @worker.route("/ping")
+        async def ping(data):
+            return worker.web("template", path="pong.html")
+        """
+        def _route(coro):
+            self.add_route(coro, uri)
+            return coro
+        return _route
+
+    def add_route(self, coro, uri: str = "/"):
+        """
+        ルーティングを設定しURLとコルーチンを紐づける関数です。
+
+        Parameters
+        ----------
+        coro : Callable
+            紐づけるコルーチンです。
+        uri : str, default "/"
+            ルーティングで設定するuriです。
+        """
+        self.routes[uri] = coro
+
+    def remove_route(self, uri: str):
+        """
+        登録したルーティングを削除します。
+
+        Parameters
+        ----------
+        uri : str
+            削除するルーティングのuriです。
+        """
+        del self.routes[uri]
+
+    def web(self, event_type: str, **kwargs: dict) -> dict:
+        """
+        RTSanicServerに返すコールバックを楽に作るためのものです。
+
+        Parameters
+        ----------
+        event_type : str
+            コールバックの種類を入れます。
+        **kwargs : dict, default {}
+            コールバックに入れる引数です。
+
+        Returns
+        -------
+        data : dict
+            引数にそって作ったコールバックデータです。
+
+        Examples
+        --------
+        @worker.event()
+        async def on_access(ws, data):
+            if data["uri"]
+        """
+        data = {"type": event_type}
+        data.update(kwargs)
+        return data
+
     async def worker(self):
         """
         Workerのプログラムです。
@@ -138,7 +265,7 @@ class Worker:
         Workerを動かす際はこれを呼び出すのではなくWorker.runを呼び出してください。
 
         See Also
-        ---------
+        --------
         run : Workerを起動させます。
         """
         self.logger.info("Connecting to websocket...")
@@ -400,7 +527,7 @@ class Worker:
                     return
         raise ValueError("そのコルーチンはイベントとして登録されていません。")
 
-    def run_event(self, event_name: str, data: dict):
+    def run_event(self, event_name: str, data: dict, ws=None):
         """
         イベントを実行します。
 
@@ -410,9 +537,30 @@ class Worker:
             実行するイベントの名前です。
         data : dict
             イベントに渡すデータです。
+        ws, default Worker.ws
+            イベントに渡すWebsocketGatewayです。
+            デフォルトはDiscord用です。
         """
         for coro in self.events.get(event_name, []):
-            asyncio.create_task(coro(self.ws, data))
+            asyncio.create_task(coro(ws if ws else self.ws, data))
+
+    async def run_event_with_wait(self, event_name: str, data: dict, ws=None):
+        """
+        イベントを実行します。
+        実行が終了するまで待ちます。
+
+        Parameters
+        ----------
+        event_name : str
+            実行するイベントの名前です。
+        data : dict
+            イベントに渡すデータです。
+        ws, default Worker.ws
+            イベントに渡すWebsocketGatewayです。
+            デフォルトはDiscord用です。
+        """
+        for coro in self.events.get(event_name, []):
+            await coro(ws if ws else self.ws, data)
 
     def command(self, command_name: str = None):
         """
