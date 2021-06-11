@@ -1,10 +1,9 @@
 # RT - Shard 
 
 import discord
+from sanic import Sanic, response
 
-from sanic.response import file, html, json, redirect
-from sanic.exceptions import abort
-from sanic import Sanic
+from sanic.exceptions import abort, NotFound
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from flask_misaka import Misaka
@@ -19,6 +18,7 @@ import asyncio
 import logging
 
 from .discord_requests import DiscordRequests
+from .web_requests import WebRequests
 from .utils import make_session_id
 
 
@@ -233,21 +233,6 @@ class RTSanicServer(Sanic):
         coro.__event_name = event_name if event_name else coro.__name__
         self.events.append(coro)
 
-    async def template(self, tpl, **kwargs):
-        """
-        Jinja2テンプレートエンジンです。
-
-        Parameters
-        -----------
-        tpl : str
-            使うテンプレート(ファイル)のパスです。
-        **kwargs : dict, default {}
-            テンプレートで交換するものを入れます。
-        """
-        template = self.env.get_template(tpl)
-        content = await template.render_async(kwargs)
-        return html(content)
-
     async def request(self, data: dict) -> dict:
         """
         接続しているWorkerにRTSanicServerからリクエストします。
@@ -270,7 +255,7 @@ class RTSanicServer(Sanic):
                 now = number
         self.wss[now]["queue"] += 1
         await self.wss[now]["ws"].send(dumps(data))
-        callback = loads(await self.wss[now]["ws"].recv())
+        callback = loads(await self.wss[now]["ws"].recv())["data"]
         self.wss[now]["queue"] -= 1
         return callback
 
@@ -311,6 +296,36 @@ class RTSanicServer(Sanic):
                     }
                 }
                 callback = await self.request(data)
+                try:
+                    request = getattr(self, callback["type"])
+                except AttributeError:
+                    try:
+                        request = getattr(response, callback["data"])
+                    except AttributeError:
+                        raise NotFound()
+                finally:
+                    if asyncio.iscoroutinefunction(request):
+                        return await self.request(
+                            *callback["args"], **callback["kwargs"])
+                    else:
+                        return self.request(
+                            *callback["args"], **callback["kwargs"])
+
+    async def template(self, tpl, **kwargs):
+        """
+        Jinja2テンプレートエンジンです。
+        Worker側が使うために作られたものですがbackend側でも使えます。
+
+        Parameters
+        -----------
+        tpl : str
+            使うテンプレート(ファイル)のパスです。
+        **kwargs : dict, default {}
+            テンプレートで交換するものを入れます。
+        """
+        template = self.env.get_template(tpl)
+        content = await template.render_async(kwargs)
+        return html(content)
 
     async def wait_until_ready(self):
         """

@@ -21,7 +21,7 @@ def if_connected(function):
     return _function
 
 
-class Worker(WebManager):
+class Worker:
     """
     Workerのインスタンスを作成します。
 
@@ -72,6 +72,7 @@ class Worker(WebManager):
         self.commands = {}
         self.cogs = {}
         self.extensions = {}
+        self.routes = {}
 
         self.ws = None
         self._number = None
@@ -173,7 +174,7 @@ class Worker(WebManager):
             await ws.send(dumps(callback))
             self.web_logger.info("Finished event.")
 
-    def run_route(self, uri: str, data: dict):
+    def run_route(self, uri: str, data: dict = {}):
         """
         指定されたuriのルーティングを実行します。
 
@@ -181,9 +182,28 @@ class Worker(WebManager):
         ----------
         uri : str
             実行するルーティングのuriです。
-        data : dict
+        data : dict, default {}
             ルーティングに渡すデータです。
         """
+        # 一致するルーティングを探す。
+        splited = iter(uri.split("/"))
+        for key in self.routes:
+            args, kwargs, ok = [], {}, True
+            for value in key.split("/"):
+                if value[0] == "<" and value[-1] == ">":
+                    # もし<>に囲まれているならその部分を引数に追加する。
+                    args.append(value[1:-1])
+                elif value[0] == "?":
+                    # クエリパラメータをキーワード引数に入れる。
+                    i = value.find("=")
+                    kwargs[value[1:i]] = value[i + 1:]
+                elif not value == next(splited):
+                    # 一致しないところがあるならルーティングが違うということでやめる。
+                    ok = False
+                    break
+            if ok:
+                return await self.routes[key](data, *args)
+        return None
 
     def route(self, coro, uri: str = "/"):
         """
@@ -231,7 +251,7 @@ class Worker(WebManager):
         """
         del self.routes[uri]
 
-    def web(self, event_type: str, **kwargs: dict) -> dict:
+    def web(self, event_type: str, *args: tuple, **kwargs: dict) -> dict:
         """
         RTSanicServerに返すコールバックを楽に作るためのものです。
 
@@ -249,12 +269,12 @@ class Worker(WebManager):
 
         Examples
         --------
-        @worker.event()
-        async def on_access(ws, data):
-            if data["uri"]
+        @worker.route("/ping")
+        async def index(self, data):
+            return worker.web("json", {"code": "pong!"})
         """
         data = {"type": event_type}
-        data.update(kwargs)
+        data.update({"args": args, "kwargs": kwargs})
         return data
 
     async def worker(self):
