@@ -58,7 +58,7 @@ class RTBackend(discord.AutoShardedClient):
         つないでいるWorkerのIDのリストです。
     """
     def __init__(self, *args, logging_level: int = logging.ERROR,
-                 port: int = 3000, **kwargs):
+                 host: str = "localhost", port: int = 3000, **kwargs):
         # ログの出力を設定する。
         logging.basicConfig(
             level=logging_level,
@@ -85,7 +85,7 @@ class RTBackend(discord.AutoShardedClient):
         # Workerの初期設定をする。
         self.queue = asyncio.Queue()
         self.logger.info("Creating websockets server.")
-        server = websockets.serve(self._worker, "localhost", str(port))
+        server = websockets.serve(self._worker, host, str(port))
         loop = asyncio.get_event_loop()
         loop.run_until_complete(server)
         self.logger.info("Complete!")
@@ -173,6 +173,9 @@ class RTSanicServer(Sanic):
     ----------
     app : sanic.Sanic
         Sanicです。
+    wss : dict
+         接続しているWebsocketGatewayの辞書です。
+         {"ID": {"ws": WebsocketGateway, "queue": queue_count}}
     """
 
     DEFAULT_EXTS = (".html", ".xml", ".tpl")
@@ -195,9 +198,7 @@ class RTSanicServer(Sanic):
             "markdown", Misaka(autolink=True, wrap=True).render)
 
         # 通信の準備をする。
-        self.ws, self._ready = None, asyncio.Event()
-        self.queue = asyncio.Queue()
-        self.worker_count = 0
+        self.wss, self._ready = {}, asyncio.Event()
         self.support_exts = support_exts
         self.__setup_route(ws_host, ws_port)
 
@@ -247,18 +248,47 @@ class RTSanicServer(Sanic):
         content = await template.render_async(kwargs)
         return html(content)
 
+    async def request(self, data: dict) -> dict:
+        """
+        接続しているWorkerにRTSanicServerからリクエストします。
+        ルーティングされているURLが開かれた際などに使われています。
+
+        Parameters
+        -----------
+        data : dict
+            渡すもの。
+
+        Returns
+        -------
+        callback : dict
+        """
+        before = -1
+        now = None
+        for number in self.wss:
+            if self.wss[number]["queue"] < before or before == -1:
+                before = self.wss[number]["queue"]
+                now = number
+        self.wss[now]["queue"] += 1
+        await self.wss[now]["ws"].send(dumps(data))
+        callback = loads(await self.wss[now]["ws"].recv())
+        self.wss[now]["queue"] -= 1
+        return callback
+
     def __setup_route(self, host: str, port: int):
         @self.websocket("/webserver")
         async def backend(request, ws):
-            self.ws = ws
-            if not self.worker_count:
+            number = make_session_id()
+            self.wss[number] = {
+                "ws": ws,
+                "queue": 0
+            }
+            if not self.wss:
                 self._ready.set()
-            self.worker_count += 1
             # Workerとのwebserver用の通信をする。
             while True:
                 await asyncio.sleep(0.01)
-            self.worker_count -= 1
-            if not self.worker_count:
+            del self.wss[number]
+            if not self.wss:
                 self._ready.clear()
 
         @self.route("/<path:path>")
@@ -280,8 +310,7 @@ class RTSanicServer(Sanic):
                         "uri": path
                     }
                 }
-                await self.ws.send(dumps(data))
-                callback = loads(await ws.recv())
+                callback = await self.request(data)
 
     async def wait_until_ready(self):
         """
