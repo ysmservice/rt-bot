@@ -110,7 +110,7 @@ class Worker:
         super().__init__()
 
     def run(self, web: bool = False,
-            host: str = "ws://localhost/webserver", port: int = 80):
+            ws_url: str = "ws://localhost/webserver"):
         """
         Workerを起動させます。
 
@@ -128,19 +128,19 @@ class Worker:
         """
         self.logger.info("Starting worker...")
         try:
-            self.loop.run_until_complete(self._run(web, host, port))
+            self.loop.run_until_complete(
+                asyncio.gather(
+                    self.webserver(ws_url),
+                    self.worker(),
+                    return_exceptions=True
+                )
+            )
         except KeyboardInterrupt:
             pass
         finally:
             self.loop.stop()
             self.loop.close()
         self.logger.info("Worker is closed by user KeyboardInterrupt!")
-
-    async def _run(self, web, host, port):
-        task_worker = self.loop.create_task(self.worker())
-        if web:
-            task_web = self.loop.create_task(self.webserver(host, port))
-        await asyncio.wait({task_worker, task_web})
 
     async def close(self):
         """
@@ -156,7 +156,7 @@ class Worker:
         self.logger.info("  Loop is closed.")
         self.logger.info("Worker is closed.")
 
-    async def webserver(self, host: str, port: int):
+    async def webserver(self, ws_url: str):
         """
         RTSanicServerと通信をするプログラムです。
         普通はこれを呼び出しません。
@@ -169,7 +169,7 @@ class Worker:
         """
         self.web_logger = logging.getLogger("rt.web")
         self.web_logger.info("Connecting to RTSanicServer websocekt...")
-        ws = await connect(host)
+        ws = await connect(ws_url)
         self.web_ws = ws
         self._web_ready.set()
         while True:

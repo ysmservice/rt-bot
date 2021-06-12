@@ -176,7 +176,7 @@ class RTSanicServer:
 
     DEFAULT_EXTS = (".html", ".xml", ".tpl")
 
-    def __init__(self, name: str, *args, ws_host: str = "localhost/webserver",
+    def __init__(self, name: str, *args, ws_uri: str = "/webserver",
                  support_exts: Union[List[str], Tuple[str]] = DEFAULT_EXTS,
                  folder: str = "templates",
                  flask_misaka: dict = {"autolink": True, "wrap": True},
@@ -193,10 +193,10 @@ class RTSanicServer:
             "markdown", Misaka(autolink=True, wrap=True).render)
 
         # 通信の準備をする。
-        self.wss, self._ready, self._stop  = {}, asyncio.Event(), asyncio.Event()
+        self.wss, self._ready, self._stop = {}, asyncio.Event(), asyncio.Event()
         self.support_exts = support_exts
         self.logger = logging.getLogger("rt.web")
-        self.__setup_route(ws_host)
+        self.__setup_route(ws_uri)
 
     async def request(self, data: dict) -> dict:
         """
@@ -235,10 +235,10 @@ class RTSanicServer:
                 "kwargs": {}
             }
 
-    def __setup_route(self, host: str):
-        h = host.replace("localhost", "")
+    def __setup_route(self, ws_uri: str):
         app = self.app
-        @app.websocket(h if h else "/")
+
+        @app.websocket(ws_uri if ws_uri else "/")
         async def backend(request, ws):
             number = make_session_id()
             self.wss[number] = {

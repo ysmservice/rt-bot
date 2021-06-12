@@ -19,9 +19,10 @@ async def test(ws, data, ctx):
     print(data["content"])
     # r2!test 1
 
+
 @worker.route("/test")
 async def testweb(data):
     return worker.web("text", "test")
 
 
-worker.run(web=True, port=8080)
+worker.run(web=True, ws_url="ws://localhost:8080/webserver")
