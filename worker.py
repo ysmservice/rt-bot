@@ -23,7 +23,6 @@ async def test(ws, data, ctx):
 @worker.route("/test")
 async def testweb(data):
     data = worker.web("template", "index.html")
-    print(data)
     return data
 
 
