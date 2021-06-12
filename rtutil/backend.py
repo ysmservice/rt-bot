@@ -159,11 +159,32 @@ class RTBackend(discord.AutoShardedClient):
 class RTSanicServer:
     """
     Sanicを使用したウェブサーバーです。
+    これはとても便利です。
+    Workerとの通信をするのでWorkerがルーティングを取得することができます。
+    デフォルトでは`templates`にあるhtml,xml,tplのファイルを返すことができます。
+    しかもJinja2テンプレートエンジンを搭載し、マークダウンも使用することができます。
+    マークダウンはファイルに`{{ % filter markdown % }}`から`{{ % endfilter % }}`と囲んだところが自動的に装飾されます。
 
     Parameters
     ----------
+    *args : Union[list, tuple], default ()
+        ウェブサーバーのベースであるsanic.Sanicに渡す下のname以外の引数です。
     name : str, default __name__
         ウェブサーバーの名前です。
+    ws_uri : str, default "/webserver"
+        Workerとの通信に使うWebsocketのアドレスです。
+    support_exts : Union[List[str], Tuple[str]], default (".html", ".xml", ".tpl")
+        返すことができるファイルのリストまたはタプルです。
+    folder : str, default "templates"
+        返すことのできるファイルがあるフォルダのパスです。
+        例としてhello.htmlがあったとします。
+        それがfolderのパスのフォルダにあるとします。
+        その場合`http://アドレス/hello.html`でこのファイルは返されます。
+        これの返すことのできるファイルのリストは上のsupport_extsに渡されるリストです。
+    logging_level : int, default logging.ERROR
+        loggingのレベルです。
+    **kwargs : dict, default {}
+        ウェブサーバーんぼベースであるsanic.Sanicに渡すキーワード引数です。
 
     Attributes
     ----------
@@ -180,8 +201,15 @@ class RTSanicServer:
                  support_exts: Union[List[str], Tuple[str]] = DEFAULT_EXTS,
                  folder: str = "templates",
                  flask_misaka: dict = {"autolink": True, "wrap": True},
+                 logging_level: int = logging.ERROR,
                  **kwargs):
         self.app = Sanic(name, *args, **kwargs)
+
+        self.logger = logging.getLogger("rt.web")
+        logging.basicConfig(
+            level=logging_level,
+            format="[%(name)s][%(levelname)s] %(message)s"
+        )
 
         # Jinja2 Template Engine, Flask-Misaka
         self.env = Environment(
@@ -193,9 +221,9 @@ class RTSanicServer:
             "markdown", Misaka(autolink=True, wrap=True).render)
 
         # 通信の準備をする。
-        self.wss, self._ready, self._stop = {}, asyncio.Event(), asyncio.Event()
+        self.wss, self._ready = {}, asyncio.Event()
+        self.stop = False
         self.support_exts = support_exts
-        self.logger = logging.getLogger("rt.web")
         self.__setup_route(ws_uri)
 
     async def request(self, data: dict) -> dict:
@@ -224,7 +252,7 @@ class RTSanicServer:
             self.logger.info("  Selected worker " + now + ".")
             await self.wss[now]["ws"].send(dumps(data))
             self.logger.info("  Requested.")
-            callback = loads(await self.wss[now]["ws"].recv())["data"]
+            callback = loads(await self.wss[now]["ws"].recv())
             self.logger.info("Received! Done.")
             self.wss[now]["queue"] -= 1
             return callback
@@ -248,8 +276,9 @@ class RTSanicServer:
             self.logger.info("Connected worker. (" + number + ")")
             if not self.wss:
                 self._ready.set()
-            # Workerとのwebserver用の通信をする。
-            await self._stop.wait()
+            # Workerとのwebserver用の通信を時間を作る。
+            while not self.stop:
+                await asyncio.sleep(0.01)
             self.logger.info("Finished worker. (" + number + ")")
             del self.wss[number]
             if not self.wss:
@@ -257,7 +286,7 @@ class RTSanicServer:
 
         @app.listener('before_server_stop')
         async def notify_server_stopping(app, loop):
-            self._stop.set()
+            self.stop = True
 
         @app.route("/<path:path>")
         async def return_file(request, path: str):
@@ -279,6 +308,12 @@ class RTSanicServer:
                     }
                 }
                 callback = await self.request(data)
+                if callback["type"] == "error":
+                    callback["type"] = "text"
+                    callback["args"] = ("エラーが発生したため処理を実行することができませんでした。: \n" + callback["data"],)
+                    callback["kwargs"] = {}
+                    print(callback["data"])
+                callback = callback["data"]
                 try:
                     request = getattr(self, callback["type"])
                 except AttributeError:

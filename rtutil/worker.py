@@ -173,13 +173,19 @@ class Worker:
         self.web_ws = ws
         self._web_ready.set()
         while True:
-            self.web_logger.info("  Waiting event...")
+            self.web_logger.info("Waiting event...")
             data = loads(await ws.recv())
-            self.web_logger.info("  Received event!\n  Sending callback.")
-            callback = {
-                "type": "end",
-                "data": await self.run_event(data["type"], data)
-            }
+            try:
+                self.web_logger.info("  Received event!\n  Sending callback.")
+                callback = {
+                    "type": "end",
+                    "data": await self.run_route(data["type"], data)
+                }
+            except Exception:
+                callback = {
+                    "type": "error",
+                    "data": format_exc()
+                }
             await ws.send(dumps(callback))
             self.web_logger.info("Finished event.")
 
@@ -198,17 +204,21 @@ class Worker:
         splited = iter(uri.split("/"))
         for key in self.routes:
             args, kwargs, ok = [], {}, True
+            self.web_logger.debug("~ " + key + " ~")
             for value in key.split("/"):
-                if value[0] == "<" and value[-1] == ">":
-                    # もし<>に囲まれているならその部分を引数に追加する。
-                    args.append(value[1:-1])
-                elif value[0] == "?":
-                    # クエリパラメータをキーワード引数に入れる。
-                    i = value.find("=")
-                    kwargs[value[1:i]] = value[i + 1:]
-                elif not value == next(splited):
-                    # 一致しないところがあるならルーティングが違うということでやめる。
-                    ok = False
+                if value:
+                    if value[0] == "<" and value[-1] == ">":
+                        # もし<>に囲まれているならその部分を引数に追加する。
+                        args.append(value[1:-1])
+                    elif value[0] == "?":
+                        # クエリパラメータをキーワード引数に入れる。
+                        i = value.find("=")
+                        kwargs[value[1:i]] = value[i + 1:]
+                    elif not value == next(splited):
+                        # 一致しないところがあるならルーティングが違うということでやめる。
+                        ok = False
+                        break
+                else:
                     break
             if ok:
                 return await self.routes[key](data, *args)
