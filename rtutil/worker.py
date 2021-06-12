@@ -51,13 +51,17 @@ class Worker:
         登録されているイベント一覧の辞書です。
     commands : Dict[str, Callable]
         登録されているコマンド一覧の辞書です。
-    cogs : Dict[str, class]
+    cogs : Dict[str, object]
         登録されているコグ一覧の辞書です。
-    extensions : Dict[str, module]
+    extensions : Dict[str, object]
         登録されているエクステンション一覧の辞書です。
+    routes : Dict[str, Callable]
+        登録されているルーティング一覧の辞書です。
     ws
         動いているWorkerが親のBackendと通信に使っているWebsocketのGatewayです。
         DiscordからのイベントをBackendから受け取ったりなどしたりします。
+    web_ws
+        動いているWorkerがRTSanicServerと通信に使っているWebsocketのGatewayです。
     prefixes : tuple
         Botの接頭詞のタプルです。
     """
@@ -74,7 +78,7 @@ class Worker:
         self.extensions = {}
         self.routes = {}
 
-        self.ws = None
+        self.ws, self.web_ws = None, None
         self._number = None
         self.queue = asyncio.Queue()
         self._event = asyncio.Event()
@@ -123,18 +127,20 @@ class Worker:
             特にportを設定していない場合はデフォルトのままで大丈夫です。
         """
         self.logger.info("Starting worker...")
-        self.loop.create_task(self.worker())
-        if web:
-            self.loop.create_task(self.webserver(host, port))
         try:
-            self.loop.run_forever()
+            self.loop.run_until_complete(self._run(web, host, port))
         except KeyboardInterrupt:
-            self.logger.info("Closing worker...")
-            self.loop.run_until_complete(self.close())
-            self.logger.info("  Websocket is closed.")
-        self.loop.stop()
-        self.logger.info("  Loop is closed.")
+            pass
+        finally:
+            self.loop.stop()
+            self.loop.close()
         self.logger.info("Worker is closed by user KeyboardInterrupt!")
+
+    async def _run(self, web, host, port):
+        task_worker = self.loop.create_task(self.worker())
+        if web:
+            task_web = self.loop.create_task(self.webserver(host, port))
+        await asyncio.wait({task_worker, task_web})
 
     async def close(self):
         """
@@ -142,10 +148,13 @@ class Worker:
         """
         self.logger.info("Closing worker...")
         await self.ws.close(reason="Don't worry, It is true end!")
+        if self.web_ws:
+            await self.web_ws.close(reason="Don't worry, It is true end!")
         self.logger.info("  Websocket is closed.")
         self.loop.stop()
+        self.loop.close()
         self.logger.info("  Loop is closed.")
-        self.logger.info("Worker is closed by user KeyboardInterrupt!")
+        self.logger.info("Worker is closed.")
 
     async def webserver(self, host: str, port: int):
         """
@@ -169,12 +178,12 @@ class Worker:
             self.web_logger.info("  Received event!\n  Sending callback.")
             callback = {
                 "type": "end",
-                "data": self.run_event(data["type"], data)
+                "data": await self.run_event(data["type"], data)
             }
             await ws.send(dumps(callback))
             self.web_logger.info("Finished event.")
 
-    def run_route(self, uri: str, data: dict = {}):
+    async def run_route(self, uri: str, data: dict = {}):
         """
         指定されたuriのルーティングを実行します。
 

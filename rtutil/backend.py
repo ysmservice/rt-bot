@@ -18,7 +18,6 @@ import asyncio
 import logging
 
 from .discord_requests import DiscordRequests
-from .web_requests import WebRequests
 from .utils import make_session_id
 
 
@@ -157,10 +156,7 @@ class RTBackend(discord.AutoShardedClient):
         self.workers.remove(number)
 
 
-    async def
-
-
-class RTSanicServer(Sanic):
+class RTSanicServer:
     """
     Sanicを使用したウェブサーバーです。
 
@@ -180,13 +176,12 @@ class RTSanicServer(Sanic):
 
     DEFAULT_EXTS = (".html", ".xml", ".tpl")
 
-    def __init__(self, ws_host: str, ws_port: int, *args, name: str = __name__,
+    def __init__(self, name: str, *args, ws_host: str = "localhost/webserver",
                  support_exts: Union[List[str], Tuple[str]] = DEFAULT_EXTS,
                  folder: str = "templates",
                  flask_misaka: dict = {"autolink": True, "wrap": True},
                  **kwargs):
-        super().__init__(name)
-        self.events = []
+        self.app = Sanic(name, *args, **kwargs)
 
         # Jinja2 Template Engine, Flask-Misaka
         self.env = Environment(
@@ -198,40 +193,10 @@ class RTSanicServer(Sanic):
             "markdown", Misaka(autolink=True, wrap=True).render)
 
         # 通信の準備をする。
-        self.wss, self._ready = {}, asyncio.Event()
+        self.wss, self._ready, self._stop  = {}, asyncio.Event(), asyncio.Event()
         self.support_exts = support_exts
-        self.__setup_route(ws_host, ws_port)
-
-    def event(self, coro, event_name: str = None):
-        """
-        WebServerのイベント登録用のデコレータです。
-
-        Parameters
-        -----------
-        coro : Callable
-            登録するイベントのコルーチンです。　
-        event_name : str, default None
-            登録するイベントの種類です。
-        """
-        def _decorator(coro):
-            self.add_event(coro, event_name=event_name)
-            return coro
-        return _decorator
-
-    def add_event(self, coro, event_name: str = None):
-        """
-        WebServerのイベント登録用関数です。
-        イベント例：`on_before_return`
-
-        Parameters
-        -----------
-        coro : Callable
-            登録するイベントのコルーチンです。　
-        event_name : str, default None
-            登録するイベントの種類です。
-        """
-        coro.__event_name = event_name if event_name else coro.__name__
-        self.events.append(coro)
+        self.logger = logging.getLogger("rt.web")
+        self.__setup_route(ws_host)
 
     async def request(self, data: dict) -> dict:
         """
@@ -247,37 +212,55 @@ class RTSanicServer(Sanic):
         -------
         callback : dict
         """
-        before = -1
-        now = None
-        for number in self.wss:
-            if self.wss[number]["queue"] < before or before == -1:
-                before = self.wss[number]["queue"]
-                now = number
-        self.wss[now]["queue"] += 1
-        await self.wss[now]["ws"].send(dumps(data))
-        callback = loads(await self.wss[now]["ws"].recv())["data"]
-        self.wss[now]["queue"] -= 1
-        return callback
+        if self.wss:
+            self.logger.info("Requesting...")
+            before = -1
+            now = None
+            for number in self.wss:
+                if self.wss[number]["queue"] < before or before == -1:
+                    before = self.wss[number]["queue"]
+                    now = number
+            self.wss[now]["queue"] += 1
+            self.logger.info("  Selected worker " + now + ".")
+            await self.wss[now]["ws"].send(dumps(data))
+            self.logger.info("  Requested.")
+            callback = loads(await self.wss[now]["ws"].recv())["data"]
+            self.logger.info("Received! Done.")
+            self.wss[now]["queue"] -= 1
+            return callback
+        else:
+            return {
+                "type": "text",
+                "args": ["Error : まだ起動中またはWorkerのWebServerへの接続が失敗しています。"],
+                "kwargs": {}
+            }
 
-    def __setup_route(self, host: str, port: int):
-        @self.websocket("/webserver")
+    def __setup_route(self, host: str):
+        h = host.replace("localhost", "")
+        app = self.app
+        @app.websocket(h if h else "/")
         async def backend(request, ws):
             number = make_session_id()
             self.wss[number] = {
                 "ws": ws,
                 "queue": 0
             }
+            self.logger.info("Connected worker. (" + number + ")")
             if not self.wss:
                 self._ready.set()
             # Workerとのwebserver用の通信をする。
-            while True:
-                await asyncio.sleep(0.01)
+            await self._stop.wait()
+            self.logger.info("Finished worker. (" + number + ")")
             del self.wss[number]
             if not self.wss:
                 self._ready.clear()
 
-        @self.route("/<path:path>")
-        async def return_file(self, request, path: str):
+        @app.listener('before_server_stop')
+        async def notify_server_stopping(app, loop):
+            self._stop.set()
+
+        @app.route("/<path:path>")
+        async def return_file(request, path: str):
             if path.endswith(self.support_exts):
                 if exists(path):
                     return await self.template(path)
@@ -285,7 +268,7 @@ class RTSanicServer(Sanic):
                     return abort(404)
             else:
                 data = {
-                    "type": "access"
+                    "type": "access",
                     "data": {
                         "content_type": request.content_type,
                         "ip": request.ip,
@@ -300,15 +283,15 @@ class RTSanicServer(Sanic):
                     request = getattr(self, callback["type"])
                 except AttributeError:
                     try:
-                        request = getattr(response, callback["data"])
+                        request = getattr(response, callback["type"])
                     except AttributeError:
-                        raise NotFound()
+                        raise abort(500)
                 finally:
                     if asyncio.iscoroutinefunction(request):
-                        return await self.request(
+                        return await request(
                             *callback["args"], **callback["kwargs"])
                     else:
-                        return self.request(
+                        return request(
                             *callback["args"], **callback["kwargs"])
 
     async def template(self, tpl, **kwargs):
