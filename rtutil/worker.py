@@ -44,6 +44,9 @@ class Worker:
         文字列を入れるとその文字列 + 名前でprintされます。
     ignore_me: bool, default True
         自分(Bot自身)のメッセージを無視するかどうかです。
+    retry_connect : int, default 5
+        Workerとの通信に使うWebsocketが理由なしに切断された際に接続しなおす回数です。
+        デフォルトでは五回です。
 
     Attributes
     ----------
@@ -67,7 +70,8 @@ class Worker:
     """
     def __init__(self, prefixes: Union[List[str], Tuple[str], str], *,
                  loop=None, logging_level: int = logging.ERROR,
-                 print_extension_name: bool = False, ignore_me: bool = True):
+                 print_extension_name: bool = False, ignore_me: bool = True,
+                 retry_connect: int = 3):
         self.print_extension_name = print_extension_name
         self.ignore_me = ignore_me
 
@@ -168,26 +172,41 @@ class Worker:
         run : Workerを起動させます。
         """
         self.web_logger = logging.getLogger("rt.web")
-        self.web_logger.info("Connecting to RTSanicServer websocekt...")
-        ws = await connect(ws_url)
-        self.web_ws = ws
-        self._web_ready.set()
+        connect_count = 0
         while True:
-            self.web_logger.info("Waiting event...")
-            data = loads(await ws.recv())
+            self.web_logger.info("Connecting to RTSanicServer websocket...")
             try:
-                self.web_logger.info("  Received event!\n  Sending callback.")
-                callback = {
-                    "type": "end",
-                    "data": await self.run_route(data["type"], data)
-                }
-            except Exception:
-                callback = {
-                    "type": "error",
-                    "data": format_exc()
-                }
-            await ws.send(dumps(callback))
-            self.web_logger.info("Finished event.")
+                connect_count += 1
+                ws = await connect(ws_url)
+                self.web_ws = ws
+                self._web_ready.set()
+                while True:
+                    self.web_logger.info("Waiting event...")
+                    data = loads(await ws.recv())
+                    try:
+                        self.web_logger.info("  Received event!\n  Sending callback.")
+                        callback = {
+                            "type": "end",
+                            "data": await self.run_route(data["type"], data)
+                        }
+                    except Exception:
+                        callback = {
+                            "type": "error",
+                            "data": format_exc()
+                        }
+                    await ws.send(dumps(callback))
+                    self.web_logger.info("Finished event.")
+            except websockets.exceptions.ConnectionClosedOK:
+                self.web_logger.warning("Broken Websocket Gateway")
+            except ConnectionRefusedError:
+                self.web_logger.warning("Broken Websocket Gateway")
+            finally:
+                if ws.close_reason:
+                    break
+                else:
+                    self.web_logger.warning("Reconnect after 3 seconds...")
+                    await asyncio.sleep(3)
+        self.web_logger.info("Closed websocket.")
 
     async def run_route(self, uri: str, data: dict = {}):
         """

@@ -163,7 +163,8 @@ class RTSanicServer:
     Workerとの通信をするのでWorkerがルーティングを取得することができます。
     デフォルトでは`templates`にあるhtml,xml,tplのファイルを返すことができます。
     しかもJinja2テンプレートエンジンを搭載し、マークダウンも使用することができます。
-    マークダウンはファイルに`{{ % filter markdown % }}`から`{{ % endfilter % }}`と囲んだところが自動的に装飾されます。
+    マークダウンはファイルに`{{ % filter markdown % }}`から
+    `{{ % endfilter % }}`と囲んだところが自動的に装飾されます。
 
     Parameters
     ----------
@@ -173,7 +174,7 @@ class RTSanicServer:
         ウェブサーバーの名前です。
     ws_uri : str, default "/webserver"
         Workerとの通信に使うWebsocketのアドレスです。
-    support_exts : Union[List[str], Tuple[str]], default (".html", ".xml", ".tpl")
+    support_exts : Tuple[str], default (".html", ".xml", ".tpl")
         返すことができるファイルのリストまたはタプルです。
     folder : str, default "templates"
         返すことのできるファイルがあるフォルダのパスです。
@@ -199,11 +200,12 @@ class RTSanicServer:
 
     def __init__(self, name: str, *args, ws_uri: str = "/webserver",
                  support_exts: Union[List[str], Tuple[str]] = DEFAULT_EXTS,
-                 folder: str = "templates",
+                 folder: str = "./templates",
                  flask_misaka: dict = {"autolink": True, "wrap": True},
                  logging_level: int = logging.ERROR,
                  **kwargs):
         self.app = Sanic(name, *args, **kwargs)
+        self.folder = folder
 
         self.logger = logging.getLogger("rt.web")
         logging.basicConfig(
@@ -213,7 +215,7 @@ class RTSanicServer:
 
         # Jinja2 Template Engine, Flask-Misaka
         self.env = Environment(
-            loader=FileSystemLoader("static/website/html"),
+            loader=FileSystemLoader(folder),
             autoescape=select_autoescape(support_exts),
             enable_async=True
         )
@@ -277,24 +279,37 @@ class RTSanicServer:
             if not self.wss:
                 self._ready.set()
             # Workerとのwebserver用の通信を時間を作る。
-            while not self.stop:
+            while not self.stop or not self.wss.closed:
                 await asyncio.sleep(0.01)
             self.logger.info("Finished worker. (" + number + ")")
             del self.wss[number]
             if not self.wss:
                 self._ready.clear()
 
-        @app.listener('before_server_stop')
+        @app.listener('after_server_stop')
         async def notify_server_stopping(app, loop):
             self.stop = True
 
+        @app.route("/")
+        async def return_index(request):
+            if exists(self.folder + "/index.html"):
+                return await self.template("index.html")
+
         @app.route("/<path:path>")
         async def return_file(request, path: str):
-            if path.endswith(self.support_exts):
-                if exists(path):
+            print("あああああああ", path)
+            true_path = self.folder + "/" + path
+            if path.endswith(self.support_exts) or path == "":
+                if path == "":
+                    path = "index.html"
+                if exists(true_path):
+                    print("あああああああ template", path)
                     return await self.template(path)
                 else:
+                    print("あああああああ 404 ", path)
                     return abort(404)
+            elif exists(true_path):
+                return await response.file(true_path)
             else:
                 data = {
                     "type": "access",
@@ -310,10 +325,12 @@ class RTSanicServer:
                 callback = await self.request(data)
                 if callback["type"] == "error":
                     callback["type"] = "text"
-                    callback["args"] = ("エラーが発生したため処理を実行することができませんでした。: \n" + callback["data"],)
+                    callback["args"] = ("エラーが発生したため処理を実行することができませんでした。: \n"
+                                        + callback["data"],)
                     callback["kwargs"] = {}
                     print(callback["data"])
-                callback = callback["data"]
+                else:
+                    callback = callback["data"]
                 try:
                     request = getattr(self, callback["type"])
                 except AttributeError:
@@ -343,7 +360,7 @@ class RTSanicServer:
         """
         template = self.env.get_template(tpl)
         content = await template.render_async(kwargs)
-        return html(content)
+        return response.html(content)
 
     async def wait_until_ready(self):
         """
