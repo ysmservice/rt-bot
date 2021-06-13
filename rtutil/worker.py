@@ -116,32 +116,31 @@ class Worker:
 
     def run(self, web: bool = False,
             web_ws_url: str = "ws://localhost/webserver",
-            backend_ws_url: str = "ws://localhost/webserver"):
+            backend_ws_url: str = "ws://localhost:3000"):
         """
         Workerを起動させます。
+        RTBackendが別で起動している必要があります。
+        ウェブサーバーと連携する場合はRTSanicServerが別で起動している必要があります。
 
         Parameters
         ----------
+        backend_ws_url : str, default "ws://localhost:3000"
+            RTBackendに設定している通信用のWebsocketのURLです。
         web : bool, default False
             RTSanicServerを動かしている場合のみ使用してください。
             これはWebServerと連携するかどうかです。
-        host : str, default "ws://localhost/webserver"
-            RTSanicServerのWebsocketに設定しているurlを入れてください。
-            特にhostを設定していない場合はデフォルトのままで大丈夫です。
+        web_ws_url : str, default "ws://localhost/webserver"
+            RTSanicServerのWebsocketに設定しているurlです。
         """
         self.logger.info("Starting worker...")
+        self.loop.create_task(self.worker(backend_ws_url))
+        if web:
+            self.loop.create_task(self.webserver(web_ws_url))
         try:
-            self.loop.run_until_complete(
-                asyncio.gather(
-                    self.webserver(web_ws_url),
-                    self.worker(backend_ws_url),
-                    return_exceptions=True
-                )
-            )
+            self.loop.run_forever()
         except KeyboardInterrupt:
             pass
         finally:
-            self.loop.stop()
             self.loop.close()
         self.logger.info("Worker is closed by user KeyboardInterrupt!")
 
@@ -155,8 +154,7 @@ class Worker:
             await self.web_ws.close(reason="Don't worry, It is true end!")
         self.logger.info("  Websocket is closed.")
         self.loop.stop()
-        self.loop.close()
-        self.logger.info("  Loop is closed.")
+        self.logger.info("  Loop is stopped.")
         self.logger.info("Worker is closed.")
 
     async def webserver(self, ws_url: str):
@@ -200,16 +198,16 @@ class Worker:
                     await ws.send(dumps(callback))
                     self.web_logger.info("Finished event.")
             except websockets_exceptions.ConnectionClosedOK:
-                self.web_logger.warning(
+                self.web_logger.error(
                     "Websocket Gateway is broken for no reason.")
-            except ConnectionRefusedError:
-                self.web_logger.warning("Failed to connect.")
+            except ConnectionRefusedError as e:
+                self.logger.error(f"Failed to connect. : {e}")
             finally:
                 # 理由なしに切断されたかつ再接続がTrueの場合は再接続をする。
                 if ws.close_reason:
                     break
                 elif self.retry_connect:
-                    self.web_logger.warning("Reconnect after 3 seconds...")
+                    self.web_logger.info("Reconnect after 3 seconds...")
                     await asyncio.sleep(3)
                 else:
                     break
@@ -315,7 +313,7 @@ class Worker:
         Examples
         --------
         @worker.route("/ping")
-        async def index(self, data):
+        async def index(data):
             return worker.web("json", {"code": "pong!"})
         """
         data = {"type": event_type}
@@ -340,12 +338,12 @@ class Worker:
         """
         # 親のDiscordからのイベントを受け取るmain.pyと通信をする。
         while True:
+            self.logger.info("Connecting to websocket...")
             try:
-                self.logger.info("Connecting to websocket...")
                 ws = await connect(backend_ws_url)
                 self.ws = ws
                 self._ready.set()
-                self.logger.info("Started worker.")
+                self.logger.info("Start worker.")
                 while True:
                     # Discordのイベントがあるなら取得する。。
                     try:
@@ -390,17 +388,20 @@ class Worker:
                     await self._request.wait()
                     await asyncio.sleep(0.01)
             except websockets_exceptions.ConnectionClosedOK:
-                self.logger.warning(
+                self.logger.error(
                     "Websocket Gateway is broken for no reason.")
-            except ConnectionRefusedError:
-                self.logger.warning("Failed to connect.")
+            except ConnectionRefusedError as e:
+                self.logger.error(f"Failed to connect. : {e}")
+            except Exception:
+                self.logger.error(
+                    "Exception in backend websocket:\n" + format_exc())
             finally:
                 # もし理由なしに切断されたりした場合かつインスタンス作成時に再接続をTrueにした場合は再接続する。
-                if getattr(ws, "close_reason", None):
+                if getattr(self.ws, "close_reason", None):
                     break
                 elif self.retry_connect:
                     # 三秒後にもう一度接続する。
-                    self.logger.warning("Reconnect after 3 seconds...")
+                    self.logger.info("Reconnect after 3 seconds...")
                     await asyncio.sleep(3)
                 else:
                     break

@@ -17,12 +17,11 @@ worker = rtutil.Worker(prefixes, logging_level=logging.DEBUG)
 @worker.command()
 async def test(ws, data, ctx):
     print(data["content"])
-    # r2!test 1
 
 
-@worker.route("/test")
+@worker.route("/api/check")
 async def testweb(data):
-    data = worker.web("template", "index.html")
+    data = worker.web("json", {"status": "ok"})
     return data
 
 

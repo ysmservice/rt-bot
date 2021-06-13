@@ -183,7 +183,9 @@ class RTSanicServer:
         その場合`http://アドレス/hello.html`でこのファイルは返されます。
         これの返すことのできるファイルのリストは上のsupport_extsに渡されるリストです。
         **Warning!!**
-        TOKENが記載されているファイルがあるフォルダーを設定してしますとTOKEN流出の恐れがあります。
+        TOKENが記載されているファイルがあるフォルダーを設定してしまうとTOKEN流出の恐れがあります。
+    max_length : int, default 100
+        扱うことのできるuriの長さです。
     flask_misaka : dict, default {"autolink": True, "wrap": True}
         テンプレートエンジンで使うことのできるフィルターの`markdown`での追加設定です。
         何の追加設定に対応しているかはflask-misakaを参照してください。
@@ -196,21 +198,29 @@ class RTSanicServer:
     ----------
     app : sanic.Sanic
         Sanicです。
+    folder : str
+        返すことのできるファイルがあるフォルダのパスです。
+    logger
+        loggingのloggerです。
+    stop : bool
+        停止するかしないかです。
     wss : dict
-         接続しているWebsocketGatewayの辞書です。
-         {"ID": {"ws": WebsocketGateway, "queue": queue_count}}
+        接続しているWebsocketGatewayの辞書です。
+        {"ID": {"ws": WebsocketGateway, "queue": queue_count}}
     """
 
     DEFAULT_EXTS = (".html", ".xml")
 
     def __init__(self, name: str, *args, ws_uri: str = "/webserver",
                  template_exts: Union[List[str], Tuple[str]] = DEFAULT_EXTS,
-                 folder: str = "./templates",
+                 folder: str = "templates",
+                 max_length: int = 100,
                  flask_misaka: dict = {"autolink": True, "wrap": True},
                  logging_level: int = logging.ERROR,
                  **kwargs):
         self.app = Sanic(name, *args, **kwargs)
         self.folder = folder
+        self.max_length = max_length
 
         self.logger = logging.getLogger("rt.web")
         logging.basicConfig(
@@ -269,11 +279,14 @@ class RTSanicServer:
             self.wss[now]["queue"] -= 1
             return callback
         else:
-            BT = "まだ起動中のWorkerがありません。"
+            BT = "まだ準備が完了していません。"
             return {
-                "type": "text",
-                "args": [f"Error : {BT}またはWorkerのWebServerへの接続が失敗しています。"],
-                "kwargs": {}
+                "type": "end",
+                "data": {
+                    "type": "abort",
+                    "args": [503, f"{BT}またはWorkerへの接続に失敗しています。"],
+                    "kwargs": {}
+                }
             }
 
     def __setup_route(self, ws_uri: str):
@@ -308,6 +321,8 @@ class RTSanicServer:
 
         @app.route("/<path:path>")
         async def return_file(request, path: str):
+            if len(path) > self.max_length:
+                return abort(414)
             # なにかアクセスがあったならそれに対応する対応をする。
             true_path = self.folder + "/" + path
             if path.endswith(self.support_exts):
@@ -345,20 +360,25 @@ class RTSanicServer:
                 else:
                     callback = callback["data"]
                 # もしファイルやJSONなどを返すようにコールバックに書いてあるならその通りにする。
-                try:
-                    request = getattr(self, callback["type"])
-                except AttributeError:
+                if callback["type"] == "template":
+                    res = self.template
+                elif callback["type"] == "abort":
+                    res = self.__abort
+                else:
                     try:
-                        request = getattr(response, callback["type"])
+                        res = getattr(response, callback["type"])
                     except AttributeError:
-                        raise abort(500)
-                finally:
-                    if asyncio.iscoroutinefunction(request):
-                        return await request(
-                            *callback["args"], **callback["kwargs"])
-                    else:
-                        return request(
-                            *callback["args"], **callback["kwargs"])
+                        return abort(500, f"{callback['type']}は使用できません。")
+                if asyncio.iscoroutinefunction(request):
+                    return await res(
+                        *callback["args"], **callback["kwargs"])
+                else:
+                    print(res)
+                    return res(
+                        *callback["args"], **callback["kwargs"])
+
+    def __abort(self, status_code: int, message: str = None):
+        return abort(status_code, message)
 
     async def template(self, tpl, **kwargs):
         """
