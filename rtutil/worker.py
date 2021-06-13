@@ -345,7 +345,8 @@ class Worker:
                 self._ready.set()
                 self.logger.info("Start worker.")
                 while True:
-                    # Discordのイベントがあるなら取得する。。
+                    # Discordのイベントがあるなら取得する。
+                    print("yey")
                     try:
                         data = loads(
                             await asyncio.wait_for(ws.recv(), timeout=0.01))
@@ -363,6 +364,7 @@ class Worker:
                             if (event_type in self.events
                                     and data["type"] == "start"):
                                 # 登録されているイベントを呼び出すものならそのイベントを呼び出す。
+                                print(data)
                                 new_data = data["data"]["data"]
                                 new_data["callback_template"] = callback_data
                                 # イベントの実行をする。
