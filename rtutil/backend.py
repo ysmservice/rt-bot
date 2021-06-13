@@ -3,7 +3,7 @@
 import discord
 from sanic import Sanic, response
 
-from sanic.exceptions import abort, NotFound
+from sanic.exceptions import abort
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from flask_misaka import Misaka
@@ -174,14 +174,19 @@ class RTSanicServer:
         ウェブサーバーの名前です。
     ws_uri : str, default "/webserver"
         Workerとの通信に使うWebsocketのアドレスです。
-    support_exts : Tuple[str], default (".html", ".xml", ".tpl")
-        返すことができるファイルのリストまたはタプルです。
+    template_exts: Union[List[str], Tuple[str]], default (".html", ".xml")
+        テンプレートエンジンを使用して返すファイルのリストです。
     folder : str, default "templates"
         返すことのできるファイルがあるフォルダのパスです。
         例としてhello.htmlがあったとします。
         それがfolderのパスのフォルダにあるとします。
         その場合`http://アドレス/hello.html`でこのファイルは返されます。
         これの返すことのできるファイルのリストは上のsupport_extsに渡されるリストです。
+        **Warning!!**
+        TOKENが記載されているファイルがあるフォルダーを設定してしますとTOKEN流出の恐れがあります。
+    flask_misaka : dict, default {"autolink": True, "wrap": True}
+        テンプレートエンジンで使うことのできるフィルターの`markdown`での追加設定です。
+        何の追加設定に対応しているかはflask-misakaを参照してください。
     logging_level : int, default logging.ERROR
         loggingのレベルです。
     **kwargs : dict, default {}
@@ -196,10 +201,10 @@ class RTSanicServer:
          {"ID": {"ws": WebsocketGateway, "queue": queue_count}}
     """
 
-    DEFAULT_EXTS = (".html", ".xml", ".tpl")
+    DEFAULT_EXTS = (".html", ".xml")
 
     def __init__(self, name: str, *args, ws_uri: str = "/webserver",
-                 support_exts: Union[List[str], Tuple[str]] = DEFAULT_EXTS,
+                 template_exts: Union[List[str], Tuple[str]] = DEFAULT_EXTS,
                  folder: str = "./templates",
                  flask_misaka: dict = {"autolink": True, "wrap": True},
                  logging_level: int = logging.ERROR,
@@ -216,7 +221,7 @@ class RTSanicServer:
         # Jinja2 Template Engine, Flask-Misaka
         self.env = Environment(
             loader=FileSystemLoader(folder),
-            autoescape=select_autoescape(support_exts),
+            autoescape=select_autoescape(template_exts),
             enable_async=True
         )
         self.env.filters.setdefault(
@@ -225,13 +230,14 @@ class RTSanicServer:
         # 通信の準備をする。
         self.wss, self._ready = {}, asyncio.Event()
         self.stop = False
-        self.support_exts = support_exts
+        self.support_exts = template_exts
         self.__setup_route(ws_uri)
 
     async def request(self, data: dict) -> dict:
         """
-        接続しているWorkerにRTSanicServerからリクエストします。
+        接続しているWorkerにRTSanicServerから処理のリクエストします。
         ルーティングされているURLが開かれた際などに使われています。
+        **普通は使いません。内部で使用しているものです。**
 
         Parameters
         -----------
@@ -242,8 +248,10 @@ class RTSanicServer:
         -------
         callback : dict
         """
+        # Workerへルーティングなどの処理をリクエストする。
         if self.wss:
             self.logger.info("Requesting...")
+            # 一番リクエストのキューが少ないとされるWorkerにリクエストを実行する。
             before = -1
             now = None
             for number in self.wss:
@@ -251,17 +259,20 @@ class RTSanicServer:
                     before = self.wss[number]["queue"]
                     now = number
             self.wss[now]["queue"] += 1
+            # リクエストするWorkerに
             self.logger.info("  Selected worker " + now + ".")
             await self.wss[now]["ws"].send(dumps(data))
             self.logger.info("  Requested.")
             callback = loads(await self.wss[now]["ws"].recv())
+            # リクエストのコールバックを返す。
             self.logger.info("Received! Done.")
             self.wss[now]["queue"] -= 1
             return callback
         else:
+            BT = "まだ起動中のWorkerがありません。"
             return {
                 "type": "text",
-                "args": ["Error : まだ起動中またはWorkerのWebServerへの接続が失敗しています。"],
+                "args": [f"Error : {BT}またはWorkerのWebServerへの接続が失敗しています。"],
                 "kwargs": {}
             }
 
@@ -297,20 +308,21 @@ class RTSanicServer:
 
         @app.route("/<path:path>")
         async def return_file(request, path: str):
-            print("あああああああ", path)
+            # なにかアクセスがあったならそれに対応する対応をする。
             true_path = self.folder + "/" + path
-            if path.endswith(self.support_exts) or path == "":
-                if path == "":
-                    path = "index.html"
+            if path.endswith(self.support_exts):
+                # もしファイルへのアクセスならファイルを返す。
+                # ここで返すファイルは決められたファイルのみ。
                 if exists(true_path):
-                    print("あああああああ template", path)
                     return await self.template(path)
                 else:
-                    print("あああああああ 404 ", path)
                     return abort(404)
             elif exists(true_path):
+                # ファイルを返す。
+                # ダウンロードなど。
                 return await response.file(true_path)
             else:
+                # もしファイル返却じゃない場合はWorkerにルーティング実行のリクエストをする。
                 data = {
                     "type": "access",
                     "data": {
@@ -323,6 +335,7 @@ class RTSanicServer:
                     }
                 }
                 callback = await self.request(data)
+                # コールバックがもしエラーならエラーの出力をする。
                 if callback["type"] == "error":
                     callback["type"] = "text"
                     callback["args"] = ("エラーが発生したため処理を実行することができませんでした。: \n"
@@ -331,6 +344,7 @@ class RTSanicServer:
                     print(callback["data"])
                 else:
                     callback = callback["data"]
+                # もしファイルやJSONなどを返すようにコールバックに書いてあるならその通りにする。
                 try:
                     request = getattr(self, callback["type"])
                 except AttributeError:
@@ -364,6 +378,6 @@ class RTSanicServer:
 
     async def wait_until_ready(self):
         """
-        Websocketのサーバーに一つでもWorkerが接続している状態になるまで待ちます。
+        WorkerのWebsocketに一つでも接続している状態になるまで待ちます。
         """
         await self._ready.wait()

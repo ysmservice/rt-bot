@@ -1,9 +1,9 @@
 # RT - Worker
 
+from websockets import connect, exceptions as websockets_exceptions
 from typing import Union, Tuple, List
 from importlib import import_module
 from traceback import format_exc
-from websockets import connect
 from ujson import loads, dumps
 import logging
 import asyncio
@@ -71,9 +71,10 @@ class Worker:
     def __init__(self, prefixes: Union[List[str], Tuple[str], str], *,
                  loop=None, logging_level: int = logging.ERROR,
                  print_extension_name: bool = False, ignore_me: bool = True,
-                 retry_connect: int = 3):
+                 retry_connect: bool = True):
         self.print_extension_name = print_extension_name
         self.ignore_me = ignore_me
+        self.retry_connect = retry_connect
 
         self.loop = loop if loop else asyncio.get_event_loop()
         self.events = {}
@@ -114,7 +115,8 @@ class Worker:
         super().__init__()
 
     def run(self, web: bool = False,
-            ws_url: str = "ws://localhost/webserver"):
+            web_ws_url: str = "ws://localhost/webserver",
+            backend_ws_url: str = "ws://localhost/webserver"):
         """
         Workerを起動させます。
 
@@ -124,18 +126,15 @@ class Worker:
             RTSanicServerを動かしている場合のみ使用してください。
             これはWebServerと連携するかどうかです。
         host : str, default "ws://localhost/webserver"
-            RTSanicServerのWebsocketに設定しているhostを入れてください。
+            RTSanicServerのWebsocketに設定しているurlを入れてください。
             特にhostを設定していない場合はデフォルトのままで大丈夫です。
-        port : int, default 80
-            RTSanicServerのWebsocketに設定しているportを入れてください。
-            特にportを設定していない場合はデフォルトのままで大丈夫です。
         """
         self.logger.info("Starting worker...")
         try:
             self.loop.run_until_complete(
                 asyncio.gather(
-                    self.webserver(ws_url),
-                    self.worker(),
+                    self.webserver(web_ws_url),
+                    self.worker(backend_ws_url),
                     return_exceptions=True
                 )
             )
@@ -172,40 +171,48 @@ class Worker:
         run : Workerを起動させます。
         """
         self.web_logger = logging.getLogger("rt.web")
-        connect_count = 0
         while True:
+            # ウェブサーバーのWebsocketへ接続する。
             self.web_logger.info("Connecting to RTSanicServer websocket...")
             try:
-                connect_count += 1
                 ws = await connect(ws_url)
                 self.web_ws = ws
                 self._web_ready.set()
                 while True:
+                    # アクセスなどのイベントを待機する。
                     self.web_logger.info("Waiting event...")
                     data = loads(await ws.recv())
+                    # イベントを実行する。実行結果はコールバックに記載する。
                     try:
-                        self.web_logger.info("  Received event!\n  Sending callback.")
+                        self.web_logger.info(
+                            "  Received event!\n  Sending callback.")
                         callback = {
                             "type": "end",
                             "data": await self.run_route(data["type"], data)
                         }
                     except Exception:
+                        # エラーが発生した場合はエラー内容をコールバックに記載する。。
                         callback = {
                             "type": "error",
                             "data": format_exc()
                         }
+                    # コールバックを送信する。
                     await ws.send(dumps(callback))
                     self.web_logger.info("Finished event.")
-            except websockets.exceptions.ConnectionClosedOK:
-                self.web_logger.warning("Broken Websocket Gateway")
+            except websockets_exceptions.ConnectionClosedOK:
+                self.web_logger.warning(
+                    "Websocket Gateway is broken for no reason.")
             except ConnectionRefusedError:
-                self.web_logger.warning("Broken Websocket Gateway")
+                self.web_logger.warning("Failed to connect.")
             finally:
+                # 理由なしに切断されたかつ再接続がTrueの場合は再接続をする。
                 if ws.close_reason:
                     break
-                else:
+                elif self.retry_connect:
                     self.web_logger.warning("Reconnect after 3 seconds...")
                     await asyncio.sleep(3)
+                else:
+                    break
         self.web_logger.info("Closed websocket.")
 
     async def run_route(self, uri: str, data: dict = {}):
@@ -315,59 +322,89 @@ class Worker:
         data.update({"args": args, "kwargs": kwargs})
         return data
 
-    async def worker(self):
+    async def worker(self, backend_ws_url: str = "ws://localhost:3000"):
         """
         Workerのプログラムです。
         普通はこれを呼びだしません。
         なのでこの説明は無視してかまいません。
         Workerを動かす際はこれを呼び出すのではなくWorker.runを呼び出してください。
 
+        Parameters
+        ----------
+        backend_ws_url : str, default "ws://localhost:3000"
+            接続するRTBackendのWebsocketのURLです。
+
         See Also
         --------
         run : Workerを起動させます。
         """
-        self.logger.info("Connecting to websocket...")
         # 親のDiscordからのイベントを受け取るmain.pyと通信をする。
-        # イベントを受け取ったらそのイベントでの通信を開始する。
-        ws = await connect("ws://localhost:3000")
-        self.ws = ws
-        self._ready.set()
-        self.logger.info("Started worker.")
         while True:
             try:
-                data = loads(await asyncio.wait_for(ws.recv(), timeout=0.01))
-            except asyncio.TimeoutError:
-                pass
-            else:
-                # イベント呼び出しならそれ専用のことをする。
-                self.logger.info("Received event.")
-                callback_data = {
-                    "type": "ok",
-                    "data": {}
-                }
-                try:
-                    event_type = data['data']['type']
-                    if (event_type in self.events
-                            and data["type"] == "start"):
-                        # 登録されているイベントを呼び出すものならそのイベントを呼び出す。
-                        new_data = data["data"]["data"]
-                        new_data["callback_template"] = callback_data
-                        # イベントの実行をする。
-                        self.logger.info(f"  Runnning {event_type} events...")
-                        for coro in self.events[data["data"]["type"]]:
-                            self.logger.info(f"    {coro.__name__}")
-                            asyncio.create_task(coro(ws, new_data))
-                        self.logger.info("Runned events.")
-                except Exception:
-                    error = format_exc()
-                    callback_data["type"] = "error"
-                    callback_data["data"] = error
-                    self.logger.error("Exception in event:\n" + error)
-            if self._request_queue_count != 0:
-                self._request.clear()
-            self._event.set()
-            await self._request.wait()
-            await asyncio.sleep(0.01)
+                self.logger.info("Connecting to websocket...")
+                ws = await connect(backend_ws_url)
+                self.ws = ws
+                self._ready.set()
+                self.logger.info("Started worker.")
+                while True:
+                    # Discordのイベントがあるなら取得する。。
+                    try:
+                        data = loads(
+                            await asyncio.wait_for(ws.recv(), timeout=0.01))
+                    except asyncio.TimeoutError:
+                        pass
+                    else:
+                        # イベント呼び出しならそれ専用のことをする。
+                        self.logger.info("Received event.")
+                        callback_data = {
+                            "type": "ok",
+                            "data": {}
+                        }
+                        try:
+                            event_type = data['data']['type']
+                            if (event_type in self.events
+                                    and data["type"] == "start"):
+                                # 登録されているイベントを呼び出すものならそのイベントを呼び出す。
+                                new_data = data["data"]["data"]
+                                new_data["callback_template"] = callback_data
+                                # イベントの実行をする。
+                                self.logger.info(
+                                    f"  Runnning {event_type} events...")
+                                for coro in self.events[data["data"]["type"]]:
+                                    self.logger.info(f"    {coro.__name__}")
+                                    asyncio.create_task(coro(ws, new_data))
+                                self.logger.info("Runned events.")
+                        except Exception:
+                            # もしイベント実行中にエラーが発生した場合はコールバックのtypeをエラーにする。
+                            # そしてエラー内容を同梱する。
+                            error = format_exc()
+                            callback_data["type"] = "error"
+                            callback_data["data"] = error
+                            self.logger.error("Exception in event:\n" + error)
+                    # Backendへのリクエストが0じゃないならリクエスト実行の時間を作る。
+                    # そしてリクエスト実行で実行できるようになるまで_eventで待ってるはずなので、_eventをsetする。
+                    # この後の動きはWorker.disocrdにて記載している。
+                    if self._request_queue_count != 0:
+                        self._request.clear()
+                    self._event.set()
+                    await self._request.wait()
+                    await asyncio.sleep(0.01)
+            except websockets_exceptions.ConnectionClosedOK:
+                self.logger.warning(
+                    "Websocket Gateway is broken for no reason.")
+            except ConnectionRefusedError:
+                self.logger.warning("Failed to connect.")
+            finally:
+                # もし理由なしに切断されたりした場合かつインスタンス作成時に再接続をTrueにした場合は再接続する。
+                if getattr(ws, "close_reason", None):
+                    break
+                elif self.retry_connect:
+                    # 三秒後にもう一度接続する。
+                    self.logger.warning("Reconnect after 3 seconds...")
+                    await asyncio.sleep(3)
+                else:
+                    break
+        self.logger.info("Closed websocket.")
 
     @if_connected
     async def me(self, n: int = 0) -> bool:
@@ -465,7 +502,10 @@ class Worker:
             Websocketの準備ができてない際に発生します。
         """
         self.logger.info(f"Requesting {event_type} ...")
+        # Backendへのリクエストの数を増やす。
         self._request_queue_count += 1
+        # waitやsetやclearがなんなのかわからない場合は最初にWorker.workerを見てください。
+        # イベント取得が終わるまで待つ。
         await self._event.wait()
         # Discordに何かリクエストしてもらう。
         self.logger.info("  Sending request to backend...")
@@ -481,19 +521,26 @@ class Worker:
             wait = kwargs["wait"]
             data["data"]["wait"] = wait
             del kwargs["wait"]
+        # リクエストを送る。
         await self.ws.send(dumps(data))
         self.logger.info("    Sended request.")
+        # リクエストの結果(コールバック)を取得する。
         data = loads(await self.ws.recv())
         self.logger.info("  Received request callback.")
         self.logger.debug("    Worker < " + str(data))
-        if data["type"] == "error":
-            raise Exception(" in request:\n" + data["data"])
-            self.logger.error("The request failed.")
+        # リクエストは終わったということでイベント取得ループをもう一度動かす必要がある。
+        # _requestをsetする。
         self._request.set()
+        # _eventを動かなくすることでリクエストが終わるまでWorker.discordは使えなくなる。
         self._event.clear()
         self._request_queue_count -= 1
         self.logger.info("Requested " + event_type + "!")
-        return data["data"]
+        # リクエストでエラーが発生した場合はraiseで例外を発生させる。
+        if data["type"] == "error":
+            self.logger.error("Exception in request:\n" + data["data"])
+            raise Exception(" in request:\n" + data["data"])
+        else:
+            return data["data"]
 
     async def wait_until_ready(self):
         """

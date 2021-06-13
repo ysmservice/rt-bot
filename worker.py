@@ -26,4 +26,4 @@ async def testweb(data):
     return data
 
 
-worker.run(web=True, ws_url="ws://localhost:8080/webserver")
+worker.run(web=True, web_ws_url="ws://localhost:8080/webserver")

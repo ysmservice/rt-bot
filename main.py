@@ -7,7 +7,7 @@ import rtutil
 print("Now loading...")
 
 
-bot = rtutil.RTBackend()
+bot = rtutil.RTBackend(logging_level=rtutil.logging.DEBUG)
 
 
 with open("data.json", "r") as f:
