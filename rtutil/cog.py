@@ -20,6 +20,7 @@ class Cog(type):
                 # ここでコマンドかイベントリスナーの名前をあったら取得する。
                 event_name = getattr(value, "__listener", None)
                 command = getattr(value, "__command", None)
+                route = getattr(value, "__route", None)
                 # 取得できたなら登録してあげる。
                 if event_name:
                     event_name, kwargs = event_name
@@ -29,6 +30,9 @@ class Cog(type):
                     self.bot.add_command(
                         value, command_name=command_name, **kwargs)
                     self.commands.append(value)
+                elif route:
+                    uri, args, kwargs = route
+                    self.bot.add_route(value, uri)
 
         return self
 
@@ -48,13 +52,24 @@ class Cog(type):
         return decorator
 
     @classmethod
-    def command(cls, command_name=None, **kwargs):
+    def command(cls, command_name: str = None, **kwargs):
         def decorator(function):
             if not asyncio.iscoroutinefunction(function):
                 raise TypeError("登録する関数はコルーチンにする必要があります。")
             function.__command = (command_name
                                   if command_name else function.__name__,
                                   kwargs)
+            function.__cog_name = cls.__name__
+            return function
+        return decorator
+
+    @classmethod
+    def route(cls, uri: str = "/", *args, **kwargs):
+        def decorator(function):
+            if not asyncio.iscoroutinefunction(function):
+                raise TypeError("登録する関数はコルーチンにする必要があります。")
+            function.__route = (uri if uri else function.__name__,
+                                args, kwargs)
             function.__cog_name = cls.__name__
             return function
         return decorator

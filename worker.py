@@ -4,14 +4,25 @@ import logging
 import rtutil
 
 
-worker = rtutil.Worker("r2!", logging_level=logging.DEBUG)
-worker.load_extension("cog.bot_general")
+test = True
+if test:
+    prefixes = ("r2!", "R2!", "#2 ", ".2 ")
+else:
+    prefixes = ("rt!", "RT!", "#t ", "#T ", ".t ", ".T ")
+
+
+worker = rtutil.Worker(prefixes, logging_level=logging.DEBUG)
 
 
 @worker.command()
 async def test(ws, data, ctx):
     print(data["content"])
-    # r2!test 1
 
 
-worker.run()
+@worker.route("/api/check")
+async def testweb(data):
+    data = worker.web("json", {"status": "ok"})
+    return data
+
+
+worker.run(web=True, web_ws_url="ws://localhost:8080/webserver")
