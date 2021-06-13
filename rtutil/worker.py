@@ -88,6 +88,7 @@ class Worker:
         self.queue = asyncio.Queue()
         self._event = asyncio.Event()
         self._request = asyncio.Event()
+        self._request.set()
         self._ready = asyncio.Event()
         self._web_ready = asyncio.Event()
         self._request_queue_count = 0
@@ -346,7 +347,6 @@ class Worker:
                 self.logger.info("Start worker.")
                 while True:
                     # Discordのイベントがあるなら取得する。
-                    print("yey")
                     try:
                         data = loads(
                             await asyncio.wait_for(ws.recv(), timeout=0.01))

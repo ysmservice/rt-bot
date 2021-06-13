@@ -16,12 +16,7 @@ worker = rtutil.Worker(prefixes, logging_level=logging.DEBUG)
 
 @worker.command()
 async def test(ws, data, ctx):
-    print("ああああああああttst", data["content"])
-
-
-@worker.event()
-async def create_message(ws, data):
-    print("ああああああああ", data["content"])
+    print(data["content"])
 
 
 @worker.route("/api/check")

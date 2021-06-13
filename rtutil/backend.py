@@ -373,7 +373,6 @@ class RTSanicServer:
                     return await res(
                         *callback["args"], **callback["kwargs"])
                 else:
-                    print(res)
                     return res(
                         *callback["args"], **callback["kwargs"])
 
