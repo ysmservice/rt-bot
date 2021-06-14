@@ -15,7 +15,7 @@ worker = rtutil.Worker(prefixes, logging_level=logging.DEBUG)
 
 
 @worker.command()
-async def test(ws, data, ctx):
+async def test(data, ctx):
     print(data["content"])
 
 

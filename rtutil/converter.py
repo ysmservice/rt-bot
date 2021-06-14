@@ -47,7 +47,7 @@ class Converter:
                 data, ctx, kwargs[kwarg],
                 self.sig.parameters[next(parameters)].annotation
             )
-        await self.coro(ws, data, ctx, *new_args, **new_kwargs)
+        await self.coro(data, ctx, *new_args, **new_kwargs)
 
     @property
     def added_coro(self):

@@ -650,7 +650,7 @@ class Worker:
             デフォルトはDiscord用です。
         """
         for coro in self.events.get(event_name, []):
-            asyncio.create_task(coro(ws if ws else self.ws, data))
+            asyncio.create_task(coro(data))
 
     async def run_event_with_wait(self, event_name: str, data: dict, ws=None):
         """
