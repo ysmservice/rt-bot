@@ -183,8 +183,8 @@ class Worker:
                     data = loads(await ws.recv())
                     # イベントを実行する。実行結果はコールバックに記載する。
                     try:
-                        self.web_logger.info(
-                            "  Received event!\n  Sending callback.")
+                        self.web_logger.info("  Received event!")
+                        self.web_logger.info("  Sending callback.")
                         callback = {
                             "type": "end",
                             "data": await self.run_route(data["type"], data)
@@ -229,7 +229,6 @@ class Worker:
         splited = iter(uri.split("/"))
         for key in self.routes:
             args, kwargs, ok = [], {}, True
-            self.web_logger.debug("~ " + key + " ~")
             for value in key.split("/"):
                 if value:
                     if value[0] == "<" and value[-1] == ">":
@@ -283,6 +282,7 @@ class Worker:
             ルーティングで設定するuriです。
         """
         self.routes[uri] = coro
+        self.logger.info("Added route " + uri)
 
     def remove_route(self, uri: str):
         """
@@ -294,6 +294,7 @@ class Worker:
             削除するルーティングのuriです。
         """
         del self.routes[uri]
+        self.logger.info("Removed route " + uri)
 
     def web(self, event_type: str, *args: tuple, **kwargs: dict) -> dict:
         """
@@ -745,9 +746,10 @@ class Worker:
         # コマンド削除用の関数。
         if asyncio.iscoroutine(command_name):
             command_name = command_name.__name__
+        doc = self.commands[command_name].__doc__
         del self.commands[command_name]
         self.run_event(
-            "on_command_remove", {"name": command_name})
+            "on_command_remove", {"doc": doc, "name": command_name})
         self.logger.info(f"Removed command {command_name}")
 
     async def process_commands(self, ws, data: dict):
