@@ -650,8 +650,9 @@ class Worker:
             イベントに渡すWebsocketGatewayです。
             デフォルトはDiscord用です。
         """
-        for coro in self.events.get(event_name, []):
-            asyncio.create_task(coro(data))
+        if self.loop.is_running():
+            for coro in self.events.get(event_name, []):
+                asyncio.create_task(coro(data))
 
     async def run_event_with_wait(self, event_name: str, data: dict, ws=None):
         """
@@ -834,7 +835,7 @@ class Worker:
         self.cogs[name] = cog_class
         # Cogにあるイベントなどのリストを全部追加する。
         # CogにあるイベントなどのリストはmetaclassのCogによって追加される。(rtutil/cog.py)
-        for name, data in cog_class.__coros.items():
+        for name, data in cog_class.coros.items():
             eval(f'self.add_{data["mode"]}(data["coro"], *data["args"], **data["kwargs"])')
         self.logger.info("Added cog " + name)
 
@@ -843,7 +844,7 @@ class Worker:
             coro, "__cog_name",
             "ThisIsNotCogYeahAndImTasuren_-"
         )
-        return cog_name == name:
+        return cog_name == name
 
     def remove_cog(self, name: str):
         """
