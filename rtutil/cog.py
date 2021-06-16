@@ -35,7 +35,20 @@ def _inject(attrs, worker):
 class Cog(type):
     def __new__(cls, name, bases, attrs):
         self = super().__new__(cls, name, bases, attrs)
-        self.attrs = attrs
+        # 追加するイベントなどの追加して欲しいもののリストを作る。
+        # 型はリストではなく辞書です。リストの方がわかりやすいからリストとかいた。
+        self.__coros = {}
+        for key, coro in attrs:
+            for check in ("event", "command", "route"):
+                k = getattr(coro, check, None)
+                if k:
+                    self.__coros[key] = {
+                        "args": k[0],
+                        "kwargs": k[1],
+                        "mode": check,
+                        "coro": coro
+                    }
+                    break
         return self
 
     @classmethod
@@ -43,34 +56,31 @@ class Cog(type):
         return __name__
 
     @classmethod
-    def listener(cls, name=None, **kwargs):
+    def listener(cls, *args, **kwargs):
         def decorator(function):
             if not asyncio.iscoroutinefunction(function):
                 raise TypeError("登録する関数はコルーチンにする必要があります。")
-            function.listener = (name if name else function.__name__,
-                                   kwargs)
+            function.event = (args, kwargs)
             function.__cog_name = cls.__name__
             return function
         return decorator
 
     @classmethod
-    def command(cls, command_name: str = None, **kwargs):
+    def command(cls, *args, **kwargs):
         def decorator(function):
             if not asyncio.iscoroutinefunction(function):
                 raise TypeError("登録する関数はコルーチンにする必要があります。")
-            function.command = (command_name
-                                  if command_name else function.__name__,
-                                  kwargs)
+            function.command = (args, kwargs)
             function.__cog_name = cls.__name__
             return function
         return decorator
 
     @classmethod
-    def route(cls, uri: str = "/", *args, **kwargs):
+    def route(cls, *args, **kwargs):
         def decorator(function):
             if not asyncio.iscoroutinefunction(function):
                 raise TypeError("登録する関数はコルーチンにする必要があります。")
-            function.route = (uri, args, kwargs)
+            function.route = (args, kwargs)
             function.__cog_name = cls.__name__
             return function
         return decorator

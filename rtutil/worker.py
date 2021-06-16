@@ -832,7 +832,18 @@ class Worker:
         # コグを追加する。
         name = cog_class.__class__.__name__
         self.cogs[name] = cog_class
+        # Cogにあるイベントなどのリストを全部追加する。
+        # CogにあるイベントなどのリストはmetaclassのCogによって追加される。(rtutil/cog.py)
+        for name, data in cog_class.__coros.items():
+            eval(f'self.add_{data["mode"]}(data["coro"], *data["args"], **data["kwargs"])')
         self.logger.info("Added cog " + name)
+
+    def _cog_name_check(self, coro, name: str) -> bool:
+        cog_name = getattr(
+            coro, "__cog_name",
+            "ThisIsNotCogYeahAndImTasuren_-"
+        )
+        return cog_name == name:
 
     def remove_cog(self, name: str):
         """
@@ -849,16 +860,25 @@ class Worker:
             コグが見つからない場合発生します。
         """
         # コグを削除する。
-        # この時コグで登録されたコマンドを削除しておく。
         if name in self.cogs:
+            # コグで追加されたコマンドを削除する。
             for command_name in self.commands:
-                cog_name = getattr(
-                    "__cog_name", "ThisIsNotCogYeahAndImTasuren_-")
-                if cog_name == name:
+                if self.cog_name_check(self.commands[command_name], name):
                     self.remove_command(command_name)
+            # コグで追加されたイベントを削除する。
+            for event_name in self.events:
+                for coro in self.events[event_name]:
+                    if sefl.cog_name_check(coro, name):
+                        self.remove_event(coro, event_name)
+            # コグで追加されたルーティングを削除する。
+            for uri in self.routes:
+                if self.cog_name_check(self.routes[uri], name):
+                    self.remove_route(uri)
+            # コグがアンロード時に呼び出して欲しい関数`cog_unload`があるなら呼び出す。
             cog_unload = getattr(self.cogs[name], "cog_unload", None)
             if cog_unload:
                 cog_unload()
+            # コグを削除する。
             del self.cogs[name]
             self.logger.info("Removed cog " + name)
         else:
