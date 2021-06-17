@@ -4,21 +4,22 @@ from typing import Tuple, Callable
 import rtutil, discord
 
 
-class Help(metaclass=rtutil.Cog):
-    CHECK_LIST = ("Parameters", "Returns", "Examples")
-    CATEGORIES = {
-        "bot": "Bot関連",
-        "server-tool": "サーバー(ツール)",
-        "server-panel": "サーバー(パネル)",
-        "server-safety": "サーバー(安全)",
-        "server-useful": "サーバー(便利)",
-        "individual": "個人",
-        "entertainment": "娯楽",
-        "chplugin": "チャンネルプラグイン",
-        "mybot": "MyBot",
-        "other": "その他"
-    }
+CHECK_LIST = ("Parameters", "Returns", "Examples")
+CATEGORIES = {
+    "bot": "Bot関連",
+    "server-tool": "サーバー(ツール)",
+    "server-panel": "サーバー(パネル)",
+    "server-safety": "サーバー(安全)",
+    "server-useful": "サーバー(便利)",
+    "individual": "個人",
+    "entertainment": "娯楽",
+    "chplugin": "チャンネルプラグイン",
+    "mybot": "MyBot",
+    "other": "その他"
+}
 
+
+class Help(metaclass=rtutil.Cog):
     def __init__(self, worker):
         self.worker = worker
         self.data = {}
@@ -28,16 +29,26 @@ class Help(metaclass=rtutil.Cog):
         """ドキュメンテーションを分けます。
         コマンドの関数についているドキュメンテーションをカテゴリーと見出しと説明に分解して返します。
         """
-        splited = doc.splitlines()
-        category = splited[0]
-        heading = splited[1]
+        splited = doc[:doc.find("\n")].split(",")
+        category = splited[0] if splited else "その他"
+        heading = splited[1] if len(splited) > 1 else ""
         description = doc.replace(category + "\n", "").replace(heading + "\n", "")
-        return category, heading, description
+        new_description = ""
+        for line in description.splitlines():
+            if line.startswith("    "):
+                e = 4
+            elif line.startswith("  "):
+                e = 2
+            elif line.startswith("\t"):
+                e = 1
+            else:
+                continue
+            new_description += line[e:] + "\n"
+        return category, heading, new_description[:-1]
 
     @rtutil.Cog.listener()
-    async def on_command_add(self, cmd):
+    def on_command_add(self, cmd):
         # コマンドのヘルプを取り出してヘルプに追加する。
-        print("wow")
         if cmd["coro"].__doc__:
             category, heading, description = self.parse(cmd["coro"].__doc__)
             if category not in self.data:
@@ -46,9 +57,10 @@ class Help(metaclass=rtutil.Cog):
             name = cmd["name"] + " " + heading
             self.numbers[index] = name
             self.data[category][index] = [name, description]
+            print(self.data)
 
     @rtutil.Cog.listener()
-    async def on_command_remove(self, cmd):
+    def on_command_remove(self, cmd):
         if cmd["doc"]:
             category, heading, _ = self.parse(cmd["doc"])
             name = cmd["name"] + " " + heading
@@ -60,10 +72,10 @@ class Help(metaclass=rtutil.Cog):
         if group_name in CATEGORIES:
             group_name = CATEGORIES[group_name]
             data["title"] = group_name
-            data = self.data[group_name]
+            data.update(self.data[group_name])
         else:
             data["status"] = "Not found"
-        return worker.web("json", data)
+        return self.worker.web("json", data)
 
     @rtutil.Cog.route("/help/<group_name>/<command_name>")
     async def help_web_detail(self, data: dict, group_name: str, command_name):
@@ -73,11 +85,11 @@ class Help(metaclass=rtutil.Cog):
             data["content"] = self.data[group_name][self.numbers[command_name]]
         else:
             data["status"] = "Not found"
-        return worker.web("json", data)
+        return self.worker.web("json", data)
 
     @rtutil.Cog.command()
     async def help(self, data, ctx):
-        """
+        """Bot関連,Helpを表示します。
         Helpコマンドです。
         RTにあるコマンドを表示します。
         # 使用方法

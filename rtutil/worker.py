@@ -21,6 +21,9 @@ def if_connected(function):
     return _function
 
 
+NOT_COROUTINE_EVENTS = ("on_command_add", "on_command_remove")
+
+
 class Worker:
     """
     Workerのインスタンスを作成します。
@@ -184,11 +187,11 @@ class Worker:
                     # イベントを実行する。実行結果はコールバックに記載する。
                     try:
                         self.web_logger.info("  Received event!")
-                        self.web_logger.info("  Sending callback.")
                         callback = {
                             "type": "end",
-                            "data": await self.run_route(data["type"], data)
+                            "data": await self.run_route(data["data"]["uri"], data)
                         }
+                        self.web_logger.info("  Sending callback.")
                     except Exception:
                         # エラーが発生した場合はエラー内容をコールバックに記載する。。
                         callback = {
@@ -231,19 +234,18 @@ class Worker:
             args, kwargs, ok = [], {}, True
             for value in key.split("/"):
                 if value:
+                    try:
+                        now = next(splited)
+                    except StopIteration:
+                        ok = False
+                        break
                     if value[0] == "<" and value[-1] == ">":
                         # もし<>に囲まれているならその部分を引数に追加する。
-                        args.append(value[1:-1])
-                    elif value[0] == "?":
-                        # クエリパラメータをキーワード引数に入れる。
-                        i = value.find("=")
-                        kwargs[value[1:i]] = value[i + 1:]
-                    elif not value == next(splited):
+                        args.append(now)
+                    elif value != now:
                         # 一致しないところがあるならルーティングが違うということでやめる。
                         ok = False
                         break
-                else:
-                    break
             if ok:
                 return await self.routes[key](data, *args)
         return None
@@ -602,9 +604,12 @@ class Worker:
             登録しようとしているイベントがコルーチン出ない場合発生します。
         """
         # イベント登録用の関数。
-        if not asyncio.iscoroutinefunction(coro):
-            raise TypeError("登録するイベントはコルーチンである必要があります。")
         event_name = event_name if event_name else coro.__name__
+        if asyncio.iscoroutinefunction(coro):
+            if event_name in NOT_COROUTINE_EVENTS:
+                raise TypeError("rtutil.NOT_COROUTINE_EVENTSにあるイベントはコルーチンである必要があります。")
+        elif event_name not in NOT_COROUTINE_EVENTS:
+            raise TypeError("登録するイベントはコルーチンである必要があります。")
         if event_name not in self.events:
             self.events[event_name] = []
         self.events[event_name].append(coro)
@@ -623,9 +628,11 @@ class Worker:
             削除しようとしているイベントがコルーチン出ない場合発生します。
         """
         # イベント削除用の関数。
-        if not asyncio.iscoroutinefunction(coro):
-            raise TypeError("削除するイベントはコルーチンである必要があります。")
         event_name = event_name if event_name else coro.__name__
+        if asyncio.iscoroutinefunction(coro) and event_name in NOT_COROUTINE_EVENTS:
+            raise TypeError("rtutil.NOT_COROUTINE_EVENTSにあるイベントはコルーチンである必要があります。")
+        else:
+            raise TypeError("削除するイベントはコルーチンである必要があります。")
         if event_name in self.events:
             i = -1
             for check_coro in self.events[event_name]:
@@ -650,9 +657,18 @@ class Worker:
             イベントに渡すWebsocketGatewayです。
             デフォルトはDiscord用です。
         """
-        if self.loop.is_running():
-            for coro in self.events.get(event_name, []):
-                asyncio.create_task(coro(data))
+        for coro in self.events.get(event_name, []):
+            if self.loop.is_running():
+                if asyncio.iscoroutinefunction(coro):
+                    asyncio.create_task(coro(data))
+                else:
+                    raise RuntimeError("イベントはコルーチンである必要があります。")
+            elif event_name in NOT_COROUTINE_EVENTS:
+                if asyncio.iscoroutinefunction(coro):
+                    raise RuntimeError(
+                        "rtutil.NOT_COROUTINE_EVENTSにあるイベントはコルーチンではない必要があります。")
+                else:
+                    coro(data)
 
     async def run_event_with_wait(self, event_name: str, data: dict, ws=None):
         """

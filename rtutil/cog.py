@@ -1,6 +1,31 @@
 # RT - Cog
 
 import asyncio
+from .worker import NOT_COROUTINE_EVENTS
+
+
+def make_decorator(cls, mode, args, kwargs):
+    def decorator(function):
+        if asyncio.iscoroutinefunction(function):
+            if mode == "event":
+                en = args[0] if args else function.__name__
+                if en in NOT_COROUTINE_EVENTS:
+                    raise TypeError(
+                        "rtutil.NOT_COROUTINE_EVENTSにあるイベントはコルーチンである必要があります。")
+        else:
+            if mode == "event":
+                en = args[0] if args else function.__name__
+                if en not in NOT_COROUTINE_EVENTS:
+                    raise TypeError("登録する関数はコルーチンにする必要があります。")
+            else:
+                raise TypeError("登録する関数はコルーチンにする必要があります。")
+        exec(
+            "function." + mode + " = (args, kwargs)",
+            {"args": args, "kwargs": kwargs, "function": function}
+        )
+        function.__cog_name = cls.__name__
+        return function
+    return decorator
 
 
 class Cog(type):
@@ -36,30 +61,16 @@ class Cog(type):
 
     @classmethod
     def listener(cls, *args, **kwargs):
-        def decorator(function):
-            if not asyncio.iscoroutinefunction(function):
-                raise TypeError("登録する関数はコルーチンにする必要があります。")
-            function.event = (args, kwargs)
-            function.__cog_name = cls.__name__
-            return function
-        return decorator
+        return make_decorator(cls, "event", args, kwargs)
+
+    @classmethod
+    def event(cls, *args, **kwargs):
+        return make_decorator(cls, "event", args, kwargs)
 
     @classmethod
     def command(cls, *args, **kwargs):
-        def decorator(function):
-            if not asyncio.iscoroutinefunction(function):
-                raise TypeError("登録する関数はコルーチンにする必要があります。")
-            function.command = (args, kwargs)
-            function.__cog_name = cls.__name__
-            return function
-        return decorator
+        return make_decorator(cls, "command", args, kwargs)
 
     @classmethod
     def route(cls, *args, **kwargs):
-        def decorator(function):
-            if not asyncio.iscoroutinefunction(function):
-                raise TypeError("登録する関数はコルーチンにする必要があります。")
-            function.route = (args, kwargs)
-            function.__cog_name = cls.__name__
-            return function
-        return decorator
+        return make_decorator(cls, "route", args, kwargs)
