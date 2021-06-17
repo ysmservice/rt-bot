@@ -53,7 +53,7 @@ class Converter:
     def added_coro(self):
         # コンバーターを設定したコルーチンを返す。
         return self._coro(
-            self.data, self.ctx, *self.args, **self.kwargs)
+            self.ws, self.data, self.ctx, *self.args, **self.kwargs)
 
     async def convert(self, data, ctx, arg, target_type):
         # コンバーターの変換するための関数。

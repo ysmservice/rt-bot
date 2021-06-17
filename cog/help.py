@@ -55,7 +55,7 @@ class Help(metaclass=rtutil.Cog):
                 self.data[category] = {}
             index = len(self.data[category]) + 1
             name = cmd["name"] + " " + heading
-            self.numbers[index] = name
+            self.numbers[name] = index
             self.data[category][index] = [name, description]
             print(self.data)
 
@@ -78,7 +78,7 @@ class Help(metaclass=rtutil.Cog):
         return self.worker.web("json", data)
 
     @rtutil.Cog.route("/help/<group_name>/<command_name>")
-    async def help_web_detail(self, data: dict, group_name: str, command_name):
+    async def help_web_detail(self, data: dict, group_name: str, command_name: str):
         data = {"status": "ok", "g-title": None, "content": None}
         if group_name in CATEGORIES:
             group_name = CATEGORIES[group_name]
