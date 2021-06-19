@@ -3,8 +3,10 @@
 from websockets import connect, exceptions as websockets_exceptions
 from typing import Union, Tuple, List
 from importlib import import_module
+from urllib.parse import unquote
 from traceback import format_exc
 from ujson import loads, dumps
+from copy import deepcopy
 import logging
 import asyncio
 
@@ -19,6 +21,9 @@ def if_connected(function):
         else:
             raise NotConnected("まだWebSocketに接続できていないので処理を実行できません。")
     return _function
+
+
+NOT_COROUTINE_EVENTS = ("on_command_add", "on_command_remove")
 
 
 class Worker:
@@ -183,12 +188,12 @@ class Worker:
                     data = loads(await ws.recv())
                     # イベントを実行する。実行結果はコールバックに記載する。
                     try:
-                        self.web_logger.info(
-                            "  Received event!\n  Sending callback.")
+                        self.web_logger.info("  Received event!")
                         callback = {
                             "type": "end",
-                            "data": await self.run_route(data["type"], data)
+                            "data": await self.run_route(data["data"]["uri"], data)
                         }
+                        self.web_logger.info("  Sending callback.")
                     except Exception:
                         # エラーが発生した場合はエラー内容をコールバックに記載する。。
                         callback = {
@@ -227,27 +232,44 @@ class Worker:
         """
         # 一致するルーティングを探す。
         splited = iter(uri.split("/"))
+        will_do, will_args = "", []
         for key in self.routes:
+            # 一つづつ登録されているルーティングをひとつづつ現在のルーティングと比べる。
+            now_splited = deepcopy(splited)
             args, kwargs, ok = [], {}, True
-            self.web_logger.debug("~ " + key + " ~")
-            for value in key.split("/"):
+            now_key = key.split("/")
+            before = will_do
+            # 実行予定にあらかじめ現在チェックしている登録済みのルーティングのuriを設定しておく。
+            # もしチェックしたルーティングが違う場合はこのwill_doは以前までwill_doに入っていたものを入れる。
+            # 下では途中まで同じuriが出たときのバグに対処するために実行予定より長いuriだった場合のみ実行予定に入れる。
+            if len(key) > len(will_do):
+                will_do = key
+            else:
+                continue
+            # 引数を追加したりルーティングが違うなら実行予定のルーティングを変更したりする。
+            for value in now_key:
                 if value:
+                    try:
+                        now = next(now_splited)
+                    except StopIteration:
+                        will_do = before
+                        break
                     if value[0] == "<" and value[-1] == ">":
                         # もし<>に囲まれているならその部分を引数に追加する。
-                        args.append(value[1:-1])
-                    elif value[0] == "?":
-                        # クエリパラメータをキーワード引数に入れる。
-                        i = value.find("=")
-                        kwargs[value[1:i]] = value[i + 1:]
-                    elif not value == next(splited):
-                        # 一致しないところがあるならルーティングが違うということでやめる。
-                        ok = False
-                        break
-                else:
-                    break
-            if ok:
-                return await self.routes[key](data, *args)
-        return None
+                        args.append(now)
+                    elif value != now:
+                        # もしルーティングが今調べているものと違うならwill_doを前のものに変える。
+                        will_do = before
+            # もしルーティングが登録されているルーティングと一致する場合は引数を登録しておく。
+            if will_do != before:
+                will_args = args
+            # 引数をリセットする。
+            args = []
+        # 実行予定が空出ない場合はルーティングを実行する。
+        if will_do:
+            return await self.routes[will_do](data, *map(unquote, will_args))
+        else:
+            return None
 
     def route(self, coro, uri: str = "/"):
         """
@@ -283,6 +305,7 @@ class Worker:
             ルーティングで設定するuriです。
         """
         self.routes[uri] = coro
+        self.logger.info("Added route " + uri)
 
     def remove_route(self, uri: str):
         """
@@ -294,6 +317,7 @@ class Worker:
             削除するルーティングのuriです。
         """
         del self.routes[uri]
+        self.logger.info("Removed route " + uri)
 
     def web(self, event_type: str, *args: tuple, **kwargs: dict) -> dict:
         """
@@ -601,9 +625,12 @@ class Worker:
             登録しようとしているイベントがコルーチン出ない場合発生します。
         """
         # イベント登録用の関数。
-        if not asyncio.iscoroutinefunction(coro):
-            raise TypeError("登録するイベントはコルーチンである必要があります。")
         event_name = event_name if event_name else coro.__name__
+        if asyncio.iscoroutinefunction(coro):
+            if event_name in NOT_COROUTINE_EVENTS:
+                raise TypeError("rtutil.NOT_COROUTINE_EVENTSにあるイベントはコルーチンである必要があります。")
+        elif event_name not in NOT_COROUTINE_EVENTS:
+            raise TypeError("登録するイベントはコルーチンである必要があります。")
         if event_name not in self.events:
             self.events[event_name] = []
         self.events[event_name].append(coro)
@@ -622,9 +649,11 @@ class Worker:
             削除しようとしているイベントがコルーチン出ない場合発生します。
         """
         # イベント削除用の関数。
-        if not asyncio.iscoroutinefunction(coro):
-            raise TypeError("削除するイベントはコルーチンである必要があります。")
         event_name = event_name if event_name else coro.__name__
+        if asyncio.iscoroutinefunction(coro) and event_name in NOT_COROUTINE_EVENTS:
+            raise TypeError("rtutil.NOT_COROUTINE_EVENTSにあるイベントはコルーチンである必要があります。")
+        else:
+            raise TypeError("削除するイベントはコルーチンである必要があります。")
         if event_name in self.events:
             i = -1
             for check_coro in self.events[event_name]:
@@ -650,7 +679,17 @@ class Worker:
             デフォルトはDiscord用です。
         """
         for coro in self.events.get(event_name, []):
-            asyncio.create_task(coro(ws if ws else self.ws, data))
+            if self.loop.is_running():
+                if asyncio.iscoroutinefunction(coro):
+                    asyncio.create_task(coro(data))
+                else:
+                    raise RuntimeError("イベントはコルーチンである必要があります。")
+            elif event_name in NOT_COROUTINE_EVENTS:
+                if asyncio.iscoroutinefunction(coro):
+                    raise RuntimeError(
+                        "rtutil.NOT_COROUTINE_EVENTSにあるイベントはコルーチンではない必要があります。")
+                else:
+                    coro(data)
 
     async def run_event_with_wait(self, event_name: str, data: dict, ws=None):
         """
@@ -745,9 +784,10 @@ class Worker:
         # コマンド削除用の関数。
         if asyncio.iscoroutine(command_name):
             command_name = command_name.__name__
+        doc = self.commands[command_name].__doc__
         del self.commands[command_name]
         self.run_event(
-            "on_command_remove", {"name": command_name})
+            "on_command_remove", {"doc": doc, "name": command_name})
         self.logger.info(f"Removed command {command_name}")
 
     async def process_commands(self, ws, data: dict):
@@ -830,7 +870,18 @@ class Worker:
         # コグを追加する。
         name = cog_class.__class__.__name__
         self.cogs[name] = cog_class
+        # Cogにあるイベントなどのリストを全部追加する。
+        # CogにあるイベントなどのリストはmetaclassのCogによって追加される。(rtutil/cog.py)
+        for name, data in cog_class.coros.items():
+            eval(f'self.add_{data["mode"]}(data["coro"], *data["args"], **data["kwargs"])')
         self.logger.info("Added cog " + name)
+
+    def _cog_name_check(self, coro, name: str) -> bool:
+        cog_name = getattr(
+            coro, "__cog_name",
+            "ThisIsNotCogYeahAndImTasuren_-"
+        )
+        return cog_name == name
 
     def remove_cog(self, name: str):
         """
@@ -847,16 +898,25 @@ class Worker:
             コグが見つからない場合発生します。
         """
         # コグを削除する。
-        # この時コグで登録されたコマンドを削除しておく。
         if name in self.cogs:
+            # コグで追加されたコマンドを削除する。
             for command_name in self.commands:
-                cog_name = getattr(
-                    "__cog_name", "ThisIsNotCogYeahAndImTasuren_-")
-                if cog_name == name:
+                if self.cog_name_check(self.commands[command_name], name):
                     self.remove_command(command_name)
+            # コグで追加されたイベントを削除する。
+            for event_name in self.events:
+                for coro in self.events[event_name]:
+                    if sefl.cog_name_check(coro, name):
+                        self.remove_event(coro, event_name)
+            # コグで追加されたルーティングを削除する。
+            for uri in self.routes:
+                if self.cog_name_check(self.routes[uri], name):
+                    self.remove_route(uri)
+            # コグがアンロード時に呼び出して欲しい関数`cog_unload`があるなら呼び出す。
             cog_unload = getattr(self.cogs[name], "cog_unload", None)
             if cog_unload:
                 cog_unload()
+            # コグを削除する。
             del self.cogs[name]
             self.logger.info("Removed cog " + name)
         else:

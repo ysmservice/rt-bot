@@ -1,5 +1,6 @@
 # RT - Worker Program
 
+from ujson import load
 import logging
 import rtutil
 
@@ -12,17 +13,14 @@ else:
 
 
 worker = rtutil.Worker(prefixes, logging_level=logging.DEBUG)
+worker.load_extension("cog.help")
 
 
-@worker.command()
-async def test(ws, data, ctx):
-    print(data["content"])
+with open("data.json", "r") as f:
+    worker.data = load(f)
+worker.colors = {
+	key: eval(worker.data["colors"][key]) for key in worker.data["colors"]
+}
 
 
-@worker.route("/api/check")
-async def testweb(data):
-    data = worker.web("json", {"status": "ok"})
-    return data
-
-
-worker.run(web=True, web_ws_url="ws://localhost:8080/webserver")
+worker.run(web=True, web_ws_url="ws://localhost:5000/webserver")
