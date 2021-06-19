@@ -3,8 +3,10 @@
 from websockets import connect, exceptions as websockets_exceptions
 from typing import Union, Tuple, List
 from importlib import import_module
+from urllib.parse import unquote
 from traceback import format_exc
 from ujson import loads, dumps
+from copy import deepcopy
 import logging
 import asyncio
 
@@ -230,25 +232,44 @@ class Worker:
         """
         # 一致するルーティングを探す。
         splited = iter(uri.split("/"))
+        will_do, will_args = "", []
         for key in self.routes:
+            # 一つづつ登録されているルーティングをひとつづつ現在のルーティングと比べる。
+            now_splited = deepcopy(splited)
             args, kwargs, ok = [], {}, True
-            for value in key.split("/"):
+            now_key = key.split("/")
+            before = will_do
+            # 実行予定にあらかじめ現在チェックしている登録済みのルーティングのuriを設定しておく。
+            # もしチェックしたルーティングが違う場合はこのwill_doは以前までwill_doに入っていたものを入れる。
+            # 下では途中まで同じuriが出たときのバグに対処するために実行予定より長いuriだった場合のみ実行予定に入れる。
+            if len(key) > len(will_do):
+                will_do = key
+            else:
+                continue
+            # 引数を追加したりルーティングが違うなら実行予定のルーティングを変更したりする。
+            for value in now_key:
                 if value:
                     try:
-                        now = next(splited)
+                        now = next(now_splited)
                     except StopIteration:
-                        ok = False
+                        will_do = before
                         break
                     if value[0] == "<" and value[-1] == ">":
                         # もし<>に囲まれているならその部分を引数に追加する。
                         args.append(now)
                     elif value != now:
-                        # 一致しないところがあるならルーティングが違うということでやめる。
-                        ok = False
-                        break
-            if ok:
-                return await self.routes[key](data, *args)
-        return None
+                        # もしルーティングが今調べているものと違うならwill_doを前のものに変える。
+                        will_do = before
+            # もしルーティングが登録されているルーティングと一致する場合は引数を登録しておく。
+            if will_do != before:
+                will_args = args
+            # 引数をリセットする。
+            args = []
+        # 実行予定が空出ない場合はルーティングを実行する。
+        if will_do:
+            return await self.routes[will_do](data, *map(unquote, will_args))
+        else:
+            return None
 
     def route(self, coro, uri: str = "/"):
         """
