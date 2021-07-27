@@ -1,6 +1,7 @@
 __pycache__
 *.md
 *.json
+*.secret
 *.crt
 *.key
 *.sublime-project
