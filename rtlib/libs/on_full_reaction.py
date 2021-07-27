@@ -8,17 +8,34 @@ import asyncio
 
 
 class OnFullReactionAddRemove(commands.Cog):
-    """Backendで使うことのできる拡張コグの一つです。
-    `on_raw_reaction_add/remove`と`on_reaction_add/remove`の合成版を作るためのコグ。
-    `on_raw_reaction_add/remove`だとメッセージオブジェクトがないため毎回取得する必要がある。
-    `on_reaction_add/remove`だとメッセージオブジェクトがあるが古いメッセージだと呼ばれない。
-    これを両方使うのは非常にめんどくさいそしてrawに関しては毎回メッセージを取得する必要がある。
-    これを解決するためのものがこのコグです。
-    このコグは`rtlib.Backend.rtlibs`のリストに`on_full_reaction`の文字列を追加することで有効になる。
-    このコグを有効にすると`on_full_reaction_add/remove`のイベントが使えるようになる。
-    これは`discord.RawReactionActionEvent`にメッセージであるmessageを追加したものが引数で渡される。
-    そしてadd/remove関係なくアクションをしたmemberが使用できます。"""
-    def __init__(self, bot, timeout: float = 0.01):
+    """`on_raw_reaction_add/remove`と`on_reaction_add/remove`の合成版を作るためのコグ。  
+    `on_raw_reaction_add/remove`だとメッセージオブジェクトがないため毎回取得する必要がある。  
+    `on_reaction_add/remove`だとメッセージオブジェクトがあるが古いメッセージだと呼ばれない。  
+    これを両方使うのは非常にめんどくさいそしてrawに関しては毎回メッセージを取得する必要がある。  
+    これを解決するためのものがこのコグです。  
+    このコグは`rtlib.Backend.rtlibs`のリストに`on_full_reaction`の文字列を追加することで有効になります。  
+    そしてこのコグを有効にすると`on_full_reaction_add/remove`のイベントが使えるようになります。  
+    これは`discord.RawReactionActionEvent`にメッセージであるmessageを追加したものが引数で渡されます。  
+    そしてadd/remove関係なくアクションをしたmemberが使用できます。
+    
+    Examples
+    --------
+    # 定義時にキーワード引数であるon_init_botに渡す関数。
+    def on_init_bot(bot):
+        # rtlib.libsのon_full_reactionを有効にする。
+        bot.rtlibs.append("on_full_reaction")
+
+        @bot.event
+        async def on_full_reaction_add(payload):
+            print(payload.message)
+
+    Notes
+    -----
+    この拡張コグにはキーワード引数として`timeout`を渡すことができます。  
+    これは`on_reaction_add/remove`が来るまでどれだけ待機するかです。  
+    デフォルトでは`0.025`となっています。  
+    引数の渡し方についてはrtlib.libsの説明を参照してください。""" # noqa
+    def __init__(self, bot, timeout: float = 0.025):
         self.bot, self.timeout = bot, timeout
         self.cache, self.reactions = {}, {}
         self.cache_killer.start()
@@ -58,7 +75,8 @@ class OnFullReactionAddRemove(commands.Cog):
 
     def make_key(self, message_id: int, channel_id: int, guild_id: int,
                  emoji: discord.PartialEmoji, user_id: int, event: str) -> str:
-        return f"{message_id}.{channel_id}.{guild_id}.{emoji}.{user_id}.{event}"
+        return (f"{message_id}.{channel_id}.{guild_id}.{emoji}.{user_id}."
+                + event)
 
     @commands.Cog.listener()
     async def on_reaction_add(self, r, u):
@@ -75,7 +93,8 @@ class OnFullReactionAddRemove(commands.Cog):
         # ここで見つからなかったら自分で作る。
         # `asyncio.Event.set`を実行した後は一緒に取得できたものを入れておく。
         key = self.make_key(reaction.message.id, reaction.message.channel.id,
-                            reaction.message.guild.id if reaction.message.guild else 0,
+                            reaction.message.guild.id
+                            if reaction.message.guild else 0,
                             reaction.emoji, user.id, event)
         if key in self.reactions:
             self.reactions[key][1] = [reaction, user]
@@ -99,19 +118,23 @@ class OnFullReactionAddRemove(commands.Cog):
         # もしリ`on_reaction_addremove`が呼ばれるならwaitはその時点で終わる。
         error = False
         try:
-            await asyncio.wait_for(self.reactions[key][0].wait(), timeout=self.timeout)
+            await asyncio.wait_for(self.reactions[key][0].wait(),
+                                   timeout=self.timeout)
         except asyncio.TimeoutError:
             # もし`self.on_reaction_addremove`が呼ばれなかった場合は自分でmessageを取得する。
             # この時キャッシュにmessageが既にあるならそのキャッシュを使用する。
-            if (cache:=self.cache.get(payload.message_id)) is None:
+            if (cache := self.cache.get(payload.message_id)) is None:
                 try:
-                    channel = (self.bot.get_channel(payload.channel_id) if payload.guild_id
+                    channel = (self.bot.get_channel(payload.channel_id)
+                               if payload.guild_id
                                else self.bot.get_user(payload.user_id))
-                    cache = [await channel.fetch_message(payload.message_id), time() + 60]
+                    cache = [await channel.fetch_message(payload.message_id),
+                             time() + 60]
                     self.cache[payload.message_id] = cache
-                    payload.member = (cache[0].guild.get_member(payload.user_id)
+                    payload.member = (cache[0].guild.get_member(
+                                        payload.user_id)
                                       if payload.guild_id else None)
-                except Exception as e:
+                except Exception:
                     # なんらかの理由でメッセーいなどを取得できなかったら諦める。
                     error = True
             if not error:
@@ -128,5 +151,4 @@ class OnFullReactionAddRemove(commands.Cog):
 
 
 def setup(bot, *args, **kwargs):
-    if "on_full_reaction_add/remove" in bot.rtlibs:
-        bot.add_cog(OnFullReactionAddRemove(bot, *args, **kwargs))
+    bot.add_cog(OnFullReactionAddRemove(bot, *args, **kwargs))

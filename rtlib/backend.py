@@ -1,18 +1,16 @@
 # rtlib - Backend
 
-from typing import Optional, Callable, Any, Tuple
+from typing import Optional, Callable, Any
 
 from discord.ext import commands
 from copy import copy
-import discord
-import asyncio
 import sanic
 
 from . import libs
 
 
 class Backend(commands.AutoShardedBot):
-    """`sanic.Sanic`と`discord.ext.commands.AutoShardedBot`をラップしたクラスです。  
+    """`sanic.Sanic`と`discord.ext.commands.AutoShardedBot` をラップしたクラスです。  
     `discord.ext.commands.AutoShardedBot`を継承しています。  
     sanicによるウェブサーバーとDiscordのBotを同時に手軽に動かすことができます。
 
@@ -37,9 +35,9 @@ class Backend(commands.AutoShardedBot):
     ----------
     web : sanic.Sanic
         `sanic.Sanic`のインスタンス、ウェブサーバーです。 
-    rtlib : list
+    rtlibs : List[str]
         rtlibが提供するBot作りに便利なものの中で使う物の名前を入れるリストです。  
-        リアクションイベント時にキャッシュにあるない問わず呼び出される`on_full_reaction_add`などがあります。
+        リアクションイベント時にキャッシュにあるない問わず呼び出される`on_full_reaction`などがあります。
 
     Examples
     --------
@@ -47,7 +45,7 @@ class Backend(commands.AutoShardedBot):
 
     def on_init(bot):
         bot.load_extension("cogs.music")
-        bot.rtlibs.append("on_full_reaction_add/remove")
+        bot.rtlibs.append("on_full_reaction")
 
         @bot.event
         async def on_full_reaction_add(payload):
@@ -55,11 +53,9 @@ class Backend(commands.AutoShardedBot):
 
     bot = rtlib.Backend(commands_prefix=">", on_init_bot=on_init)
 
-    bot.run("TOKEN")"""
-
-    RTLIBS: Tuple[str] = ("on_full_reaction",)
-
-    def __init__(self, *args, on_init_bot: Callable[[object], Any] = lambda bot:None,
+    bot.run("TOKEN")""" # noqa
+    def __init__(self, *args, on_init_bot: Callable[
+                    [object], Any] = lambda bot: None,
                  name: str = "rt.backend", log: bool = True, **kwargs):
         self._on_init_bot: Callable[[object], Any] = on_init_bot
         self.name: str = name
@@ -73,8 +69,10 @@ class Backend(commands.AutoShardedBot):
         self.__args, self.__kwargs = args, kwargs
 
         # Routeなど色々セットアップする。
-        self.web.register_listener(self._before_server_stop, "before_server_stop")
-        self.web.register_listener(self._after_server_start, "after_server_start")
+        self.web.register_listener(self._before_server_stop,
+                                   "before_server_stop")
+        self.web.register_listener(self._after_server_start,
+                                   "after_server_start")
         self.web.add_route(self._hello_route, "/hello")
 
         self.rtlibs: list = []
@@ -88,7 +86,7 @@ class Backend(commands.AutoShardedBot):
             `print`に渡す引数です。
         title : Optional[str], default None
             ログのタイトルです。  
-            デフォルトはBackendの定義時に引数であるnameに渡した文字列が使用されます。"""
+            デフォルトはBackendの定義時に引数であるnameに渡した文字列が使用されます。""" # noqa
         if self.log:
             if title is None:
                 title = self.name
@@ -107,8 +105,9 @@ class Backend(commands.AutoShardedBot):
         self.add_listener(self._on_ready, "on_ready")
         self._on_init_bot(self)
         # rtlib.libsの読み込みをする。
-        for setup_name in self.RTLIBS:
-            data: dict = getattr(self, f"_rtlibs_", {"args": [], "kwargs": {}})
+        for setup_name in self.rtlibs:
+            data: dict = getattr(self, f"_rtlibs_{setup_name}",
+                                 {"args": [], "kwargs": {}})
             getattr(libs, setup_name)(self, *data["args"], **data["kwargs"])
         # Botに接続する。
         loop.create_task(self.start(self.__token, reconnect=self.__reconnect))
@@ -149,7 +148,7 @@ class Backend(commands.AutoShardedBot):
         reconnect : bool, default True
             接続したBotから切断された際に再接続をするかどうかです。
         **kwargs
-            `sanic.Sanic.run`に渡すキーワード引数です。"""
+            `sanic.Sanic.run`に渡すキーワード引数です。""" # noqa
         self.__token, self.__reconnect = token, reconnect
         self.print("Connecting to discord and running sanic...")
         self.web.run(*args, **kwargs)
