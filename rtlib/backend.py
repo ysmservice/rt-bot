@@ -1,12 +1,14 @@
 # rtlib - Backend
 
-from typing import Optional, Callable, Any
+from typing import Optional, Callable, Any, Tuple
 
 from discord.ext import commands
 from copy import copy
 import discord
 import asyncio
 import sanic
+
+from . import libs
 
 
 class Backend(commands.AutoShardedBot):
@@ -31,16 +33,32 @@ class Backend(commands.AutoShardedBot):
     **kwargs
         `discord.ext.commands.AutoShardedBot`に渡すキーワード引数です。
 
+    Attributes
+    ----------
+    web : sanic.Sanic
+        `sanic.Sanic`のインスタンス、ウェブサーバーです。 
+    rtlib : list
+        rtlibが提供するBot作りに便利なものの中で使う物の名前を入れるリストです。  
+        リアクションイベント時にキャッシュにあるない問わず呼び出される`on_full_reaction_add`などがあります。
+
     Examples
     --------
     import rtlib
 
     def on_init(bot):
         bot.load_extension("cogs.music")
+        bot.rtlibs.append("on_full_reaction_add/remove")
+
+        @bot.event
+        async def on_full_reaction_add(payload):
+           print(payload.message.content)
 
     bot = rtlib.Backend(commands_prefix=">", on_init_bot=on_init)
 
     bot.run("TOKEN")"""
+
+    RTLIBS: Tuple[str] = ("on_full_reaction",)
+
     def __init__(self, *args, on_init_bot: Callable[[object], Any] = lambda bot:None,
                  name: str = "rt.backend", log: bool = True, **kwargs):
         self._on_init_bot: Callable[[object], Any] = on_init_bot
@@ -57,7 +75,9 @@ class Backend(commands.AutoShardedBot):
         # Routeなど色々セットアップする。
         self.web.register_listener(self._before_server_stop, "before_server_stop")
         self.web.register_listener(self._after_server_start, "after_server_start")
-        self.web.add_route(self._hello, "/hello")
+        self.web.add_route(self._hello_route, "/hello")
+
+        self.rtlibs: list = []
 
     def print(self, *args, title: Optional[str] = None, **kwargs) -> None:
         """簡単にログ出力をするためのもの。
@@ -84,12 +104,38 @@ class Backend(commands.AutoShardedBot):
         # discord.pyをセットアップする。
         self.__kwargs["loop"] = loop
         super().__init__(*self.__args, **self.__kwargs)
-        self._on_init_bot(self)
         self.add_listener(self._on_ready, "on_ready")
+        self._on_init_bot(self)
+        # rtlib.libsの読み込みをする。
+        for setup_name in self.RTLIBS:
+            data: dict = getattr(self, f"_rtlibs_", {"args": [], "kwargs": {}})
+            getattr(libs, setup_name)(self, *data["args"], **data["kwargs"])
+        # Botに接続する。
         loop.create_task(self.start(self.__token, reconnect=self.__reconnect))
 
-    async def _hello(self, request):
-        return sanic.response.text("Hi")
+    async def _hello_route(self, _):
+        return sanic.response.text("Hi, I'm" + self.user.name + ".")
+
+    def args(self, *args, **kwargs) -> dict:
+        """rtlib.libsの読み込みで渡す引数を簡単に作るための関数です。
+
+        Parameters
+        ----------
+        *args
+            引数。
+        **kwargs
+            キーワード引数。
+
+        Returns
+        -------
+        args : Dict[Union[list, Dict[str, Any]]]
+            `{"args": args, "kwargs": kwargs}`の形式で渡されます。
+
+        Examples
+        --------
+        # rtlib.libsのon_full_reactionに渡すキーワード引数としてtimeoutを追加する。
+        bot._rtlibs_on_full_reaction = bot.args(timeout=0.01)"""
+        return {"args": args, "kwargs": kwargs}
 
     def run(self, token: str, *args, reconnect: bool = True, **kwargs) -> None:
         """BackendをDiscordに接続させて動かします。
