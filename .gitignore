@@ -1,11 +1,12 @@
 __pycache__
 *.md
-*.json
 *.secret
 *.crt
 *.key
+*.save
 *.sublime-project
 *.sublime-workspace
+*.*~
 tmp
 log
 pypi
