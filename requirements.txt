@@ -1,6 +1,0 @@
-ujson
-discord.py
-websockets
-sanic
-jinja2
-flask-misaka
