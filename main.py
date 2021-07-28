@@ -20,7 +20,13 @@ prefixes = data["prefixes"][argv[1]]
 # Backendのセットアップをする。
 def on_init(bot):
     bot.load_extension("jishaku")
-    bot.rtlibs.append("on_full_reaction")
+    bot.load_extension("rtlib.libs.on_full_reaction")
+    bot.load_extension("rtlib.libs.on_command_add")
+
+
+    @bot.command()
+    async def test(ctx):
+        await ctx.reply("test")
 
 
 bot = rtlib.Backend(command_prefix=prefixes,

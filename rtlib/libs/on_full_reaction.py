@@ -1,4 +1,28 @@
-# rtlib.libs - Support on_full_reaction_add/remove
+"""新たに`on_full_reaction_add/remove`というイベントを追加するエクステンションです。  
+これをロードすると上に書いた通り`on_full_reaction_add/remove`のイベントを使用できるようになります。  
+このイベントはリアクションが何かしらのメッセージに付与された際に呼び出されます。  
+呼び出される際には引数として`discord.RawReactionActionEvent`を拡張したpayloadが渡されます。  
+`payload.message`のようにメッセージが追加されています。  
+このように`on_raw_reaction_add/remove`と`on_reaction_add/remove`を使い分ける必要がなくなります。  
+このエクステンションは`bot.load_extension("rtlib.libs.on_full_reaction")`で使えるようになります。
+
+Examples
+--------
+import rtlib
+
+# Backend(Bot)定義時に実行される関数。
+def on_init_bot(bot):
+    # rtlib.libs.on_full_reactionを読み込む。
+    bot.load_extension("rtlib.libs.on_full_reaction")
+
+bot.run("token")
+
+Notes
+-----
+このエクステンションには引数として`timeout`を渡すことができます。  
+これは`on_raw_reaction_add/remove`が呼び出された際に`on_reaction_add/remove`が呼び出されるまでどれだけ待つかです。  
+デフォルトは`0.025`です。`bot._rtlib_ofr_timeout = 0.05`のように設定することができます。  
+もし`on_full_reaction_add/remove`が呼び出されないまたはたまに呼び出されるなどの場合は、この引数に0.025以上の数字を設定してみてください。""" # noqa
 
 from discord.ext import commands, tasks
 import discord
@@ -8,22 +32,16 @@ import asyncio
 
 
 class OnFullReactionAddRemove(commands.Cog):
-    """`on_raw_reaction_add/remove`と`on_reaction_add/remove`の合成版を作るためのコグ。  
-    `on_raw_reaction_add/remove`だとメッセージオブジェクトがないため毎回取得する必要がある。  
-    `on_reaction_add/remove`だとメッセージオブジェクトがあるが古いメッセージだと呼ばれない。  
-    これを両方使うのは非常にめんどくさいそしてrawに関しては毎回メッセージを取得する必要がある。  
-    これを解決するためのものがこのコグです。  
-    このコグは`rtlib.Backend.rtlibs`のリストに`on_full_reaction`の文字列を追加することで有効になります。  
-    そしてこのコグを有効にすると`on_full_reaction_add/remove`のイベントが使えるようになります。  
-    これは`discord.RawReactionActionEvent`にメッセージであるmessageを追加したものが引数で渡されます。  
-    そしてadd/remove関係なくアクションをしたmemberが使用できます。
-    
+    """コグ
+
     Examples
     --------
+    import rtlib
+
     # 定義時にキーワード引数であるon_init_botに渡す関数。
     def on_init_bot(bot):
         # rtlib.libsのon_full_reactionを有効にする。
-        bot.rtlibs.append("on_full_reaction")
+        bot.load_extension("rtlib.libs.on_full_reaction")
 
         @bot.event
         async def on_full_reaction_add(payload):
@@ -31,10 +49,8 @@ class OnFullReactionAddRemove(commands.Cog):
 
     Notes
     -----
-    この拡張コグにはキーワード引数として`timeout`を渡すことができます。  
-    これは`on_reaction_add/remove`が来るまでどれだけ待機するかです。  
-    デフォルトでは`0.025`となっています。  
-    引数の渡し方についてはrtlib.libsの説明を参照してください。""" # noqa
+    このコグにはキーワード引数として`timeout`を渡すことができます。  
+    `bot._rtlib_ofr_timeout = 0.05`のようにすることで渡すことができます。""" # noqa
     def __init__(self, bot, timeout: float = 0.025):
         self.bot, self.timeout = bot, timeout
         self.cache, self.reactions = {}, {}
@@ -99,7 +115,7 @@ class OnFullReactionAddRemove(commands.Cog):
         if key in self.reactions:
             self.reactions[key][1] = [reaction, user]
         else:
-            self.reactions[key] = [asyncio.Event(), [reaction, user], time()]
+            self.reactions[key] = [asyncio.Event(), [reaction, user], time() + 3]
         self.reactions[key][0].set()
 
     async def on_raw_reaction_addremove(self, payload, event: str):
@@ -129,7 +145,7 @@ class OnFullReactionAddRemove(commands.Cog):
                                if payload.guild_id
                                else self.bot.get_user(payload.user_id))
                     cache = [await channel.fetch_message(payload.message_id),
-                             time() + 60]
+                             time() + 30]
                     self.cache[payload.message_id] = cache
                     payload.member = (cache[0].guild.get_member(
                                         payload.user_id)
@@ -150,5 +166,6 @@ class OnFullReactionAddRemove(commands.Cog):
                 self.bot.dispatch("full_reaction_" + event, payload)
 
 
-def setup(bot, *args, **kwargs):
-    bot.add_cog(OnFullReactionAddRemove(bot, *args, **kwargs))
+def setup(bot):
+    timeout = getattr(bot, "_rtlib_ofr_timeout", 0.025)
+    bot.add_cog(OnFullReactionAddRemove(bot, timeout=timeout))

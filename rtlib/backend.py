@@ -35,9 +35,6 @@ class Backend(commands.AutoShardedBot):
     ----------
     web : sanic.Sanic
         `sanic.Sanic`のインスタンス、ウェブサーバーです。 
-    rtlibs : List[str]
-        rtlibが提供するBot作りに便利なものの中で使う物の名前を入れるリストです。  
-        リアクションイベント時にキャッシュにあるない問わず呼び出される`on_full_reaction`などがあります。
 
     Examples
     --------
@@ -45,7 +42,7 @@ class Backend(commands.AutoShardedBot):
 
     def on_init(bot):
         bot.load_extension("cogs.music")
-        bot.rtlibs.append("on_full_reaction")
+        bot.load_extension("on_full_reaction")
 
         @bot.event
         async def on_full_reaction_add(payload):
@@ -75,8 +72,6 @@ class Backend(commands.AutoShardedBot):
                                    "after_server_start")
         self.web.add_route(self._hello_route, "/hello")
 
-        self.rtlibs: list = []
-
     def print(self, *args, title: Optional[str] = None, **kwargs) -> None:
         """簡単にログ出力をするためのもの。
 
@@ -104,37 +99,11 @@ class Backend(commands.AutoShardedBot):
         super().__init__(*self.__args, **self.__kwargs)
         self.add_listener(self._on_ready, "on_ready")
         self._on_init_bot(self)
-        # rtlib.libsの読み込みをする。
-        for setup_name in self.rtlibs:
-            data: dict = getattr(self, f"_rtlibs_{setup_name}",
-                                 {"args": [], "kwargs": {}})
-            getattr(libs, setup_name)(self, *data["args"], **data["kwargs"])
         # Botに接続する。
         loop.create_task(self.start(self.__token, reconnect=self.__reconnect))
 
     async def _hello_route(self, _):
         return sanic.response.text("Hi, I'm" + self.user.name + ".")
-
-    def args(self, *args, **kwargs) -> dict:
-        """rtlib.libsの読み込みで渡す引数を簡単に作るための関数です。
-
-        Parameters
-        ----------
-        *args
-            引数。
-        **kwargs
-            キーワード引数。
-
-        Returns
-        -------
-        args : Dict[Union[list, Dict[str, Any]]]
-            `{"args": args, "kwargs": kwargs}`の形式で渡されます。
-
-        Examples
-        --------
-        # rtlib.libsのon_full_reactionに渡すキーワード引数としてtimeoutを追加する。
-        bot._rtlibs_on_full_reaction = bot.args(timeout=0.01)"""
-        return {"args": args, "kwargs": kwargs}
 
     def run(self, token: str, *args, reconnect: bool = True, **kwargs) -> None:
         """BackendをDiscordに接続させて動かします。
