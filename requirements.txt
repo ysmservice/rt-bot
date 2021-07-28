@@ -1,0 +1,8 @@
+# rtlibで必要なモジュール
+sanic
+jinja2
+flask-misaka
+ujson
+discord.py
+# RT本プログラムで必要なモジュール
+youtube_dl

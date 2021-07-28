@@ -1,4 +1,6 @@
-# RT Backend
+"""RT Backend
+(C) 2020 RT-Team
+起動方法はREADME.mdを参照してください。"""
 
 from sys import argv
 import ujson
@@ -9,8 +11,8 @@ import rtlib
 with open("data.json", "r", encoding="utf-8_sig") as f:
     data: dict = ujson.load(f)
 with open("token.secret", "r", encoding="utf-8_sig") as f:
-    tokens: list = f.read().splitlines()
-TOKEN = tokens[2] if argv[1] == "production" else tokens[1]
+    tokens: dict = ujson.load(f)
+TOKEN = tokens["token"][argv[1]]
 
 
 # その他設定をする。
@@ -22,11 +24,6 @@ def on_init(bot):
     bot.load_extension("jishaku")
     bot.load_extension("rtlib.libs.on_full_reaction")
     bot.load_extension("rtlib.libs.on_command_add")
-
-
-    @bot.command()
-    async def test(ctx):
-        await ctx.reply("test")
 
 
 bot = rtlib.Backend(command_prefix=prefixes,
