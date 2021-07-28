@@ -1,11 +1,12 @@
 # rtlib - Backend
 
-from typing import Optional, Callable, Any
+from typing import Union, Optional, Callable, Any
 
 from discord.ext import commands
 from copy import copy
 import sanic
 
+from .web_manager import WebManager
 from . import libs
 
 
@@ -13,6 +14,12 @@ class Backend(commands.AutoShardedBot):
     """`sanic.Sanic`と`discord.ext.commands.AutoShardedBot` をラップしたクラスです。  
     `discord.ext.commands.AutoShardedBot`を継承しています。  
     sanicによるウェブサーバーとDiscordのBotを同時に手軽に動かすことができます。
+
+    Notes
+    -----
+    このクラスの定義時に`rtlib.WebManager`も定義されます。  
+    もしウェブサイトを同時に立てたい場合はそちらのクラスのリファレンスも読みましょう。  
+    デフォルトの設定ではアクセスされた際は`templates`フォルダにあるファイルを返すようになっています。
 
     Parameters
     ----------
@@ -28,6 +35,9 @@ class Backend(commands.AutoShardedBot):
         また、Backend内にあるログ出力機能でのタイトルにデフォルトで使用されます。
     log : bool, default True
         ログをコンソールに出力するかどうかです。
+    web_manager_kwargs : Union[list, tuple], default ()
+        このクラスの定義時にウェブサーバーの管理に便利な`rtlib.WebManager`を定義します。  
+        その`rtlib.WebManager`の定義時に渡すキーワード引数です。
     **kwargs
         `discord.ext.commands.AutoShardedBot`に渡すキーワード引数です。
 
@@ -53,7 +63,9 @@ class Backend(commands.AutoShardedBot):
     bot.run("TOKEN")""" # noqa
     def __init__(self, *args, on_init_bot: Callable[
                     [object], Any] = lambda bot: None,
-                 name: str = "rt.backend", log: bool = True, **kwargs):
+                 name: str = "rt.backend", log: bool = True,
+                 web_manager_kwargs: dict = {},
+                 **kwargs):
         self._on_init_bot: Callable[[object], Any] = on_init_bot
         self.name: str = name
         self.log: bool = log
@@ -71,6 +83,7 @@ class Backend(commands.AutoShardedBot):
         self.web.register_listener(self._after_server_start,
                                    "after_server_start")
         self.web.add_route(self._hello_route, "/hello")
+        self.web_manager = WebManager(self, **web_manager_kwargs)
 
     def print(self, *args, title: Optional[str] = None, **kwargs) -> None:
         """簡単にログ出力をするためのもの。

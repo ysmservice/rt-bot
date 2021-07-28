@@ -34,4 +34,4 @@ bot = rtlib.Backend(command_prefix=prefixes,
 bot.data = data
 
 
-bot.run(TOKEN)
+bot.run(TOKEN, host="0.0.0.0", port=80)
