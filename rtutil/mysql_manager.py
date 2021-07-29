@@ -56,6 +56,45 @@ class Cursor:
     async def __aexit__(self, ex_type, ex_value, trace):
         await self.cursor.close()
 
+    async def create_table(self, table: str, columns: Dict[str, str],
+                           if_not_exists: bool = True, commit: bool = True) -> None:
+        """テーブルを作成します。
+
+        Parameters
+        ----------
+        table : str
+            テーブルの名前です。
+        columns : Dict[str, str]
+            作成する列の名前と型名の辞書です。  
+            例：`{"name": "TEXT", "data": "TEXT"}`
+        if_not_exists : bool, default True
+            テーブルが存在しない場合作るようにするかどうかです。
+        commit : bool, default True
+            テーブルの作成後に自動で`MySQLManager.commit`をするかどうかです。"""
+        if_not_exists = "IF NOT EXISTS " if if_not_exists else ""
+        values = ", ".join(f"{key} {values[key]}" for key in values)
+        await self.cursor.execute(f"CREATE TABLE {if_not_exists}{table} ({values})")
+        del if_not_exists, values
+        if commit:
+            await self.connection.commit()
+
+    async def drop_table(self, table: str, if_exists: bool = True, commit: bool = True) -> None:
+        """テーブルを削除します。
+
+        Parameters
+        ----------
+        table : str
+            削除するテーブルの名前です。
+        if_exists : bool, default True
+            もしテーブルが存在するならテーブルを削除するかどうかです。
+        commit : bool, default True
+            テーブル削除後に自動で`MySQLManager.commit`を実行するかどうかです。"""
+        if_exists = "IF EXISTS " if if_exists else ""
+        await self.cursor.execute(f"DROP TABLE {if_exists}{table}")
+        del if_exists
+        if commit:
+            await self.connection.commit()
+
     def _get_column_args(self, values: Dict[str, Any], format_text: str = "{} = ? AND") -> Tuple[str, list]:
         conditions, args = "", []
         for key in targets:
@@ -63,7 +102,7 @@ class Cursor:
             args.append(targets[key])
         return conditions, args
 
-    async def post_data(self, table: str, values: Dict[str, Any], commit: bool = True) -> None:
+    async def insert_data(self, table: str, values: Dict[str, Any], commit: bool = True) -> None:
         """特定のテーブルにデータを追加します。  
 
         Paremeters
@@ -71,7 +110,8 @@ class Cursor:
         table : str
             対象のテーブルです。
         values : Dict[str, Any]
-            列名とそれに対応する追加する値です。
+            列名とそれに対応する追加する値です。  
+            辞書は自動でjsonになります。
         commit : bool, default True
             追加後に自動で`MySQLManager.commit`を実行するかどうかです。  
             もし複数のデータを一度で追加する場合はこれを`False`にして終わった後に自分でcommitをしましょう。
@@ -83,29 +123,92 @@ class Cursor:
             await cursor.post_data("tasuren_friends", values)"""
         conditions, args = self._get_column_args(values, "{}, ")
         await self.curosr.execute(
-            f"INSERT INTO {table} VALUES ({conditions[:-1]}) ('?, '*len(args))", args)
+            f"INSERT INTO {table} VALUES ({conditions[:-1]}) ('?, '*len(args))",
+            [ujson.dumps(arg) if isinstance(arg, dict) else arg for arg in args]
+        )
         if commit:
             await self.connection.commit()
 
-    async def get_data(self, table: str, targets: Dict[str, Any], fetchall: bool = False) -> list:
-        """特定のテーブルにある特定の条件のデータを取得します。  
-        見つからない場合は空である`[]`が返されます。
+    async def update_data(self, table: str, values: Dict[str, Any],
+                          targets: Dict[str, Any], commit: bool = True) -> None:
+        """特定のテーブルの特定のデータを更新します。
+
+        Parameters
+        ----------
+        table : str
+            対象のテーブルです。
+        values : Dict[str, Any]
+            更新する内容です。
+        targets : Dict[str, Any]
+            更新するデータの条件です。
+        commit : bool, default True
+            更新後に自動で`MySQLManager.commit`を実行するかどうかです。"""
+        values, values_args = self._get_column_args(values)
+        conditions, conditions_args = self._get_column_args(targets)
+        await self.cursor.execute(
+            f"UPDATE {table} SET {values[:-4]} WHERE {conditions[:-4]}",
+            values_args + conditions_args
+        )
+        if commit:
+            await self.connection.commit()
+
+    async def exists(self, table: str, targets: Dict[str, Any]) -> bool:
+        """特定のテーブルに特定のデータが存在しているかどうかを確認します。
 
         Parameters
         ----------
         table : str
             対象のテーブルです。
         targets : Dict[str, Any]
-            条件に追加するものです。
-        fetchall : bool, default False
-            取得したものを全て取得するかどうかです。  
-            Falseの場合は一つだけしか取得されません。
+            存在確認をするデータの条件です。
 
         Returns
         -------
-        datas : list
+        exists : bool
+            存在しているならTrue、存在しないならFalseです。"""
+        return await self.get_data(table, targets, fetchall=False) != []
+
+    async def delete(self, table: str, targets: Dict[str, Any], commit: bool = True) -> None:
+        """特定のテーブルにある特定のデータを削除します。
+
+        Parameters
+        ----------
+        table : str
+            対象のテーブルです。
+        targets : Dict[str, Any]
+            削除するデータの条件です。
+        commit : bool, default True
+            削除後に自動で`MySQLManager.commit`を実行するかどうかです。"""
+        conditions, args = self._get_column_args(targets)
+        await self.cursor.execute(
+            f"DELETE FROM {table} WHERE {conditions[:-4]}",
+            args
+        )
+        if commit:
+            await self.connection.commit()
+
+    async def get_data(self, table: str, targets: Dict[str, Any], fetchall: bool = True) -> list:
+        """特定のテーブルにある特定の条件のデータを取得します。  
+        見つからない場合は空である`[]`が返されます。  
+        これはイテレータで引数のfetchallをFalseにした場合はイテレータではなくなります。
+
+        Parameters
+        ----------
+        table : str
+            対象のテーブルです。
+        targets : Dict[str, Any]
+            取得するデータの条件です。
+        fetchall : bool, default True
+            取得したものを全て取得するかどうかです。  
+            Falseの場合は一つだけしか取得されません。
+            これがTrueの場合はyield、Falseの場合はreturnで取得したデータが返されます。
+
+        Returns
+        -------
+        data : list
             取得したデータのリストです。  
-            `[[なにか, なにか, なにか, 辞書データ], ...]`のようになっています。  
+            `[なにか, なにか, なにか, なにか]`のようになっています。  
+            もしjsonがあった場合は辞書になります。  
             見つからない場合は空である`[]`となります。
 
         Examples
@@ -113,17 +216,26 @@ class Cursor:
         async with Cursor(db) as cursor:
             # ひとつだけ取得する。
             targets = {"name": "Takkun"}
-            rows = await cursor.get_data("tasuren_friends", targets)
-            if rows is not None:
-                print(rows[0][1])
+            row = cursor.get_data("tasuren_friends", targets, fetchall=False)
+            if row:
+                print(row[1])
                 # -> "Takkun"
-                print(rows[0][-1])
+                print(row[-1])
                 # -> {"detail": "愉快"} (辞書データ)"""
         conditions, args = self._get_column_args(targets)
         await self.cursor.exeute(
             f"SELECT * FROM {table} WHERE {conditions[:-4]}", args)
-        rows = await self.cur.fetchone() if fetchall else await self.cur.fetchall()
-        return [row[:-1] + ujson.loads(row[-1]) for row in rows]
+        rows = await self.cur.fetchall() if fetchall else [await self.cur.fetchone()]
+        if rows:
+            for row in rows:
+                datas = [ujson.loads(data) if data[0] == "{" and row[-1] == "}"
+                         else data for data in row]
+                if fetchall:
+                    yield datas
+                else:
+                    return datas
+        elif not fetchall:
+            return []
 
 
 class MySQLManager:
