@@ -1,6 +1,6 @@
 # RT Util - MySQL Manager
 
-from typing import Any, Dict
+from typing import Union, Any, Dict, Tuple
 
 from asyncio import AbstractEventLoop
 from aiomysql import connect
@@ -12,13 +12,56 @@ class AlreadyPosted(Exception):
 
 
 class Cursor:
-    @classmethod
-    async def get_cursor(cls, loop, connection):
-        """Cursorを取得します。"""
-        cls.loop = loop
-        cls.connection = connection
-        cls.cursor = await connection.cursor()
-        return cls
+    """cursorを使ってやるデータベースの操作を簡単に行うためのクラスです。
+
+    Parameters
+    ----------
+    db : MySQLManager
+        データベースマネージャーです。
+
+    Attributes
+    ----------
+    loop : asyncio.AbstractEventLoop
+        イベントループです。
+    connection
+        データベースとの接続です。
+    cursor
+        データベースの操作などに使うカーソルです。  
+        `Cursor.prepare_cursor`を実行するまではこれは有効になりません。
+
+    Notes
+    -----
+    なにか操作をしたい場合は`Cursor.prepare_cursor`を実行する必要があります。  
+    操作が終わったら`Cursor.close`を実行する必要があります。  
+    そしてこのクラスは`async with`文を使うことができ、これを使うことで`Cursor.prepare_cursor`と`Cursor.close`を省くことができます。  
+    もしこのクラスにある関数以外でなにかカスタムで実行したいことがあれば`Cursor.cursor`の`execute`などをを使用してください。"""
+    def __init__(self, db: MySQLManager):
+        self.loop, self.connection = db.loop, db.connection
+
+    async def prepare_cursor(self):
+        """Cursorを使えるようにします。"""
+        self.cursor = await connection.cursor()
+
+    async def close(self):
+        """Curosorを閉じます。"""
+        await self.cursor.close()
+
+    def __del__(self):
+        self.loop.create_task(self.cursor.close())
+
+    async def __aenter__(self):
+        await self.prepare_cursor()
+        return self
+
+    async def __aexit__(self, ex_type, ex_value, trace):
+        await self.cursor.close()
+
+    def _get_column_args(self, values: Dict[str, Any], format_text: str = "{} = ? AND") -> Tuple[str, list]:
+        conditions, args = "", []
+        for key in targets:
+            conditions += format_text.format(key)
+            args.append(targets[key])
+        return conditions, args
 
     async def post_data(self, table: str, values: Dict[str, Any], commit: bool = True) -> None:
         """特定のテーブルにデータを追加します。  
@@ -35,10 +78,14 @@ class Cursor:
 
         Examples
         --------
-        cur = await db.get_cursor()
-        values = {"name": "Takkun", "data": {"detail": "愉快"}}
-        await cur.post_data("tasuren_friends", values)
-        await cur.close()"""
+        async with Cursor(db) as cursor:
+            values = {"name": "Takkun", "data": {"detail": "愉快"}}
+            await cursor.post_data("tasuren_friends", values)"""
+        conditions, args = self._get_column_args(values, "{}, ")
+        await self.curosr.execute(
+            f"INSERT INTO {table} VALUES ({conditions[:-1]}) ('?, '*len(args))", args)
+        if commit:
+            await self.connection.commit()
 
     async def get_data(self, table: str, targets: Dict[str, Any], fetchall: bool = False) -> list:
         """特定のテーブルにある特定の条件のデータを取得します。  
@@ -63,32 +110,20 @@ class Cursor:
 
         Examples
         --------
-        cur = await db.get_cursor()
-        # ひとつだけ取得する。
-        targets = {"name": "Takkun"}
-        rows = await cur.get_data("tasuren_friends", targets)
-        if rows is not None:
-            print(rows[0][1])
-            # -> "Takkun"
-            print(rows[0][-1])
-            # -> {"detail": "愉快"} (辞書データ)
-        await cur.close()"""
-        conditions, args = "", []
-        for key in targets:
-            conditions += f"{key} = ? AND"
-            args.append(targets[key])
-        async with self.connection.cursor() as cur:
-            await cur.exeute(
-                f"SELECT * FROM {table} WHERE {conditions[:-4]}", args)
-            rows = await cur.fetchone() if fetchall else await curs.fetchall()
+        async with Cursor(db) as cursor:
+            # ひとつだけ取得する。
+            targets = {"name": "Takkun"}
+            rows = await cursor.get_data("tasuren_friends", targets)
+            if rows is not None:
+                print(rows[0][1])
+                # -> "Takkun"
+                print(rows[0][-1])
+                # -> {"detail": "愉快"} (辞書データ)"""
+        conditions, args = self._get_column_args(targets)
+        await self.cursor.exeute(
+            f"SELECT * FROM {table} WHERE {conditions[:-4]}", args)
+        rows = await self.cur.fetchone() if fetchall else await self.cur.fetchall()
         return [row[:-1] + ujson.loads(row[-1]) for row in rows]
-
-    async def close(self):
-        """Curosorを閉じます。"""
-        await self.cursor.close()
-
-    def __del__(self):
-        self.loop.create_task(self.cursor.close())
 
 
 class MySQLManager:
@@ -135,7 +170,9 @@ class MySQLManager:
 
     async def get_cursor(self):
         """カーソルを取得します。"""
-        return await Cursor.get_cursor(self.loop)
+        cursor = Cursor(self.loop)
+        await cursor.prepare_cursor()
+        return cursor
 
     def close():
         self.__del__()
