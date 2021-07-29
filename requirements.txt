@@ -4,5 +4,7 @@ jinja2
 flask-misaka
 ujson
 discord.py
+# rtutilで必要なモジュール
+aiomysql
 # RT本プログラムで必要なモジュール
 youtube_dl

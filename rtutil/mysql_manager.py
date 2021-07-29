@@ -1,61 +1,141 @@
 # RT Util - MySQL Manager
 
+from typing import Any, Dict
+
+from asyncio import AbstractEventLoop
 from aiomysql import connect
 import ujson
 
 
+class AlreadyPosted(Exception):
+    pass
+
+
+class Cursor:
+    @classmethod
+    async def get_cursor(cls, loop, connection):
+        """Cursorを取得します。"""
+        cls.loop = loop
+        cls.connection = connection
+        cls.cursor = await connection.cursor()
+        return cls
+
+    async def post_data(self, table: str, values: Dict[str, Any], commit: bool = True) -> None:
+        """特定のテーブルにデータを追加します。  
+
+        Paremeters
+        ----------
+        table : str
+            対象のテーブルです。
+        values : Dict[str, Any]
+            列名とそれに対応する追加する値です。
+        commit : bool, default True
+            追加後に自動で`MySQLManager.commit`を実行するかどうかです。  
+            もし複数のデータを一度で追加する場合はこれを`False`にして終わった後に自分でcommitをしましょう。
+
+        Examples
+        --------
+        cur = await db.get_cursor()
+        values = {"name": "Takkun", "data": {"detail": "愉快"}}
+        await cur.post_data("tasuren_friends", values)
+        await cur.close()"""
+
+    async def get_data(self, table: str, targets: Dict[str, Any], fetchall: bool = False) -> list:
+        """特定のテーブルにある特定の条件のデータを取得します。  
+        見つからない場合は空である`[]`が返されます。
+
+        Parameters
+        ----------
+        table : str
+            対象のテーブルです。
+        targets : Dict[str, Any]
+            条件に追加するものです。
+        fetchall : bool, default False
+            取得したものを全て取得するかどうかです。  
+            Falseの場合は一つだけしか取得されません。
+
+        Returns
+        -------
+        datas : list
+            取得したデータのリストです。  
+            `[[なにか, なにか, なにか, 辞書データ], ...]`のようになっています。  
+            見つからない場合は空である`[]`となります。
+
+        Examples
+        --------
+        cur = await db.get_cursor()
+        # ひとつだけ取得する。
+        targets = {"name": "Takkun"}
+        rows = await cur.get_data("tasuren_friends", targets)
+        if rows is not None:
+            print(rows[0][1])
+            # -> "Takkun"
+            print(rows[0][-1])
+            # -> {"detail": "愉快"} (辞書データ)
+        await cur.close()"""
+        conditions, args = "", []
+        for key in targets:
+            conditions += f"{key} = ? AND"
+            args.append(targets[key])
+        async with self.connection.cursor() as cur:
+            await cur.exeute(
+                f"SELECT * FROM {table} WHERE {conditions[:-4]}", args)
+            rows = await cur.fetchone() if fetchall else await curs.fetchall()
+        return [row[:-1] + ujson.loads(row[-1]) for row in rows]
+
+    async def close(self):
+        """Curosorを閉じます。"""
+        await self.cursor.close()
+
+    def __del__(self):
+        self.loop.create_task(self.cursor.close())
+
+
 class MySQLManager:
     """MySQLをRT仕様で簡単に使うためのモジュールです。  
-    注意：Botの起動が完了するまで使うことはできません。"""
-    def __init__(self, bot, user: str, password: str):
-        self.bot = bot
-        self.__user, self.__password = user, password
-        self.bot.add_listener(self._on_ready, "on_ready")
+    aiomysqlを使用しています。
 
-    async def _on_ready(self):
+    Parameters
+    ----------
+    loop : asyncio.AbstractEventLoop
+        イベントループです。
+    user : str
+        MySQLのユーザー名です。
+    password : str
+        MySQLのパスワードです。
+    db_name : str, default "mysql"
+        データベースの名前です。
+
+    Attributes
+    ----------
+    connection
+        aiomysqlのMySQLとのコネクションです。
+    loop : asyncio.AbstractEventLoop
+        使用しているイベントループです。
+
+    Examples
+    --------
+    db = rtutil.MySQLManager(bot.loop, "root", "I wanna be the guy")"""
+    def __init__(self, loop: AbstractEventLoop, user: str, password: str, db_name: str = "mysql"):
+        loop.create_task(self._setup(user, password, loop, db_name))
+
+    async def _setup(self, user, password, db) -> None:
         # データベースの準備をする。
+        self.loop = loop
         self.connection = await connect(host="127.0.0.1", port=3306,
                                         user=user, password=password,
                                         db="mysql", loop=self.bot.loop,
                                         charset="utf8")
         cur = await self.connection.cursor()
-        await cur.execute("CREATE TABLE IF NOT EXISTS UserData (UserID INTEGER, SettingName TEXT, Data TEXT)")
-        await cur.execute("CREATE TABLE IF NOT EXISTS GuildData (UserID INTEGER, SettingName TEXT Data TEXT)")
-        await self.connection.commit()
         await cur.close()
 
-    async def get_userdata(self, user_id: int, setting_name: str) -> dict:
-        """特定のユーザーデータを取得します。
-        Parameters
-        ----------
-        usre_id : int
-            対象のユーザーデータです。
-        setting_name : str
-            対象の設定名です。
- 
-        Returns
-        -------
-        data : dict
-            取得したデータです。  
-            もしデータが見つからない場合は空の`{}`となります。"""
-        cur = await self.connection.cursor()
-        await cur.execute("SELECT * FROM UserData WHERE UserID = ? AND SettingName = ?",
-                          (user_id, setting_name))
-        row = await cur.fetchone()
-        return ujson.loads(row[-1]) if row else {}
+    async def commit(self):
+        """変更をセーブします。"""
+        await self.connection.commit()
 
-    async def get_all_userdata(self, setting_name: str) -> dict:
-        """対象の設定項目の設定をすべて取得します。
-        Parameters
-        ----------
-        setting_name : str
-            対象の設定名です。
-
-        Returns
-        -------
-        data : 
-            取得したデータです。  
-            もしデータがみつからない場合は空の`()`です。"""
+    async def get_cursor(self):
+        """カーソルを取得します。"""
+        return await Cursor.get_cursor(self.loop)
 
     def close():
         self.__del__()
