@@ -4,7 +4,11 @@ from typing import Union, Any, Dict, Tuple
 
 from asyncio import AbstractEventLoop
 from aiomysql import connect
+import warnings
 import ujson
+
+
+warnings.filterwarnings('ignore', module=r"aiomysql")
 
 
 class AlreadyPosted(Exception):
@@ -36,18 +40,21 @@ class Cursor:
     そしてこのクラスは`async with`文を使うことができ、これを使うことで`Cursor.prepare_cursor`と`Cursor.close`を省くことができます。  
     もしこのクラスにある関数以外でなにかカスタムで実行したいことがあれば`Cursor.cursor`の`execute`などをを使用してください。"""
     def __init__(self, db):
+        self.cursor = None
         self.loop, self.connection = db.loop, db.connection
 
     async def prepare_cursor(self):
         """Cursorを使えるようにします。"""
-        self.cursor = await connection.cursor()
+        self.cursor = await self.connection.cursor()
+        self.cursor._defer_warnings = True
 
     async def close(self):
         """Curosorを閉じます。"""
-        await self.cursor.close()
+        if self.cursor is not None:
+            await self.cursor.close()
 
     def __del__(self):
-        self.loop.create_task(self.cursor.close())
+        self.loop.create_task(self.close())
 
     async def __aenter__(self):
         await self.prepare_cursor()
@@ -61,7 +68,7 @@ class Cursor:
         """テーブルを作成します。
 
         Parameters
-        ----------
+        ----------ppp
         table : str
             テーブルの名前です。
         columns : Dict[str, str]
@@ -72,7 +79,7 @@ class Cursor:
         commit : bool, default True
             テーブルの作成後に自動で`MySQLManager.commit`をするかどうかです。"""
         if_not_exists = "IF NOT EXISTS " if if_not_exists else ""
-        values = ", ".join(f"{key} {values[key]}" for key in values)
+        values = ", ".join(f"{key} {columns[key]}" for key in columns)
         await self.cursor.execute(f"CREATE TABLE {if_not_exists}{table} ({values})")
         del if_not_exists, values
         if commit:
@@ -95,11 +102,11 @@ class Cursor:
         if commit:
             await self.connection.commit()
 
-    def _get_column_args(self, values: Dict[str, Any], format_text: str = "{} = ? AND") -> Tuple[str, list]:
+    def _get_column_args(self, values: Dict[str, Any], format_text: str = "{} = %s AND") -> Tuple[str, list]:
         conditions, args = "", []
-        for key in targets:
+        for key in values:
             conditions += format_text.format(key)
-            args.append(targets[key])
+            args.append(values[key])
         return conditions, args
 
     async def insert_data(self, table: str, values: Dict[str, Any], commit: bool = True) -> None:
@@ -122,8 +129,9 @@ class Cursor:
             values = {"name": "Takkun", "data": {"detail": "愉快"}}
             await cursor.post_data("tasuren_friends", values)"""
         conditions, args = self._get_column_args(values, "{}, ")
-        await self.curosr.execute(
-            f"INSERT INTO {table} VALUES ({conditions[:-1]}) ('?, '*len(args))",
+        query = ("%s, " * len(args))[:-2]
+        await self.cursor.execute(
+            f"INSERT INTO {table} ({conditions[:-2]}) VALUES ({query})",
             [ujson.dumps(arg) if isinstance(arg, dict) else arg for arg in args]
         )
         if commit:
@@ -222,9 +230,9 @@ class Cursor:
                 print(row[-1])
                 # -> {"detail": "愉快"} (辞書データ)"""
         conditions, args = self._get_column_args(targets)
-        await self.cursor.exeute(
+        await self.cursor.execute(
             f"SELECT * FROM {table} WHERE {conditions[:-4]}", args)
-        rows = await self.cur.fetchall() if fetchall else [await self.cur.fetchone()]
+        rows = await self.cursor.fetchall() if fetchall else [await self.cursor.fetchone()]
         if rows:
             for row in rows:
                 datas = [ujson.loads(data) if data[0] == "{" and row[-1] == "}"

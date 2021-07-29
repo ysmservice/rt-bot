@@ -27,7 +27,7 @@ class DatabaseManager(commands.Cog):
     @commands.group(aliases=("db",))
     async def database(self, ctx):
         """databaseコマンドグループです。"""
-        if not ctx.subcommand_invoked:
+        if not ctx.invoked_subcommand:
             await ctx.reply("使い方が間違っています。")
 
     @database.command()
@@ -45,11 +45,11 @@ class DatabaseManager(commands.Cog):
             await cursor.drop_table(table, ie, commit)
         await ctx.reply("Ok")
 
-    @dabase.command()
+    @database.command()
     @is_admin()
     async def insert_data(self, ctx, table, values, commit: bool = True):
         async with self.db.get_cursor() as cursor:
-            await cursor.insert_data(table, loads(values), commit)
+            await cursor.insert_data(table, loads(values.replace("'", '"')), commit)
         await ctx.reply("Ok")
 
     @database.command()
@@ -77,8 +77,10 @@ class DatabaseManager(commands.Cog):
     @is_admin()
     async def get_data(self, ctx, table, targets, fetchall: bool = True):
         async with self.db.get_cursor() as cursor:
-            await cursor.get_data(table, loads(targets), fetchall)
-        await ctx.reply("Ok")
+            rows = [row async for row in cursor.get_data(
+                table, loads(targets.replace("'", '"')), fetchall)]
+        await ctx.reply("Ok\n```\n" + str(rows) + "\n```")
+        del rows
 
     @database.command()
     @is_admin()
