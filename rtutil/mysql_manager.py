@@ -35,7 +35,7 @@ class Cursor:
     操作が終わったら`Cursor.close`を実行する必要があります。  
     そしてこのクラスは`async with`文を使うことができ、これを使うことで`Cursor.prepare_cursor`と`Cursor.close`を省くことができます。  
     もしこのクラスにある関数以外でなにかカスタムで実行したいことがあれば`Cursor.cursor`の`execute`などをを使用してください。"""
-    def __init__(self, db: MySQLManager):
+    def __init__(self, db):
         self.loop, self.connection = db.loop, db.connection
 
     async def prepare_cursor(self):
@@ -118,7 +118,7 @@ class Cursor:
 
         Examples
         --------
-        async with Cursor(db) as cursor:
+        async with db.get_cursor() as cursor:
             values = {"name": "Takkun", "data": {"detail": "愉快"}}
             await cursor.post_data("tasuren_friends", values)"""
         conditions, args = self._get_column_args(values, "{}, ")
@@ -190,7 +190,7 @@ class Cursor:
     async def get_data(self, table: str, targets: Dict[str, Any], fetchall: bool = True) -> list:
         """特定のテーブルにある特定の条件のデータを取得します。  
         見つからない場合は空である`[]`が返されます。  
-        これはイテレータで引数のfetchallをFalseにした場合はイテレータではなくなります。
+        イテレータです。
 
         Parameters
         ----------
@@ -201,7 +201,6 @@ class Cursor:
         fetchall : bool, default True
             取得したものを全て取得するかどうかです。  
             Falseの場合は一つだけしか取得されません。
-            これがTrueの場合はyield、Falseの場合はreturnで取得したデータが返されます。
 
         Returns
         -------
@@ -213,10 +212,10 @@ class Cursor:
 
         Examples
         --------
-        async with Cursor(db) as cursor:
+        async with db.get_cursor() as cursor:
             # ひとつだけ取得する。
             targets = {"name": "Takkun"}
-            row = cursor.get_data("tasuren_friends", targets, fetchall=False)
+            row = cursor.get_data("tasuren_friends", targets, fetchall=False).__next__()
             if row:
                 print(row[1])
                 # -> "Takkun"
@@ -233,9 +232,9 @@ class Cursor:
                 if fetchall:
                     yield datas
                 else:
-                    return datas
+                    yield datas
         elif not fetchall:
-            return []
+            yield datas
 
 
 class MySQLManager:
@@ -263,15 +262,16 @@ class MySQLManager:
     Examples
     --------
     db = rtutil.MySQLManager(bot.loop, "root", "I wanna be the guy")"""
-    def __init__(self, loop: AbstractEventLoop, user: str, password: str, db_name: str = "mysql"):
-        loop.create_task(self._setup(user, password, loop, db_name))
+    def __init__(self, loop: AbstractEventLoop, user: str, password: str, db_name: str = "mysql",
+                 port: int = 3306, host: str = "localhost"):
+        loop.create_task(self._setup(user, password, loop, db_name, port, host))
 
-    async def _setup(self, user, password, db) -> None:
+    async def _setup(self, user, password, loop, db, port, host) -> None:
         # データベースの準備をする。
         self.loop = loop
-        self.connection = await connect(host="127.0.0.1", port=3306,
+        self.connection = await connect(host=host, port=port,
                                         user=user, password=password,
-                                        db="mysql", loop=self.bot.loop,
+                                        db=db, loop=loop,
                                         charset="utf8")
         cur = await self.connection.cursor()
         await cur.close()
@@ -280,10 +280,9 @@ class MySQLManager:
         """変更をセーブします。"""
         await self.connection.commit()
 
-    async def get_cursor(self):
-        """カーソルを取得します。"""
-        cursor = Cursor(self.loop)
-        await cursor.prepare_cursor()
+    def get_cursor(self) -> Cursor:
+        """データベースの操作を楽にするためのクラスのインスタンスを取得します。"""
+        cursor = Cursor(self)
         return cursor
 
     def close():
