@@ -7,7 +7,6 @@ import ujson
 import rtlib
 
 from data import data, is_admin
-import rtutil
 
 
 # 設定ファイルの読み込み。
@@ -22,7 +21,7 @@ prefixes = data["prefixes"][argv[1]]
 
 # Backendのセットアップをする。
 def on_init(bot):
-    bot.data["mysql"] = rtutil.mysql.MySQLManager(
+    bot.data["mysql"] = rtlib.mysql.MySQLManager(
         bot.loop, secret["mysql"]["user"], secret["mysql"]["password"])
     bot.is_owner = lambda user: bot.is_admin(user.id)
 

@@ -16,7 +16,15 @@ class AlreadyPosted(Exception):
 
 
 class Cursor:
-    """cursorを使ってやるデータベースの操作を簡単に行うためのクラスです。
+    """データベースの操作を簡単に行うためのクラスです。  
+    `Cursor.get_data`などの便利なものが使えます。  
+    `MySQLManager.get_cursor`から取得することができます。
+    このクラスは「`MySQLManager.get_cursor`から取得」と書きましたが、もちろん下にあるParametersを見て自分で定義することもできます。
+    例：`cursor = Cursor(MySQLManager)`
+
+    Notes
+    -----
+    
 
     Parameters
     ----------
@@ -31,14 +39,7 @@ class Cursor:
         データベースとの接続です。
     cursor
         データベースの操作などに使うカーソルです。  
-        `Cursor.prepare_cursor`を実行するまではこれは有効になりません。
-
-    Notes
-    -----
-    なにか操作をしたい場合は`Cursor.prepare_cursor`を実行する必要があります。  
-    操作が終わったら`Cursor.close`を実行する必要があります。  
-    そしてこのクラスは`async with`文を使うことができ、これを使うことで`Cursor.prepare_cursor`と`Cursor.close`を省くことができます。  
-    もしこのクラスにある関数以外でなにかカスタムで実行したいことがあれば`Cursor.cursor`の`execute`などをを使用してください。"""
+        `Cursor.prepare_cursor`を実行するまではこれは有効になりません。"""
     def __init__(self, db):
         self.cursor = None
         self.loop, self.connection = db.loop, db.connection
