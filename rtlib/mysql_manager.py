@@ -11,10 +11,6 @@ import ujson
 warnings.filterwarnings('ignore', module=r"aiomysql")
 
 
-class AlreadyPosted(Exception):
-    pass
-
-
 class Cursor:
     """データベースの操作を簡単に行うためのクラスです。  
     `Cursor.get_data`などの便利なものが使えます。  
@@ -24,7 +20,19 @@ class Cursor:
 
     Notes
     -----
-    
+    データベースの操作をする場合は`Cursor.prepare_cursor`を実行しないとなりません。  
+    そしてデータベースの操作を終えた後は`Cursor.close`を実行しないといけません。  
+    ですがこれは`async with`文で代用することができます。  
+    もしデータベースを操作した場合は`MySQLManager.commit`を通常は実行する必要がありますが、`Cursor`のデータベースを変更するものは全て自動で`MySQLManager.commit`を実行します。  
+    これは引数の`commit`をFalseにすることで自動で実行しなくなります。  
+    もし連続でデータベースの操作をする場合はこの引数`commit`をFalseにして操作終了後に自分で`MySQLManager.commit`を実行する方が効率的でしょう。
+
+    Example
+    -------
+    db = MySQLManager(...)
+    async with db.get_cursor() as cursor:
+        row = await cursor.get_data("test", {"column1": "tasuren"})
+    print(row)
 
     Parameters
     ----------
@@ -45,7 +53,13 @@ class Cursor:
         self.loop, self.connection = db.loop, db.connection
 
     async def prepare_cursor(self):
-        """Cursorを使えるようにします。"""
+        """Cursorを使えるようにします。  
+        データベースの操作をするにはこれを実行する必要があります。  
+        そして操作後は`Cursor.close`を実行する必要があります。
+
+        Notes
+        -----
+        これを使用する代わりに`async with`文を使用することが可能です。"""
         self.cursor = await self.connection.cursor()
         self.cursor._defer_warnings = True
 
@@ -196,7 +210,7 @@ class Cursor:
         if commit:
             await self.connection.commit()
 
-    async def get_datas(self, table: str, targets: Dict[str, Any]) -> list:
+    async def get_datas(self, table: str, targets: Dict[str, Any], _fetchall: bool = True) -> list:
         """特定のテーブルにある特定の条件のデータを取得します。  
         見つからない場合は空である`[]`が返されます。  
         ジェネレーターです。
@@ -214,16 +228,29 @@ class Cursor:
             取得したデータのリストです。  
             yieldで返され`[なにか, なにか, なにか, なにか]`のようになっています。  
             もしjsonがあった場合は辞書になります。  
-            見つからない場合は空である`[]`となります。"""
-        conditions, args = self._get_column_args(targets)
+            見つからない場合は空である`[]`となります。
+
+        Notes
+        -----
+        もし条件関係なく全てを取得したい場合は引数の`targets`を空である`{}`にしましょう。"""
+        if targets:
+            conditions, args = self._get_column_args(targets)
+            conditions = " WHERE " + conditions[:-4]
+        else:
+            conditions, args = "", None
         await self.cursor.execute(
-            f"SELECT * FROM {table} WHERE {conditions[:-4]}", args)
-        rows = await self.cursor.fetchall()
+            f"SELECT * FROM {table}{conditions}", args)
+        if not _fetchall:
+            rows = await self.cursor.fetchall()
+        else:
+            rows = [await self.cursor.fetchone()]
         if rows:
             for row in rows:
                 datas = [ujson.loads(data) if data[0] == "{" and data[-1] == "}"
                          else data for data in row]
                 yield datas
+                if not _fetchall:
+                    break
         else:
             yield []
 
@@ -241,31 +268,33 @@ class Cursor:
                 # -> "Takkun"
                 print(row[-1])
                 # -> {"detail": "愉快"} (辞書データ)"""
-        conditions, args = self._get_column_args(targets)
-        await self.cursor.execute(
-            f"SELECT * FROM {table} WHERE {conditions[:-4]}", args)
-        row = await self.cursor.fetchone()
-        if row:
-            return [ujson.loads(data) if data[0] == "{" and data[-1] == "}"
-                    else data for data in row]
-        else:
-            return []
+        return [row async for row in self.get_datas(table, targets, _fetchall=False)][0]
 
 
 class MySQLManager:
-    """MySQLをRT仕様で簡単に使うためのモジュールです。  
+    """MySQLを簡単に使うためのモジュールです。  
     aiomysqlを使用しています。
+
+    Notes
+    -----
+    データベースの操作はこのクラスにあるものだけではできません。  
+    データベースの操作を行うなら`Cursor`を使いましょう。  
+    `Cursor`は`MySQLManager.get_cursor`で定義済みのものを取得することができます。
 
     Parameters
     ----------
     loop : asyncio.AbstractEventLoop
-        イベントループです。
+        使う非同期のイベントループです。
     user : str
         MySQLのユーザー名です。
     password : str
         MySQLのパスワードです。
     db_name : str, default "mysql"
         データベースの名前です。
+    port : int, default 3306
+        MySQLのポートです。
+    host : str, defualt "localhost"
+        MySQLのhostです。
 
     Attributes
     ----------
@@ -301,6 +330,7 @@ class MySQLManager:
         return cursor
 
     def close():
+        """データベースとの接続を終了します。"""
         self.__del__()
 
     def __del__(self):
