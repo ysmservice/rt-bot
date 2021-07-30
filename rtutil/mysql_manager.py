@@ -68,7 +68,7 @@ class Cursor:
         """テーブルを作成します。
 
         Parameters
-        ----------ppp
+        ----------
         table : str
             テーブルの名前です。
         columns : Dict[str, str]
@@ -174,7 +174,7 @@ class Cursor:
         -------
         exists : bool
             存在しているならTrue、存在しないならFalseです。"""
-        return await self.get_data(table, targets, fetchall=False) != []
+        return await self.get_data(table, targets) != []
 
     async def delete(self, table: str, targets: Dict[str, Any], commit: bool = True) -> None:
         """特定のテーブルにある特定のデータを削除します。
@@ -195,10 +195,10 @@ class Cursor:
         if commit:
             await self.connection.commit()
 
-    async def get_data(self, table: str, targets: Dict[str, Any], fetchall: bool = True) -> list:
+    async def get_datas(self, table: str, targets: Dict[str, Any]) -> list:
         """特定のテーブルにある特定の条件のデータを取得します。  
         見つからない場合は空である`[]`が返されます。  
-        イテレータです。
+        ジェネレーターです。
 
         Parameters
         ----------
@@ -206,24 +206,35 @@ class Cursor:
             対象のテーブルです。
         targets : Dict[str, Any]
             取得するデータの条件です。
-        fetchall : bool, default True
-            取得したものを全て取得するかどうかです。  
-            Falseの場合は一つだけしか取得されません。
 
         Returns
         -------
         data : list
             取得したデータのリストです。  
-            `[なにか, なにか, なにか, なにか]`のようになっています。  
+            yieldで返され`[なにか, なにか, なにか, なにか]`のようになっています。  
             もしjsonがあった場合は辞書になります。  
-            見つからない場合は空である`[]`となります。
+            見つからない場合は空である`[]`となります。"""
+        conditions, args = self._get_column_args(targets)
+        await self.cursor.execute(
+            f"SELECT * FROM {table} WHERE {conditions[:-4]}", args)
+        rows = await self.cursor.fetchall()
+        if rows:
+            for row in rows:
+                datas = [ujson.loads(data) if data[0] == "{" and data[-1] == "}"
+                         else data for data in row]
+                yield datas
+        else:
+            yield []
+
+    async def get_data(self, table: str, targets: Dict[str, Any]) -> list:
+        """一つだけデータを取得します。  
+        引数は`Cursor.get_datas`と同じです。
 
         Examples
         --------
         async with db.get_cursor() as cursor:
-            # ひとつだけ取得する。
             targets = {"name": "Takkun"}
-            row = cursor.get_data("tasuren_friends", targets, fetchall=False).__next__()
+            row = await cursor.get_data("tasuren_friends", targets)
             if row:
                 print(row[1])
                 # -> "Takkun"
@@ -232,17 +243,12 @@ class Cursor:
         conditions, args = self._get_column_args(targets)
         await self.cursor.execute(
             f"SELECT * FROM {table} WHERE {conditions[:-4]}", args)
-        rows = await self.cursor.fetchall() if fetchall else [await self.cursor.fetchone()]
-        if rows:
-            for row in rows:
-                datas = [ujson.loads(data) if data[0] == "{" and row[-1] == "}"
-                         else data for data in row]
-                if fetchall:
-                    yield datas
-                else:
-                    yield datas
-        elif not fetchall:
-            yield datas
+        row = await self.cursor.fetchone()
+        if row:
+            return [ujson.loads(data) if data[0] == "{" and data[-1] == "}"
+                    else data for data in row]
+        else:
+            return []
 
 
 class MySQLManager:

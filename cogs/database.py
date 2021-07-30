@@ -35,7 +35,8 @@ class DatabaseManager(commands.Cog):
     async def create_table(self, ctx, table, columns, ine: bool = True, commit: bool = True):
         columns = loads(columns)
         async with self.db.get_cursor() as cursor:
-            await cursor.create_table(table, colunms, ine, commit)
+            await cursor.create_table(
+                table, colunms.replace("'", '"'), ine, commit)
         await ctx.reply("Ok")
 
     @database.command()
@@ -56,29 +57,35 @@ class DatabaseManager(commands.Cog):
     @is_admin()
     async def update_data(self, ctx, table, values, targets, commit: bool = True):
         async with self.db.get_cursor() as cursor:
-            await cursor.update_data(table, loads(values), loads(targets), commit)
+            print(table, values, targets)
+            await cursor.update_data(
+                table, loads(values.replace("'", '"')),
+                loads(targets.replace("'", '"')), commit)
         await ctx.reply("Ok")
 
     @database.command()
     @is_admin()
     async def exists(self, ctx, table, targets):
         async with self.db.get_cursor() as cursor:
-            await cursor.exists(table, loads(targets))
-        await ctx.reply("Ok")
+            b = await cursor.exists(table, loads(targets.replace("'", '"')))
+        await ctx.reply("Ok `" + str(b) + "`")
 
     @database.command()
     @is_admin()
     async def delete(self, ctx, table, targets, commit: bool = True):
         async with self.db.get_cursor() as cursor:
-            await cursor.delete(table, loads(targets), commit)
+            await cursor.delete(table, loads(targets.replace("'", '"')), commit)
         await ctx.reply("Ok")
 
     @database.command()
     @is_admin()
-    async def get_data(self, ctx, table, targets, fetchall: bool = True):
+    async def get_data(self, ctx, table, targets, fetchall: bool = False):
         async with self.db.get_cursor() as cursor:
-            rows = [row async for row in cursor.get_data(
-                table, loads(targets.replace("'", '"')), fetchall)]
+            targets = loads(targets.replace("'", '"'))
+            if fetchall:
+                rows = [row async for row in cursor.get_datas(table, targets)]
+            else:
+                rows = await cursor.get_data(table, targets)
         await ctx.reply("Ok\n```\n" + str(rows) + "\n```")
         del rows
 
