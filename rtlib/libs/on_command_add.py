@@ -1,13 +1,13 @@
-# rtlib.libs - On add/remove command
+"""`on_command_add/remove`のイベントを追加することができるエクステンションです。  
+イベント名の通りコマンドのついか/削除時に呼び出されます。  
+`bot.load_extension("rtlib.libs.on_command_add")`で使うことができます。
+これを使用して追加されるイベントには`discord.ext.commands.Command`が渡されます。"""
 
 from discord.ext import commands
 from copy import copy
 
 
 class OnAddRemoveCommand(commands.Cog):
-    """`on_command_add/remove`のイベントを追加することができるコグです。  
-    イベント名の通りコマンドのついか/削除時に呼び出されます。  
-    `bot.load_extension("rtlib.libs.on_command_add")`で使うことができます。""" # noqa
     def __init__(self, bot):
         self.bot = bot
         self._default_add_cmd = copy(self.bot.add_command)
