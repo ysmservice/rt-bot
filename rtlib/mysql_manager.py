@@ -222,9 +222,9 @@ class Cursor:
         targets : Dict[str, Any]
             取得するデータの条件です。
 
-        Returns
-        -------
-        data : list
+        Yields
+        ------
+        list
             取得したデータのリストです。  
             yieldで返され`[なにか, なにか, なにか, なにか]`のようになっています。  
             もしjsonがあった場合は辞書になります。  
