@@ -46,6 +46,7 @@ class DocHelp(commands.Cog):
         "Warnings": "# 警告",
         "Examples": "# コマンドの使用例",
         "Raises": "# 起こり得るエラー",
+        "Returns": "# 実行結果",
         "See Also": "# 関連事項"
     }
     TYPES = {
@@ -69,12 +70,12 @@ class DocHelp(commands.Cog):
             text = text.replace("\n", "")
         return text
 
-    def convert_normal(self, text: str) -> Tuple[str, int]:
+    def convert_normal(self, text: str, left: bool = True) -> Tuple[str, int]:
         # 文字列の最初にある空白を削除して改行を削除する。
         blank_count: int = 0
-        if text and text[-1] not in self.BLANKS:
-            while text[0] not in self.BLANKS:
-                text = text[1:]
+        if text and text[-1 if left else 0] not in self.BLANKS:
+            while text[0 if left else -1] not in self.BLANKS:
+                text = text[1:] if left else text[:-1]
                 blank_count += 1
             if text[-1] == "\n":
                 text = text[:-1]
@@ -86,8 +87,10 @@ class DocHelp(commands.Cog):
             # 引数の説明の項目だったら。
             if blank_count < before[1] or before[2]:
                 # 引数名と型だったら。例：`arg : str`
-                splited = text.split()
-                return f"**{splited[0]}** : {self.TYPES.get(splited[1], splited[1])}"
+                splited = text.split(":")
+                result = f"**{splited[0]}** : {self.TYPES.get(splited[1], splited[1])}"
+                # その他引数に付け加えているもの。
+
             else:
                 # 引数の説明だったら。
                 return text
