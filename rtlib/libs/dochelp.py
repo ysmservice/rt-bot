@@ -33,8 +33,8 @@ async def soudayo(ctx, mode="便乗"):
 
 # 上のコマンドにあるドキュメンテーションがヘルプリストに自動で追加されます。"""
 
+from typing import Callable, Tuple, List
 from discord.ext import commands
-from typing import Callable
 
 
 class DocHelp(commands.Cog):
@@ -42,7 +42,17 @@ class DocHelp(commands.Cog):
     BLANKS = (" ", "\t", "　")
     HEADDINGS = {
         "Parameters": "# コマンドの引数",
-        "Examples": "# コマンドの使用例"
+        "Notes": "# メモ",
+        "Warnings": "# 警告",
+        "Examples": "# コマンドの使用例",
+        "Raises": "# 起こり得るエラー",
+        "See Also": "# 関連事項"
+    }
+    TYPES = {
+        "str": "文字列",
+        "int": "整数",
+        "float": "小数",
+        "bool": "真偽値"
     }
 
     def __init__(self, bot):
@@ -59,37 +69,52 @@ class DocHelp(commands.Cog):
             text = text.replace("\n", "")
         return text
 
-    def convert_normal(self, text: str) -> str:
+    def convert_normal(self, text: str) -> Tuple[str, int]:
         # 文字列の最初にある空白を削除して改行を削除する。
+        blank_count: int = 0
         if text and text[-1] not in self.BLANKS:
             while text[0] not in self.BLANKS:
                 text = text[1:]
+                blank_count += 1
             if text[-1] == "\n":
                 text = text[:-1]
-        return text
+        return text, blank_count
 
-    def item_parser(self, now_item: str, text: str):
+    def item_parser(self, now_item: str, text: str, blank_count: int, before: List[str, int, bool]) -> str:
+        # 項目の中身をマークダウンに変換したりする。
         if now_item == "Parameters":
-            if now_item
+            # 引数の説明の項目だったら。
+            if blank_count < before[1] or before[2]:
+                # 引数名と型だったら。例：`arg : str`
+                splited = text.split()
+                return f"**{splited[0]}** : {self.TYPES.get(splited[1], splited[1])}"
+            else:
+                # 引数の説明だったら。
+                return text
+        elif now_item
 
     def parse_doc(self, doc: str, item_parser: Optional[Callable] = None):
         item_parser = self.item_parser if item_parser is None else item_parser
-        text, now_item, before, now = "", "", "", ""
+        text, now_item, before, now = "", "", ["", 0, False], ""
 
         for line in doc.splitlines():
-            normal_text, new = self.convert_normal(line), ""
+            (normal_text, blank_count), new = self.convert_normal(line), ""
 
             if all(char == "-" for char in self.remove_blanks(line)):
-                # 項目名
-                new = self.HEADDINGS.get(before, before) + "\n"
-                now_item = before
+                # 項目名を置き換える。
+                new = self.HEADDINGS.get(before[0], before[0]) + "\n"
+                now_item = before[0]
+                before[2] = True
             elif normal_text not in self.HEADDINGS:
                 # 項目の中にあるものをitem_parserに通してできたものを追加する。
-                new = item_parser(normal_text) + "\n"
+                new = item_parser(now_item, normal_text,
+                                  blank_count, before) + "\n"
+            else:
+                before[2] = False
 
             text += new
             now += new
-            before = noraml_text
+            before[:2] = noraml_text, blanik_count
 
     @commands.Cog.listener()
     async def on_command_add(self, command):
