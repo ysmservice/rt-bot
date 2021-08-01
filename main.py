@@ -1,6 +1,7 @@
-"""RT Backend
-(C) 2020 RT-Team
-起動方法はREADME.mdを参照してください。"""
+"""RT Backend (C) 2020 RT-Team
+LICENSE : ./LICENSE
+README  : ./readme.md
+"""
 
 from asyncio import coroutine
 from sys import argv
