@@ -8,22 +8,22 @@ class DocParser:
 
     HEADDINGS = {
         "ja": {
-            "Parameters": "# コマンドの引数",
-            "Notes": "# メモ",
-            "Warnings": "# 警告",
-            "Examples": "# コマンドの使用例",
-            "Raises": "# 起こり得るエラー",
-            "Returns": "# 実行結果",
-            "See Also": "# 関連事項"
+            "Parameters": "### コマンドの引数",
+            "Notes": "### メモ",
+            "Warnings": "### 警告",
+            "Examples": "### コマンドの使用例",
+            "Raises": "### 起こり得るエラー",
+            "Returns": "### 実行結果",
+            "See Also": "### 関連事項"
         },
         "en": {
-            "Parameters": "# Argments",
-            "Notes": "# Note",
-            "Warnings": "# Warning",
-            "Examples": "# Example",
-            "Raises": "# Possible errors",
-            "Returns": "# Result",
-            "See Also": "# See Also"
+            "Parameters": "### Argments",
+            "Notes": "### Note",
+            "Warnings": "### Warning",
+            "Examples": "### Example",
+            "Raises": "### Possible errors",
+            "Returns": "### Result",
+            "See Also": "### See Also"
         }
     }
     ITEM_REPLACE_TEXTS = {
@@ -32,8 +32,8 @@ class DocParser:
             "int": "整数",
             "float": "小数",
             "bool": "真偽値",
-            ", optional": ", オプション",
-            ", default": ", デフォルト"
+            "optional": "オプション",
+            "default": "デフォルト"
         },
         "en": {
             "str": "text",
@@ -67,11 +67,11 @@ class DocParser:
 
     def _colon_parser(self, line: str, now_lang: str) -> str:
         # ITEM_REPLACE_TEXTSにある文字列は日本語に置き換える。
-        for type_name in self.ITEM_REPLACE_TEXTS:
+        for type_name in self.ITEM_REPLACE_TEXTS[now_lang]:
             if type_name in line:
                 line = line.replace(
-                    type_name, self.ITEM_REPLACE_TEXTS[now_lang].get(
-                        type_name, "# " + type_name))
+                    type_name, self.ITEM_REPLACE_TEXTS[now_lang]
+                        .get(type_name, type_name))
         # 名前の部分を**で囲む。
         if ":" in line:
             left, right, left_count, right_count = self._split(line)
@@ -134,6 +134,8 @@ class DocParser:
             インデントの空白の数です。
         indent_type : Literal[" ", "\t"], default " "
             インデントに使われているの空白の文字です。
+        session_id : Union[str, int], default 0
+            イベントでなんのドキュメンテーションで呼び出されたか判別するのに使えるセッションIDです。
         item_parser : Optional[Callable[str, dict, dict]] = None
             項目をパースする際に使う関数です。  
             指定されなかった場合は`DocParser._item_parser`が使用されます。  
@@ -143,7 +145,7 @@ class DocParser:
         -------
         dict
             これは言語で分けられてパースしたドキュメンテーションを返すため辞書型となっています。  
-            デフォルトの言語は`ja`となっています。"""
+            デフォルトの言語は`ja`となっています。""" # noqa
         item_parser = self._item_parser if item_parser is None else item_parser
         self.indent, self.indent_type = indent, indent_type
 
@@ -159,7 +161,11 @@ class DocParser:
         }
 
         for line in doc.splitlines():
-            line = line[indent*first_indent_count:]
+            # もしインデントがあるならインデントを削除しておく。
+            if line != "":
+                line = line[indent*first_indent_count:]
+
+            # パースする。
             if all(char == "-" for char in line) and line != "":
                 if before["line"].startswith("!lang "):
                     now["lang"] = before["line"][6:]

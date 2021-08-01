@@ -10,57 +10,12 @@ from .web_manager import WebManager
 from . import libs
 
 
-class Backend(commands.AutoShardedBot):
-    """`sanic.Sanic`と`discord.ext.commands.AutoShardedBot` をラップしたクラスです。  
-    `discord.ext.commands.AutoShardedBot`を継承しています。  
-    sanicによるウェブサーバーとDiscordのBotを同時に手軽に動かすことができます。
+class Mixer:
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-    Notes
-    -----
-    このクラスの定義時に`rtlib.WebManager`も定義されます。  
-    もしウェブサイトを同時に立てたい場合はそちらのクラスのリファレンスも読みましょう。  
-    デフォルトの設定ではアクセスされた際は`templates`フォルダにあるファイルを返すようになっています。
 
-    Parameters
-    ----------
-    *args
-        `discord.ext.commands.AutoShardedBot`に渡す引数です。
-    on_init_bot : Callable[[object], Any], default lambda bot:None
-        `discord.ext.commands.AutoShardedBot`の定義後に呼び出されます。  
-        sanicとの兼用をするのにこのBackend定義時に定義することができないためこれがあります。  
-        なのでもし`load_extension`などを使う際はそれを実行する関数をここに入れてください。  
-        ここに渡した関数は呼ばれる際にBackendのインスタンスが渡されます。
-    name : str, default "rt.backend"
-        `sanic.Sanic`の引数nameに渡すものです。  
-        また、Backend内にあるログ出力機能でのタイトルにデフォルトで使用されます。
-    log : bool, default True
-        ログをコンソールに出力するかどうかです。
-    web_manager_kwargs : Union[list, tuple], default ()
-        このクラスの定義時にウェブサーバーの管理に便利な`rtlib.WebManager`を定義します。  
-        その`rtlib.WebManager`の定義時に渡すキーワード引数です。
-    **kwargs
-        `discord.ext.commands.AutoShardedBot`に渡すキーワード引数です。
-
-    Attributes
-    ----------
-    web : sanic.Sanic
-        `sanic.Sanic`のインスタンス、ウェブサーバーです。 
-
-    Examples
-    --------
-    import rtlib
-
-    def on_init(bot):
-        bot.load_extension("cogs.music")
-        bot.load_extension("on_full_reaction")
-
-        @bot.event
-        async def on_full_reaction_add(payload):
-           print(payload.message.content)
-
-    bot = rtlib.Backend(commands_prefix=">", on_init_bot=on_init)
-
-    bot.run("TOKEN")""" # noqa
+class BackendBase(Mixer):
     def __init__(self, *args, on_init_bot: Callable[
                     [object], Any] = lambda bot: None,
                  name: str = "rt.backend", log: bool = True,
@@ -139,3 +94,63 @@ class Backend(commands.AutoShardedBot):
     async def _close_backend(self) -> None:
         # discord.pyのクライアントのcloseにオーバーライドする関数です。
         self.web.stop()
+
+
+class Backend(BackendBase, commands.Bot):
+    """`sanic.Sanic`と`discord.ext.commands.Bot` をラップしたクラスです。  
+    `discord.ext.commands.Bot`を継承しています。  
+    sanicによるウェブサーバーとDiscordのBotを同時に手軽に動かすことができます。
+
+    Notes
+    -----
+    このクラスの定義時に`rtlib.WebManager`も定義されます。  
+    もしウェブサイトを同時に立てたい場合はそちらのクラスのリファレンスも読みましょう。  
+    デフォルトの設定ではアクセスされた際は`templates`フォルダにあるファイルを返すようになっています。
+
+    Parameters
+    ----------
+    *args
+        `discord.ext.commands.Bot`に渡す引数です。
+    on_init_bot : Callable[[object], Any], default lambda bot:None
+        `discord.ext.commands.Bot`の定義後に呼び出されます。  
+        sanicとの兼用をするのにこのBackend定義時に定義することができないためこれがあります。  
+        なのでもし`load_extension`などを使う際はそれを実行する関数をここに入れてください。  
+        ここに渡した関数は呼ばれる際にBackendのインスタンスが渡されます。
+    name : str, default "rt.backend"
+        `sanic.Sanic`の引数nameに渡すものです。  
+        また、Backend内にあるログ出力機能でのタイトルにデフォルトで使用されます。
+    log : bool, default True
+        ログをコンソールに出力するかどうかです。
+    web_manager_kwargs : Union[list, tuple], default ()
+        このクラスの定義時にウェブサーバーの管理に便利な`rtlib.WebManager`を定義します。  
+        その`rtlib.WebManager`の定義時に渡すキーワード引数です。
+    **kwargs
+        `discord.ext.commands.Bot`に渡すキーワード引数です。
+
+    Attributes
+    ----------
+    web : sanic.Sanic
+        `sanic.Sanic`のインスタンス、ウェブサーバーです。 
+
+    Examples
+    --------
+    import rtlib
+
+    def on_init(bot):
+        bot.load_extension("cogs.music")
+        bot.load_extension("on_full_reaction")
+
+        @bot.event
+        async def on_full_reaction_add(payload):
+           print(payload.message.content)
+
+    bot = rtlib.Backend(commands_prefix=">", on_init_bot=on_init)
+
+    bot.run("TOKEN")""" # noqa
+    pass
+
+class AutoShardedBackend(BackendBase, commands.AutoShardedBot):
+    """Backendの自動シャード版です。  
+    `discord.ext.commands.Bot`ではなく`discord.ext.commands.AutoShardedBot`を継承しています。  
+    引数など説明は基本Backendと同じです。"""
+    pass

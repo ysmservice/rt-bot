@@ -7,10 +7,6 @@ from data import is_admin
 
 
 class DatabaseManager(commands.Cog):
-    """!lang ja
-    --------
-    データベースを操作するためのものです。
-    データベースを管理するには`data.py`の`data["admins"]`に自分のIDがある必要があります。"""
     def __init__(self, bot):
         self.bot, self.rt = bot, bot.data
         self.db = self.rt["mysql"]
@@ -31,7 +27,10 @@ class DatabaseManager(commands.Cog):
     async def database(self, ctx):
         """!lang ja
         --------
-        データベースを操作するグループコマンドの親コマンドです。"""
+        データベースを操作するための管理者用のコマンドです。
+
+        !parent Admin
+        -------"""
         if not ctx.invoked_subcommand:
             await ctx.reply("使い方が間違っています。")
 

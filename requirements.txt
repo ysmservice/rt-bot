@@ -2,6 +2,7 @@
 sanic
 jinja2
 flask-misaka
+aiofiles
 ujson
 discord.py
 # rtutilで必要なモジュール
