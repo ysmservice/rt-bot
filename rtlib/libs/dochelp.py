@@ -105,7 +105,6 @@ class DocHelp(commands.Cog):
 
             wrote, doc = False, {}
             if isinstance(session_id, int):
-                print(1, command.name)
                 # 親コマンドがいるコマンドのヘルプを親コマンドに追記する。
                 for lang in data:
                     doc[lang] = f"\n## {command.name}\n" + data[lang]
@@ -133,7 +132,6 @@ class DocHelp(commands.Cog):
                 # そして`self._set_parent`が呼ばれそこでカテゴリーが登録されます。
                 # そのカテゴリーに親コマンドがいないコマンドのヘルプを書き込みます。
                 # 例：`!parent 安全`
-                print(2, command.name)
                 for category_name in self.data:
                     if session_id in self.data[category_name]:
                         self.data[category_name][session_id] = data
@@ -141,7 +139,6 @@ class DocHelp(commands.Cog):
                         break
                 # もしカテゴリーが割り振られなかった場合はotherカテゴリーを作りそこに入れる。
                 if not wrote:
-                    print(4, command.name)
                     self.data["other"][session_id] = data
 
     @commands.Cog.listener()
