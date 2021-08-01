@@ -39,17 +39,29 @@ from discord.ext import commands
 from .util import DocParser
 
 
-class DocHelp(DocParser, commands.Cog):
+class DocHelp(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.data: dict = {}
         if "OnAddRemoveCommand" not in self.bot.cogs:
             self.bot.load_extension("rtlib.libs.on_command_add")
-        super().__init__()
+
+        self.dp = DocParser()
+        self.dp.add_event(self.set_parent)
+        self.indent_type = " "
+        self.indent = 4
 
     @commands.Cog.listener()
     async def on_command_add(self, command):
-        command.callback.__doc__
+        doc = command.callback.__doc__
+        if doc:
+            if command.cog is None:
+                first_indent_count = 2
+            else:
+                first_indent_count = 1
+            data = self.dp.parse(doc, furst_indent_count=first_indent_count,
+                                 indent=self.indent, indent_type=self.indeent_type,
+                                 session_id=)
 
 
 def setup(bot):

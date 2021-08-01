@@ -1,28 +1,50 @@
 # rtlib.libs.util - Doc Parser
 
-from typing import Literal, Optional, Callable, Tuple
+from typing import Literal, Optional, Union, Callable, Tuple
 
 
 class DocParser:
     """ドキュメントをパースするためのクラスです。"""
 
     HEADDINGS = {
-        "Parameters": "# コマンドの引数",
-        "Notes": "# メモ",
-        "Warnings": "# 警告",
-        "Examples": "# コマンドの使用例",
-        "Raises": "# 起こり得るエラー",
-        "Returns": "# 実行結果",
-        "See Also": "# 関連事項"
+        "ja": {
+            "Parameters": "# コマンドの引数",
+            "Notes": "# メモ",
+            "Warnings": "# 警告",
+            "Examples": "# コマンドの使用例",
+            "Raises": "# 起こり得るエラー",
+            "Returns": "# 実行結果",
+            "See Also": "# 関連事項"
+        },
+        "en": {
+            "Parameters": "# Argments",
+            "Notes": "# Note",
+            "Warnings": "# Warning",
+            "Examples": "# Example",
+            "Raises": "# Possible errors",
+            "Returns": "# Result",
+            "See Also": "# See Also"
+        }
     }
     ITEM_REPLACE_TEXTS = {
-        "str": "文字列",
-        "int": "整数",
-        "float": "小数",
-        "bool": "真偽値",
-        ", optional": ", オプション",
-        ", default": ", デフォルト"
+        "ja": {
+            "str": "文字列",
+            "int": "整数",
+            "float": "小数",
+            "bool": "真偽値",
+            ", optional": ", オプション",
+            ", default": ", デフォルト"
+        },
+        "en": {
+            "str": "text",
+            "int": "integer",
+            "float": "decimal",
+            "bool": "boolean"
+        }
     }
+
+    def __init__(self):
+        self.events = {}
 
     def _split(self, text: str, target: str = ":") -> Tuple[str, str, int, int]:
         # targetの左と右を分けてtargetの周りにある空白の数を取得する。
@@ -43,11 +65,13 @@ class DocParser:
         return (left[:0 - left_count], right[right_count:],
                 left_count, right_count)
 
-    def _colon_parser(self, line: str) -> str:
+    def _colon_parser(self, line: str, now_lang: str) -> str:
         # ITEM_REPLACE_TEXTSにある文字列は日本語に置き換える。
         for type_name in self.ITEM_REPLACE_TEXTS:
             if type_name in line:
-                line = line.replace(type_name, self.ITEM_REPLACE_TEXTS[type_name])
+                line = line.replace(
+                    type_name, self.ITEM_REPLACE_TEXTS[now_lang].get(
+                        type_name, "# " + type_name))
         # 名前の部分を**で囲む。
         if ":" in line:
             left, right, left_count, right_count = self._split(line)
@@ -64,11 +88,39 @@ class DocParser:
                 return line[self.indent:]
             else:
                 # 引数の名前と型。
-                return self._colon_parser(line)
+                return self._colon_parser(line, now["lang"])
         return line
 
+    def add_event(self, function: Callable, event_name: Optional[str] = None) -> None:
+        """`!`から始まる項目をカスタムするためのイベントハンドラを追加します。  
+        ドキュメンテーションから引数を渡すなどに使うことができます。
+
+        Parameters
+        ----------
+        function : Callable
+            イベントハンドラの関数です。
+        event_name : Optional[str], default None
+            イベント名です。  
+            `!event_name`となります。
+
+        Examples
+        --------
+        DocParser.add_event(lambda line, now, before: print("テストじゃん。", line),
+                            "This_is_the_test.")"""
+        event_name = function.__name__ if event_name is None else event_name
+        self.events[event_name] = function
+
+    def remove_event(self, event_name: str) -> None:
+        """指定されたイベントを削除します。
+
+        Parameters
+        ----------
+        event_name : str
+            削除するイベントの名前です。"""
+        del self.events[event_name]
+
     def parse(self, doc: str, *, first_indent_count: int = 1, indent: int = 4,
-              indent_type: Literal[" ", "\t"] = " ",
+              indent_type: Literal[" ", "\t"] = " ", session_id: Union[str, int] = 0,
               item_parser: Optional[Callable] = None) -> dict:
         """渡されたドキュメンテーションをマークダウンにパースします。
 
@@ -102,27 +154,50 @@ class DocParser:
         }
         now = {
             "lang": "ja",
-            "item": "description"
+            "item": "description",
+            "session_id": session_id
         }
 
         for line in doc.splitlines():
             line = line[indent*first_indent_count:]
             if all(char == "-" for char in line) and line != "":
-                # もし項目を分ける水平線だったら項目名をメモしておく。
                 if before["line"].startswith("!lang "):
                     now["lang"] = before["line"][6:]
                     if now["lang"] not in text:
                         text[now["lang"]] = ""
                     now["item"] = "description"
+                elif before["line"].startswith(tuple([f"!{key}" for key in self.events])):
+                    blank_index = before["line"].find(" ")
+                    if blank_index == -1:
+                        item_name = before["line"][1:]
+                    else:
+                        item_name = before["line"][1:blank_index]
+                    write = self.events[item_name](line, now, before)
+                    if write:
+                        now["item"] = item_name
+                    else:
+                        now["item"] = "!"
                 else:
                     before["item"] = now["item"]
                     now["item"] = before["line"]
-                    t = self.HEADDINGS.get(now["item"], now["item"]) + "\n"
+                    t = self.HEADDINGS[now["lang"]].get(now["item"], now["item"]) + "\n"
                     text[now["lang"]] += t
-            elif line not in self.HEADDINGS and not line.startswith("!lang "):
-                # 項目名などではない普通の場合はitem_paresrでアイテムをパースする。
+            elif (line not in self.HEADDINGS[now["lang"]] and not line.startswith("!")
+                      and now["item"] != "!"):
                 text[now["lang"]] += item_parser(line, now, before) + "\n"
             before["line"] = line
+
+        # 最初と最後に改行があるならそれを削除しておく。
+        for key in text:
+            if text[key]:
+                while text[key]:
+                    if text[key][0] == "\n":
+                        text[key] = text[key][1:]
+                        continue
+                    if text[key][-1] == "\n":
+                        text[key] = text[key][:-1]
+                        continue
+                    break
         return text
 
 
@@ -163,13 +238,19 @@ test1 : str
     test1
 test2 : str
 
+!test
+-----
+test
+
 Notes
 -----
 Finish!
 """
     dp = DocParser()
+    dp.add_event(lambda line, now, before: print("お、テストじゃん！"),
+                 "test")
 
     data = dp.parse(doc, first_indent_count=0)
     for key in data:
-        print("-----", key, "------")
+        print("\n-----", key, "------")
         print(data[key])
