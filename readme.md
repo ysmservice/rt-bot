@@ -3,9 +3,8 @@ RTのバックエンドです。
 (C) 2020 RT-Team
 
 ## ライセンスについて
-ライセンスは現在`No license`となっています。  
-著作権表記：`(C) 2020 RT-Team`  
-ですが、rtlibは配布予定なのでrtlibにあるものは`MIT LICENSE`となります。
+ライセンスは現在`BSD 4-Clause License`で`LICENSE`ファイルに記載されています。  
+著作権表記：`(C) 2020 RT-Team`
 
 ## 起動方法
 Python 3.8以上、MySQLを用意します。
