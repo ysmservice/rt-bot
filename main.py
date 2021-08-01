@@ -3,7 +3,7 @@ LICENSE : ./LICENSE
 README  : ./readme.md
 """
 
-from asyncio import coroutine
+from os import listdir
 from sys import argv
 import ujson
 import rtlib
@@ -31,7 +31,12 @@ def on_init(bot):
     bot.load_extension("rtlib.libs.on_full_reaction")
     bot.load_extension("rtlib.libs.on_command_add")
     bot.load_extension("rtlib.libs.dochelp")
-    bot.load_extension("cogs.database")
+    # cogsフォルダにあるエクステンションを読み込む。
+    for path in listdir("cogs"):
+        if path.endswith(".py"):
+            bot.load_extension("cogs." + path[:-3])
+        elif "." not in path and path != "__pycache__" and path[0] != ".":
+            bot.load_extension("cogs." + path)
 
 
 # テスト時は普通のBackendを本番はシャード版Backendを定義する。
