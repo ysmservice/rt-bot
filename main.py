@@ -30,6 +30,7 @@ def on_init(bot):
     bot.load_extension("jishaku")
     bot.load_extension("rtlib.libs.on_full_reaction")
     bot.load_extension("rtlib.libs.on_command_add")
+    bot.load_extension("rtlib.libs.simple_viewo")
     bot.load_extension("rtlib.libs.dochelp")
     # cogsフォルダにあるエクステンションを読み込む。
     for path in listdir("cogs"):
@@ -47,9 +48,12 @@ kwargs = {
 }
 if argv[1] == "test":
     bot = rtlib.Backend(*args, **kwargs)
+    bot.test = True
 elif argv[1] == "production":
     bot = rtlib.AutoShardedBackend(*args, **kwargs)
+    bot.test = False
 bot.data = data
+bot.colors = data["colors"]
 bot.is_admin = is_admin
 
 
