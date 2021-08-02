@@ -24,7 +24,9 @@ prefixes = data["prefixes"][argv[1]]
 # Backendのセットアップをする。
 def on_init(bot):
     bot.data["mysql"] = rtlib.mysql.MySQLManager(
-        bot.loop, secret["mysql"]["user"], secret["mysql"]["password"])
+        loop=bot.loop, user=secret["mysql"]["user"],
+        password=secret["mysql"]["password"], db="mysql",
+        pool = True)
 
     # エクステンションを読み込む。
     bot.load_extension("jishaku")
@@ -47,9 +49,12 @@ kwargs = {
 }
 if argv[1] == "test":
     bot = rtlib.Backend(*args, **kwargs)
+    bot.test = True
 elif argv[1] == "production":
     bot = rtlib.AutoShardedBackend(*args, **kwargs)
+    bot.test = False
 bot.data = data
+bot.colors = data["colors"]
 bot.is_admin = is_admin
 
 

@@ -2,8 +2,9 @@
 
 from typing import Union, Any, Dict, Tuple
 
-from asyncio import AbstractEventLoop
-from aiomysql import connect
+from asyncio import AbstractEventLoop, get_event_loop
+from aiomysql import create_pool, connect
+from pymysql.err import OperationalError
 import warnings
 import ujson
 
@@ -95,12 +96,12 @@ class Cursor:
             テーブルの作成後に自動で`MySQLManager.commit`をするかどうかです。"""
         if_not_exists = "IF NOT EXISTS " if if_not_exists else ""
         values = ", ".join(f"{key} {columns[key]}" for key in columns)
-        await self.cursor.execute(f"CREATE TABLE {if_not_exists}{table} ({values})")
-        del if_not_exists, values
+        await self.cursor.execute(f"CREATE TABLE {if_not_exists}{table} ({values});")
         if commit:
             await self.connection.commit()
+        del if_not_exists, values
 
-    async def drop_table(self, table: str, if_exists: bool = True, commit: bool = True) -> None:
+    async def drop_table(self, table: str, commit: bool = True) -> None:
         """テーブルを削除します。
 
         Parameters
@@ -111,9 +112,7 @@ class Cursor:
             もしテーブルが存在するならテーブルを削除するかどうかです。
         commit : bool, default True
             テーブル削除後に自動で`MySQLManager.commit`を実行するかどうかです。"""
-        if_exists = "IF EXISTS " if if_exists else ""
-        await self.cursor.execute(f"DROP TABLE {if_exists}{table}")
-        del if_exists
+        await self.cursor.execute(f"DROP TABLE {table};")
         if commit:
             await self.connection.commit()
 
@@ -237,18 +236,19 @@ class Cursor:
             conditions, args = self._get_column_args(targets)
             conditions = " WHERE " + conditions[:-4]
         else:
-            conditions, args = "", None
+            conditions, args = "", ()
         await self.cursor.execute(
             f"SELECT * FROM {table}{conditions}", args)
         if not _fetchall:
             rows = await self.cursor.fetchall()
         else:
             rows = [await self.cursor.fetchone()]
-        if rows:
+        if rows and True: # (rows != [None] and targets == {})
             for row in rows:
-                datas = [ujson.loads(data) if data[0] == "{" and data[-1] == "}"
-                         else data for data in row]
-                yield datas
+                if isinstance(row, str):
+                    row = [ujson.loads(data) if data[0] == "{" and data[-1] == "}"
+                           else data for data in row]
+                yield row
                 if not _fetchall:
                     break
         else:
@@ -273,52 +273,74 @@ class Cursor:
 
 class MySQLManager:
     """MySQLを簡単に使うためのモジュールです。  
-    aiomysqlを使用しています。
+    aiomysqlを使用しています。  
+    プールを使用することもできます。  
+    複数のコグから使うなどの場合はプールモードで定義しましょう。
 
     Notes
     -----
     データベースの操作はこのクラスにあるものだけではできません。  
     データベースの操作を行うなら`Cursor`を使いましょう。  
-    `Cursor`は`MySQLManager.get_cursor`で定義済みのものを取得することができます。
+    `Cursor`は`MySQLManager.get_cursor`で定義済みのものを取得することができます。  
+    このクラスをプールモードで定義したの場合は、そのクラスは`get_cursor`や`commit`などが使用できません。  
+    これを使用する場合はプールからコネクションを取得する必要があります。  
+    これは`MySQLManager.get_database`から取得可能です。  
+    これで取得したものはプールモードをオフにして定義したこのクラスと同等です。
 
     Parameters
     ----------
-    loop : asyncio.AbstractEventLoop
-        使う非同期のイベントループです。
-    user : str
-        MySQLのユーザー名です。
-    password : str
-        MySQLのパスワードです。
-    db_name : str, default "mysql"
-        データベースの名前です。
-    port : int, default 3306
-        MySQLのポートです。
-    host : str, defualt "localhost"
-        MySQLのhostです。
+    pool : bool, default False
+        プールを使用します。
+    **kwargs : dict
+        `aiomysql.connect`または`aiomysql.create_pool`に渡すキーワード引数です。
 
     Attributes
     ----------
     connection
-        aiomysqlのMySQLとのコネクションです。
+        aiomysqlのMySQLとのコネクションです。  
+        プールの場合は使えません。
+    pool
+        aiomysqlのプールです。  
+        プールじゃない場合は使えません。
     loop : asyncio.AbstractEventLoop
         使用しているイベントループです。
 
     Examples
     --------
-    db = rtutil.MySQLManager(bot.loop, "root", "I wanna be the guy")"""
-    def __init__(self, loop: AbstractEventLoop, user: str, password: str, db_name: str = "mysql",
-                 port: int = 3306, host: str = "localhost"):
-        loop.create_task(self._setup(user, password, loop, db_name, port, host))
+    # 普通
+    db = rtutil.MySQLManager(
+        loop=bot.loop, user="root", password="I wanna be the guy", db="mysql")
+    async with db.get_cursor() as cursor:
+        ...
+    # プールとして使う場合
+    pool = rtutil.MySQLManager(
+        loop=bot.loop, user="root", password="I wanna be the guy", db="mysql")
+    db = pool.get_database()
+    async with db.get_cursor() as cursor:
+        ..."""
+    def __init__(self, pool: bool = False, _pool_c=False, **kwargs):
+        self.connection, self.pool = None, None
+        self.loop = kwargs.get("loop", get_event_loop())
+        self.loop.create_task(self._setup(pool, _pool_c, kwargs))
 
-    async def _setup(self, user, password, loop, db, port, host) -> None:
+    async def _setup(self, pool, _pool_c, kwargs) -> None:
         # データベースの準備をする。
-        self.loop = loop
-        self.connection = await connect(host=host, port=port,
-                                        user=user, password=password,
-                                        db=db, loop=loop,
-                                        charset="utf8")
-        cur = await self.connection.cursor()
-        await cur.close()
+        if pool and not _pool_c:
+            self.pool = await create_pool(**kwargs)
+        elif not _pool_c:
+            self.connection = await connect(**kwargs)
+
+    async def get_database(self):
+        """このクラスの定義済みのものをプールを使って取得します。  
+        これはこのクラスの定義時`pool=True`と言う引数を作っている場合のみ使用できます。  
+        
+        Warnings
+        --------
+        これはデータベースへの接続が終わってから実行してください。"""
+        new = self.__class__(_pool_c=True, loop=self.loop)
+        new.connection = await self.pool.acquire()
+        new.use = True
+        return new
 
     async def commit(self):
         """変更をセーブします。"""
@@ -334,4 +356,7 @@ class MySQLManager:
         self.__del__()
 
     def __del__(self):
-        self.connection.close()
+        if self.connection is not None:
+            self.connection.close()
+        if self.pool is not None:
+            self.pool.close()
