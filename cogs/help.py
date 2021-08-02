@@ -56,3 +56,8 @@ class Help(commands.Cog):
     @commands.command(aliases=["dhelp"])
     async def discord_help(self, ctx, *, word):
         """"""
+        pass
+
+
+def setup(bot):
+    bot.add_cog(Help(bot))
