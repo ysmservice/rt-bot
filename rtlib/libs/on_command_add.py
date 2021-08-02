@@ -23,7 +23,8 @@ class OnAddRemoveCommand(commands.Cog):
             queue_done = command.name
         self.bot.dispatch("command_add", cmd)
     # もしqueueを処理したのならそのqueueを削除する。
-    del self.queue[queue_done]
+    if queue_done is not None:
+        del self.queue[queue_done]
     # オーバーライドされたオリジナルを実行する。
     return self._default_add_cmd_!parent_onlyname!(command)
 self.!parent! = !parent!"""

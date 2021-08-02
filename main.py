@@ -24,13 +24,14 @@ prefixes = data["prefixes"][argv[1]]
 # Backendのセットアップをする。
 def on_init(bot):
     bot.data["mysql"] = rtlib.mysql.MySQLManager(
-        bot.loop, secret["mysql"]["user"], secret["mysql"]["password"])
+        loop=bot.loop, user=secret["mysql"]["user"],
+        password=secret["mysql"]["password"], db="mysql",
+        pool = True)
 
     # エクステンションを読み込む。
     bot.load_extension("jishaku")
     bot.load_extension("rtlib.libs.on_full_reaction")
     bot.load_extension("rtlib.libs.on_command_add")
-    bot.load_extension("rtlib.libs.simple_viewo")
     bot.load_extension("rtlib.libs.dochelp")
     # cogsフォルダにあるエクステンションを読み込む。
     for path in listdir("cogs"):

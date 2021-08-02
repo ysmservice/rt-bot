@@ -9,10 +9,10 @@ from data import is_admin
 class DatabaseManager(commands.Cog):
     def __init__(self, bot):
         self.bot, self.rt = bot, bot.data
-        self.db = self.rt["mysql"]
 
     @commands.Cog.listener()
     async def on_ready(self):
+        self.db = await self.rt["mysql"].get_database()
         # テスト用のテーブルを作る。
         async with self.db.get_cursor() as cursor:
             columns = {
@@ -68,7 +68,7 @@ class DatabaseManager(commands.Cog):
 
     @database.command()
     @is_admin()
-    async def drop_table(self, ctx, table, ie: bool = True, commit: bool = True):
+    async def drop_table(self, ctx, table, commit: bool = True):
         """!lang ja
         --------
         データベースからテーブルを削除します。
@@ -77,13 +77,10 @@ class DatabaseManager(commands.Cog):
         ----------
         table : str
             削除するテーブルの名前です。
-        ie : bool, default True
-            もし削除するテーブルが存在するなら削除を行い削除するテーブルが存在しないのなら何もしないようにするかどうかです。
-            Falseを入れた場合は削除するテーブルが存在しない際エラーが発生します。
         commit : bool, defualt True
             削除後に自動でcommitをするかどうかです。"""
         async with self.db.get_cursor() as cursor:
-            await cursor.drop_table(table, ie, commit)
+            await cursor.drop_table(table, commit)
         await ctx.reply("Ok")
 
     @database.command()
@@ -136,7 +133,6 @@ class DatabaseManager(commands.Cog):
         特定のIDにあるnameのコラムを`tasurenはアイワナ`に変更します。
         `rt!database update_data credit "{'id':634763612535390209}" "{'name':'tasurenはアイワナ'}"`"""
         async with self.db.get_cursor() as cursor:
-            print(table, values, targets)
             await cursor.update_data(
                 table, loads(values.replace("'", '"')),
                 loads(targets.replace("'", '"')), commit)

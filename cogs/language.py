@@ -28,15 +28,14 @@ class Language(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.cache = {}
-        self.db = self.botdata["mysql"]
         self.dpy_injection()
 
     def dpy_injection(self):
         # discord.pyのsendを改造する。
         default_send = copy(discord.abc.Messageable.send)
 
+        # 元のsendにつけたしをしたバージョンのsend。
         async def new_send(channel, *args, **kwargs):
-            # 元のsendにつけたしをしたバージョンのsend。
             # このsendが返信に使われたのなら返信先のメッセージの送信者(実行者)の言語設定を読み込む。
             lang = "ja"
             if (reference := kwargs.get("reference")) is not None:
@@ -44,45 +43,63 @@ class Language(commands.Cog):
             # もし実行者の言語設定がjaじゃないならcontentなどの文字列が言語データにないか検索をする。
             if lang != "ja":
                 if (content := kwargs.get("content", False)):
-                    # contentを翻訳済みに交換する。
-                    kwargs["content"] = self.replace_language()
+                    kwargs["content"] = self.get_text(kwargs["content"], lang)
+                if args:
+                    args = (self.get_text(args[0], lang),)
                 if kwargs.get("embed", False):
-                    kwargs["embed"] = self.replace_language()
-                    
+                    kwargs["embed"] = self.get_text(kwargs["embed"], lang)
+                if "embeds" in kwargs:
+                    kwargs["embeds"] = [self.get_text(embed, lang)
+                                        for embed in kwargs.get("embeds", [])]
+            # 元のsendを実行する。インスタンス化されてないからselfの代わりにchannelを渡す。
             return await default_send(
                 channel.channel if isinstance(channel, commands.Context) else channel,
                 *args, **kwargs
             )
 
-        discord.abc.Messageable.send = self.new_send
+        # オーバーライドする。
+        discord.abc.Messageable.send = new_send
 
-    def replace_language(self, content: Union[str, discord.Embed], language: Literal[LANGUAGES]) -> Union[str, discord.Embed]:
-        """渡されたものにある文字列を渡された言語コードのものに交換をします。  
-        渡されたものにある文字列は渡された言語コードと一緒にdata/replies.jsonにないと変化しません。
+    def _get_reply(self, text: str, lang: Literal[LANGUAGES]) -> str:
+        # 指定された文字を指定された言語で交換します。
+        return self.replies.get(text, {}).get(lang, text)
+
+    def _replace_embed(self, embed: discord.Embed, lang: Literal[LANGUAGES]) -> discord.Embed:
+        # Embedを指定された言語コードで交換します。
+        # タイトルとディスクリプションを交換する。
+        for n in ("title", "description"):
+            if getattr(embed, n) is discord.Embed.Empty:
+                setattr(embed, n, self._get_reply(getattr(embed, n), lang))
+        # Embedにあるフィールドの文字列を交換する。
+        new_fields = []
+        for field in embed.fields:
+            field.name = self._get_reply(field.name, lang)
+            field.value = self._get_reply(field.value, lang)
+        # Embedのフッターを交換する。
+        if embed.footer is discord.Embed.Empty:
+            embed.footer = self._get_reply(embed.footer, lang)
+        return embed
+
+    def get_text(self, text: Union[str, discord.Embed],
+                 target: Union[int, Literal[LANGUAGES]]) -> str:
+        """渡された言語コードに対応する文字列に渡された文字列を交換します。  
+        また言語コードの代わりにユーザーIDを渡すことができます。  
+        ユーザーIDを渡した場合はそのユーザーIDに設定されている言語コードが使用されます。  
+        またまた文字列の代わりにdiscord.Embedなどを渡すこともできます。
 
         Parameters
         ----------
-        content : Union[str, discord.Embed]
-            交換をするもの。
-        language : Literal["ja", "en"]
-            交換先の言語コードです。
-
-        Returns
-        -------
-        Union[str, discord.Embed] : contentにある文字列をlanguageに対応する文字列に交換した後のcontentです。"""
-        pass
-
-    def get_text(self, author_id: int, text: str) -> str:
-        """textを渡されたIDに設定されている言語コードにあった文字列にして返します。  
-        data/replies.jsonに翻訳済みのものがあるtextでなければ変化しません。
-
-        Parameters
-        ----------
-        author_id : int
-            対象のユーザーのIDです。
-        text : str
-            交換したい文字列です。"""
-        return self.replies[self.get(author_id)].get(text, text)
+        text : Union[str, discord.Embed]
+            交換したい文字列です。
+        target : Union[int, Literal["ja", "en"]]
+            対象のIDまたは言語コードです。"""
+        # この関数はself._get_replyとself._replace_embedを合成したようなものです。
+        if isinstance(target, int):
+            target = self.get(target)
+        if isinstance(text, str):
+            return self._get_reply(text, target)
+        elif isinstance(text, discord.Embed):
+            return self._replace_embed(text, target)
 
     async def update_language(self) -> None:
         # 言語データを更新します。
@@ -103,14 +120,16 @@ class Language(commands.Cog):
     async def update_cache(self, cursor):
         # キャッシュを更新します。
         # キャッシュがあるのはコマンドなど実行時に毎回データベースから読み込むのはあまりよくないから。
-        async for ugid, lang in cursor.get_datas("language", {}):
-            self.cache[ugid] = lang
+        async for row in cursor.get_datas("language", {}):
+            if row:
+                self.cache[row[0]] = row[1]
 
     @commands.Cog.listener()
     async def on_ready(self):
+        self.db = await self.bot.data["mysql"].get_database()
         # テーブルがなければ作っておく。
         columns = {
-            "id": "INTEGER",
+            "id": "BIGINT",
             "language": "TEXT"
         }
         async with self.db.get_cursor() as cursor:
@@ -135,7 +154,7 @@ class Language(commands.Cog):
         return self.cache.get(ugid, "ja")
 
     @commands.command(aliases=["lang"])
-    async def language(self, ctx, language: Literal[LANGUAGES]):
+    async def language(self, ctx, language):
         """!lang ja
         --------
         RTの言語設定を変更します。
@@ -169,26 +188,25 @@ class Language(commands.Cog):
             raise ValueError(f"Error: {code}")
 
         # 返信内容と変更内容を用意する。
-        color, mode = self.bot.colors["normal"], None
-        title, description = "Ok", None
+        color = self.bot.colors["normal"]
+        title, description = "Ok", discord.Embed.Empty
         await ctx.trigger_typing()
 
         # データベースに変更内容を書き込む。
-        if mode is not None:
-            targets = {"id": ctx.author.id}
-            async with self.db.get_cursor() as cursor:
-                new = {"language": language}
-                if await cursor.exists("language", targets):
-                    await cursor.update_data("language", new, targets)
-                else:
-                    targets.update(new)
-                    await cursor.insert_data("language", targets)
-                await self.update_cache(cursor)
+        targets = {"id": ctx.author.id}
+        async with self.db.get_cursor() as cursor:
+            if await cursor.exists("language", targets):
+                await cursor.update_data("language", {"language": language}, targets)
+            else:
+                targets["language"] = language
+                print(targets)
+                await cursor.insert_data("language", targets)
+            await self.update_cache(cursor)
 
         # 返信をする。
         embed = discord.Embed(
             title=title, description=description, color=color)
-        await ctx.reply(embed)
+        await ctx.reply(embed=embed)
 
 
 def setup(bot):
