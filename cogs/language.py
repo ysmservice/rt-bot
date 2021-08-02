@@ -3,8 +3,8 @@
 from discord.ext import commands
 import discord
 
+from typing import Literal, Union, List, Tuple
 from aiofiles import open as async_open
-from typing import Literal, Union
 from ujson import loads
 from copy import copy
 
@@ -21,16 +21,21 @@ class Language(commands.Cog):
     * 言語データのリロード。
        - self.reload_language / self.update_language
     * send呼び出し時にもし実行者/サーバーが英語に設定しているなら、contentなどを言語データから英語のものに置き換えるようにsendを改造する。
-       - self.dpy_injection"""
+       - self.dpy_injection
+
+    ## このコグを読み込んでできること
+    `channel.send("日本語", target=author.id)`や`message.reply("日本語")`とした時に自動で`data/replies.json`にある翻訳済み文字列に交換します。  
+    もし一部環境などによっては変化する文字列がある場合は`data/replis.json`の方では`$$`にして、コードは`"$ここに変化する文字列$"`のようにすれば良いです。  
+    もし翻訳済みに交換してほしくないテキストの場合は引数で`replace_language=False`とやればよいです。"""
 
     LANGUAGES = ("ja", "en")
 
     def __init__(self, bot):
         self.bot = bot
         self.cache = {}
-        self.dpy_injection()
+        self._dpy_injection()
 
-    def dpy_injection(self):
+    def _dpy_injection(self):
         # discord.pyのsendを改造する。
         default_send = copy(discord.abc.Messageable.send)
 
@@ -40,17 +45,21 @@ class Language(commands.Cog):
             lang = "ja"
             if (reference := kwargs.get("reference")) is not None:
                 lang = self.get(reference.author.id)
-            # もし実行者の言語設定がjaじゃないならcontentなどの文字列が言語データにないか検索をする。
-            if lang != "ja":
-                if (content := kwargs.get("content", False)):
-                    kwargs["content"] = self.get_text(kwargs["content"], lang)
-                if args:
-                    args = (self.get_text(args[0], lang),)
-                if kwargs.get("embed", False):
-                    kwargs["embed"] = self.get_text(kwargs["embed"], lang)
-                if "embeds" in kwargs:
-                    kwargs["embeds"] = [self.get_text(embed, lang)
-                                        for embed in kwargs.get("embeds", [])]
+
+            if not kwargs.pop("replace_language", True):
+                # もし言語データ交換するなと引数から指定されたならデフォルトのjaにする。
+                lang = "ja"
+            # contentなどの文字列が言語データにないか検索をする。
+            if (content := kwargs.get("content", False)):
+                kwargs["content"] = self.get_text(kwargs["content"], lang)
+            if args:
+                args = (self.get_text(args[0], lang),)
+            if kwargs.get("embed", False):
+                kwargs["embed"] = self.get_text(kwargs["embed"], lang)
+            if "embeds" in kwargs:
+                kwargs["embeds"] = [self.get_text(embed, lang)
+                                    for embed in kwargs.get("embeds", [])]
+
             # 元のsendを実行する。インスタンス化されてないからselfの代わりにchannelを渡す。
             return await default_send(
                 channel.channel if isinstance(channel, commands.Context) else channel,
@@ -60,15 +69,44 @@ class Language(commands.Cog):
         # オーバーライドする。
         discord.abc.Messageable.send = new_send
 
+    def _extract_question(self, text: str, parse_character: str = "$") -> Tuple[List[str], List[str]]:
+        # 渡された文字列の中にある`$xxx$`のxxxのやところを
+        now, now_target, results, other = "", False, [], ""
+
+        for char in text:
+            if char == parse_character:
+                if now_target:
+                    results.append(now)
+                    now_target = False
+                    now = ""
+                else:
+                    now_target = True
+            if now_target and char != parse_character:
+                now += char
+            else:
+                other += char
+
+        return results, other
+
     def _get_reply(self, text: str, lang: Literal[LANGUAGES]) -> str:
         # 指定された文字を指定された言語で交換します。
-        return self.replies.get(text, {}).get(lang, text)
+        # $で囲まれている部分を取得しておく。
+        results, text = self._extract_question(text)
+
+        # 言語データから文字列を取得する。
+        result = self.replies.get(text, {}).get(lang, text)
+
+        # 上で$で囲まれた部分を取得したのでその囲まれた部分を交換する。
+        for word in results:
+            result = result.replace("$$", word, 1)
+
+        return result
 
     def _replace_embed(self, embed: discord.Embed, lang: Literal[LANGUAGES]) -> discord.Embed:
         # Embedを指定された言語コードで交換します。
         # タイトルとディスクリプションを交換する。
         for n in ("title", "description"):
-            if getattr(embed, n) is discord.Embed.Empty:
+            if getattr(embed, n) is not discord.Embed.Empty:
                 setattr(embed, n, self._get_reply(getattr(embed, n), lang))
         # Embedにあるフィールドの文字列を交換する。
         new_fields = []
@@ -76,8 +114,9 @@ class Language(commands.Cog):
             field.name = self._get_reply(field.name, lang)
             field.value = self._get_reply(field.value, lang)
         # Embedのフッターを交換する。
-        if embed.footer is discord.Embed.Empty:
-            embed.footer = self._get_reply(embed.footer, lang)
+        if embed.footer:
+            if embed.footer.text is not discord.Embed.empty:
+                embed.footer.text = self._get_reply(embed.footer.text, lang)
         return embed
 
     def get_text(self, text: Union[str, discord.Embed],
