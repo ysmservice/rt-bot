@@ -28,6 +28,9 @@ class DatabaseManager(commands.Cog):
         """!lang ja
         --------
         データベースを操作するための管理者用のコマンドです。
+        
+        !lang en
+        -------
         This can edit database, It's can use only admin.
 
         !parent Admin
