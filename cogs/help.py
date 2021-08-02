@@ -48,6 +48,10 @@ class Help(commands.Cog):
         )
         await ctx.reply(embed=embed)
 
+    def _convert_embed(self, command_name: str, doc: str, **kwargs) -> discord.Embed:
+        # rtlib.libs.DocParserでドキュメンテーションからマークダウンに変換された文字列をEmbedに変換する関数。
+        embed = discord.Embed(**kwargs)
+        return embed
 
     @commands.command(aliases=["dhelp"])
     async def discord_help(self, ctx, *, word):
