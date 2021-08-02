@@ -3,6 +3,6 @@
         "en": "test"
     },
     "現在のRTのレイテンシ：$$ms": {
-	"en": "test：$$ms"
+	"en": "Now RT latency:$$ms"
     }
 }
