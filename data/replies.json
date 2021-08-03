@@ -3,6 +3,9 @@
         "en": "test"
     },
     "現在のRTのレイテンシ：$$ms": {
-	"en": "Now RT latency:$$ms"
+    	"en": "Now RT latency:$$ms"
+    },
+    "Helpが必要ですか？": {
+	    "en": "..."
     }
 }
