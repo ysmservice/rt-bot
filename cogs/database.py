@@ -23,7 +23,12 @@ class DatabaseManager(commands.Cog):
             }
             await cursor.create_table("test", columns)
 
-    @commands.group(aliases=("db",))
+    @commands.group(aliases=("db",),
+                    extras={
+                        "headding": {"ja": "データベース管理用コマンドです。",
+                                     "en": "Database management commands"},
+                        "parent": "Admin"
+                    })
     async def database(self, ctx):
         """!lang ja
         --------
@@ -31,10 +36,7 @@ class DatabaseManager(commands.Cog):
         
         !lang en
         -------
-        This can edit database, It's can use only admin.
-
-        !parent Admin
-        -------"""
+        This can edit database, It's can use only admin."""
         if not ctx.invoked_subcommand:
             await ctx.reply("使い方が間違っています。")
 

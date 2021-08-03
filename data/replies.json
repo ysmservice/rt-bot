@@ -2,10 +2,15 @@
     "テスト": {
         "en": "test"
     },
+    "# ここからcogs/bot_general.py #": {},
     "現在のRTのレイテンシ：$$ms": {
     	"en": "Now RT latency:$$ms"
     },
+    "# ここからcogs/help.py #": {},
     "Helpが必要ですか？": {
 	    "en": "..."
+    },
+    "Help - カテゴリー一覧": {
+	"en": "..."
     }
 }

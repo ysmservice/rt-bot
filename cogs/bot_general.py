@@ -45,7 +45,15 @@ class BotGeneral(commands.Cog):
 
         self._now_status_index = 0 if self._now_status_index else 1
 
-    @commands.command()
+    @commands.command(
+        extras={
+            "headding": {
+                "ja": "レイテンシを表示します。",
+                "en": "Show you RT latency."
+            },
+            "parent": "RT"
+        }
+    )
     async def ping(self, ctx):
         """!lang ja
         --------

@@ -29,7 +29,7 @@ class OnAddRemoveCommand(commands.Cog):
     return self._default_add_cmd_!parent_onlyname!(command)
 self.!parent! = !parent!"""
     ON_REMOVE_COMMAND = """def !parent!(name):
-    command = self._default_remove_cmd!parent_onlyname!(name)
+    command = self._default_remove_cmd_!parent_onlyname!(name)
     self.bot.dispatch("command_remove", command)
     return name
 self.!parent! = !parent!"""

@@ -83,7 +83,7 @@ class DocHelp(commands.Cog):
         self.dp.add_event(self._set_parent, "parent")
         self.indent_type = " "
         self.indent = 4
-        self.data = {"other": {}}
+        self.data = {}
 
     @commands.Cog.listener()
     async def on_command_add(self, command):
@@ -116,15 +116,15 @@ class DocHelp(commands.Cog):
                         for lang in self.data[category_name][command.parent.name]:
                             if lang in data:
                                 # 親コマンドのヘルプにコマンドのヘルプを追記する。
-                                self.data[category_name][command.parent.name][lang] += doc[lang]
+                                self.data[category_name][command.parent.name][lang][1] += doc[lang]
                                 wrote = True
                         break
-                # もしカテゴリーが見つからないのならotherカテゴリーにする。
+                # もしカテゴリーが見つからないのならOtherカテゴリーにする。
                 if not wrote:
                     n = (command.name if command.parent.name == "I wanna be the guy!"
                          else command.parent.name)
                     for lang in doc:
-                        self.data["other"][n] = "\n" + doc[lang][2:]
+                        self.data["Other"][n][lang][1] = "\n" + doc[lang][2:]
             else:
                 # 親コマンドがいないコマンドの場合コマンドのヘルプを新しく書き込む。
                 # もしコマンドのヘルプに`!parent`があるならself._set_parentが呼ばれます。
@@ -132,14 +132,21 @@ class DocHelp(commands.Cog):
                 # そして`self._set_parent`が呼ばれそこでカテゴリーが登録されます。
                 # そのカテゴリーに親コマンドがいないコマンドのヘルプを書き込みます。
                 # 例：`!parent 安全`
+                for lang in data:
+                    headdings = command.extras.get("headding", {})
+                    data[lang] = [headdings.get(lang, ""), data[lang]]
                 for category_name in self.data:
                     if session_id in self.data[category_name]:
                         self.data[category_name][session_id] = data
                         wrote = True
                         break
                 # もしカテゴリーが割り振られなかった場合はotherカテゴリーを作りそこに入れる。
+                # この際commands.command(extras=ここ)のここでparentを指定されたらそこからカテゴリーをとる。
                 if not wrote:
-                    self.data["other"][session_id] = data
+                    parent = "Other" if (parent := command.extras.get("parent")) is None else parent
+                    if parent not in self.data:
+                        self.data[parent] = {}
+                    self.data[parent][session_id] = data
 
     @commands.Cog.listener()
     async def on_command_remove(self, command):
@@ -148,7 +155,7 @@ class DocHelp(commands.Cog):
         if command:
             for category_name in self.data:
                 if command.name in self.data[category_name]:
-                    del self.data[category_name]
+                    del self.data[category_name][command.name]
                     break
 
     def _set_parent(self, line: str, now: dict, before: dict) -> Literal[None, False]:
@@ -158,7 +165,7 @@ class DocHelp(commands.Cog):
             category_name = before["line"].replace("!parent ", "")
             if category_name not in self.data:
                 self.data[category_name] = {}
-            self.data[category_name][now["session_id"]] = ""
+            self.data[category_name][now["session_id"]] = {}
             return False
 
     async def output(self, path: str) -> None:

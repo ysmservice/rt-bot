@@ -14,7 +14,8 @@ class DocParser:
             "Examples": "### コマンドの使用例",
             "Raises": "### 起こり得るエラー",
             "Returns": "### 実行結果",
-            "See Also": "### 関連事項"
+            "See Also": "### 関連事項",
+            "Aliases": "### エイリアス"
         },
         "en": {
             "Parameters": "### Argments",
@@ -23,7 +24,8 @@ class DocParser:
             "Examples": "### Example",
             "Raises": "### Possible errors",
             "Returns": "### Result",
-            "See Also": "### See Also"
+            "See Also": "### See Also",
+            "Aliases": "### Aliases"
         }
     }
     ITEM_REPLACE_TEXTS = {

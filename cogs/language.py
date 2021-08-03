@@ -115,7 +115,7 @@ class Language(commands.Cog):
             field.value = self._get_reply(field.value, lang)
         # Embedのフッターを交換する。
         if embed.footer:
-            if embed.footer.text is not discord.Embed.empty:
+            if embed.footer.text is not discord.Embed.Empty:
                 embed.footer.text = self._get_reply(embed.footer.text, lang)
         return embed
 
@@ -145,13 +145,13 @@ class Language(commands.Cog):
         async with async_open("data/replies.json") as f:
             self.replies = loads(await f.read())
 
-    @commands.command()
+    @commands.command(
+        extras={"headding": {"ja": "言語データを再読込します。",
+                             "en": "Reload language data."},
+                "parent": "Admin"})
     @is_admin()
     async def reload_language(self, ctx):
-        """言語データを再読込します。
-
-        !parent Admin
-        -------"""
+        """言語データを再読込します。"""
         await ctx.trigger_typing()
         await self.update_language()
         await ctx.reply("Ok")
@@ -192,7 +192,16 @@ class Language(commands.Cog):
         Literal["ja", "en"] : 言語コード。"""
         return self.cache.get(ugid, "ja")
 
-    @commands.command(aliases=["lang"])
+    @commands.command(
+        aliases=["lang"],
+        extras={
+            "headding": {
+                "ja": "Change language setting.",
+                "en": "言語設定を変更します。"
+            },
+            "parent": "RT"
+        }
+    )
     async def language(self, ctx, language):
         """!lang ja
         --------
@@ -208,8 +217,7 @@ class Language(commands.Cog):
         ------
         ValueError : もし無効な言語コードが入れられた場合発生します。
 
-        !lang en
-        --------
+        ## English
         Change the language setting for RT.
 
         Parameters
