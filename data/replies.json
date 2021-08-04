@@ -8,21 +8,21 @@
     },
     "# ここからcogs/help.py #": {},
     "Helpが必要ですか？": {
-	    "en": "..."
+	    "en": "Do you need help?"
     },
     "Help - カテゴリー一覧": {
-	    "en": "..."
+	    "en": "categories list"
     },
     "`rt!dhelp <名前>`を実行することで詳細を見ることができます。": {
-        "en": "..."
+        "en": "You can see detail, If you use rt!dhelp <name>"
     },
     "検索結果": {
         "en": "Results"
     },
     "名前部分一致": {
-        "en": "..."
+        "en": "Name partial match"
     },
     "説明部分一致": {
-        "en": "..."
+        "en": "detail partial match"
     }
 }
