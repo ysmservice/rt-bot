@@ -35,8 +35,8 @@ class BackendBase(Mixer):
         # Routeなど色々セットアップする。
         self.web.register_listener(self._before_server_stop,
                                    "before_server_stop")
-        self.web.register_listener(self._after_server_start,
-                                   "after_server_start")
+        self.web.register_listener(self._before_server_start,
+                                   "main_process_start")
         self.web.add_route(self._hello_route, "/hello")
         self.web_manager = WebManager(self, **web_manager_kwargs)
 
@@ -61,7 +61,7 @@ class BackendBase(Mixer):
     async def _before_server_stop(self, _, __):
         await self._default_close()
 
-    async def _after_server_start(self, _, loop):
+    async def _before_server_start(self, _, loop):
         # discord.pyをセットアップする。
         self.__kwargs["loop"] = loop
         super().__init__(*self.__args, **self.__kwargs)
@@ -69,6 +69,7 @@ class BackendBase(Mixer):
         self._on_init_bot(self)
         # Botに接続する。
         loop.create_task(self.start(self.__token, reconnect=self.__reconnect))
+        await self.wait_until_ready()
 
     async def _hello_route(self, _):
         return sanic.response.text("Hi, I'm" + self.user.name + ".")

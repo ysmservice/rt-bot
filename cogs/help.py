@@ -1,5 +1,7 @@
 # RT - Help
 
+from sanic.response import json
+
 from discord.ext import commands
 import discord
 
@@ -7,13 +9,55 @@ from typing import List, Tuple
 
 
 class Help(commands.Cog):
+
+    CATEGORIES = {
+        "bot": "RT",
+        "server-tool": "ServerTool",
+        "server-panel": "ServerPanel",
+        "server-safety": "ServerSafety",
+        "server-useful": "ServerUseful",
+        "entertainment": "Entertainment",
+        "individual": "Individual",
+        "chplugin": "ChannelPlugin",
+        "mybot": "MyBot",
+        "other": "Other"
+    }
+
     def __init__(self, bot):
         self.bot = bot
         self.help = self.bot.cogs["DocHelp"].data
         try:
-            pass
+            self._setup_web()
         except Exception as e:
             print(e)
+
+    def _setup_web(self):
+        @self.bot.web.route("/help/<category>")
+        async def help_category(request, category):
+            category = self.CATEGORIES.get(category, category)
+            count, lang = 0, "ja"
+            data = {
+                str(count := count + 1):[
+                    key, self.help[category][key][lang][0]
+                ]
+                for key in self.help[category]
+            } if category in self.help else {}
+            data["status"] = "ok" if data else "Not found"
+            data["title"] = category
+            return json(data)
+
+        @self.bot.web.route("/help/<category>/<command_name>")
+        async def help_detail(request, category, command_name):
+            category = self.CATEGORIES.get(category, category)
+            data, lang = {"g-title": category, "status": "Not found"}, "ja"
+            data["content"] = (f"# {command_name}\n"
+                               + self.help[category][command_name]["ja"][1]
+                                   .replace("### ", "## ")
+                               if command_name in self.help.get(category, {})
+                               else ".0.エラー：見つかりませんでした。")
+            if not data["content"].startswith(".0.") and data["content"]:
+                data["status"] = "ok"
+            return json(data)
 
     @commands.command(
         extras={
