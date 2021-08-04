@@ -30,6 +30,8 @@ def on_init(bot):
 
     # エクステンションを読み込む。
     bot.load_extension("jishaku")
+    bot.load_extension("rtlib.libs.on_send")
+    bot.load_extension("rtlib.componesy")
     bot.load_extension("rtlib.libs.on_full_reaction")
     bot.load_extension("rtlib.libs.on_command_add")
     bot.load_extension("rtlib.libs.dochelp")

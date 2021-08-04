@@ -33,41 +33,30 @@ class Language(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.cache = {}
-        self._dpy_injection()
+        self.bot.cogs["OnSend"].add_event(self._new_send)
 
-    def _dpy_injection(self):
-        # discord.pyのsendを改造する。
-        default_send = copy(discord.abc.Messageable.send)
+    async def _new_send(self, channel, *args, **kwargs):
+        # 元のsendにつけたしをする関数。rtlib.libs.on_sendを使う。
+        # このsendが返信に使われたのなら返信先のメッセージの送信者(実行者)の言語設定を読み込む。
+        lang = "ja"
+        if (reference := kwargs.get("reference")) is not None:
+            lang = self.get(reference.author.id)
 
-        # 元のsendにつけたしをしたバージョンのsend。
-        async def new_send(channel, *args, **kwargs):
-            # このsendが返信に使われたのなら返信先のメッセージの送信者(実行者)の言語設定を読み込む。
+        if not kwargs.pop("replace_language", True):
+            # もし言語データ交換するなと引数から指定されたならデフォルトのjaにする。
             lang = "ja"
-            if (reference := kwargs.get("reference")) is not None:
-                lang = self.get(reference.author.id)
+        # contentなどの文字列が言語データにないか検索をする。
+        if (content := kwargs.get("content", False)):
+            kwargs["content"] = self.get_text(kwargs["content"], lang)
+        if args:
+            args = (self.get_text(args[0], lang),)
+        if kwargs.get("embed", False):
+            kwargs["embed"] = self.get_text(kwargs["embed"], lang)
+        if "embeds" in kwargs:
+            kwargs["embeds"] = [self.get_text(embed, lang)
+                                for embed in kwargs.get("embeds", [])]
 
-            if not kwargs.pop("replace_language", True):
-                # もし言語データ交換するなと引数から指定されたならデフォルトのjaにする。
-                lang = "ja"
-            # contentなどの文字列が言語データにないか検索をする。
-            if (content := kwargs.get("content", False)):
-                kwargs["content"] = self.get_text(kwargs["content"], lang)
-            if args:
-                args = (self.get_text(args[0], lang),)
-            if kwargs.get("embed", False):
-                kwargs["embed"] = self.get_text(kwargs["embed"], lang)
-            if "embeds" in kwargs:
-                kwargs["embeds"] = [self.get_text(embed, lang)
-                                    for embed in kwargs.get("embeds", [])]
-
-            # 元のsendを実行する。インスタンス化されてないからselfの代わりにchannelを渡す。
-            return await default_send(
-                channel.channel if isinstance(channel, commands.Context) else channel,
-                *args, **kwargs
-            )
-
-        # オーバーライドする。
-        discord.abc.Messageable.send = new_send
+        return args, kwargs
 
     def _extract_question(self, text: str, parse_character: str = "$") -> Tuple[List[str], List[str]]:
         # 渡された文字列の中にある`$xxx$`のxxxのやところを
