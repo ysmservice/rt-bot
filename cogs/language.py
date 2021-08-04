@@ -33,7 +33,7 @@ class Language(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.cache = {}
-        self.bot.cogs["OnSend"].add_event(self._new_send)
+        self.bot.cogs["OnSend"].add_event(self._new_send, "on_send")
 
     async def _new_send(self, channel, *args, **kwargs):
         # 元のsendにつけたしをする関数。rtlib.libs.on_sendを使う。
