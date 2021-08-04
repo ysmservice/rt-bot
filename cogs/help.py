@@ -65,15 +65,15 @@ class Help(commands.Cog):
         # rtlib.libs.DocParserでドキュメンテーションからマークダウンに変換された文字列をEmbedに変換する関数。
         now, text, embed, embeds, field_length = ["description", 0], "", None, [], 0
         onecmd = "## " not in doc
+        make_embed = lambda text: discord.Embed(
+            title=f"**{command_name}**", description=text, **kwargs)
 
         for line in (docs := doc.splitlines()):
             is_item = line.startswith("## ")
-            end = docs[-1] == line
             # Embedやフィールドを作るか作るないか。
-            if is_item or end:
+            if is_item:
                 if now[0] == "description":
-                    embed = discord.Embed(
-                        title=f"**{command_name}**", description=text[:-1], **kwargs)
+                    embed = make_embed(text[:-1])
                 now = ["field", len(embed.fields)]
             if now[0] == "field":
                 if field_length == 25:
@@ -101,6 +101,11 @@ class Help(commands.Cog):
             if embed is None:
                 text += f"{line}\n"
 
+        # fieldが一つでもないとEmbedが作られない、そのためEmbedが空の場合作る。
+        if embed is None:
+            embed = make_embed(text[:-1])
+        # Embed一つに25個までフィールドが追加可能で25に達しないと上では結果リストにEmbedを追加しない。
+        # だからEmbedを追加しておく。
         if field_length < 25 and embed is not None:
             embeds.append(embed)
         return embeds
@@ -202,14 +207,14 @@ class Help(commands.Cog):
                 ]
                 for name_, value in (("名前部分一致", on_name), ("説明部分一致", on_doc)):
                     embeds[0].add_field(
-                        name=name_, value=("\n".join(f"`{n}` {self.help[category][n][lang][0]}"
-                                                     for category, n in value)
+                        name=name_, value=("\n".join(
+                                                f"`{n}` {self.help[category][n][lang][0]}"
+                                                for category, n in value)
                                            if value else "見つかりませんでした。")
                     )
         for embed in embeds:
             embed.set_footer(
-                text=(f"`{self.bot.command_prefix[0]}dhelp <名前>`"
-                      + "を実行することで詳細を見ることができます。"))
+                text="`rt!dhelp <名前>`を実行することで詳細を見ることができます。")
             await ctx.send(content=ctx.author.mention, embed=embed,
                            replace_language=replace_language)
 
