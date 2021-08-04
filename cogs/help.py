@@ -27,6 +27,7 @@ class Help(commands.Cog):
         self.bot = bot
         self.help = self.bot.cogs["DocHelp"].data
         try:
+            # Web Help APIのsetup
             self._setup_web()
         except Exception as e:
             print(e)
