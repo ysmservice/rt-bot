@@ -9,7 +9,7 @@ from discord.ext import commands
 from copy import copy
 
 
-class OnAddRemoveCommand(commands.Cog):
+class OnCommandAdd(commands.Cog):
 
     ON_ADD_COMMAND = """def !parent!(command):
     # もしグループコマンドならそのグループのadd/remove_commandをオーバーライドする。
@@ -75,4 +75,4 @@ self.!parent! = !parent!"""
 
 
 def setup(bot):
-    bot.add_cog(OnAddRemoveCommand(bot))
+    bot.add_cog(OnCommandAdd(bot))

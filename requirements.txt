@@ -5,7 +5,9 @@ flask-misaka
 aiofiles
 ujson
 discord.py
-# rtutilで必要なモジュール
 aiomysql
+# rtutilで必要なモジュール
+## OAuth
+reprypt
 # RT本プログラムで必要なモジュール
 youtube_dl
