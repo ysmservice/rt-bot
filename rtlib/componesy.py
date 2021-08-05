@@ -49,8 +49,8 @@ class View:
     -----
     このComponesyを使うには`bot.load_extension("rtlib.componesy")`をしないといけません。  
     または`componesy.setup(bot)`でもいけます。  
-    それに加えて`bot.load_extension("rtlib.libs.on_send")`もしないといけません。  
-    二つのエクステンションを読み込む必要があるということなので注意してね。
+    それと`bot.load_extension("rtlib.libs.on_send")`は読み込まれていない場合自動で読み込まれます。  
+    エクステンションを読み込む必要があるということなので注意してね。
 
     Parameters
     ----------
@@ -143,11 +143,10 @@ class Componesy(commands.Cog):
         self.bot = bot
         self.views = {}
         self.view = make_view
-        try:
-            self.bot.cogs["OnSend"].add_event(self._new_send, "on_send")
-            self.bot.cogs["OnSend"].add_event(self._new_send, "on_edit")
-        except KeyError:
-            raise KeyError("rtlib.libs.on_sendというエクステンションをロードしている必要があります。")
+        if "OnSend" not in self.bot.cogs:
+            self.bot.load_extension("rtlib.libs.on_send")
+        self.bot.cogs["OnSend"].add_event(self._new_send, "on_send")
+        self.bot.cogs["OnSend"].add_event(self._new_send, "on_edit")
 
     async def _new_send(self, channel, *args, **kwargs):
         # sendからコンポーネントを使えるようにする。

@@ -1,12 +1,12 @@
 # rtlib - Web Manager
 
-from typing import Union, List, Tuple
-
 from sanic import Sanic, exceptions, response
-
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from flask_misaka import Misaka
 
+from typing import Union, List, Tuple
+from discord.ext import commands
+from inspect import getmembers
 from os.path import exists
 
 
@@ -14,7 +14,12 @@ class WebManager:
     """ウェブサーバーを簡単に管理するためのクラスです。  
     `rtlib.Backend`で使用されます。  
     もしこれを`rtlib.Backend`じゃなく普通のdiscord.pyの`commands.Bot`などで使いたい場合は、`bot.web = sanic.Sanic()`のようにしてそれを引数のbotに渡しましょう。  
-    もし`rtlib.Backend`を使用する人でこのクラスに何かしらキーワード引数を渡したい場合は、`rtlib.Backend`のキーワード引数である`web_manager_kwargs`を使用してください。
+    もし`rtlib.Backend`を使用する人でこのクラスに何かしらキーワード引数を渡したい場合は、`rtlib.Backend`のキーワード引数である`web_manager_kwargs`を使用してください。  
+    これを有効にすると`discord.ext.commands.Cog.route`が使えるようになり、エクステンションでrouteを登録してリロードもできるようになります。
+
+    Notes
+    -----
+    これは`bot.load_extension("rtlib.libs.on_cog_add")`が自動で実行されます。
 
     Parameters
     ----------
@@ -42,6 +47,74 @@ class WebManager:
 
         # SanicにRouteなどを追加する。
         self.web.register_middleware(self._on_response, "response")
+
+        # on_readyをセットアップする。する。
+        if not hasattr(bot, "_rtlib"):
+            self._setup()
+
+    def _setup(self):
+        # commands.Cog.routeからrouteを登録できるようにする。
+        self._routes = {}
+        self._added_routes = []
+        self.events = {"on_route_add": [], "on_route_remove": []}
+        self.bot.load_extension("rtlib.libs.on_cog_add")
+        self.bot.add_listener(self._on_cog_add, "on_cog_add")
+        self.bot.add_listener(self._on_cog_remove, "on_cog_remove")
+
+        # commands.Cog.routeを作る。
+        commands.Cog.route = self._route
+
+    def _route(self, *args, **kwargs):
+        # commands.Cog.routeのためのもの。
+        def decorator(coro):
+            coro._route = (coro, args, kwargs)
+            return coro
+        return decorator
+
+    async def _on_cog_add(self, cog):
+        # コグがロードされた際に呼び出されます。commands.Cog.routeのためのもの。
+        routes = [coro._route for _, coro in getmembers(cog)
+                  if hasattr(coro, "_route")]
+
+        for coro, args, kwargs in routes:
+            # routeリストに`commands.Cog.route`がくっついてるやつを登録する。
+            name = cog.__class__.__name__
+
+            # カスタムイベントを走らせる。
+            route_full_name = f"{name}.{coro.__name__}"
+            for event in self.events["on_route_add"]:
+                coro = await event(coro)
+
+            # routeリストに登録をする。
+            if name not in self._routes:
+                self._routes[name] = {}
+            self._routes[name][coro.__name__] = coro
+
+            if route_full_name not in self._added_routes:
+                # もしsanicにrouteをまだ登録していないなら登録をする。
+                # self._added_routesはcommands.Cog.routeが付いているrouteの関数を実行するrouteが、sanicにもう追加したかどうかを調べるためのもの。
+                @self.web.route(*args, **kwargs)
+                async def main_route(*main_args, **main_kwargs):
+                    # 登録するrouteの関数(commands.Cog.routeが付いてるやつ)があれば実行する。
+                    route = self._routes[name][coro.__name__]
+                    if route_full_name in self._added_routes:
+                        return await route(cog, *main_args, **main_kwargs)
+                    else:
+                        return exceptions.abort(404)
+                self._added_routes.append(route_full_name)
+
+    async def _on_cog_remove(self, cog):
+        # コグが削除された際に呼ばれます。commands.Cog.routeのためのもの。
+        # routeの中で実行するrouteの関数(coommands.Cog.routeが付いてるやつ)を削除する。
+        routes = self._routes.get((name := cog.__class__.__name__), {})
+        delete = []
+        for key in routes:
+            for event in self.events["on_route_remove"]:
+                self._routes[name][key] = await event(self._routes[name][key])
+            delete.append(key)
+        for key in delete:
+            del self._routes[name][key]
+        del delete
 
     async def _on_response(self, request, res):
         # Sanicがレスポンスを返す時に呼ばれる関数です。

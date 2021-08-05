@@ -22,6 +22,7 @@ class BackendBase(Mixer):
                  web_manager_kwargs: dict = {},
                  **kwargs):
         self._on_init_bot: Callable[[object], Any] = on_init_bot
+        self._rtlib = True
         self.name: str = name
         self.log: bool = log
 
@@ -66,6 +67,7 @@ class BackendBase(Mixer):
         self.__kwargs["loop"] = loop
         super().__init__(*self.__args, **self.__kwargs)
         self.add_listener(self._on_ready, "on_ready")
+        self.web_manager._setup()
         self._on_init_bot(self)
         # Botに接続する。
         loop.create_task(self.start(self.__token, reconnect=self.__reconnect))

@@ -23,13 +23,18 @@ prefixes = data["prefixes"][argv[1]]
 
 # Backendのセットアップをする。
 def on_init(bot):
-    bot.data["mysql"] = rtlib.mysql.MySQLManager(
+    bot.mysql = bot.data["mysql"] = rtlib.mysql.MySQLManager(
         loop=bot.loop, user=secret["mysql"]["user"],
         password=secret["mysql"]["password"], db="mysql",
         pool = True)
+    oauth_secret = secret["oauth"][argv[1]]
+    bot.oauth = bot.data["oauth"] = rtlib.OAuth(
+        bot, oauth_secret["client_id"], oauth_secret["client_secret"])
+    del oauth_secret
 
     # エクステンションを読み込む。
     bot.load_extension("jishaku")
+    bot.load_extension("rtutil.oauth_manager")
     bot.load_extension("rtlib.libs.on_send")
     bot.load_extension("rtlib.componesy")
     bot.load_extension("rtlib.libs.on_full_reaction")

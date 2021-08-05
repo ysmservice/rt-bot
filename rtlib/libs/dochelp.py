@@ -76,7 +76,7 @@ class DocHelp(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.data: dict = {}
-        if "OnAddRemoveCommand" not in self.bot.cogs:
+        if "OnCommandAdd" not in self.bot.cogs:
             self.bot.load_extension("rtlib.libs.on_command_add")
 
         self.dp = DocParser()

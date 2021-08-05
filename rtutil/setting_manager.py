@@ -7,8 +7,8 @@ from typing import TypedDict, Union
 
 
 class SettingData(TypedDict):
-    callback: Callable,
-    permission: discord.Permissions,
+    callback: Callable
+    permission: discord.Permissions
     type: Literal["guild", "user"]
 
 
