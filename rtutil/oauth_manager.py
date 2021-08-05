@@ -16,16 +16,16 @@ class OAuthCog(commands.Cog):
             "login": False,
             "status": "ok"
         }
-        if request.user is None:
+        if request.ctx.user is None:
             data["user_name"] = "Unknown"
         else:
-            data["user_name"] = str(request.user)
+            data["user_name"] = str(request.ctx.user)
         return sanic.response.json(data)
 
     @commands.Cog.route("/discord/login")
     @OAuth.login_require()
     async def login(self, request):
-        print("loggin", request.user.name, request.user.id)
+        print("loggin", request.ctx.user.name, request.ctx.user.id)
         return sanic.response.redirect("/dashboard.html")
 
 

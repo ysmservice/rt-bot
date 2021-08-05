@@ -98,7 +98,8 @@ class OAuth:
                     self.BASE + "oauth2/token", data=data, headers=headers) as r:
                 data: dict = await r.json(loads=ujson.loads)
         except aiohttp.client_exceptions.ClientResponseError:
-            raise ValueError("codeが正しくないのでtokenを取得するのに失敗しました。")
+            raise ValueError("ごめんなさい！Discordから渡されたコードから情報を取得できなかったのですぅ...\n"
+                             + "申し訳ないんですがもう一度再挑戦してほしいんです！")
         return data
 
     @require_session
@@ -120,12 +121,12 @@ class OAuth:
 
         # userdataからidと名前を取り出してクッキーに入れるものを作る。
         data = await self._get_userdata(token)
-        cookie_data = {"user_id": data["id"], "name": data["name"]}
+        cookie_data = {"user_id": data["id"], "name": data["username"]}
 
         # クッキーに暗号化してから入れる。
         response = sanic.response.redirect(callback_uri)
-        response["session"] = reprypt.encrypt(ujson.dumps(cookie_data), self.secret_key)
-        print(resonse["session"])
+        response.cookies["session"] = reprypt.encrypt(ujson.dumps(cookie_data), self.secret_key)
+
         return response
 
     def _make_new_route(
@@ -138,37 +139,49 @@ class OAuth:
             request_index = args.index(request)
             request = args[request_index]
 
-            if not (userdata := request.cookies.get("session")) or require:
+            if ((not (userdata := request.cookies.get("session"))
+                     or (code := request.args.get("code"))) and require):
                 # もしまだログインが終わってないなら。
-                if (code := request.args.get("code")):
-                    # もし認証後ならcodeをtokenにしてクッキーに情報を保存する。
-                    # その後またこのrouteにリダイレクトする。
-                    try:
-                        response = await self._callback(
-                            code, request.url[:request.url.find("?")],
-                            request.path, scope)
-                    except ValueError as e:
-                        response = sanic.exceptions.abort(
-                            500, f"OAuth認証に失敗しました。\n> {e}")
-                    finally:
-                        return response
+                # もし認証後ならcodeをtokenにしてクッキーに情報を保存する。
+                # その後またこのrouteにリダイレクトする。
+                try:
+                    response = await self._callback(
+                        code, request.url[:request.url.find("?") + 1],
+                        request.path, scope)
+                except ValueError as e:
+                    raise sanic.exceptions.SanicException(
+                        f"OAuth認証に失敗しました。\n> {e}", status_code=500)
+                except Exception as e:
+                    raise sanic.exceptions.SanicException(
+                        f"OAuth認証に失敗しました。\n> {e}", status_code=500)
+                else:
+                    return response
                 user = None
-            else:
+            elif userdata:
                 # もしログイン済みならクッキーに記録されてるユーザーデータを複合化して取得する。
                 try:
                     userdata = ujson.loads(reprypt.decrypt(userdata, self.secret_key))
                 except reprypt.DecryptError:
                     user = None
                 else:
-                    user = self.bot.get_user(userdata["id"])
+                    user = self.bot.get_user(int(userdata["user_id"]))
 
             if user is None and not want:
                 # もしユーザーの取得に失敗したまたはOAuth認証をしていないならOAuth認証をさせる。
                 # しかしlogin_wantの場合はここをスキップする。
-                return sanic.response.redirect(await self.get_url(request.url, scope))
+                if userdata[0] == "{":
+                    # もしユーザーデータを取得することができているのにユーザーオブジェクトを取得していないなら例外を発生させる。
+                    # こうしないとintentsのメンバーが有効じゃない時などにずっと認証画面という無限ループが発生してしまう。
+                    # 無限ループって怖くね？
+                    raise sanic.exceptions.SanicException(
+                        "OAuth認証に失敗しました。\n> ユーザーデータの取得に失敗しました。"
+                        + "すみません、RTを使ってる人ですか...？(メイド風の喋り方で。)")
+                else:
+                    return sanic.response.redirect(
+                        await self.get_url(request.url[:request.url.find("?") + 1], scope))
 
             # routeに渡すrequestにユーザーオブジェクトを付け加える。
-            args[request_index].user = user
+            args[request_index].ctx.user = user
             # デコレータが付いているコルーチン関数を実行する。
             return await coro(*args, **kwargs)
         new.__name__ = coro.__name__
@@ -205,3 +218,7 @@ class OAuth:
             coro._login_want = (1, kwargs)
             return coro
         return decorator
+
+    def __del__(self):
+        if self.cs:
+            self.cs.close()

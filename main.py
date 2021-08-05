@@ -5,6 +5,7 @@ README  : ./readme.md
 
 from os import listdir
 from sys import argv
+import discord
 import ujson
 import rtlib
 
@@ -29,7 +30,9 @@ def on_init(bot):
         pool = True)
     oauth_secret = secret["oauth"][argv[1]]
     bot.oauth = bot.data["oauth"] = rtlib.OAuth(
-        bot, oauth_secret["client_id"], oauth_secret["client_secret"])
+        bot, oauth_secret["client_id"], oauth_secret["client_secret"],
+        oauth_secret["client_secret"]
+    )
     del oauth_secret
 
     # エクステンションを読み込む。
@@ -49,10 +52,13 @@ def on_init(bot):
 
 
 # テスト時は普通のBackendを本番はシャード版Backendを定義する。
+intents = discord.Intents.default()
+intents.members = True
 args = (prefixes,)
 kwargs = {
     "help_command": None,
-    "on_init_bot": on_init
+    "on_init_bot": on_init,
+    "intents": intents
 }
 if argv[1] == "test":
     bot = rtlib.Backend(*args, **kwargs)

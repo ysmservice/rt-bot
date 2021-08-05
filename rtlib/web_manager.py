@@ -6,6 +6,7 @@ from flask_misaka import Misaka
 
 from typing import Union, List, Tuple
 from discord.ext import commands
+from traceback import print_exc
 from inspect import getmembers
 from os.path import exists
 
@@ -71,6 +72,15 @@ class WebManager:
             return coro
         return decorator
 
+    async def _wrap_error_log(self, coro, name, default=None):
+        # 渡されたコルーチンをエラーハンドリングして実行する。
+        try:
+            return await coro
+        except Exception:
+            print(f"Exception on `{name}`:")
+            print_exc()
+            return default
+
     async def _on_cog_add(self, cog):
         # コグがロードされた際に呼び出されます。commands.Cog.routeのためのもの。
         routes = [coro._route for _, coro in getmembers(cog)
@@ -83,7 +93,7 @@ class WebManager:
             # カスタムイベントを走らせる。
             route_full_name = f"{name}.{coro.__name__}"
             for event in self.events["on_route_add"]:
-                coro = await event(coro)
+                coro = await self._wrap_error_log(event(coro), route_full_name, coro)
 
             # routeリストに登録をする。
             if name not in self._routes:
@@ -93,15 +103,20 @@ class WebManager:
             if route_full_name not in self._added_routes:
                 # もしsanicにrouteをまだ登録していないなら登録をする。
                 # self._added_routesはcommands.Cog.routeが付いているrouteの関数を実行するrouteが、sanicにもう追加したかどうかを調べるためのもの。
-                @self.web.route(*args, **kwargs)
-                async def main_route(*main_args, **main_kwargs):
-                    # 登録するrouteの関数(commands.Cog.routeが付いてるやつ)があれば実行する。
-                    route = self._routes[name][coro.__name__]
-                    if route_full_name in self._added_routes:
-                        return await route(cog, *main_args, **main_kwargs)
-                    else:
-                        return exceptions.abort(404)
+
+                async def main_route(*args, cog_name=name, coro_name=coro.__name__, **kwargs):
+                    async def main_route():
+                        # 登録するrouteの関数(commands.Cog.routeが付いてるやつ)があれば実行する。
+                        route = self._routes[cog_name][coro_name]
+                        if route_full_name in self._added_routes:
+                            return await route(cog, *args, **kwargs)
+                        else:
+                            raise exceptions.SanicException("Requested URL not found", status_code=404)
+                    return await main_route()
+
+                self.web.add_route(main_route, *args, **kwargs)
                 self._added_routes.append(route_full_name)
+            del coro
 
     async def _on_cog_remove(self, cog):
         # コグが削除された際に呼ばれます。commands.Cog.routeのためのもの。
@@ -110,7 +125,11 @@ class WebManager:
         delete = []
         for key in routes:
             for event in self.events["on_route_remove"]:
-                self._routes[name][key] = await event(self._routes[name][key])
+                await self._wrap_error_Log(
+                    event(self._routes[name][key]),
+                    f"Exception on route '{name}.{key}':",
+                    self._routes[name][key]
+                )
             delete.append(key)
         for key in delete:
             del self._routes[name][key]
@@ -119,7 +138,7 @@ class WebManager:
     async def _on_response(self, request, res):
         # Sanicがレスポンスを返す時に呼ばれる関数です。
         # もしRouteが見つからなかったならファイルを返すことを試みる。
-        if ((b"requested" in res.body or b"not found" in res.body)
+        if ((b"Requested" in res.body or b"not found" in res.body)
                 and res.status == 404):
             path = request.path[1:]
             true_path = self.folder + "/" + path
@@ -138,7 +157,9 @@ class WebManager:
                     return await response.file(true_path)
             else:
                 return exceptions.abort(
-                    404, message=f"{path}が見つからなかった...\nアクセスしたお客様〜、ごめんちゃい！(スターフォックス64のあれ風)") # noqa
+                    f"{path}が見つからなかった...\nアクセスしたお客様〜、ごめんちゃい！(スターフォックス64のあれ風)",
+                    status_code=404
+                )
 
     async def template(self, path: str, **kwargs) -> response.HTTPResponse:
         """Jinja2テンプレートエンジンを使用してファイルを返します。  
