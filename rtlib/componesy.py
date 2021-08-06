@@ -162,7 +162,6 @@ class Componesy(commands.Cog):
 
                 # rtlib.componesyのために渡されたアイテムリストを一つづつ追加していく。
                 for uiitem, coro in items["items"]:
-                    # もしメソッドなら
                     if coro.__self__ is None:
                         new_coro = coro
                     else:
