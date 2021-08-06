@@ -1,11 +1,14 @@
 # RT - News
 
 from discord.ext import commands
+import discord
 
 from aiofiles import open as async_open
 from ujson import loads, dumps
+from typing import Optional
 from time import time
 
+from rtlib.ext import Embeds
 from data import is_admin
 
 
@@ -30,6 +33,19 @@ class News(commands.Cog):
         async with self.db.get_cursor() as cursor:
             await cursor.delete_data("news", {"time": time_})
 
+    async def _get_news(self, time_: Optional[int] = None) -> Optional[str]:
+        # Newsを取得する。
+        async with self.db.get_cursor() as cursor:
+            if time_ is None:
+                return (await cursor.get_data("news", {"time": time_}))[0]
+
+    async def _get_news_all(self) -> str:
+        # Newsを全て取得する。
+        async with self.db.get_cursor() as cursor:
+            async for row in cursor.get_datas("news", {}):
+                if row:
+                    yield row[0]
+
     @commands.group(
         extras={
             "headding": {
@@ -40,7 +56,9 @@ class News(commands.Cog):
         }
     )
     async def news(self, ctx):
-        ...
+        embeds = Embeds("News")
+        async for row in self._get_news_all():
+            embeds.add_embed()
 
 
 def setup(bot):
