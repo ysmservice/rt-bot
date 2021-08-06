@@ -106,6 +106,10 @@ class Embeds:
         もしEmbedsの操作用のボタン以外に何かカスタムでボタンを付け加えたいなどの際はこの属性に手を加えましょう。  
         デフォルトは操作用のボタンであるダッシュ矢印と普通の矢印のボタンとなっています。  
         (デフォルトのボタンラベル：ダッシュ左:`<<`, 左:`<-`, 右:`->`, ダッシュ右:`>>`)
+    Texts
+        矢印に使う文字列が入っているクラスです。  
+        `Embeds.Texts.left/right`, `Embeds.Texts.dash_left/dash_right`があります。  
+        (dashは二ページ飛ばしの方。)
 
     Examples
     --------
@@ -126,6 +130,12 @@ class Embeds:
             )
         await ctx.reply(embeds=embeds)"""
 
+    class Texts:
+        dash_left: str = "<<"
+        left: str = "<-"
+        right: str = "->"
+        dash_right: str = ">>"
+
     TARGET = Union[discord.User, discord.Member, Literal["everyone"]]
 
     def __init__(self, name: str, target: TARGET = "everyone",
@@ -144,10 +154,10 @@ class Embeds:
                 List[str, Callable, dict]
             ]
         ] = [
-            ("button", self._on_dash_left, {"label": "<<"}),
-            ("button", self._on_left, {"label": "<-"}),
-            ("button", self._on_right, {"label": "->"}),
-            ("button", self._on_dash_right, {"label": ">>"})
+            ("button", self._on_dash_left, {"label": self.Texts.dash_left}),
+            ("button", self._on_left, {"label": self.Texts.left}),
+            ("button", self._on_right, {"label": self.Texts.right}),
+            ("button", self._on_dash_right, {"label": self.Texts.dash_right})
         ]
 
     def _on_view(self, view: componesy.View):
