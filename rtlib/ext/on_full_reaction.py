@@ -4,18 +4,7 @@
 呼び出される際には引数として`discord.RawReactionActionEvent`を拡張したpayloadが渡されます。  
 `payload.message`のようにメッセージが追加されています。  
 このように`on_raw_reaction_add/remove`と`on_reaction_add/remove`を使い分ける必要がなくなります。  
-このエクステンションは`bot.load_extension("rtlib.libs.on_full_reaction")`で使えるようになります。
-
-Examples
---------
-import rtlib
-
-# Backend(Bot)定義時に実行される関数。
-def on_init_bot(bot):
-    # rtlib.libs.on_full_reactionを読み込む。
-    bot.load_extension("rtlib.libs.on_full_reaction")
-
-bot.run("token")
+このエクステンションは`bot.load_extension("rtlib.ext.on_full_reaction")`で使えるようになります。
 
 Notes
 -----
@@ -32,25 +21,6 @@ import asyncio
 
 
 class OnFullReactionAddRemove(commands.Cog):
-    """コグ
-
-    Examples
-    --------
-    import rtlib
-
-    # 定義時にキーワード引数であるon_init_botに渡す関数。
-    def on_init_bot(bot):
-        # rtlib.libsのon_full_reactionを有効にする。
-        bot.load_extension("rtlib.libs.on_full_reaction")
-
-        @bot.event
-        async def on_full_reaction_add(payload):
-            print(payload.message)
-
-    Notes
-    -----
-    このコグにはキーワード引数として`timeout`を渡すことができます。  
-    `bot._rtlib_ofr_timeout = 0.05`のようにすることで渡すことができます。""" # noqa
     def __init__(self, bot, timeout: float = 0.025):
         self.bot, self.timeout = bot, timeout
         self.cache, self.reactions = {}, {}
