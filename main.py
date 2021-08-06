@@ -41,6 +41,8 @@ def on_init(bot):
     rtlib.setup(bot)
     # cogsフォルダにあるエクステンションを読み込む。
     for path in listdir("cogs"):
+        if path[0] in ("#", "."):
+            continue
         if path.endswith(".py"):
             bot.load_extension("cogs." + path[:-3])
         elif "." not in path and path != "__pycache__" and path[0] != ".":

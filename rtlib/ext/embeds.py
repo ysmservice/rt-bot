@@ -6,7 +6,7 @@
 from discord.ext import commands, tasks
 import discord
 
-from typing import Optional, Union, Literal, List, Tuple, Callable
+from typing import Optional, Union, Literal, List, Tuple, Callable, Any
 from asyncio import create_task, iscoroutinefunction
 from functools import wraps
 from time import time
@@ -150,7 +150,7 @@ class Embeds:
         self.message: Union[discord.Message, None] = None
         self.items: List[
             Union[
-                Tuple[Literal[str, Callable, dict], ...],
+                Tuple[Any, ...],
                 List[str, Callable, dict]
             ]
         ] = [
@@ -159,6 +159,7 @@ class Embeds:
             ("button", self._on_right, {"label": self.Texts.right}),
             ("button", self._on_dash_right, {"label": self.Texts.dash_right})
         ]
+        self._rtlib_embeds = True
 
     def _on_view(self, view: componesy.View):
         # send時にViewを組み立てる際に呼び出される関数です。
@@ -353,7 +354,8 @@ class EmbedsCog(commands.Cog):
             # もしリスト形式でEmbedが渡されたならそれでEmbedsを作る。
             if isinstance(embeds, list):
                 embeds = Embeds(embeds=embeds)
-            elif not isinstance(embeds, Embeds):
+            elif not hasattr(embeds, "_rtlib_embeds"):
+                print(embeds)
                 raise ValueError("`rtlib.ext.embeds.Embeds`ではないものが入れられました。")
             # Embedsの一番目をキーワード引数のembedに入れる。
             if embeds.embeds == []:
