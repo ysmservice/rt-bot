@@ -1,5 +1,6 @@
 """Cogの追加/削除時に呼び出される`on_cog_add/remove`というイベントを作るためのエクステンションです。  
-`bot.load_extension("rtlig.ext.on_cog_add")`で使うことができます。
+`bot.load_extension("rtlib.ext.on_cog_add")`で有効化することができます。  
+また`rtlib.setup(bot)`でも有効化することができます。
 
 # Examples
 ```python

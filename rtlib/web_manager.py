@@ -58,7 +58,7 @@ class WebManager:
         self._routes = {}
         self._added_routes = []
         self.events = {"on_route_add": [], "on_route_remove": []}
-        self.bot.load_extension("rtlib.libs.on_cog_add")
+        self.bot.load_extension("rtlib.ext.on_cog_add")
         self.bot.add_listener(self._on_cog_add, "on_cog_add")
         self.bot.add_listener(self._on_cog_remove, "on_cog_remove")
 

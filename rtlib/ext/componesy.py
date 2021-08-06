@@ -2,12 +2,11 @@
 これを使えば以下のようにボタン付きのメッセージを作成できます。
 ```python
 from rtlib.ext import componesy
+from rtlib import setup
 
 # ...
 
-bot.load_extension("rtlib.ext.componesy")
-# または
-componesy.setup(bot)
+setup(bot)
 
 # ...
 
@@ -21,7 +20,9 @@ async def test(ctx):
     await ctx.reply("test", view=view)
 ```
 ## 使用方法
-`bot.load_extension("rtlib.ext.componesy")`または`componesy.setup(bot)`で有効にできます。  
+このエクステンションの名前は`componesy`です。  
+有効化方法は`bot.load_extension("rtlib.ext.componesy")`です。  
+`rtlib.setup`でもいけます。  
 使用方法は`coponesy.View("Viewの名前")`, `componesy.View.add_item(アイテム名, コールバック, **kwargs)`です。  
 詳細は`componesy.View`のドキュメンテーションを参照してください。"""
 
@@ -30,7 +31,7 @@ from discord.ext import commands
 import discord
 
 from typing import Tuple, Callable
-from copy import copy
+from copy import deepcopy
 
 
 def item(name: str, callback: Callable, **kwargs) -> Tuple[Callable, Callable]:
@@ -107,9 +108,10 @@ class View:
         view = componesy.View("TestView")
         view.add_item("button", test_interaction, label="Push me!")
         await ctx.reply("test", view=view)"""
-    def __init__(self, view_name: str):
-        self.items = []
-        self.view_name = view_name
+    def __init__(self, view_name: str, *args, **kwargs):
+        self.items: list = []
+        self.view_name: str = view_name
+        self._args, self._kwargs = args, kwargs
         # rtlibのViewかどうかの判別用の変数。
         self._rtlib_view = 0
 
@@ -153,7 +155,9 @@ class View:
         # 辞書型のアイテムに変換をする。
         return {
             "view_name": self.view_name,
-            "items": self.items
+            "items": self.items,
+            "args": self._args,
+            "kwargs": self._kwargs
         }
 
 
@@ -163,7 +167,7 @@ class Componesy(commands.Cog):
         self.views = {}
         self.view = make_view
         if "OnSend" not in self.bot.cogs:
-            self.bot.load_extension("rtlib.libs.on_send")
+            self.bot.load_extension("rtlib.ext.on_send")
         self.bot.cogs["OnSend"].add_event(self._new_send, "on_send")
         self.bot.cogs["OnSend"].add_event(self._new_send, "on_edit")
 
@@ -178,14 +182,13 @@ class Componesy(commands.Cog):
                 items = items._make_items()
             # viewの名前を取る。
             view_name = items["view_name"]
+            class_args, class_kwargs = items["args"], items["kwargs"]
 
             # Viewがまだ作られてないなら作る。
             if view_name not in self.views:
-                # discord.ui.Viewのコピーを作る。
-                # このコピーからViewのクラスを作っていく。
-                NewView = copy(discord.ui.View)
+                # componesyによるアイテムを新しく作るViewに追加する関数リストに追加していく。
+                functions = {}
 
-                # rtlib.componesyのために渡されたアイテムリストを一つづつ追加していく。
                 for uiitem, coro in items["items"]:
                     if coro.__self__ is None:
                         new_coro = coro
@@ -196,18 +199,16 @@ class Componesy(commands.Cog):
                             async def new_coro():
                                 return await _coro_original(*args, **kwargs)
                             return await new_coro()
-                    # Viewのコピーに設定する。
-                    setattr(NewView, coro.__name__, uiitem(new_coro))
+
+                    functions[coro.__name__] = uiitem(new_coro)
                     del new_coro, coro
 
-                # Viewのコピーに設定されたインタラクションの関数達をdiscord.pyは色々設定する。
-                # それは__init_subclass__で行われるため、__init_subclass__を実行しておく。
-                NewView.__init_subclass__()
+                # typeを使用して動的にdiscord.ui.Viewを継承した上で追加した関数をつけたクラスを作成する。
                 # キャッシュに毎回Viewを作らないようにViewクラスを保存しておく。
-                self.views[view_name] = NewView
+                self.views[view_name] = type(view_name, (discord.ui.View,), functions)
 
             # Viewのインスタンスを作りsendの引数viewに設定をする。
-            kwargs["view"] = self.views[view_name]()
+            kwargs["view"] = self.views[view_name](*class_args, **class_kwargs)
 
         # 引数を返す。
         return args, kwargs

@@ -8,7 +8,8 @@
 ## 使用方法
 使えるイベントは`on_send`と`on_edit`です。
 ### 有効化
-`bot.load_extension("rtlib.ext.on_send")`で有効にできます。
+`bot.load_extension("rtlib.ext.on_send")`で有効化することができます。  
+また`rtlib.setup`でもできます。
 ### イベント追加/削除
 追加：`bot.cogs["OnSend"].add_event(コルーチン関数, イベント名)`
 削除：`bot.cogs["OnSend"].remove_event(コルーチン関数, イベント名)`
@@ -57,9 +58,10 @@ class OnSend(commands.Cog):
         for coro in self.events[event_name]:
             try:
                 args, kwargs = await coro(arg, *args, **kwargs)
-            except Exception:
+            except Exception as e:
                 print(f"Error on `on_send`, {coro.__name__}:")
-                print_exc()
+                raise e
+                break
         return args, kwargs
 
     def _dpy_injection(self):
@@ -68,19 +70,24 @@ class OnSend(commands.Cog):
 
         async def new_send(channel, *args, **kwargs):
             args, kwargs = await self._run_event("on_send", channel, *args, **kwargs)
-            return await default_send(
+            message = await default_send(
                 channel.channel if isinstance(channel, commands.Context) else channel,
                 *args, **kwargs
             )
+            self.bot.dispatch("sended", message, args, kwargs)
+            return message
 
         async def new_edit(message, *args, **kwargs):
             args, kwargs = await self._run_event("on_edit", message, *args, **kwargs)
-            return await default_edit(message, *args, **kwargs)
+            message = await default_edit(message, *args, **kwargs)
+            self.bot.dispatch("edited", message, args, kwargs)
+            return message
         
         discord.abc.Messageable.send = new_send
         discord.Message.edit = new_edit
 
-    def add_event(self, coro: Callable, event_name: Optional[str] = None) -> None:
+    def add_event(self, coro: Callable, event_name: Optional[str] = None,
+                  first: bool = False) -> None:
         """send時に呼び出して欲しいコルーチン関数を登録します。  
         登録したコルーチン関数は`送信対象のチャンネル, *args, **kwargs`の引数が渡されます。  
         そして`args, kwargs`を返却しなければなりません。  
@@ -92,9 +99,16 @@ class OnSend(commands.Cog):
             コルーチン関数です。
         event_name : str, optional
             イベント名です。  
-            もし指定されなかった場合はcoroの名前が使用されます。"""
+            もし指定されなかった場合はcoroの名前が使用されます。
+        first : bool, default False
+            一番最初に実行されるようにするかどうかです。  
+            複数のイベントがこれをTrueとする場合は一番になれないのでご注意！  
+            (この場合は`bot.cogs["OnSend"].events`から手動で変更を加える必要がありますねえ。)"""
         event_name = event_name if event_name else coro.__name__
-        self.events[event_name].append(coro)
+        if first and self.events:
+            self.events[event_name] = [coro] + self.events[event_name][1:]
+        else:
+            self.events[event_name].append(coro)
 
     def remove_event(self, coro: Callable, event_name: Optional[str]):
         """OnSend.add_eventで登録したコルーチン関数を削除します。

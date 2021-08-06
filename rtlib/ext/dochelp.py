@@ -1,7 +1,9 @@
 """自動ドキュメンテーションヘルプ管理エクステンション  
 コマンドフレームワークで定義したコマンドのコルーチン関数にあるドキュメンテーションから、ヘルプリストを自動で生成するためのエクステンションです。  
 ヘルプメッセージの管理がとても楽になります。  
-`bot.load_extension("rtlib.ext.dochelp")`で有効にすることができます。  
+`bot.load_extension("rtlib.ext.dochelp")`で有効化することができます。  
+また`rtlib.setup`でも有効化できます。  
+これを読み込む場合は`on_command_add`が自動で読み込まれるのでこれを読み込まないでください。
 ### 書き込み方法
 下のExamplesのようにすれば良いです。  
 ですがもし親コマンドのいないコマンドのヘルプの場合は以下のようにカテゴリーを指定してください。
@@ -77,7 +79,7 @@ class DocHelp(commands.Cog):
         self.bot = bot
         self.data: dict = {}
         if "OnCommandAdd" not in self.bot.cogs:
-            self.bot.load_extension("rtlib.libs.on_command_add")
+            self.bot.load_extension("rtlib.ext.on_command_add")
 
         self.dp = DocParser()
         self.dp.add_event(self._set_parent, "parent")

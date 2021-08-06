@@ -1,6 +1,7 @@
 """`on_command_add/remove`のイベントを追加することができるエクステンションです。  
 イベント名の通りコマンドのついか/削除時に呼び出されます。  
-`bot.load_extension("rtlib.ext.on_command_add")`で使うことができます。
+`bot.load_extension("rtlib.ext.on_command_add")`で有効化することができます。  
+また`rtlib.setup(bot)`でも有効化することができます。  
 これを使用して追加されるイベントには`discord.ext.commands.Command`が渡されます。"""
 
 from typing import Literal, Callable

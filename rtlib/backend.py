@@ -7,7 +7,6 @@ from copy import copy
 import sanic
 
 from .web_manager import WebManager
-from . import libs
 
 
 class Mixer:

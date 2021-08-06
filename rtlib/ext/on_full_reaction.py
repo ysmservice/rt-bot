@@ -4,7 +4,8 @@
 呼び出される際には引数として`discord.RawReactionActionEvent`を拡張したpayloadが渡されます。  
 `payload.message`のようにメッセージが追加されています。  
 このように`on_raw_reaction_add/remove`と`on_reaction_add/remove`を使い分ける必要がなくなります。  
-このエクステンションは`bot.load_extension("rtlib.ext.on_full_reaction")`で使えるようになります。
+`bot.load_extension("rtlib.ext.on_full_reaction")`で有効化ができます。  
+また`rtlib.setup(bot)`でも有効化することができます。
 
 Notes
 -----
