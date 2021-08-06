@@ -6,8 +6,8 @@
 from discord.ext import commands, tasks
 import discord
 
-from typing import Optional, Union, Literal, List, Tuple
-from asyncio import create_task
+from typing import Optional, Union, Literal, List, Tuple, Callable
+from asyncio import create_task, iscoroutinefunction
 from functools import wraps
 from time import time
 
@@ -52,7 +52,13 @@ def _is_target(function):
 
 class Embeds:
     """矢印ボタンでページ切り替えが可能なEmbedのリストであるEmbedsを作るためのクラスです。  
-    Embedの編集も`message.edit`からではなくこのクラスから行うことができます。
+    Embedの編集も`message.edit`からではなくこのクラスから行うことができます。  
+    これは`send/reply`に`embeds`の引数で渡すことで作ったEmbedsを送信することができます。
+
+    Notes
+    -----
+    もし入れるEmbedの数がとんでもない個数の場合は追加するのをEmbedではなくEmbedを返すコルーチン関数にするのを勧めます。  
+    詳細は`Embeds.add_embed`にて。
 
     Warnings
     --------
@@ -99,7 +105,26 @@ class Embeds:
         `(アイテム名, コールバック, `componesy.View.add_item`に渡すキーワード引数)`  
         もしEmbedsの操作用のボタン以外に何かカスタムでボタンを付け加えたいなどの際はこの属性に手を加えましょう。  
         デフォルトは操作用のボタンであるダッシュ矢印と普通の矢印のボタンとなっています。  
-        (デフォルトのボタンラベル：ダッシュ左:`<<`, 左:`<-`, 右:`->`, ダッシュ右:`>>`)"""
+        (デフォルトのボタンラベル：ダッシュ左:`<<`, 左:`<-`, 右:`->`, ダッシュ右:`>>`)
+
+    Examples
+    --------
+    from rtlib.ext import Embeds
+    from rtlib import setup
+
+    setup(bot)
+
+    @bot.command()
+    async def test(self, ctx, *, text):
+        # このコマンドに渡した引数の行一つづつEmbedのりすとにする。
+        embeds = embeds.Embeds("Embeds_test")
+        i = 0
+        for line in text.splitlines():
+            i += 1
+            embeds.add_embed(
+                discord.Embed(title=f"Embedリスト {i}", description=line)
+            )
+        await ctx.reply(embeds=embeds)"""
 
     TARGET = Union[discord.User, discord.Member, Literal["everyone"]]
 
@@ -174,26 +199,32 @@ class Embeds:
         message : message, optional
             編集対象のメッセージです。"""
         message = self.message if message is None else message
-        await message.edit(embed=self.embeds[self.now])
+        embed = self.embeds[self.now]
+        if iscoroutinefunction(embed):
+            # もしコルーチン関数ならそれを実行して返されたEmbedを使う。
+            embed = await embed(message, self.now)
+        await message.edit(embed=embed)
         self.last_update = time()
 
     @_require_not_expired
-    def add_embed(self, embed: discord.Embed) -> None:
+    def add_embed(self, embed: Union[discord.Embed, Callable]) -> None:
         """EmbedsにEmbedを追加します。
         
         Parameters
         ----------
-        embed : discord.Embed
-            追加するEmbedです。"""
+        embed : Union[discord.Embed, Callable]
+            追加するEmbedです。  
+            これにはコルーチン関数を渡すことができます。  
+            このコルーチン関数には`メッセージ, 切り替え後のEmbed番号`の引数が渡されます。"""
         self.embeds.append(embed)
 
     @_require_not_expired
-    def remove_embed(self, embed: Union[discord.Embed, int]):
+    def remove_embed(self, embed: Union[discord.Embed, Callable, int]):
         """EmbedsからEmbedを削除します。
 
         Parameters
         ----------
-        embed : discord.Embed
+        embed : Union[discord.Embed, Callable, int]
             削除するするEmbedです。  
             もし整数を入れた場合はその番号の場所にあるEmbedが削除されます。"""
         index = embed if isinstance(embed, int) else self.embeds.index(embed)
@@ -204,8 +235,8 @@ class Embeds:
             create_task(self.update_embed())
 
     @_require_not_expired
-    def edit_embed(self, target: Union[discord.Embed, int],
-                   embed: discord.Embed) -> None:
+    def edit_embed(self, target: Union[discord.Embed, Callable, int],
+                   embed: Union[discord.Embed, Callable]) -> None:
         """EmbedsにあるEmbedを交換します。
 
         Notes
@@ -214,10 +245,10 @@ class Embeds:
 
         Parameters
         ----------
-        target : Union[discord.Embed, int]
+        target : Union[discord.Embed, Callable, int]
             交換対象のEmbedです。  
             整数を入れた場合その番号の場所にあるEmbedが対象となります。
-        embed : discord.Embed
+        embed : Union[discord.Embed, Callable]
             交換するEmbedです。
 
         Raises
