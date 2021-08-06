@@ -65,7 +65,26 @@ class DatabaseManager(commands.Cog):
         Examples
         --------
         IDは整数で名前が文字列のテーブルを作成します。
-        `rt!database create_table credit "{'id':'INTEGER','name':'TEXT'}"`"""
+        `rt!database create_table credit "{'id':'INTEGER','name':'TEXT'}"`
+        !lang en
+        --------
+        add to database.
+        
+        Parameters
+        ----------
+        table : str
+            add to table name
+        columns : dict
+            add to table column
+            please use `'`
+            write with type
+        ine : bool, default True
+            if table is not at database it create new table.
+            if table is at database ignore
+            If this is set to False, an error will occur when the table already exists.
+        commit : bool, default True
+            if command use, It can do auto commit. 
+        """
         columns = loads(columns)
         async with self.db.get_cursor() as cursor:
             await cursor.create_table(
