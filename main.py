@@ -38,11 +38,11 @@ def on_init(bot):
     # エクステンションを読み込む。
     bot.load_extension("jishaku")
     bot.load_extension("rtutil.oauth_manager")
-    bot.load_extension("rtlib.libs.on_send")
-    bot.load_extension("rtlib.componesy")
-    bot.load_extension("rtlib.libs.on_full_reaction")
-    bot.load_extension("rtlib.libs.on_command_add")
-    bot.load_extension("rtlib.libs.dochelp")
+    bot.load_extension("rtlib.ext.on_send")
+    bot.load_extension("rtlib.ext.componesy")
+    bot.load_extension("rtlib.ext.on_full_reaction")
+    bot.load_extension("rtlib.ext.on_command_add")
+    bot.load_extension("rtlib.ext.dochelp")
     # cogsフォルダにあるエクステンションを読み込む。
     for path in listdir("cogs"):
         if path.endswith(".py"):

@@ -1,4 +1,29 @@
-# rtlib - Componesy
+"""# Componesy - ボタンなどを簡単に作るためのエクステンション。
+これを使えば以下のようにボタン付きのメッセージを作成できます。
+```python
+from rtlib.ext import componesy
+
+# ...
+
+bot.load_extension("rtlib.ext.componesy")
+# または
+componesy.setup(bot)
+
+# ...
+
+async def test_interaction(view, button, interaction):
+    await interaction.channel.send("Pushed button!")
+
+@bot.command()
+async def test(ctx):
+    view = componesy.View("TestView")
+    view.add_item("button", test_interaction, label="Push me!")
+    await ctx.reply("test", view=view)
+```
+## 使用方法
+`bot.load_extension("rtlib.ext.componesy")`または`componesy.setup(bot)`で有効にできます。  
+使用方法は`coponesy.View("Viewの名前")`, `componesy.View.add_item(アイテム名, コールバック, **kwargs)`です。  
+詳細は`componesy.View`のドキュメンテーションを参照してください。"""
 
 from discord.abc import Messageable
 from discord.ext import commands
@@ -68,7 +93,7 @@ class View:
 
     Examples
     --------
-    from rtlib import componesy
+    from rtlib.ext import componesy
 
     # ...
 
