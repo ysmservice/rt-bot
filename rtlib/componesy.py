@@ -132,12 +132,6 @@ class View:
         }
 
 
-NEW_CORO = """async def new_coro(*args, **kwargs):
-    return await self._!!_coro(*args, **kwargs)
-self._!!_new_coro = new_coro
-del new_coro"""
-
-
 class Componesy(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -173,16 +167,11 @@ class Componesy(commands.Cog):
                         new_coro = coro
                     else:
                         # もしメソッドならViewに設定できないのでラップする。
-                        # この時なぜexecの中に入れる理由：
-                        # そうしないとforでとったcoroが使われるはずが、items["items"]の最後のcoroがが使われてしまうから。
-                        # 正直なんでそうなるのか対処法もよくわからない誰か教えてくれ。()
-                        n = coro.__name__
-                        original_coro_name = f"_{n}_coro"
-                        setattr(self, original_coro_name, copy(coro))
-                        exec(NEW_CORO.replace("!!", n), {"self": self})
-                        new_coro_name = f"_{n}_new_coro"
-                        new_coro = getattr(self, new_coro_name)
-                        delattr(self, new_coro_name)
+                        # 二重ラップしないとcoroが2個目以降のcoroと同じになる。
+                        async def new_coro(*args, _coro_original=coro, **kwargs):
+                            async def new_coro():
+                                return await _coro_original(*args, **kwargs)
+                            return await new_coro()
                     # Viewのコピーに設定する。
                     setattr(NewView, coro.__name__, uiitem(new_coro))
                     del new_coro, coro
