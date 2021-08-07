@@ -20,6 +20,7 @@ class OAuthCog(commands.Cog):
             data["user_name"] = "Unknown"
         else:
             data["user_name"] = str(request.ctx.user)
+            data["login"] = True
         return sanic.response.json(data)
 
     @commands.Cog.route("/discord/login")

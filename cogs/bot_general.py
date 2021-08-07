@@ -66,6 +66,30 @@ class BotGeneral(commands.Cog):
         If latency is over to 400, network is bad."""
         await ctx.reply(f"現在のRTのレイテンシ：${self._get_ping()}$ms")
 
+    async def _setting_test_callback(self, ctx, data):
+        print(ctx.author.name, data)
+
+    @commands.command(
+        extras={
+            "on_setting": {
+                "description": "テスト設定。",
+                "callback": _setting_test_callback,
+                "mode": "guild",
+                "items": [
+                    {
+                        "permissions": ["administrator"],
+                        "item_type": "text",
+                        "name": "引数1",
+                        "text": "デフォルトのテキスト"
+                    }
+                ]
+            }
+        }
+    )
+    async def _setting_test(self, ctx, *, text):
+        await self._setting_test_callback(ctx, text)
+        await ctx.reply("Ok")
+
 
 def setup(bot):
     bot.add_cog(BotGeneral(bot))

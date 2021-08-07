@@ -140,7 +140,7 @@ class OAuth:
             request = args[request_index]
 
             if ((not (userdata := request.cookies.get("session"))
-                     or (code := request.args.get("code"))) and require):
+                     and (code := request.args.get("code"))) and require):
                 # もしまだログインが終わってないなら。
                 # もし認証後ならcodeをtokenにしてクッキーに情報を保存する。
                 # その後またこのrouteにリダイレクトする。
@@ -165,20 +165,22 @@ class OAuth:
                     user = None
                 else:
                     user = self.bot.get_user(int(userdata["user_id"]))
+            else:
+                user = None
 
             if user is None and not want:
                 # もしユーザーの取得に失敗したまたはOAuth認証をしていないならOAuth認証をさせる。
                 # しかしlogin_wantの場合はここをスキップする。
-                if userdata[0] == "{":
-                    # もしユーザーデータを取得することができているのにユーザーオブジェクトを取得していないなら例外を発生させる。
-                    # こうしないとintentsのメンバーが有効じゃない時などにずっと認証画面という無限ループが発生してしまう。
-                    # 無限ループって怖くね？
-                    raise sanic.exceptions.SanicException(
-                        "OAuth認証に失敗しました。\n> ユーザーデータの取得に失敗しました。"
-                        + "すみません、RTを使ってる人ですか...？(メイド風の喋り方で。)")
-                else:
-                    return sanic.response.redirect(
-                        await self.get_url(request.url[:request.url.find("?") + 1], scope))
+                if userdata:
+                    if userdata[0] == "{":
+                        # もしユーザーデータを取得することができているのにユーザーオブジェクトを取得していないなら例外を発生させる。
+                        # こうしないとintentsのメンバーが有効じゃない時などにずっと認証画面という無限ループが発生してしまう。
+                        # 無限ループって怖くね？
+                        raise sanic.exceptions.SanicException(
+                            "OAuth認証に失敗しました。\n> ユーザーデータの取得に失敗しました。"
+                            + "すみません、RTを使ってる人ですか...？(メイド風の喋り方で。)")
+                return sanic.response.redirect(
+                    await self.get_url(request.url[:request.url.find("?") + 1], scope))
 
             # routeに渡すrequestにユーザーオブジェクトを付け加える。
             args[request_index].ctx.user = user

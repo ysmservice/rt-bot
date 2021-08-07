@@ -36,9 +36,10 @@ def on_init(bot):
     del oauth_secret
 
     # エクステンションを読み込む。
+    rtlib.setup(bot)
     bot.load_extension("jishaku")
     bot.load_extension("rtutil.oauth_manager")
-    rtlib.setup(bot)
+    bot.load_extension("rtutil.setting_manager")
     # cogsフォルダにあるエクステンションを読み込む。
     for path in listdir("cogs"):
         if path[0] in ("#", "."):

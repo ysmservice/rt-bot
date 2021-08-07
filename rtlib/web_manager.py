@@ -8,7 +8,9 @@ from typing import Union, List, Tuple
 from discord.ext import commands
 from traceback import print_exc
 from inspect import getmembers
+from functools import wraps
 from os.path import exists
+from time import time
 
 
 class WebManager:
@@ -156,9 +158,9 @@ class WebManager:
                 else:
                     return await response.file(true_path)
             else:
-                return exceptions.abort(
+                raise exceptions.SanicException(
                     f"{path}が見つからなかった...\nアクセスしたお客様〜、ごめんちゃい！(スターフォックス64のあれ風)",
-                    status_code=404
+                    404
                 )
 
     async def template(self, path: str, **kwargs) -> response.HTTPResponse:
@@ -184,3 +186,25 @@ class WebManager:
         async def whoareyou(request):
             return bot.web_manager.template("im_god.html")""" # noqa
         return response.html(await self._env.get_template(path).render_async(kwargs))
+
+    @staticmethod
+    def cooldown(seconds: Union[int, float]):
+        def decorator(function):
+            @wraps(function)
+            async def new(self, request, *args, **kwargs):
+                if not hasattr(self, "_rtlib_cooldown"):
+                    self._rtlib_cooldown = {}
+                before = self._rtlib_cooldown.get(
+                    function.__name__, {}).get(request.ip, 0)
+                now = time()
+                if function.__name__ not in self._rtlib_cooldown:
+                    self._rtlib_cooldown[function.__name__] = {}
+                self._rtlib_cooldown[function.__name__][request.ip] = now
+                if now - before < seconds:
+                    raise exceptions.SanicException(
+                        "先輩！何してんすか！やめてくださいよ本当に！リクエストのしすぎですよ！",
+                        429)
+                else:
+                    return await function(self, request, *args, **kwargs)
+            return new
+        return decorator
