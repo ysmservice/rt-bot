@@ -209,7 +209,8 @@ class Cursor:
         if commit:
             await self.connection.commit()
 
-    async def get_datas(self, table: str, targets: Dict[str, Any], _fetchall: bool = True) -> list:
+    async def get_datas(self, table: str, targets: Dict[str, Any],
+                        _fetchall: bool = True, custom: str = "") -> list:
         """特定のテーブルにある特定の条件のデータを取得します。  
         見つからない場合は空である`[]`が返されます。  
         ジェネレーターです。
@@ -238,12 +239,13 @@ class Cursor:
         else:
             conditions, args = "", ()
         await self.cursor.execute(
-            f"SELECT * FROM {table}{conditions}", args)
-        if not _fetchall:
+            f"SELECT * FROM {table}{conditions}{' ' + custom if custom else custom}",
+            args)
+        if _fetchall:
             rows = await self.cursor.fetchall()
         else:
             rows = [await self.cursor.fetchone()]
-        if rows and True: # (rows != [None] and targets == {})
+        if rows:
             for row in rows:
                 if isinstance(row, str):
                     row = [ujson.loads(data) if data[0] == "{" and data[-1] == "}"

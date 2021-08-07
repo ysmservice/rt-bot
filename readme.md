@@ -20,6 +20,16 @@ Python 3.8以上、MySQLを用意します。
     "mysql": {
         "user": "root",
     	"password": "mysqlのパスワード"
+    },
+    "oauth": {
+        "test": {
+            "client_id": "test用BotのOAuthクライアントID",
+            "client_secret": "test用BotのOAuthクライアントシークレット"
+        },
+        "production": {
+            "client_id": "本番用BotのOAuthクライアントID",
+            "client_secret": "本番用BotのOAuthクライアントシークレット"
+        }
     }
 }
 ```
