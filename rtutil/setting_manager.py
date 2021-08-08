@@ -15,7 +15,7 @@ from rtlib import OAuth, WebManager
 
 class SettingItem(TypedDict):
     """設定項目のベースの型です。"""
-    item_type: Literal["text", "check", "radios"]
+    item_type: Literal["text", "check", "radios", "list"]
 
 class SettingCheck(SettingItem):
     """設定項目のチェックボックスの型です。"""
@@ -31,14 +31,9 @@ class SettingList(SettingItem):
     index: int # 現在選択されているものの番号。
     texts: Union[List[str], Tuple[str, ...]]
 
-class SettingRadio(TypedDict):
-    """設定項目のラジオボタン単体の型です。下のSettingRadiosの中にあるものです。"""
-    checked: bool # チェックされているかどうか。
-    name: str     # ラジオボタンに付ける名前。
-
 class SettingRadios(SettingItem):
     """設定項目の複数のラジオボタンの型です。"""
-    radios: Dict[str, SettingRadio]
+    radios: Dict[str, bool]
 
 class InitSettingData(TypedDict):
     """設定のデータの型。デコレータのSettingManager.settingから生成されるもの。"""
@@ -51,7 +46,6 @@ class InitSettingData(TypedDict):
 class SettingData(TypedDict):
     """InitSettingDataのAPIから返される版です。(/api/settings/<Literal["guild", "user"]>)"""
     description: str
-    display_name: str
     items: Dict[str, Type[SettingItem]]
 
 
@@ -233,29 +227,7 @@ class SettingManager(commands.Cog):
     @WebManager.cooldown(1)
     @OAuth.login_want()
     async def settings(self, request, mode):
-        """設定の項目のリストを全て取得します。modeはguildかuserです。ログインしている必要があります。
-        # 帰ってくるもの
-        {
-            "status": "ok",
-            "settings": {
-                "サーバーID": { // guildのみでuserの場合はサーバーIDのとこは省かれる。
-                    "commands": {
-                        "設定名(基本的にコマンド名)": {
-                            "name": "この設定の名前",
-                            "description": "設定の説明",
-                            "items": {
-                                "設定項目名": {
-                                    "item_type": "設定項目の種類 (text, check, radios, list)"
-                                    // あとはその設定項目によって異なるものです。
-                                    // これはこのファイルの上の方に形式が定義されています。
-                                    // なのでフロントエンド開発者はそちらを見ましょう。
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }"""
+        """設定の項目のリストを全て取得します。modeはguildかuserです。ログインしている必要があります。"""
         return_data = {"status": "ok", "settings": {}}
         if request.ctx.user:
             user = request.ctx.user
@@ -270,7 +242,11 @@ class SettingManager(commands.Cog):
                             "Context", (), {"guild": guild, "author": member})
 
                         # 返却するデータに設定項目の情報を追加できるように準備をしておく。
-                        return_data["settings"][guild_id] = {"commands": {}, "name": guild.name}
+                        return_data["settings"][guild_id] = {
+                            "commands": {},
+                            "name": guild.name,
+                            "icon": str(guild.icon.url)
+                        }
 
                         # 設定が必要な項目を一つづつ取り出す。
                         for command_name in data:
@@ -335,20 +311,13 @@ class SettingManager(commands.Cog):
             ).__anext__()
 
     @commands.Cog.route(
-        "/api/settings/guild/update/<guild_id>",
+        "/api/settings/update/guild/<guild_id>",
         methods=["POST"])
     @WebManager.cooldown(5)
     @OAuth.login_want()
     @logined_require
     async def update_setting_guild(self, request, guild_id):
-        """サーバーの設定を更新します。ログイン済みの必要があります。(クッキーがある状態。)
-        {
-            "設定するコマンド名": {
-                    "設定項目名": // 上の取得時の設定項目の更新後をここに入れる。
-                    // ^- これがいくつか続く。
-                }
-            }
-        }"""
+        """サーバーの設定を更新します。ログイン済みの必要があります。"""
         # ciYRAyZQ=3yl2kXjJI1yiczM0ejNyNzNVTNozM2jwkMjwIimb5St6ZEII1iFMnh4WVf=
         guild_id = int(guild_id)
         if (guild := self.bot.get_guild(guild_id)):
