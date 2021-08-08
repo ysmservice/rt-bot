@@ -84,8 +84,26 @@ class BotGeneral(commands.Cog):
         ["administrator"], _setting_test_callback,
         {"text:box_1": {"ja": "テスト", "en": "test"}})
     async def _setting_test(self, ctx, *, text):
-        await self._setting_test_callback(ctx, "write", items)
+        await self._setting_test_callback(ctx, "write", (("box_1", "New"),))
         await ctx.reply("Ok")
+
+    async def _setting_test_user_callback(self, ctx, mode, items):
+        if mode == "read":
+            for item_name in items:
+                if item_name.startswith("text"):
+                    yield "デフォルトの値"
+                elif item_name.startswith("radios"):
+                    yield {"radio1": False, "radio2": True}
+        else:
+            for item_name, content in items:
+                print("設定更新後：", content)
+
+    @commands.command()
+    @SettingManager.setting(
+        "user", "テスト用ユーザー設定", "Foo↑", [], _setting_test_user_callback,
+        {"text:box_1": "Yey", "radios:radios_1": "radios"})
+    async def _setting_test_user(self, ctx):
+        await self._setting_test_callback(ctx, "write", (("box_1", "New"), ("radios_1", {"radio1": False, "radio2": True})))
 
 
 def setup(bot):

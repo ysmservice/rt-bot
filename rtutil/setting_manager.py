@@ -26,6 +26,11 @@ class SettingTextBox(SettingItem):
     multiple_line: bool # 改行も含めることができるかどうか。これが存在しない際はFalse
     text: str           # 値
 
+class SettingList(SettingItem):
+    """設定項目のリストボックスの型です。"""
+    index: int # 現在選択されているものの番号。
+    texts: Union[List[str], Tuple[str, ...]]
+
 class SettingRadio(TypedDict):
     """設定項目のラジオボタン単体の型です。下のSettingRadiosの中にあるものです。"""
     checked: bool # チェックされているかどうか。
@@ -33,7 +38,7 @@ class SettingRadio(TypedDict):
 
 class SettingRadios(SettingItem):
     """設定項目の複数のラジオボタンの型です。"""
-    radios: Union[List[SettingRadio], Tuple[SettingRadio, ...]]
+    radios: Dict[str, SettingRadio]
 
 class InitSettingData(TypedDict):
     """設定のデータの型。デコレータのSettingManager.settingから生成されるもの。"""
@@ -50,12 +55,26 @@ class SettingData(TypedDict):
     items: Dict[str, Type[SettingItem]]
 
 
+def logined_require(coro: Callable) -> Callable:
+    # ログインしていないならエラーにするようにするデコレータ。
+    @wraps(coro)
+    async def new(self, request, *args, **kwargs):
+        if request.ctx.user:
+            return await coro(self, request, *args, **kwargs)
+        else:
+            raise exceptions.SanicException(
+                "(ログインして)ないです。(NYN姉貴風)", 403)
+    return new
+
+
 class SettingManager(commands.Cog):
 
+    # 設定項目の名前とそれに対応する重要キー
     ITEMS = {
         "text": "text",
         "check": "checked",
-        "radios": "radios"
+        "radios": "radios",
+        "list": "list"
     }
     NOT_FOUND_SETTING = "({}なんて設定は)ないです。(NYN姉貴風)"
 
@@ -82,7 +101,10 @@ class SettingManager(commands.Cog):
         description : str
             設定の説明です。
         items : Dict[str, str]
-            設定の項目に入れるものです。
+            設定の項目に入れるものです。  
+            `{"項目の種類:項目名": "ウェブで表示される項目の名前"}`  
+            項目名は設定更新/読み込み時になんの項目か判断するためのものです。  
+            `ウェブで表示される項目の名前`を辞書にしてキーを言語コードにすれば多言語化。
         callback : Callable
             設定変更時または設定読み込み時に呼び出される関数です。  
             `write/read, {item_name: content}`が渡されます。(contentはアイテムの種類です。)"""
@@ -154,6 +176,7 @@ class SettingManager(commands.Cog):
                 yield result
 
     def _replace_language_dict(self, data: dict, key: str, lang: str) -> dict:
+        # 渡された辞書の指定されたキーにあるやつをlangの言語に置き換えれるなら置き換える。
         if isinstance(data[key], dict):
             data[key] = data[key].get(lang, data[key]["ja"])
         return data
@@ -164,16 +187,13 @@ class SettingManager(commands.Cog):
         lang = self.bot.cogs["Language"].get(user_id)
         data = self._replace_language_dict(data, "description", lang)
         # 設定項目の名前やラジオボタンの名前などを置き換えれないか試みる。
-        if lang != "ja":
-            replace = []
-            for item_name in list(data["items"].keys()):
-                # もしアイテム表示名を別言語に交換できるのなら交換リストに追加しておく。
-                if isinstance(data["items"][item_name], str):
-                    data["items"][item_name] = self.bot.cogs["Language"].get_text(
-                        data["items"][item_name], lang)
-                else:
-                    data["items"] = self._replace_language_dict(
-                        data["items"], item_name, lang)
+        for item_name in list(data["items"].keys()):
+            # アイテムの説明を別言語に置き換えれそうなら置き換える。
+            if not isinstance(data["items"][item_name], str):
+                data["items"] = self._replace_language_dict(
+                    data["items"], item_name, lang)
+
+            if lang != "ja":
                 # アイテムにある置き換えることのできも文字列を置き換えようと試みる。
                 if item_name.startswith("radios"):
                     for radio in list(data["items"][item_name].keys()):
@@ -213,25 +233,19 @@ class SettingManager(commands.Cog):
     @WebManager.cooldown(1)
     @OAuth.login_want()
     async def settings(self, request, mode):
-        """設定の項目のリストを全て取得します。
-        # URI:/api/setting/<mode>
-        - mode : Literal["guild", "user"]
-        > 取得する設定のモードです。guildの場合はサーバーの設定一覧です。userの場合はユーザーです。
-        # レート制限
-        5秒です。
-        # 返り値
-        ## guild
+        """設定の項目のリストを全て取得します。modeはguildかuserです。ログインしている必要があります。
+        # 帰ってくるもの
         {
             "status": "ok",
             "settings": {
                 "サーバーID": { // guildのみでuserの場合はサーバーIDのとこは省かれる。
                     "commands": {
                         "設定名(基本的にコマンド名)": {
-                            "name": "設定名",
+                            "name": "この設定の名前",
                             "description": "設定の説明",
                             "items": {
                                 "設定項目名": {
-                                    "item_type": "設定項目の種類 (text, check, radios)"
+                                    "item_type": "設定項目の種類 (text, check, radios, list)"
                                     // あとはその設定項目によって異なるものです。
                                     // これはこのファイルの上の方に形式が定義されています。
                                     // なのでフロントエンド開発者はそちらを見ましょう。
@@ -254,6 +268,7 @@ class SettingManager(commands.Cog):
                     if (member := guild.get_member(user.id)):
                         guild_id, ctx = str(guild.id), type(
                             "Context", (), {"guild": guild, "author": member})
+
                         # 返却するデータに設定項目の情報を追加できるように準備をしておく。
                         return_data["settings"][guild_id] = {"commands": {}, "name": guild.name}
 
@@ -263,7 +278,7 @@ class SettingManager(commands.Cog):
                             if self.check_permissions(member, data[command_name]["permissions"]):
                                 # 設定項目で既に設定されているものがあると思うのでそれのために返却するデータにデフォルトの設定をしておく。
                                 return_data["settings"][guild_id] \
-                                    ["commands"][command_name]: SettingData = \
+                                    ["commands"][command_name] = \
                                     await self.replace_default(
                                         "guild", command_name,
                                         data[command_name], ctx
@@ -276,8 +291,9 @@ class SettingManager(commands.Cog):
                 # ユーザーのモードの設定を全て入れる。
                 # もちろん既に設定されてるやつはデフォルトの設定をしておく。
                 ctx = type("Context", (), {"author": user, "user": user})
+
                 for command_name in self.data["user"]:
-                    return_data["settings"][command_name]: SettingData = \
+                    return_data["settings"][command_name] = \
                         await self.replace_default(
                             "user", command_name,
                             self.data["user"][command_name], ctx
@@ -289,18 +305,6 @@ class SettingManager(commands.Cog):
             )
         return response.json(return_data)
 
-    @staticmethod
-    def logined_require(coro: Callable) -> Callable:
-        # ログインしていないならエラーにするようにするデコレータ。
-        @wraps(coro)
-        async def new(self, request, *args, **kwargs):
-            if requset.ctx.user:
-                return await coro(self, request, *args, **kwargs)
-            else:
-                raise exceptions.SanicException(
-                    "(ログインして)ないです。(NYN姉貴風)", 403)
-        return new
-
     async def _update_setting(
             self, mode: Literal["guild", "user"],
             request_data: Dict[str, Dict[str, Type[SettingItem]]],
@@ -311,7 +315,9 @@ class SettingManager(commands.Cog):
             if command_name not in self.data[mode]:
                 raise exceptions.SanicException(
                     self.NOT_FOUND_SETTING.format(command_name), 404)
-            if isinstance(ctx_attrs["author"], discord.Member):
+
+            # もしmodeがguildなら設定変更ができるか権限チェックを行う。
+            if mode == "guild":
                 if not self.check_permissions(
                         ctx_attrs["author"], self.data[mode][command_name]["permissions"]):
                     raise exceptions.SanicException(
@@ -323,24 +329,19 @@ class SettingManager(commands.Cog):
                 self.data[mode][command_name]["callback"],
                 (type("Context", (), ctx_attrs), "write", 
                  ((key, request_data[command_name][key] \
-                       [self.ITEMS[request_data[command_name] \
-                            [key]["item_type"]]])
+                     [self.ITEMS[request_data[command_name][key]["item_type"]]])
                   for key in request_data[command_name])
                 ), True
             ).__anext__()
 
     @commands.Cog.route(
-        "/api/settings/guild/<guild_id>",
+        "/api/settings/guild/update/<guild_id>",
         methods=["POST"])
     @WebManager.cooldown(5)
     @OAuth.login_want()
     @logined_require
     async def update_setting_guild(self, request, guild_id):
-        """サーバーの設定を更新します。
-        # URI:/api/settings/guild/<guild_id>
-        - guild_id : int
-        > 設定更新対象サーバーID
-        # POSTするデータ (json)
+        """サーバーの設定を更新します。ログイン済みの必要があります。(クッキーがある状態。)
         {
             "設定するコマンド名": {
                     "設定項目名": // 上の取得時の設定項目の更新後をここに入れる。
@@ -349,7 +350,7 @@ class SettingManager(commands.Cog):
             }
         }"""
         # ciYRAyZQ=3yl2kXjJI1yiczM0ejNyNzNVTNozM2jwkMjwIimb5St6ZEII1iFMnh4WVf=
-        guild_id = int(guild_id), 
+        guild_id = int(guild_id)
         if (guild := self.bot.get_guild(guild_id)):
             if not (member := guild.get_member(request.ctx.user.id)):
                 raise exceptions.SanicException("...誰？", 403)
@@ -364,12 +365,14 @@ class SettingManager(commands.Cog):
                 "(そのサーバーが見つから)ないです。(NYN姉貴風)", 404)
 
     @commands.Cog.route(
-        "/api/settings/user",
+        "/api/settings/update/user",
         methods=["POST"])
     @WebManager.cooldown(5)
     @OAuth.login_want()
     @logined_require
-    async def update_setting_guild(self, request):
+    async def update_setting_user(self, request):
+        """"サーバーの設定を更新します。
+        POSTするデータは上と同じでログインしている必要があります。"""
         user = request.ctx.user
         await self._update_setting("user", request.json, {"author": user})
         return response.json({"status": "ok"})
