@@ -97,9 +97,9 @@ class OAuth:
             async with self.cs.post(
                     self.BASE + "oauth2/token", data=data, headers=headers) as r:
                 data: dict = await r.json(loads=ujson.loads)
-        except aiohttp.client_exceptions.ClientResponseError:
+        except aiohttp.client_exceptions.ClientResponseError as e:
             raise ValueError("ごめんなさい！Discordから渡されたコードから情報を取得できなかったのですぅ...\n"
-                             + "申し訳ないんですがもう一度再挑戦してほしいんです！")
+                             + f"申し訳ないんですがもう一度再挑戦してほしいんです！:{e}")
         return data
 
     @require_session
