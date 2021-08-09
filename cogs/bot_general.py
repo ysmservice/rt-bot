@@ -17,21 +17,21 @@ INFO_DESC = {
 ほとんどこのBotで済むようなBotを目指してる。""",
     "en": """..."""
 }
-INFO_ITEMS = (("INVITE", {"ja": "招待リンク", "en": "..."}),
-              ("SS", {"ja": "サポートサーバー", "en": "..."}),
-              ("URL", {"ja": "RTのウェブサイト", "en": "..."}),
-              ("GITHUB", {"ja": "Github", "en": "..."}))
+INFO_ITEMS = (("INVITE", {"ja": "招待リンク", "en": "invite link"}),
+              ("SS", {"ja": "サポートサーバー", "en": "support server"}),
+              ("URL", {"ja": "RTのウェブサイト", "en": "RT offical website"}),
+              ("GITHUB", {"ja": "Github", "en": "Github"}))
 INFO_INVITE = "https://discord.com/api/oauth2/authorize?client_id=716496407212589087&permissions=8&scope=bot"
 INFO_SS, INFO_URL = "https://discord.gg/ugMGw5w", "https://rt-bot.com"
 INFO_GITHUB = """* [RT-Team](https://github.com/RT-Team)
 * [RT-Backend](https://github.com/RT-Team/rt-backend)
 * [RT-Frontend](https://github.com/RT-Team/rt-frontend)"""
 
-CREDIT_ITEMS = (("DEV", {"ja": "主な開発者", "en": "..."}),
-                ("DESIGN", {"ja": "絵文字デザイン", "en": "..."}),
-                ("ICON", {"ja": "RTのアイコン", "en": "..."}),
-                ("LANGUAGE", {"ja": "プログラミング言語", "en": "..."}),
-                ("SERVER", {"ja": "サーバーについて", "en": "..."}),
+CREDIT_ITEMS = (("DEV", {"ja": "主な開発者", "en": "main developer"}),
+                ("DESIGN", {"ja": "絵文字デザイン", "en": "emoji designer"}),
+                ("ICON", {"ja": "RTのアイコン", "en": "RT's icon"}),
+                ("LANGUAGE", {"ja": "プログラミング言語", "en": "programing language"}),
+                ("SERVER", {"ja": "サーバーについて", "en": "about server"}),
                 ("ETC", {"ja": "その他", "en": "etc"}))
 CREDIT_DEV = """<:tasren:731263470636498954> tasuren [WEBSITE](http://tasuren.f5.si)
 <:takkun:731263181586169857> Takkun [SERVER](https://discord.gg/VX7ceJw)
@@ -41,15 +41,15 @@ CREDIT_DESIGN = """<:yutam:732948166881575022> YUTAM
 CREDIT_ICON = "Made by Takkun `CC BY-SA 4.0`"
 CREDIT_LANGUAGE = {
     "ja": "使用言語：Python, 使用ライブラリ：discord.py",
-    "en": "..."
+    "en": "using language:Python, using library:discord.py"
 }
 CREDIT_SERVER = {
     "ja": "サーバーOS：Arch Linux\nSnavyさんが貸してくれています。感謝感激です！",
-    "en": "..."
+    "en": "server os:Arch Linux\nSnavy is lend server to me. Thank you to Snavy "
 }
 CREDIT_ETC = {
     "ja": "* Githubのコントリビューター達。\n* 主な翻訳協力者であるDMSくん。\nありがとうございます。",
-    "en": "..."
+    "en": "*Github's sontributors. \n* This bot is translate by DMS. \n Thank you"
 }
 
 
