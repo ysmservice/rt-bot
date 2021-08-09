@@ -10,4 +10,5 @@ aiomysql
 ## OAuth
 reprypt
 # RT本プログラムで必要なモジュール
+emoji
 youtube_dl

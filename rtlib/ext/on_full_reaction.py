@@ -109,23 +109,17 @@ class OnFullReactionAddRemove(commands.Cog):
                                    timeout=self.timeout)
         except asyncio.TimeoutError:
             # もし`self.on_reaction_addremove`が呼ばれなかった場合は自分でmessageを取得する。
-            # この時キャッシュにmessageが既にあるならそのキャッシュを使用する。
-            if (cache := self.cache.get(payload.message_id)) is None:
-                try:
-                    channel = (self.bot.get_channel(payload.channel_id)
-                               if payload.guild_id
-                               else self.bot.get_user(payload.user_id))
-                    cache = [await channel.fetch_message(payload.message_id),
-                             time() + 30]
-                    self.cache[payload.message_id] = cache
-                    payload.member = (cache[0].guild.get_member(
-                                        payload.user_id)
-                                      if payload.guild_id else None)
-                except Exception:
-                    # なんらかの理由でメッセーいなどを取得できなかったら諦める。
-                    error = True
-            if not error:
-                payload.message = cache[0]
+            try:
+                channel = (self.bot.get_channel(payload.channel_id)
+                            if payload.guild_id
+                            else self.bot.get_user(payload.user_id))
+                payload.message = await channel.fetch_message(payload.message_id)
+                payload.member = (payload.message.guild.get_member(
+                                    payload.user_id)
+                                    if payload.guild_id else None)
+            except Exception:
+                # なんらかの理由でメッセーいなどを取得できなかったら諦める。
+                error = True
         else:
             # もし`self.on_raction_addremove`が呼ばれたならそこからリアクションのデータをとる。
             reaction, user = self.reactions[key][1]
