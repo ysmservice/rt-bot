@@ -34,7 +34,14 @@ from typing import Tuple, Callable
 from copy import deepcopy
 
 
-def item(name: str, callback: Callable, **kwargs) -> Tuple[Callable, Callable]:
+def add_late():
+    def _componesy_add_late_decorator(coro):
+        return coro
+    return _componesy_add_late_decorator
+discord.ui.add_late = add_late
+
+
+def item(name: str, callback: Callable = None, **kwargs) -> Tuple[Callable, Callable]:
     """アイテムのリストを簡単に作るためのもの。
     
     Parameters
@@ -42,10 +49,23 @@ def item(name: str, callback: Callable, **kwargs) -> Tuple[Callable, Callable]:
     name : str
         アイテムの種類の名前。  
         例：`discord.ui.button`の`button`
-    callback : Callable
-        インタラクションがきた際に呼び出されるコルーチン関数。
+    callback : Callable, default None
+        インタラクションがきた際に呼び出されるコルーチン関数。  
+        普通はこの引数がなければなりませんが、リンク付きボタンの場合はなくていいです。
     **kwargs : dict
         nameで指定したdiscord.uiのアイテムに渡す引数です。"""
+    if name == "link_button":
+        name = "add_late"
+        async def new_callback(view, b_kwargs=kwargs):
+            view.add_item(discord.ui.Button(**b_kwargs))
+            return view
+        callback, kwargs = new_callback, {}
+    elif name[0] in ("B", "S"):
+        name = "add_late"
+        async def new_callback(view, b_kwargs=kwargs):
+            view.add_item(getattr(discord.ui, name)(**b_kwargs))
+            return view
+        callback, kwargs = new_callback, {}
     return (getattr(discord.ui, name)(**kwargs), callback)
 
 
@@ -115,16 +135,19 @@ class View:
         # rtlibのViewかどうかの判別用の変数。
         self._rtlib_view = 0
 
-    def add_item(self, item_name: str, callback: Callable, **kwargs) -> None:
+    def add_item(self, item_name: str, callback: Callable = None, **kwargs) -> None:
         """Viewにアイテムを追加します。
 
         Parameters
         ----------
         item_name : str
             アイテム名です。  
-            例：`button`
-        callback : Callable
-            インタラクションがあった時呼ばれるコルーチン関数です。
+            `discord.ui.Item`を作成するためのdiscord.pyのデコレータである`discord.ui.button`のbuttonなどを使うことができます。  
+            もしリンクボタンを作りたい場合はここを`link_button`にしてcallbackを指定しないでください。  
+            もしカスタムしたい場合は`add_late`にすることで、Viewのインスタンス化にcallbackが呼ばれるようにすることができます。
+        callback : Callable, default None
+            インタラクションがあった時呼ばれるコルーチン関数です。  
+            普通これは必要な引数ですが、アイテム名が`link_button`の際は必要がないです。
         **kwargs
             `discord.ui.<item_name>`に渡すキーワード引数です。
             例：`label="ボタンテキスト"`"""
@@ -187,21 +210,24 @@ class Componesy(commands.Cog):
             # Viewがまだ作られてないなら作る。
             if view_name not in self.views:
                 # componesyによるアイテムを新しく作るViewに追加する関数リストに追加していく。
-                functions = {}
+                functions, add_late = {}, None
 
                 for uiitem, coro in items["items"]:
-                    if coro.__self__ is None:
-                        new_coro = coro
+                    if uiitem.__name__.startswith("_componesy_add_late"):
+                        add_late = coro
                     else:
-                        # もしメソッドならViewに設定できないのでラップする。
-                        # 二重ラップしないとcoroが2個目以降のcoroと同じになる。
-                        async def new_coro(*args, _coro_original=coro, **kwargs):
-                            async def new_coro():
-                                return await _coro_original(*args, **kwargs)
-                            return await new_coro()
+                        if coro.__self__ is None:
+                            new_coro = coro
+                        else:
+                            # もしメソッドならViewに設定できないのでラップする。
+                            # 二重ラップしないとcoroが2個目以降のcoroと同じになる。
+                            async def new_coro(*args, _coro_original=coro, **kwargs):
+                                async def new_coro():
+                                    return await _coro_original(*args, **kwargs)
+                                return await new_coro()
 
-                    functions[coro.__name__] = uiitem(new_coro)
-                    del new_coro, coro
+                        functions[coro.__name__] = uiitem(new_coro)
+                        del new_coro, coro
 
                 # typeを使用して動的にdiscord.ui.Viewを継承した上で追加した関数をつけたクラスを作成する。
                 # キャッシュに毎回Viewを作らないようにViewクラスを保存しておく。
@@ -209,6 +235,8 @@ class Componesy(commands.Cog):
 
             # Viewのインスタンスを作りsendの引数viewに設定をする。
             kwargs["view"] = self.views[view_name](*class_args, **class_kwargs)
+            if add_late is not None:
+                kwargs["view"] = await add_late(kwargs["view"])
 
         # 引数を返す。
         return args, kwargs

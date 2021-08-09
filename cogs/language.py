@@ -34,13 +34,22 @@ class Language(commands.Cog):
         self.bot = bot
         self.cache = {}
         self.bot.cogs["OnSend"].add_event(self._new_send, "on_send")
+        self.bot.cogs["OnSend"].add_event(self._new_send, "on_edit")
 
     async def _new_send(self, channel, *args, **kwargs):
         # 元のsendにつけたしをする関数。rtlib.libs.on_sendを使う。
         # このsendが返信に使われたのなら返信先のメッセージの送信者(実行者)の言語設定を読み込む。
         lang = "ja"
-        if (reference := kwargs.get("reference")) is not None:
+        if isinstance(channel, discord.Message):
+            if (reference := channel.reference) is not None:
+                if reference.cached_message:
+                    lang = self.get(reference.cached_message.author.id)
+        elif (reference := kwargs.get("reference")) is not None:
             lang = self.get(reference.author.id)
+        if (target := kwargs.pop("target", False)):
+            if not isinstance(target, int):
+                target = target.id
+            target = self.get(target)
 
         if not kwargs.pop("replace_language", True):
             # もし言語データ交換するなと引数から指定されたならデフォルトのjaにする。
@@ -77,31 +86,39 @@ class Language(commands.Cog):
 
         return results, other
 
-    def _get_reply(self, text: str, lang: Literal[LANGUAGES]) -> str:
-        # 指定された文字を指定された言語で交換します。
-        # $で囲まれている部分を取得しておく。
-        results, text = self._extract_question(text)
+    def _get_reply(self, text: Union[str, dict], lang: Literal["ja", "en"]) -> str:
+        if text:
+            if isinstance(text, str) and text[0] != "{":
+                # 指定された文字を指定された言語で交換します。
+                # $で囲まれている部分を取得しておく。
+                results, text = self._extract_question(text)
 
-        # 言語データから文字列を取得する。
-        result = self.replies.get(text, {}).get(lang, text)
+                # 言語データから文字列を取得する。
+                result = self.replies.get(text, {}).get(lang, text)
 
-        # 上で$で囲まれた部分を取得したのでその囲まれた部分を交換する。
-        for word in results:
-            result = result.replace("$$", word, 1)
+                # 上で$で囲まれた部分を取得したのでその囲まれた部分を交換する。
+                for word in results:
+                    result = result.replace("$$", word, 1)
+            else:
+                if isinstance(text, str):
+                    text = loads(text.replace('"', r'\"').replace("'", '"'))
+                result = text.get(lang, text["ja"])
 
         return result
 
-    def _replace_embed(self, embed: discord.Embed, lang: Literal[LANGUAGES]) -> discord.Embed:
+    def _replace_embed(self, embed: discord.Embed, lang: Literal["ja", "en"]) -> discord.Embed:
         # Embedを指定された言語コードで交換します。
         # タイトルとディスクリプションを交換する。
         for n in ("title", "description"):
             if getattr(embed, n) is not discord.Embed.Empty:
                 setattr(embed, n, self._get_reply(getattr(embed, n), lang))
         # Embedにあるフィールドの文字列を交換する。
-        new_fields = []
-        for field in embed.fields:
-            field.name = self._get_reply(field.name, lang)
-            field.value = self._get_reply(field.value, lang)
+        for index in range(len(embed.fields)):
+            embed.set_field_at(
+                index, name=self._get_reply(embed.fields[index].name, lang),
+                value=self._get_reply(embed.fields[index].value, lang),
+                inline=embed.fields[index].inline
+            )
         # Embedのフッターを交換する。
         if embed.footer:
             if embed.footer.text is not discord.Embed.Empty:
@@ -109,7 +126,7 @@ class Language(commands.Cog):
         return embed
 
     def get_text(self, text: Union[str, discord.Embed],
-                 target: Union[int, Literal[LANGUAGES]]) -> str:
+                 target: Union[int, Literal["ja", "en"]]) -> str:
         """渡された言語コードに対応する文字列に渡された文字列を交換します。  
         また言語コードの代わりにユーザーIDを渡すことができます。  
         ユーザーIDを渡した場合はそのユーザーIDに設定されている言語コードが使用されます。  
@@ -167,7 +184,7 @@ class Language(commands.Cog):
         # 言語データを読み込んでおく。
         await self.update_language()
 
-    def get(self, ugid: int) -> Literal[LANGUAGES]:
+    def get(self, ugid: int) -> Literal["ja", "en"]:
         """渡されたIDになんの言語が設定されているか取得できます。  
         Bot起動後でないと正しい情報を取得することができないので注意してください。
 

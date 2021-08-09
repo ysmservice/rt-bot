@@ -3,8 +3,54 @@
 from discord.ext import commands, tasks
 import discord
 
+from traceback import TracebackException
+from rtlib.ext import Embeds, componesy
 from time import time
-from rtutil import SettingManager
+
+
+ERROR_CHANNEL = 842744343911596062
+
+INFO_DESC = {
+    "ja": """どうもRTという新時代Botです。
+このBotは既にある色々な機能や今までにない機能を取り入れた多機能型Botです。
+チャンネルステータスやウェルカムメッセージももちろん、変更可能このの読み上げや常に一番下にくるメッセージなど色々あります。
+ほとんどこのBotで済むようなBotを目指してる。""",
+    "en": """..."""
+}
+INFO_ITEMS = (("INVITE", {"ja": "招待リンク", "en": "..."}),
+              ("SS", {"ja": "サポートサーバー", "en": "..."}),
+              ("URL", {"ja": "RTのウェブサイト", "en": "..."}),
+              ("GITHUB", {"ja": "Github", "en": "..."}))
+INFO_INVITE = "https://discord.com/api/oauth2/authorize?client_id=716496407212589087&permissions=8&scope=bot"
+INFO_SS, INFO_URL = "https://discord.gg/ugMGw5w", "https://rt-bot.com"
+INFO_GITHUB = """* [RT-Team](https://github.com/RT-Team)
+* [RT-Backend](https://github.com/RT-Team/rt-backend)
+* [RT-Frontend](https://github.com/RT-Team/rt-frontend)"""
+
+CREDIT_ITEMS = (("DEV", {"ja": "主な開発者", "en": "..."}),
+                ("DESIGN", {"ja": "絵文字デザイン", "en": "..."}),
+                ("ICON", {"ja": "RTのアイコン", "en": "..."}),
+                ("LANGUAGE", {"ja": "プログラミング言語", "en": "..."}),
+                ("SERVER", {"ja": "サーバーについて", "en": "..."}),
+                ("ETC", {"ja": "その他", "en": "etc"}))
+CREDIT_DEV = """<:tasren:731263470636498954> tasuren [WEBSITE](http://tasuren.f5.si)
+<:takkun:731263181586169857> Takkun [SERVER](https://discord.gg/VX7ceJw)
+<:Snavy:788377881092161577> Snavy [SERVER](https://discord.gg/t8fsvk3)"""
+CREDIT_DESIGN = """<:yutam:732948166881575022> YUTAM
+<:omochi_nagamochi:733618053631311924> 餅。"""
+CREDIT_ICON = "Made by Takkun `CC BY-SA 4.0`"
+CREDIT_LANGUAGE = {
+    "ja": "使用言語：Python, 使用ライブラリ：discord.py",
+    "en": "..."
+}
+CREDIT_SERVER = {
+    "ja": "サーバーOS：Arch Linux\nSnavyさんが貸してくれています。感謝感激です！",
+    "en": "..."
+}
+CREDIT_ETC = {
+    "ja": "* Githubのコントリビューター達。\n* 主な翻訳協力者であるDMSくん。\nありがとうございます。",
+    "en": "..."
+}
 
 
 class BotGeneral(commands.Cog):
@@ -17,9 +63,49 @@ class BotGeneral(commands.Cog):
     def __init__(self, bot):
         self.bot, self.rt = bot, bot.data
 
+        # RT情報Embedsを作る。
+        embeds = self.info_embeds = []
+        # RTの情報のEmbedを作る。
+        embed = discord.Embed(
+            title="RT 情報",
+            description=INFO_DESC,
+            color=self.bot.colors["normal"]
+        )
+        for item_variable_name, item_name in INFO_ITEMS:
+            embed.add_field(
+                name=item_name, value=eval("INFO_" + item_variable_name),
+                inline=False
+            )
+        embeds.append(embed)
+        # クレジットのEmbedを作る。
+        embed = discord.Embed(
+            title="RT クレジット",
+            color=self.bot.colors["normal"]
+        )
+        for item_variable_name, item_name in CREDIT_ITEMS:
+            embed.add_field(
+                name=item_name, value=eval("CREDIT_" + item_variable_name),
+                inline=False
+            )
+        embeds.append(embed)
+        # 使用しているライブラリ
+        with open("requirements.txt") as f:
+            libs = f.read()
+        embed = discord.Embed(
+            title="使用しているライブラリ",
+            description=f"```md\n{libs}\n```",
+            color=self.bot.colors["normal"]
+        )
+        embeds.append(embed)
+        del embed, libs
+
         self._now_status_index = 0
         self._start_time = time()
         self.status_updater.start()
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        self.on_error_channel = self.bot.get_channel(ERROR_CHANNEL)
 
     def _get_ping(self) -> int:
         # pingを返します。
@@ -47,14 +133,8 @@ class BotGeneral(commands.Cog):
         self._now_status_index = 0 if self._now_status_index else 1
 
     @commands.command(
-        extras={
-            "headding": {
-                "ja": "レイテンシを表示します。",
-                "en": "Show you RT latency."
-            },
-            "parent": "RT"
-        }
-    )
+        extras={"headding": {"ja": "レイテンシを表示します。", "en": "Show you RT latency."},
+                "parent": "RT"})
     async def ping(self, ctx):
         """!lang ja
         --------
@@ -67,43 +147,113 @@ class BotGeneral(commands.Cog):
         If latency is over to 400, network is bad."""
         await ctx.reply(f"現在のRTのレイテンシ：${self._get_ping()}$ms")
 
-    async def _setting_test_callback(self, ctx, mode, items):
-        if mode == "read":
-            for item_name in items:
-                yield "既に設定されてる値。"
+    @commands.command(
+        extras={"headding": {"ja": "クレジットを表示します。", "en": "..."},
+                "parent": "RT"},
+        aliases=["credit", "invite", "about", "情報", "じょうほう"])
+    @commands.cooldown(1, 180, commands.BucketType.user)
+    async def info(self, ctx, secret_arg = None):
+        """!lang ja
+        --------
+        RTの情報を表示します。  
+        RTの基本情報(招待リンク,ウェブサイトURL)やクレジットなどを確認することができます。  
+        このコマンドは三分に一度実行可能です。
+        
+        !lang en
+        --------
+        ..."""
+        if secret_arg is None:
+            await ctx.reply(
+                embeds=Embeds("RtInfo", ctx.author, 180, self.info_embeds)
+            )
         else:
-            for item_name, content in items:
-                print("設定更新後 :", content)
+            await ctx.reply(f"{secret_arg}...、あなた何奴！？")
 
-    @commands.command()
-    @SettingManager.setting(
-        "guild", "テスト用設定", {
-            "ja": "設定のテストを行うためのものです。",
-            "en": "Test setting item."
-        },
-        ["administrator"], _setting_test_callback,
-        {"text:box_1": {"ja": "テスト", "en": "test"}})
-    async def _setting_test(self, ctx, *, text):
-        await self._setting_test_callback(ctx, "write", (("box_1", "New"),))
-        await ctx.reply("Ok")
-
-    async def _setting_test_user_callback(self, ctx, mode, items):
-        if mode == "read":
-            for item_name in items:
-                if item_name.startswith("text"):
-                    yield "デフォルトの値"
-                elif item_name.startswith("radios"):
-                    yield {"radio1": False, "radio2": True}
+    @commands.Cog.listener()
+    async def on_command_error(self, ctx, error):
+        # エラー時のメッセージ。翻訳はdescriptionのみ。
+        kwargs, color, content = {}, self.bot.colors["error"], "エラー"
+        if isinstance(error, commands.errors.CommandNotFound):
+            title = "404 Not Found"
+            description = {"ja": ("そのコマンドが見つかりませんでした。\n"
+                                  + "`rt!help <word>`で検索が可能です。"),
+                           "en": "..."}
+            color = self.bot.colors["unknown"]
+        elif isinstance(error, (commands.errors.BadArgument,
+                        commands.errors.MissingRequiredArgument,
+                        commands.errors.ArgumentParsingError)):
+            title = "400 Bad Request"
+            description = {"ja": "コマンドの引数が適切ではありません。\nまたは必要な引数が足りません。",
+                           "en": "..."}
+        elif isinstance(error, commands.errors.CommandOnCooldown):
+            title = "429 Too Many Requests"
+            description = {"ja": ("現在このコマンドはクールダウンとなっています。\n"
+                                  + "{:.2f}秒後に実行できます。".format(
+                                      error.retry_after)),
+                           "en": ("...\n"
+                                  + "{:.2f}".format(
+                                      error.retry_after))}
+            color = self.bot.colors["unknown"]
+        elif isinstance(error, (commands.errors.MemberNotFound,
+                        commands.errors.UserNotFound)):
+            title = "400 Bad Request"
+            description = {"ja": "指定されたユーザーが見つかりませんでした。",
+                           "en": "..."}
+        elif isinstance(error, commands.errors.ChannelNotFound):
+            title = "400 Bad Request"
+            description = {"ja": "指定されたチャンネルが見つかりませんでした。",
+                           "en": "..."}
+        elif isinstance(error, commands.errors.RoleNotFound):
+            title = "400 Bad Request"
+            description = {"ja": "指定されたロールが見つかりませんでした。",
+                           "en": "..."}
+        elif isinstance(error, commands.errors.BadBoolArgument):
+            title = "400 Bad Request"
+            description = {"ja": ("指定された真偽値が無効です。\n"
+                                  + "有効な真偽値：`on/off`, `true/false`, `True/False`"),
+                           "en": ("...\n"
+                                  + "...:`on/off`, `true/false`, `True/False`")}
+        elif isinstance(error, commands.errors.MissingPermissions):
+            title = "403 Forbidden"
+            description = {"ja": "あなたの権限ではこのコマンドを実行することができません。",
+                           "en": "..."}
+        elif isinstance(error, commands.errors.MissingRole):
+            title = "403 Forbidden"
+            description = {"ja": "あなたはこのコマンドの実行に必要な役職を持っていないため、このコマンドを実行できません。",
+                           "en": "..."}
         else:
-            for item_name, content in items:
-                print("設定更新後：", content)
+            error_message = "".join(
+                TracebackException.from_exception(error).format())
 
-    @commands.command()
-    @SettingManager.setting(
-        "user", "テスト用ユーザー設定", "Foo↑", [], _setting_test_user_callback,
-        {"text:box_1": "Yey", "radios:radios_1": "radios"})
-    async def _setting_test_user(self, ctx):
-        await self._setting_test_callback(ctx, "write", (("box_1", "New"), ("radios_1", {"radio1": False, "radio2": True})))
+            title = "500 Internal Server Error"
+            description = {
+                "ja": (f"コマンドの実行中にエラーが発生しました。\n"
+                       + f"```python\n{error_message}\n```"),
+                "en": (f"...\n"
+                       + f"```python\n{error_message}\n```"),
+            }
+
+            view = componesy.View("InternalServerErrorView", timeout=60)
+            view.add_item(
+                "link_button", style=discord.ButtonStyle.link,
+                label="サポートサーバー / SupportServer", url=INFO_SS
+            )
+            kwargs["view"] = view
+
+            # テストモードなら問答無用でエラーを出力する。
+            if self.bot.command_prefix[0] == "r2!":
+                print(error_message)
+            else:
+                # RTサーバーにエラーを通知する。
+                await self.on_error_channel.send(
+                    (f"**エラーが発生しました。**\nGuild: {ctx.guild.name}, "
+                    + f"User: {ctx.author.name}\nコマンド名：{ctx.command.qualified_name}"
+                    + content)
+                )
+
+        kwargs["embed"] = discord.Embed(
+            title=title, description=description, color=color)
+        await ctx.reply(content, **kwargs)
 
 
 def setup(bot):
