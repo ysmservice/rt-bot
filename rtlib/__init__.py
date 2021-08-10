@@ -33,7 +33,7 @@ async def webhook_send(
     wb = (wb if (wb := discord.utils.get(
             await channel.webhooks(), name=webhook_name))
           else await channel.create_webhook(name=webhook_name))
-    await wb.send(*args, **kwargs)
+    return await wb.send(*args, **kwargs)
 
 
 discord.abc.Messageable.webhook_send = webhook_send
