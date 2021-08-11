@@ -60,7 +60,10 @@ class Poll(commands.Cog):
             description=description,
             color=ctx.author.color
         )
-        embed.set_footer(text="※連打防止のため結果の反映は数秒遅れます。")
+        embed.set_footer(
+            text={"ja": "※連打防止のため結果の反映は数秒遅れます。",
+                  "en": "..."}
+        )
         mes = await ctx.webhook_send(
             "".join(("RT投票パネル", " (一人一票)" if only_one else "", "\n📊 **[...]**")),
             wait=True, embed=embed, username=ctx.author.display_name,
@@ -70,7 +73,10 @@ class Poll(commands.Cog):
             try:
                 await mes.add_reaction(emoji)
             except discord.ext.commands.errors.CommandInvokeError:
-                await ctx.reply(f"{emoji}が見つかりませんでした。")
+                await ctx.reply(
+                    {"ja": f"{emoji}が見つかりませんでした。",
+                     "en": "..."}
+                )
 
     def make_description(self, content: str, on_integer: Callable = None) -> Tuple[str, List[str]]:
         # 渡された情報から投票パネルの説明に入れる文字列を作成する。

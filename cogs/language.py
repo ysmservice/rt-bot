@@ -34,6 +34,7 @@ class Language(commands.Cog):
         self.bot = bot
         self.cache = {}
         self.bot.cogs["OnSend"].add_event(self._new_send, "on_send")
+        self.bot.cogs["OnSend"].add_event(self._new_send, "on_webhook_send")
         self.bot.cogs["OnSend"].add_event(self._new_send, "on_edit")
 
     async def _new_send(self, channel, *args, **kwargs):
@@ -122,7 +123,8 @@ class Language(commands.Cog):
         # Embedのフッターを交換する。
         if embed.footer:
             if embed.footer.text is not discord.Embed.Empty:
-                embed.footer.text = self._get_reply(embed.footer.text, lang)
+                embed.set_footer(text=self._get_reply(embed.footer.text, lang),
+                                 icon_url=embed.footer.icon_url)
         return embed
 
     def get_text(self, text: Union[str, discord.Embed],

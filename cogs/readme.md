@@ -23,3 +23,11 @@
 * 役職パネル
 ## bulk.py
 * 一括コマンド
+## ms.py
+* マインスイーパー
+## log.py
+* ログ出力
+### ToDo
+Helpに追加
+## recruitment.py
+* 募集パネル

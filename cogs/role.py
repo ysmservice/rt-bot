@@ -67,7 +67,10 @@ class RolePanel(commands.Cog):
                                       for emoji in emojis),
                 color=ctx.author.color
             )
-            embed.set_footer(text="※連打防止のため役職の付与は数秒遅れます。")
+            embed.set_footer(
+                text={"ja": "※連打防止のため役職の付与は数秒遅れます。",
+                      "en": "..."}
+            )
 
             message = await ctx.webhook_send(
                 "RT役職パネル", embed=embed, username=ctx.author.display_name,
@@ -77,7 +80,9 @@ class RolePanel(commands.Cog):
                 await message.add_reaction(emoji)
         else:
             raise commands.errors.CommandError(
-                "何も役職を指定されていないため役職パネルを作れません。")
+                {"ja": "何も役職を指定されていないため役職パネルを作れません。",
+                 "en": "..."}
+            )
 
     async def update_role(
             self, payload: discord.RawReactionActionEvent,
