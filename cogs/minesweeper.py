@@ -36,7 +36,7 @@ class Mines(commands.Cog):
         Aliases
         -------
         ms, MS
-        ..."""
+        """
         self.games[str(ctx.author.id)] = Ms(x, y, bomb)
         kek, mes, me = 200, ctx.message, False
         l = len(ctx.message.content.split())
