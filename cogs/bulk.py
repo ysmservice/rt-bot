@@ -21,6 +21,22 @@ class Bulk(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    def add_error_field(self, embed: discord.Embed,
+                        failed_members: list, t: str) -> discord.Embed:
+        # ここのtには`送信`とかが入る。
+        embed.add_field(
+            name={"ja": f"{t}に失敗したメンバー一覧",
+                  "en": f"{t}..."},
+            value=("\n".join(f"{member.mention}\n　{e}"
+                             for member, e in failed_members)
+                   if failed_members
+                   else {
+                       "ja": f"{t}に失敗したメンバーはいません。",
+                       "en": f"{t}..."
+                    })
+        )
+        return embed
+
     @commands.group()
     async def bulk(self, ctx):
         """!lang ja
@@ -64,9 +80,10 @@ class Bulk(commands.Cog):
         ..."""
         await ctx.trigger_typing()
 
-        failed_members: List[Tuple[discord.Member, str]] = []
+        failed_members = []
+
         for member in ctx.guild.members:
-            if member.id != ctx.author.id:
+            if member.id != ctx.author.id and not member.bot:
                 # もし送信対象が役職でmemberが役職を持っていないならcontinueする。
                 if isinstance(target, discord.Role):
                     if member.get_role(target.id) is None:
@@ -74,25 +91,18 @@ class Bulk(commands.Cog):
 
                 try:
                     await member.send(content)
-                except (discord.HTTPException, discord.Forbidden):
-                    failed_members.append((member, "権限不足またはメンバーがDMを許可していませえん。"))
+                except (discord.HTTPException, discord.Forbidden) as e:
+                    failed_members.append(
+                        (member, "権限不足またはメンバーがDMを許可していません。"))
                 except Exception as e:
-                    failed_members.append((member, f"何らかの理由で遅れませんでした。`{e}`"))
+                    failed_members.append(
+                        (member, f"何らかの理由で送れませんでした。`{e}`"))
 
         embed = discord.Embed(
             title={"ja": "メッセージ一括送信が完了しました。", "en": "..."},
             color=self.bot.colors["normal"]
         )
-        embed.add_field(
-            name={"ja": "送信失敗したメンバー一覧", "en": "..."},
-            value=("\n".join(f"{member.mention}\n　{e}"
-                             for member, e in failed_members)
-                   if failed_members
-                   else {
-                       "ja": "送信に失敗したメンバーはいません。",
-                       "en": "..."
-                    })
-        )
+        embed = self.add_error_field(embed, failed_members, "送信")
         await ctx.reply(embed=embed)
 
     @bulk.command()
@@ -117,11 +127,40 @@ class Bulk(commands.Cog):
         --------
         ..."""
         await ctx.trigger_typing()
-        if mode == "add":
-            for member in ctx.guild.members:
+        
+        if mode not in ("add", "remove"):
+            raise commands.errors.CommandError(
+                "引数modeはaddまたはremoveが使えます。")
+
+        failed_members = []
+
+        for member in ctx.guild.members:
+            if not member.bot:
                 # もし対象者が特定の役職を持っている人でその役職をmemberが持ってないならcontinueする。
                 if isinstance(target, discord.Role):
                     if member.get_role(target.id) is None:
                         continue
                 try:
-                    await member.add_roles(role)
+                    if mode == "add":
+                        await member.add_roles(role)
+                    else:
+                        await member.remove_roles(role)
+                except (discord.Forbidden, discord.HTTPException):
+                    failed_members.append(
+                        (member, "権限が足りないかなんかでできませんでした。")
+                    )
+                except Exception as e:
+                    failed_members.append(
+                        (member, f"なんらかの原因でできませんでした。`{e}`")
+                    )
+
+        embed = discord.Embed(
+            title={"ja": "役職付与/剥奪の一括送信が完了しました。", "en": "..."},
+            color=self.bot.colors["normal"]
+        )
+        embed = self.add_error_field(embed, failed_members, "役職の付与/剥奪")
+        await ctx.reply(embed=embed)
+
+
+def setup(bot):
+    bot.add_cog(Bulk(bot))
