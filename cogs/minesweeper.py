@@ -31,6 +31,11 @@ class Mines(commands.Cog):
 
         !lang en
         --------
+        Play Minesweeper.
+        
+        Aliases
+        -------
+        ms, MS
         ..."""
         self.games[str(ctx.author.id)] = Ms(x, y, bomb)
         kek, mes, me = 200, ctx.message, False
@@ -55,7 +60,7 @@ class Mines(commands.Cog):
                                  and m.channel == ctx.channel)
 
             if mes.content == "exit":
-                return await ctx.reply("終了")
+                return await ctx.reply({"ja":"終了","en":"finished"})
             if mes.content == "answer":
                 await ctx.reply("```\n" + game.get_answer(" ") + "\n```")
                 continue
