@@ -49,7 +49,8 @@ class OnSend(commands.Cog):
         self.bot = bot
         self.events = {
             "on_send": [],
-            "on_edit": []
+            "on_edit": [],
+            "on_webhook_send": []
         }
         self._dpy_injection()
 
@@ -67,6 +68,10 @@ class OnSend(commands.Cog):
     def _dpy_injection(self):
         default_send = copy(discord.abc.Messageable.send)
         default_edit = copy(discord.Message.edit)
+        if hasattr(discord.abc.Messageable, "webhook_send"):
+            default_webhook_send = copy(discord.abc.Messageable.webhook_send)
+        else:
+            default_webhook_send = None
 
         async def new_send(channel, *args, **kwargs):
             args, kwargs = await self._run_event("on_send", channel, *args, **kwargs)
@@ -77,6 +82,17 @@ class OnSend(commands.Cog):
             self.bot.dispatch("sended", message, args, kwargs)
             return message
 
+        if default_webhook_send:
+            async def new_webhook_send(channel, *args, **kwargs):
+                args, kwargs = await self._run_event(
+                    "on_webhook_send", channel, *args, **kwargs)
+                message = await default_webhook_send(
+                    channel.channel if isinstance(channel, commands.Context) else channel,
+                    *args, **kwargs
+                )
+                self.bot.dispatch("webhook_sended", message, args, kwargs)
+                return message
+
         async def new_edit(message, *args, **kwargs):
             args, kwargs = await self._run_event("on_edit", message, *args, **kwargs)
             message = await default_edit(message, *args, **kwargs)
@@ -85,6 +101,8 @@ class OnSend(commands.Cog):
         
         discord.abc.Messageable.send = new_send
         discord.Message.edit = new_edit
+        if default_webhook_send:
+            discord.abc.Messageable.webhook_send = new_webhook_send
 
     def add_event(self, coro: Callable, event_name: Optional[str] = None,
                   first: bool = False) -> None:
