@@ -1,6 +1,8 @@
 # rtutil
 
 from .setting_manager import SettingManager
+from .minesweeper import Ms as Minesweeper
+
 from typing import List
 import discord
 
