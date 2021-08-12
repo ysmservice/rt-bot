@@ -225,6 +225,17 @@ class BotGeneral(commands.Cog):
             error_message = "".join(
                 TracebackException.from_exception(error).format())
 
+            # テストモードなら問答無用でエラーを出力する。
+            if self.bot.command_prefix[0] == "r2!":
+                print(error_message)
+            else:
+                # RTサーバーにエラーを通知する。
+                await self.on_error_channel.send(
+                    (f"**エラーが発生しました。**\nGuild: {ctx.guild.name}, "
+                    + f"User: {ctx.author.name}\nコマンド名：{ctx.command.qualified_name}"
+                    + content)
+                )
+
             title = "500 Internal Server Error"
             description = {
                 "ja": (f"コマンドの実行中にエラーが発生しました。\n"
@@ -240,20 +251,9 @@ class BotGeneral(commands.Cog):
             )
             kwargs["view"] = view
 
-            # テストモードなら問答無用でエラーを出力する。
-            if self.bot.command_prefix[0] == "r2!":
-                print(error_message)
-            else:
-                # RTサーバーにエラーを通知する。
-                await self.on_error_channel.send(
-                    (f"**エラーが発生しました。**\nGuild: {ctx.guild.name}, "
-                    + f"User: {ctx.author.name}\nコマンド名：{ctx.command.qualified_name}"
-                    + content)
-                )
-
         kwargs["embed"] = discord.Embed(
             title=title, description=description, color=color)
-        await ctx.reply(content, **kwargs)
+        await ctx.send(f"{ctx.author.mention} " + content, **kwargs)
 
 
 def setup(bot):
