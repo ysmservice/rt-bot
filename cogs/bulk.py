@@ -26,13 +26,13 @@ class Bulk(commands.Cog):
         # ここのtには`送信`とかが入る。
         embed.add_field(
             name={"ja": f"{t}に失敗したメンバー一覧",
-                  "en": f"{t}..."},
+                  "en": f"List of members who failed {t}"},
             value=("\n".join(f"{member.mention}\n　{e}"
                              for member, e in failed_members)
                    if failed_members
                    else {
                        "ja": f"{t}に失敗したメンバーはいません。",
-                       "en": f"{t}..."
+                       "en": f"No member has failed {t}."
                     })
         )
         return embed
@@ -45,7 +45,8 @@ class Bulk(commands.Cog):
         
         !lang en
         --------
-        ..."""
+        It can send a message and add a role for some members.
+        """
         if not ctx.invoked_subcommand:
             await ctx.reply("使用方法が違います。")
 
@@ -77,7 +78,15 @@ class Bulk(commands.Cog):
         
         !lang en
         --------
-        ..."""
+        Sends the specified message to specific members who is on this server.
+        
+        Parameters
+        ----------
+        target : everyone or the role's name(mention)
+            The target to send the message.
+            `everyone` sends to all the members in the server.
+            A role's name(mention) sends to only members who has the role.
+        """
         await ctx.trigger_typing()
 
         failed_members = []
@@ -99,7 +108,7 @@ class Bulk(commands.Cog):
                         (member, f"何らかの理由で送れませんでした。`{e}`"))
 
         embed = discord.Embed(
-            title={"ja": "メッセージ一括送信が完了しました。", "en": "..."},
+            title={"ja": "メッセージ一括送信が完了しました。", "en": "It has completed to send the message to the members collectively."},
             color=self.bot.colors["normal"]
         )
         embed = self.add_error_field(embed, failed_members, "送信")
@@ -125,7 +134,19 @@ class Bulk(commands.Cog):
 
         !lang en
         --------
-        ..."""
+        Adds or Removes the specified role to specific members who is on this server.
+        
+        Parameters
+        ----------
+        mode : add or remove
+            Add or Remove the role literally.
+        target : everyone or the role's name(mention)
+            The target to send the message.
+            `everyone` adds/removes to all the members in the server.
+            A role's name(mention) adds/removes to only members who has the role.
+        role : Role's name or mention
+            A role witch adds or removes.
+        """
         await ctx.trigger_typing()
         
         if mode not in ("add", "remove"):
@@ -155,7 +176,7 @@ class Bulk(commands.Cog):
                     )
 
         embed = discord.Embed(
-            title={"ja": "役職付与/剥奪の一括送信が完了しました。", "en": "..."},
+            title={"ja": "役職付与/剥奪の一括送信が完了しました。", "en": "It has completed to add/remove a role to the members collectively."},
             color=self.bot.colors["normal"]
         )
         embed = self.add_error_field(embed, failed_members, "役職の付与/剥奪")
