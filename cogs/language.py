@@ -50,7 +50,7 @@ class Language(commands.Cog):
         if (target := kwargs.pop("target", False)):
             if not isinstance(target, int):
                 target = target.id
-            target = self.get(target)
+            lang = self.get(target)
 
         if not kwargs.pop("replace_language", True):
             # もし言語データ交換するなと引数から指定されたならデフォルトのjaにする。
@@ -143,7 +143,7 @@ class Language(commands.Cog):
         # この関数はself._get_replyとself._replace_embedを合成したようなものです。
         if isinstance(target, int):
             target = self.get(target)
-        if isinstance(text, str):
+        if isinstance(text, (str, dict)):
             return self._get_reply(text, target)
         elif isinstance(text, discord.Embed):
             return self._replace_embed(text, target)
@@ -254,7 +254,6 @@ class Language(commands.Cog):
                 await cursor.update_data("language", {"language": language}, targets)
             else:
                 targets["language"] = language
-                print(targets)
                 await cursor.insert_data("language", targets)
             await self.update_cache(cursor)
 
