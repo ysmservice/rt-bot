@@ -91,7 +91,7 @@ class Bulk(commands.Cog):
         --------
         ```
         rt!bulk send @Gamer **About the tournament of the games in next month**
-        You competes with these score:
+        You will compete with these score:
         * Minecraft(PvP)
         * Apex
         * Fortnite
