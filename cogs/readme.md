@@ -31,3 +31,5 @@
 Helpに追加
 ## recruitment.py
 * 募集パネル
+## free_channel.py
+* フリーチャンネル(旧thread/vthread)
