@@ -86,6 +86,17 @@ class Bulk(commands.Cog):
             The target to send the message.
             `everyone` sends to all the members in the server.
             A role's name(mention) sends to only members who has the role.
+        
+        Examples
+        --------
+        ```
+        rt!bulk send @Gamer **About the tournament of the games in next month**
+        You competes with these score:
+        * Minecraft(PvP)
+        * Apex
+        * Fortnite
+        * Super smash bros Special
+        ```
         """
         await ctx.trigger_typing()
 
