@@ -33,3 +33,5 @@ Helpに追加
 * 募集パネル
 ## free_channel.py
 * フリーチャンネル(旧thread/vthread)
+## ticket.py
+* チケット
