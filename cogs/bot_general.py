@@ -13,9 +13,12 @@ ERROR_CHANNEL = 842744343911596062
 INFO_DESC = {
     "ja": """どうもRTという新時代Botです。
 このBotは既にある色々な機能や今までにない機能を取り入れた多機能型Botです。
-チャンネルステータスやウェルカムメッセージももちろん、変更可能このの読み上げや常に一番下にくるメッセージなど色々あります。
+チャンネルステータスやウェルカムメッセージももちろん、変更可能このの読み上げや常に一番下にくるメッセージなど色々あります。これ翻訳できず
 ほとんどこのBotで済むようなBotを目指してる。""",
-    "en": """..."""
+    "en": """Hi I am RTBOT. This is for new year.
+    This bot is many function and never before function in this Bot.
+    Of course channelstatus, welcome message
+    I am aiming for a bot that can almost be done with this bot"""
 }
 INFO_ITEMS = (("INVITE", {"ja": "招待リンク", "en": "invite link"}),
               ("SS", {"ja": "サポートサーバー", "en": "support server"}),
@@ -148,7 +151,7 @@ class BotGeneral(commands.Cog):
         await ctx.reply(f"現在のRTのレイテンシ：${self._get_ping()}$ms")
 
     @commands.command(
-        extras={"headding": {"ja": "クレジットを表示します。", "en": "..."},
+        extras={"headding": {"ja": "クレジットを表示します。", "en": "It can view credit."},
                 "parent": "RT"},
         aliases=["credit", "invite", "about", "情報", "じょうほう"])
     @commands.cooldown(1, 180, commands.BucketType.user)
@@ -177,14 +180,14 @@ class BotGeneral(commands.Cog):
             title = "404 Not Found"
             description = {"ja": ("そのコマンドが見つかりませんでした。\n"
                                   + "`rt!help <word>`で検索が可能です。"),
-                           "en": "..."}
+                           "en": "It can't found that command.\n`rt!help <word>`This can search command"}
             color = self.bot.colors["unknown"]
         elif isinstance(error, (commands.errors.BadArgument,
                         commands.errors.MissingRequiredArgument,
                         commands.errors.ArgumentParsingError)):
             title = "400 Bad Request"
             description = {"ja": "コマンドの引数が適切ではありません。\nまたは必要な引数が足りません。",
-                           "en": "..."}
+                           "en": "It's command's function is bad."}
         elif isinstance(error, commands.errors.CommandOnCooldown):
             title = "429 Too Many Requests"
             description = {"ja": ("現在このコマンドはクールダウンとなっています。\n"
@@ -198,29 +201,29 @@ class BotGeneral(commands.Cog):
                         commands.errors.UserNotFound)):
             title = "400 Bad Request"
             description = {"ja": "指定されたユーザーが見つかりませんでした。",
-                           "en": "..."}
+                           "en": "I can't found that user."}
         elif isinstance(error, commands.errors.ChannelNotFound):
             title = "400 Bad Request"
             description = {"ja": "指定されたチャンネルが見つかりませんでした。",
-                           "en": "..."}
+                           "en": "I can't found that channel"}
         elif isinstance(error, commands.errors.RoleNotFound):
             title = "400 Bad Request"
             description = {"ja": "指定されたロールが見つかりませんでした。",
-                           "en": "..."}
+                           "en": "I can't found that role."}
         elif isinstance(error, commands.errors.BadBoolArgument):
             title = "400 Bad Request"
             description = {"ja": ("指定された真偽値が無効です。\n"
                                   + "有効な真偽値：`on/off`, `true/false`, `True/False`"),
-                           "en": ("...\n"
+                           "en": ("The specified boolean value is invalid\n"
                                   + "...:`on/off`, `true/false`, `True/False`")}
         elif isinstance(error, commands.errors.MissingPermissions):
             title = "403 Forbidden"
             description = {"ja": "あなたの権限ではこのコマンドを実行することができません。",
-                           "en": "..."}
+                           "en": "You can't do this command. Because you need permission"}
         elif isinstance(error, commands.errors.MissingRole):
             title = "403 Forbidden"
             description = {"ja": "あなたはこのコマンドの実行に必要な役職を持っていないため、このコマンドを実行できません。",
-                           "en": "..."}
+                           "en": "You can't do this command. Because you need permission"}
         else:
             error_message = "".join(
                 TracebackException.from_exception(error).format())
