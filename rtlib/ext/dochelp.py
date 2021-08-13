@@ -109,7 +109,7 @@ class DocHelp(commands.Cog):
             if isinstance(session_id, int):
                 # 親コマンドがいるコマンドのヘルプを親コマンドに追記する。
                 for lang in data:
-                    doc[lang] = f"\n## {command.name}\n" + data[lang]
+                    doc[lang] = f"\n## {command.qualified_name}\n" + data[lang]
                 cmd_parent = ("I wanna be the guy!" if command.parent.name is None
                               else command.parent.name)
                 # 親コマンドのヘルプを探します。親コマンドのヘルプは下のelseで登録されます。

@@ -35,3 +35,6 @@ Helpに追加
 * フリーチャンネル(旧thread/vthread)
 ## ticket.py
 * チケット
+## reprypt.py
+* Repryptの暗号化/復号化コマンド
+* RepryptのAPI
