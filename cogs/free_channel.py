@@ -134,9 +134,11 @@ class FreeChannel(commands.Cog):
         if (ctx.channel.topic and "RTフリーチャンネル" in ctx.channel.topic
                 and "作成者" not in ctx.channel.topic):
             await ctx.channel.edit(topic=None)
-            await sleep(0.4)
-            await ctx.reply({"ja": "フリーチャンネル作成用チャンネルを無効化しました。",
-                             "en": "..."})
+            await ctx.send(
+                {"ja": f"{ctx.author.mention}, フリーチャンネル作成用チャンネルを無効化しました。",
+                 "en": f"{ctx.author.mention}, ..."},
+                target=ctx.author.id
+            )
         else:
             await ctx.reply(
                 {"ja": "ここはフリーチャンネル作成用チャンネルではありません。",
