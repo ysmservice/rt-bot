@@ -31,10 +31,6 @@ class SettingList(SettingItem):
     index: int # 現在選択されているものの番号。
     texts: Union[List[str], Tuple[str, ...]]
 
-class SettingRadios(SettingItem):
-    """設定項目の複数のラジオボタンの型です。"""
-    radios: Dict[str, bool]
-
 class InitSettingData(TypedDict):
     """設定のデータの型。デコレータのSettingManager.settingから生成されるもの。"""
     permissions: List[str]
@@ -80,28 +76,32 @@ class SettingManager(commands.Cog):
             {"guild": {}, "user": {}}
 
     @staticmethod
-    def setting(mode: Literal["guild", "user"], name: str, description: str,
+    def setting(mode: Literal["guild", "user"], name: str,
+                description: Union[str, Dict[str, str]],
                 permissions: List[str], callback: Callable,
-                items: Dict[str, str]) -> Callable:
+                items: Dict[str, Union[str, Dict[str, str]]]) -> Callable:
         """設定コマンドにつけるデコレータです。  
         これを付けると自動でウェブの設定画面に設定項目が追加されます。
-        
+
         Parameters
         ----------
         mode: Literal["guild", "user"]
             設定の種類です。
         name : str
             設定の項目の名前です。
-        description : str
-            設定の説明です。
-        items : Dict[str, str]
+        description : Union[str, Dict[str, str]]
+            設定の説明です。  
+            言語コードとその言語に対応する説明の辞書にすることで多言語に対応することができます。
+        permissions : List[str]
+            この設定を使うのに必要な権限の名前のリストです。
+        callback : Callable
+            設定変更時または設定読み込み時に呼び出される関数です。  
+            `write/read, {item_name: content}`が渡されます。(contentはアイテムの種類です。)
+        items : Dict[str, Union[str, Dict[str, str]]]
             設定の項目に入れるものです。  
             `{"項目の種類:項目名": "ウェブで表示される項目の名前"}`  
             項目名は設定更新/読み込み時になんの項目か判断するためのものです。  
-            `ウェブで表示される項目の名前`を辞書にしてキーを言語コードにすれば多言語化。
-        callback : Callable
-            設定変更時または設定読み込み時に呼び出される関数です。  
-            `write/read, {item_name: content}`が渡されます。(contentはアイテムの種類です。)"""
+            `ウェブで表示される項目の名前`を辞書にしてキーを言語コードにすれば多言語化できます。"""
         def decorator(coro):
             # デコレータを付けた関数にコマンド追加時に設定コマンドだと検知,情報取得ができるようにする。
             coro._rtutil_setting: InitSettingData = {
@@ -245,7 +245,7 @@ class SettingManager(commands.Cog):
                         return_data["settings"][guild_id] = {
                             "commands": {},
                             "name": guild.name,
-                            "icon": str(guild.icon.url)
+                            "icon": str(guild.icon.url) if guild.icon else None
                         }
 
                         # 設定が必要な項目を一つづつ取り出す。
