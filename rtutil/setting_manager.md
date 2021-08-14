@@ -132,3 +132,31 @@ API仕様はこの下にあります。
 ### /api/settings/update/user POST
 このAPIを叩く際にログインしているユーザーの個人設定を更新します。  
 POSTするデータの形式は上と同じです。
+
+## バックエンド
+以下のようにコグ内でコマンドにデコレータをつけることで設定を登録することができます。
+```python
+from rtutil import SettingManager
+
+# ...
+
+class Cog(commands.Cog):
+    #...
+
+    async def コールバック(self, ctx, mode, items):
+        if mode == "read":
+	    # ...
+	elif mode == "write":
+	    # ...
+
+    @commands.command()
+    @SettingManager.setting(
+        "guildまたはuser", "コマンド名", "説明", [必要なけんげんの名前リスト],
+	コールバック, アイテムの辞書
+    )
+    async def command_name(self, ctx):
+        # ...
+```
+
+詳細は`rtutil/setting_manager.py`の`SettingManager.setting`のドキュメンテーション見ようね。  
+というか大体のバックエンド開発はtasurenってやつがやるから詳細は書かない。
