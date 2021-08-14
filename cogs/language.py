@@ -88,6 +88,7 @@ class Language(commands.Cog):
         return results, other
 
     def _get_reply(self, text: Union[str, dict], lang: Literal["ja", "en"]) -> str:
+        result = ""
         if text:
             if isinstance(text, str) and text[0] != "{":
                 # 指定された文字を指定された言語で交換します。

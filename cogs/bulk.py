@@ -37,7 +37,15 @@ class Bulk(commands.Cog):
         )
         return embed
 
-    @commands.group()
+    @commands.group(
+        extras={
+            "headding": {
+                "ja": "一括で指定した役職またはサーバーメンバー全員にメッセージを送信や役職の付与/剥奪ができます。",
+                "en": "Adds or removes the specified role or sends the specified message to specific members who is on this server."
+            },
+            "parent": "ServerTool"
+        }
+    )
     async def bulk(self, ctx):
         """!lang ja
         --------

@@ -208,9 +208,10 @@ class Componesy(commands.Cog):
             class_args, class_kwargs = items["args"], items["kwargs"]
 
             # Viewがまだ作られてないなら作る。
+            add_late = None
             if view_name not in self.views:
                 # componesyによるアイテムを新しく作るViewに追加する関数リストに追加していく。
-                functions, add_late = {}, None
+                functions = {}
 
                 for uiitem, coro in items["items"]:
                     if uiitem.__name__.startswith("_componesy_add_late"):

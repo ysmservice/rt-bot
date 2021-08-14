@@ -38,3 +38,6 @@ Helpに追加
 ## reprypt.py
 * Repryptの暗号化/復号化コマンド
 * RepryptのAPI
+## person.py
+* userinfo
+まだ他にも作る予定。
