@@ -9,11 +9,11 @@ class OAuthCog(commands.Cog):
 
     HEADERS = {
         "Access-Control-Allow-Origin": "https://rt-bot.com",
-        "Access-Control-Allow-Credentials": True
+        "Access-Control-Allow-Credentials": "true"
     }
     TEST_HEADERS = {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Credentials": True
+        "Access-Control-Allow-Origin": "http://127.0.0.1:5500",
+        "Access-Control-Allow-Credentials": "true"
     }
 
     def __init__(self, bot):

@@ -69,11 +69,11 @@ class SettingManager(commands.Cog):
     NOT_FOUND_SETTING = "({}なんて設定は)ないです。(NYN姉貴風)"
     HEADERS = {
         "Access-Control-Allow-Origin": "https://rt-bot.com",
-        "Access-Control-Allow-Credentials": True
+        "Access-Control-Allow-Credentials": "true"
     }
     TEST_HEADERS = {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Credentials": True
+        "Access-Control-Allow-Origin": "http://127.0.0.1:5500",
+        "Access-Control-Allow-Credentials": "true"
     }
 
     def __init__(self, bot):
