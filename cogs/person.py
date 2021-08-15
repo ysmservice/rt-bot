@@ -82,7 +82,7 @@ class Person(commands.Cog):
                     "ja": "Discord登録日時",
                     "en": "..."
                 },
-                value=(user.created_at - timedelta(hours=9)
+                value=(user.created_at + timedelta(hours=9)
                 ).strftime('%Y-%m-%d %H:%M:%S')
             )
             embeds.append(embed)
@@ -108,7 +108,7 @@ class Person(commands.Cog):
                 embed.add_field(
                     name={"ja": "参加日時",
                           "en": "..."},
-                    value=(member.joined_at - timedelta(hours=9)
+                    value=(member.joined_at + timedelta(hours=9)
                     ).strftime('%Y-%m-%d %H:%M:%S')
                 )
                 if member.voice:
