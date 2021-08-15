@@ -31,13 +31,17 @@ from discord.ext import commands
 import discord
 
 from typing import Tuple, Callable
+from functools import wraps
 from copy import deepcopy
 
 
 def add_late():
-    def _componesy_add_late_decorator(coro):
-        return coro
-    return _componesy_add_late_decorator
+    def decorator(coro):
+        @wraps(coro)
+        def _componesy_add_late_decorator(coro):
+            return coro
+        return _componesy_add_late_decorator
+    return decorator
 discord.ui.add_late = add_late
 
 

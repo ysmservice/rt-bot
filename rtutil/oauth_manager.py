@@ -6,6 +6,16 @@ import sanic
 
 
 class OAuthCog(commands.Cog):
+
+    HEADERS = {
+        "Access-Control-Allow-Origin": "https://rt-bot.com",
+        "Access-Control-Allow-Credentials": True
+    }
+    TEST_HEADERS = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Credentials": True
+    }
+
     def __init__(self, bot):
         self.bot = bot
 
@@ -23,7 +33,9 @@ class OAuthCog(commands.Cog):
             data["user_name"] = str(request.ctx.user)
             data["icon_url"] = str(request.ctx.user.avatar.url)
             data["login"] = True
-        return sanic.response.json(data)
+        return sanic.response.json(
+            data, headers=self.TEST_HEADERS if self.bot.test else self.HEADERS
+        )
 
     @commands.Cog.route("/account/login")
     @OAuth.login_require()

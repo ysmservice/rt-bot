@@ -67,6 +67,14 @@ class SettingManager(commands.Cog):
         "list": "list"
     }
     NOT_FOUND_SETTING = "({}なんて設定は)ないです。(NYN姉貴風)"
+    HEADERS = {
+        "Access-Control-Allow-Origin": "https://rt-bot.com",
+        "Access-Control-Allow-Credentials": True
+    }
+    TEST_HEADERS = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Credentials": True
+    }
 
     def __init__(self, bot):
         self.bot = bot
@@ -279,7 +287,10 @@ class SettingManager(commands.Cog):
                 "君の名は。あいにくだけどログインしてる状態じゃないとこれ使えないんっス。",
                 403
             )
-        return response.json(return_data)
+        return response.json(
+            return_data,
+            headers=self.TEST_HEADERS if self.bot.test else self.HEADERS
+        )
 
     async def _update_setting(
             self, mode: Literal["guild", "user"],
@@ -328,7 +339,10 @@ class SettingManager(commands.Cog):
                 "guild", request.json,
                 {"guild": guild, "author": member})
             del guild, member
-            return response.json({"status": "ok"})
+            return response.json(
+                {"status": "ok"},
+                headers=self.TEST_HEADERS if self.bot.test else self.HEADERS
+            )
         else:
             raise exceptions.SanicException(
                 "(そのサーバーが見つから)ないです。(NYN姉貴風)", 404)
@@ -344,7 +358,10 @@ class SettingManager(commands.Cog):
         POSTするデータは上と同じでログインしている必要があります。"""
         user = request.ctx.user
         await self._update_setting("user", request.json, {"author": user})
-        return response.json({"status": "ok"})
+        return response.json(
+            {"status": "ok"},
+            headers=self.TEST_HEADERS if self.bot.test else self.HEADERS
+        )
 
 
 def setup(bot):

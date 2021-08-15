@@ -1,10 +1,10 @@
 # RT - Help
 
-from sanic.response import json
-
 from discord.ext import commands
 import discord
 
+from rtlib.ext import componesy, Embeds
+from sanic.response import json
 from typing import List, Tuple
 
 
@@ -21,6 +21,17 @@ class Help(commands.Cog):
         "chplugin": "ChannelPlugin",
         "mybot": "MyBot",
         "other": "Other"
+    }
+    CATEGORY_JA = {
+        "ServerTool": "サーバーツール",
+        "ServerPanel": "サーバーパネル",
+        "ServerSafety": "サーバー安全",
+        "ServerUseful": "サーバー便利",
+        "Entertainment": "娯楽",
+        "Individual": "個人",
+        "ChannelPlugin": "チャンネルプラグイン",
+        "MyBot": "MyBot",
+        "Other": "その他"
     }
 
     def __init__(self, bot):
@@ -178,13 +189,27 @@ class Help(commands.Cog):
                 break
         return category, perfect, on_name, on_doc
 
+    def get_cmds(self, category, lang="ja"):
+        for cmd in category:
+            yield cmd, category[cmd].get(lang, category[cmd]["ja"])[0]
+
+    async def on_command_select(self, view, select, interaction):
+        await self.on_category_select(view, select, interaction)
+
+    async def on_category_select(self, view, select, interaction):
+        lang = self.bot.cogs["Language"].get(interaction.user.id)
+        if select.values:
+            ctx = await self.bot.get_context(interaction.message)
+            ctx.author = interaction.user
+            await self.dhelp(ctx, select.values[0])
+
     @commands.command(aliases=["discord_help", "dh"],
                       extras={
                           "headding": {"ja": "DiscordからHelpを見ます。",
                                        "en": "Get help from Discord."},
                           "parent": "RT"
                       })
-    @commands.cooldown(1, 3, commands.BucketType.user)
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def dhelp(self, ctx, *, word: str = None):
         """!lang ja
         --------
@@ -203,59 +228,73 @@ class Help(commands.Cog):
         !lang en
         --------
         上の英語バージョンをここに。"""
-        replace_language = True
         lang = self.bot.cogs["Language"].get(ctx.author.id)
 
         if word is None:
             # もしカテゴリー一覧を表示すればいいだけなら。
-            embeds = [
-                discord.Embed(
-                    title="Help - カテゴリー一覧",
-                    description="`" + "`\n`".join(self.help) + "`",
-                    color=self.bot.colors["normal"]
-                )
-            ]
+            embed = discord.Embed(
+                title="Help - カテゴリー選択",
+                description="カテゴリーを選択するとそのカテゴリーにあるコマンドが表示されます。",
+                color=self.bot.colors["normal"]
+            )
+            view = componesy.View("HelpCategorySelector", timeout=30)
+            view.add_item(
+                "Select",
+                options=[discord.SelectOption(
+                            label=self.CATEGORY_JA.get(category, category)
+                                  if lang == "ja" else category,
+                            value=category
+                         ) for category in self.help]
+            )
+            await ctx.reply(embed=embed, view=view)
         else:
-            # 検索/コマンド/カテゴリー探しを行う。
             await ctx.trigger_typing()
             category, perfect, on_name, on_doc = self.search(word, lang)
 
             if category:
                 # もしカテゴリー名が一致したなら。
-                embeds = [
-                    discord.Embed(
-                        title="Help - " + category,
-                        description="\n".join(f"`{n}` {(k := self.help[category][n]).get(lang, k['ja'])[0]}"
-                                              for n in self.help[category]),
-                        color=self.bot.colors["normal"]
-                    )
-                ]
-            elif perfect:
-                # もしコマンド名が一致したなら。
-                embeds = self._convert_embed(
-                    word, perfect,
+                description, view = "", componesy.View("HelpCategoryCommands")
+                options = []
+                for cmd, headding in self.get_cmds(word, lang):
+                    description += f"`{cmd}` {headding}\n"
+                    options.append(discord.SelectOption(label=cmd, value=cmd))
+                embed = discord.Embed(
+                    title=f"Help - {word}",
+                    description=description,
                     color=self.bot.colors["normal"]
                 )
-                replace_language = False
+                view.add_item("Select", options=options)
+                kwargs = {"embed": embed, "view": view}
+            elif perfect:
+                # もしコマンド名が一致したなら。
+                embeds = Embeds(
+                    "HelpCommandDetails", target=ctx.author.id,
+                    embeds=self._convert_embed(
+                        word, perfect,
+                        color=self.bot.colors["normal"]
+                    )
+                )
+                kwargs = {"embeds": embeds}
             else:
                 # もし何も一致しないなら検索結果を表示する。
-                embeds = [
-                    discord.Embed(
-                        title="検索結果", color=self.bot.colors["normal"]
+                embed = discord.Embed(
+                    title="検索結果", color=self.bot.colors["normal"]
+                )
+                for name, value in (("名前部分一致", on_name), ("説明部分一致", on_doc)):
+                    embed.add_field(
+                        name=name,
+                        value=("\n".join(
+                            f"`{n}` {self.help[category][n][lang][0]}"
+                            for category, n in value
+                            ) if value else "見つかりませんでした。")
                     )
-                ]
-                for name_, value in (("名前部分一致", on_name), ("説明部分一致", on_doc)):
-                    embeds[0].add_field(
-                        name=name_, value=("\n".join(
-                                                f"`{n}` {self.help[category][n][lang][0]}"
-                                                for category, n in value)
-                                           if value else "見つかりませんでした。")
-                    )
-        for embed in embeds:
-            embed.set_footer(
-                text="`rt!dhelp <名前>`を実行することで詳細を見ることができます。")
-            await ctx.send(content=ctx.author.mention, embed=embed,
-                           replace_language=replace_language)
+                kwargs = {"embed": embed, "view": view}
+
+            if ctx.message.author.id == self.bot.user.id:
+                kwargs["target"] = ctx.author.id
+                await ctx.message.send(ctx.author.mention, **kwargs)
+            else:
+                await ctx.reply(**kwargs)
 
 
 def setup(bot):
