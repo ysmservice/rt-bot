@@ -1,253 +1,141 @@
-"""# Componesy - ボタンなどを簡単に作るためのエクステンション。
-これを使えば以下のようにボタン付きのメッセージを作成できます。
-```python
-from rtlib.ext import componesy
-from rtlib import setup
+"""`discord.ui.View`を簡単に作るためのものです。"""
 
-# ...
-
-setup(bot)
-
-# ...
-
-async def test_interaction(view, button, interaction):
-    await interaction.channel.send("Pushed button!")
-
-@bot.command()
-async def test(ctx):
-    view = componesy.View("TestView")
-    view.add_item("button", test_interaction, label="Push me!")
-    await ctx.reply("test", view=view)
-```
-## 使用方法
-このエクステンションの名前は`componesy`です。  
-有効化方法は`bot.load_extension("rtlib.ext.componesy")`です。  
-`rtlib.setup`でもいけます。  
-使用方法は`coponesy.View("Viewの名前")`, `componesy.View.add_item(アイテム名, コールバック, **kwargs)`です。  
-詳細は`componesy.View`のドキュメンテーションを参照してください。"""
-
-from discord.abc import Messageable
 from discord.ext import commands
 import discord
 
-from typing import Tuple, Callable
+from typing import Union, Type, List, Tuple, Dict, Callable
 from functools import wraps
-from copy import deepcopy
+from time import time
 
 
-def add_late():
-    def decorator(coro):
-        @wraps(coro)
-        def _componesy_add_late_decorator(coro):
-            return coro
-        return _componesy_add_late_decorator
-    return decorator
-discord.ui.add_late = add_late
+# 作ったViewやItemは全てここに入れる。次同じViewを作らないようにするため。
+views: Dict[str, Type[discord.ui.View]] = {}
+items: Dict[str, Type[discord.ui.Item]] = {}
 
 
-def item(name: str, callback: Callable = None, **kwargs) -> Tuple[Callable, Callable]:
-    """アイテムのリストを簡単に作るためのもの。
-    
-    Parameters
-    ----------
-    name : str
-        アイテムの種類の名前。  
-        例：`discord.ui.button`の`button`
-    callback : Callable, default None
-        インタラクションがきた際に呼び出されるコルーチン関数。  
-        普通はこの引数がなければなりませんが、リンク付きボタンの場合はなくていいです。
-    **kwargs : dict
-        nameで指定したdiscord.uiのアイテムに渡す引数です。"""
-    if name == "link_button":
-        name = "add_late"
-        async def new_callback(view, b_kwargs=kwargs):
-            view.add_item(discord.ui.Button(**b_kwargs))
-            return view
-        callback, kwargs = new_callback, {}
-    elif name[0] in ("B", "S"):
-        name = "add_late"
-        async def new_callback(view, b_kwargs=kwargs):
-            view.add_item(getattr(discord.ui, name)(**b_kwargs))
-            return view
-        callback, kwargs = new_callback, {}
-    return (getattr(discord.ui, name)(**kwargs), callback)
-
-
-def make_view(view_name: str, items: Tuple[Tuple[Callable, Callable], ...]) -> dict:
-    """RTのcomponesyに入れる辞書を簡単に作るためのもの。
-
-    Notes
-    -----
-    discord.Embedのように作りたいなら`componesy.View`を使いましょう。  
-    というかそっちのほうがきれいになる。
-
-    Parameters
-    ----------
-    view_name : str
-        Viewの名前です。
-    items : Tuple[Tuple[Callable, Callable], ...]
-        `discord.ui.Button`などのアイテムとコールバックのコルーチン関数が入ったタプルのタプルです。  
-        このタプルは`componesy.item`で簡単に作ることが可能です。  
-        例：`(item("button", left, label="left"), item("button", right, label="right"))`"""
-    return {"view_name": view_name, "items": items}
+def _if_not_exists_view(func):
+    # もしviewsに既にあるviewだったら実行しないようにするためのデコレータ。
+    @wraps(func)
+    def new_func(self, *args, **kwargs):
+        if self.name not in views:
+            return func(self, *args, **kwargs)
+    return new_func
 
 
 class View:
-    """Viewを簡単に作るためクラスです。
-
-    Notes
-    -----
-    このComponesyを使うには`bot.load_extension("rtlib.componesy")`をしないといけません。  
-    または`componesy.setup(bot)`でもいけます。  
-    それと`bot.load_extension("rtlib.libs.on_send")`は読み込まれていない場合自動で読み込まれます。  
-    エクステンションを読み込む必要があるということなので注意してね。
-
-    Parameters
-    ----------
-    view_name : str
-        Viewの名前です。  
-        作ったViewを次使うときに使えるようにキャッシュする際に一緒に保存する名前です。  
-        なので実行の度に変わる名前にはしないでください！
-
-    Attributes
-    ----------
-    items : List[Tuple[Callable, Callable]]
-        追加されてるアイテムです。
-    view_name : str
-        Viewの名前です。
-
-    Examples
-    --------
-    from rtlib.ext import componesy
-
-    # ...
-
-    componesy.setup(bot)
-
-    async def test_interaction(view, button, interaction):
-        await interaction.channel.send("Pushed button!")
-
-    @bot.command()
-    async def test(ctx):
-        view = componesy.View("TestView")
-        view.add_item("button", test_interaction, label="Push me!")
-        await ctx.reply("test", view=view)"""
-    def __init__(self, view_name: str, *args, **kwargs):
-        self.items: list = []
-        self.view_name: str = view_name
+    """`discord.ui.View`を簡単に作れるクラスです。  
+    このクラスをそのままsendの引数のviewに渡す場合は`bot.load_extension("rtlib.ext.componesy")`を実行する必要があります。"""
+    def __init__(self, name: str, *args, **kwargs):
+        self.name: str = name
+        self.items: List[Callable] = []
+        self.instance_items: List[Type[discord.ui.Item]] = []
         self._args, self._kwargs = args, kwargs
-        # rtlibのViewかどうかの判別用の変数。
-        self._rtlib_view = 0
+        self._rtlib = True
 
-    def add_item(self, item_name: str, callback: Callable = None, **kwargs) -> None:
-        """Viewにアイテムを追加します。
+    def add_item(self, item: Union[Callable, Type[discord.ui.Item], str], callback: Callable = None, **kwargs):
+        """Viewにアイテムを追加します。  
 
-        Parameters
-        ----------
-        item_name : str
-            アイテム名です。  
-            `discord.ui.Item`を作成するためのdiscord.pyのデコレータである`discord.ui.button`のbuttonなどを使うことができます。  
-            もしリンクボタンを作りたい場合はここを`link_button`にしてcallbackを指定しないでください。  
-            もしカスタムしたい場合は`add_late`にすることで、Viewのインスタンス化にcallbackが呼ばれるようにすることができます。
-        callback : Callable, default None
-            インタラクションがあった時呼ばれるコルーチン関数です。  
-            普通これは必要な引数ですが、アイテム名が`link_button`の際は必要がないです。
-        **kwargs
-            `discord.ui.<item_name>`に渡すキーワード引数です。
-            例：`label="ボタンテキスト"`"""
-        self.items.append(item(item_name, callback, **kwargs))
+        Notes
+        -----
+        追加することのできるアイテムは`discord.ui`にあるものです。  
+        例：`button`, `select`
 
-    def remove_item(self, callback_name: str) -> None:
-        """Viewからアイテムを削除します。
+        Warnings
+        --------
+        アイテムに`discord.ui.button`や`discord.ui.select`のようなデコレータを設定した場合一度設定したら次設定できません。(設定しようとしても無視されます。)  
+        そのため実行の度に変わるものを使うアイテムを追加したい場合は、`discord.ui.Button`や`discord.ui.Select`などの`discord.ui.Item`を継承したクラスの方を使いましょう。  
+        そして`discord.ui.Item`を継承したクラスの場合それは作ったViewを`discord.ui.View`に変換してそれをインスタンス化したあとに追加されます。  
+        ですので`discord.ui.button`などのようなデコレータで追加したアイテムの後ろの位置に来ます。
 
         Parameters
         ----------
-        callback_name : str
-            削除するアイテムのコールバックの名前です。
+        item : Union[Callable, Type[discord.ui.Item], str]
+            追加するアイテムです。
+        callback : Callable = None
+            追加するアイテムに設定するコールバックです。  
+            もしアイテムを`discord.ui.button`などのデコレータにした場合は、そのコールバックが呼ばれる際にviewとそのアイテムとinteractionが渡されます。  
+            もしアイテムを`discord.ui.Button`などのクラスにした場合は、そのコールバックが呼ばれる際にそのアイテムとinteractionが渡されます。
+        **kwargs : dict
+            そのアイテムに渡すキーワード引数です。  
+            例：`label="このボタンは押さないでね。"`"""
+        if isinstance(item, str):
+            if item == "link_button":
+                item = discord.ui.Button
+            else:
+                item = getattr(discord.ui, item)
 
-        Raises
-        ------
-        KeyError : アイテムが見つからない場合発生します。"""
-        i = -1
-        for item, callback in self.items:
-            i += 1
-            if callback.__name__ == callback_name:
-                break
-        if i != -1:
-            self.items.pop(i)
+        if callback:
+            if callback.__self__ is None:
+                new_callback = callback
+            else:
+                # もしクラスのメソッドならViewを継承したクラスに設定できないのでラップする。
+                @wraps(callback)
+                async def new_callback(*args, _original_callback=callback, **kwargs):
+                    return await _original_callback(*args, **kwargs)
+
+        if item.__name__ in ("Button", "Select", "Item"):
+            # もし`discord.ui.Button`などの`discord.ui.Item`を継承したものなら。
+            # そのitemを継承したクラスを作りもしcallbackが指定されているのならそのcallbackをそのクラスに入れる。
+            item_name = self.name + str(time()).replace(".", "A")
+            if item_name not in items:
+                # 次作らないようにするために保存しておく。
+                items[item_name] = type(
+                    item_name, (item,),
+                    {"callback": new_callback} if callback else {}
+                )
+            self.instance_items.append(items[item_name](**kwargs))
+        elif item.__name__ in ("button", "select"):
+            # もし`discord.ui.button`などのデコレータをなら。
+            if self.name not in views:
+                # 既に作られているViewならこれを作らない。
+                # コールバックにその指定されたデコレータを手動でつける。
+                self.items.append(item(**kwargs)(new_callback))
         else:
-            raise KeyError("削除するアイテムが見つかりませんでした。")
+            raise ValueError("引数itemは`discord.ui.Item`を継承したものまたは`discord.ui.button`などのデコレータである必要があります。"
+                             + "もし文字列を渡した場合は`discord.ui.<渡した文字列>`のようにして自動で取得されます。")
 
-    def _make_items(self) -> dict:
-        # 辞書型のアイテムに変換をする。
-        return {
-            "view_name": self.view_name,
-            "items": self.items,
-            "args": self._args,
-            "kwargs": self._kwargs
-        }
+    def make_view(self) -> Type[discord.ui.View]:
+        """Viewを`discord.ui.View`に変換して取得します。  
+        普通はこれを使いません。"""
+        if self.name not in views:
+            # まだ作ってないViewならViewを作る
+            view = type(
+                self.name, (discord.ui.View,),
+                {callback.__name__: callback for callback in self.items}
+            )
+            views[self.name] = view
+        return views[self.name]
+
+    def get_view(self) -> object:
+        """Viewをインスタンス化済みの`discord.ui.View`にして取得します。  
+        これは`bot.load_extension("rtlib.ext.componesy")`を実行すれば`discord.abc.Messageable.send`の引数の`view`にViewを入れた際に自動で実行されます。  
+        なにか自動で実行する前に手動でやりたいことがある際はこれを使ってviewを取得してからそれをsendに渡しましょう。"""
+        view = self.make_view()(*self._args, **self._kwargs)
+        # EasyView.add_itemで追加された`discord.ui.Item`を継承したアイテムを追加する。
+        for item in self.instance_items:
+            view.add_item(item)
+        return view
 
 
 class Componesy(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.views = {}
-        self.view = make_view
         if "OnSend" not in self.bot.cogs:
             self.bot.load_extension("rtlib.ext.on_send")
-        self.bot.cogs["OnSend"].add_event(self._new_send, "on_send")
-        self.bot.cogs["OnSend"].add_event(self._new_send, "on_edit")
+        for name in ("on_send", "on_edit"):
+            self.bot.cogs["OnSend"].add_event(self._new_send, name)
 
     async def _new_send(self, channel, *args, **kwargs):
-        # sendからコンポーネントを使えるようにする。
-        items = kwargs.get("view", None)
-
-        # rtlib.componesyによるviewならそれをdiscord.ui.Viewに交換する。
-        is_view = hasattr(items, "_rtlib_view")
-        if isinstance(items, dict) or is_view:
-            if is_view:
-                items = items._make_items()
-            # viewの名前を取る。
-            view_name = items["view_name"]
-            class_args, class_kwargs = items["args"], items["kwargs"]
-
-            # Viewがまだ作られてないなら作る。
-            add_late = None
-            if view_name not in self.views:
-                # componesyによるアイテムを新しく作るViewに追加する関数リストに追加していく。
-                functions = {}
-
-                for uiitem, coro in items["items"]:
-                    if uiitem.__name__.startswith("_componesy_add_late"):
-                        add_late = coro
-                    else:
-                        if coro.__self__ is None:
-                            new_coro = coro
-                        else:
-                            # もしメソッドならViewに設定できないのでラップする。
-                            # 二重ラップしないとcoroが2個目以降のcoroと同じになる。
-                            async def new_coro(*args, _coro_original=coro, **kwargs):
-                                async def new_coro():
-                                    return await _coro_original(*args, **kwargs)
-                                return await new_coro()
-
-                        functions[coro.__name__] = uiitem(new_coro)
-                        del new_coro, coro
-
-                # typeを使用して動的にdiscord.ui.Viewを継承した上で追加した関数をつけたクラスを作成する。
-                # キャッシュに毎回Viewを作らないようにViewクラスを保存しておく。
-                self.views[view_name] = type(view_name, (discord.ui.View,), functions)
-
-            # Viewのインスタンスを作りsendの引数viewに設定をする。
-            kwargs["view"] = self.views[view_name](*class_args, **class_kwargs)
-            if add_late is not None:
-                kwargs["view"] = await add_late(kwargs["view"])
-
-        # 引数を返す。
+        # 何かしらの送信時にキーワード引数のviewがあるなら
+        if (view := kwargs.get("view")):
+            # Componesyによるものなら。
+            if getattr(view, "_rtlib", False):
+                # インスタンス済みのdiscord.ui.Viewにする。
+                kwargs["view"] = view.get_view()
         return args, kwargs
 
-    async def test_interaction(self, view, button, interaction):
-        await interaction.channel.send("Pushed button.")
+    async def test_interaction(self, button, interaction):
+        await interaction.response.send_message("Pushed button.")
 
     async def test_count(self, view, button, interaction):
         button.label = str(int(button.label) + 1)
@@ -256,7 +144,7 @@ class Componesy(commands.Cog):
     @commands.command(name="_componesy_test")
     async def test(self, ctx):
         view = View("TestView")
-        view.add_item("button", self.test_interaction, label="Push me!")
+        view.add_item("Button", self.test_interaction, label="Push me!")
         view.add_item("button", self.test_count, label="0")
         await ctx.reply("test", view=view)
 
