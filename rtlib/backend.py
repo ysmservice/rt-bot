@@ -58,7 +58,8 @@ class BackendBase(Mixer):
     async def _on_ready(self):
         self.print("Connected to discord.")
 
-    async def _before_server_stop(self, _, __):
+    async def _before_server_stop(self, _, loop):
+        self.dispatch("close", loop)
         await self._default_close()
 
     async def _before_server_start(self, _, loop):

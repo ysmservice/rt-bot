@@ -18,21 +18,22 @@ class OAuthCog(commands.Cog):
         }
         if request.ctx.user is None:
             data["user_name"] = "Unknown"
+            data["icon_url"] = None
         else:
             data["user_name"] = str(request.ctx.user)
+            data["icon_url"] = str(request.ctx.user.avatar.url)
             data["login"] = True
         return sanic.response.json(data)
 
     @commands.Cog.route("/account/login")
     @OAuth.login_require()
     async def login(self, request):
-        print("loggin", request.ctx.user.name, request.ctx.user.id)
         return sanic.response.redirect("/dashboard.html")
 
     @commands.Cog.route("/discord/login")
     @OAuth.login_require()
     async def login_alias(self, request):
-        await self.login(request)
+        return await self.login(request)
 
     @commands.Cog.route("/account/logout")
     async def logout(self, request):
@@ -43,7 +44,7 @@ class OAuthCog(commands.Cog):
 
     @commands.Cog.route("/discord/logout")
     async def logout_alias(self, request):
-        await self.logout(request)
+        return await self.logout(request)
 
 
 def setup(bot):
