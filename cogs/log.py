@@ -43,7 +43,7 @@ def log(mode: str = "normal"):
 class Log(commands.Cog):
 
     EMOJIS = {
-        "bot": "<:bot:743378375321845791>"
+        "bot": "<:bot:876337342116429844>"
     }
 
     def __init__(self, bot):

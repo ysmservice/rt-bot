@@ -10,9 +10,9 @@ from rtlib.ext import Embeds
 class Person(commands.Cog):
 
     EMOJIS = {
-        "UserFlags.hypesquad_bravery": "<:HypeSquad_Bravery:795129521140793384>",
-        "UserFlags.hypesquad_brilliance": "<:HypeSquad_Brilliance:795129460709785601>",
-        "UserFlags.hypesquad_balance": "<:HypeSquad_Balance:795129576661581864>"
+        "UserFlags.hypesquad_bravery": "<:HypeSquad_Bravery:876337861572579350>",
+        "UserFlags.hypesquad_brilliance": "<:HypeSquad_Brilliance:876337861643882506>",
+        "UserFlags.hypesquad_balance": "<:HypeSquad_Balance:876337714679676968>"
     }
 
     def __init__(self, bot):
