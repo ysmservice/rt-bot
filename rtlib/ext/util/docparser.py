@@ -77,9 +77,10 @@ class DocParser:
         # 名前の部分を**で囲む。
         if ":" in line:
             left, right, left_count, right_count = self._split(line)
-            return f"**{left}**{' '*left_count}:{' '*right_count}{right}"
+            return "".join((f"**{left.replace(' ', '')}**{' '*left_count}:",
+                            f"{' '*right_count}{right.replace(' ', '')}"))
         else:
-            return f"**{line}**"
+            return f"**{line.replace(' ', '')}**"
 
     def _item_parser(self, line: str, now: dict, before: dict) -> str:
         # 項目に含まれているものを最適なマークダウンに変換するものです。
@@ -88,9 +89,11 @@ class DocParser:
                  if len(line) >= self.indent else line == ""):
                 # 引数の説明。
                 return line[self.indent:]
+            elif all(char in (" ", "*") for char in line[:-2]):
+                return line
             else:
                 # 引数の名前と型。
-                return self._colon_parser(line, now["lang"])
+                return self._colon_parser(line, now["lang"]) + "  "
         return line
 
     def add_event(self, function: Callable, event_name: Optional[str] = None) -> None:
@@ -159,13 +162,16 @@ class DocParser:
         now = {
             "lang": "ja",
             "item": "description",
-            "session_id": session_id
+            "session_id": session_id,
+            "code": False
         }
 
         for line in doc.splitlines():
             # もしインデントがあるならインデントを削除しておく。
             if line != "":
                 line = line[indent*first_indent_count:]
+            if "```" in line:
+                now["code"] = not now["code"]
 
             # パースする。
             if all(char == "-" for char in line) and line != "":
@@ -192,6 +198,9 @@ class DocParser:
                     text[now["lang"]] += t
             elif (line not in self.HEADDINGS[now["lang"]] and not line.startswith("!")
                       and now["item"] != "!"):
+                # もし改行のみで空白2個が後ろにないなら改行を空白二個と置き換える。
+                if not line.endswith("  ") and not now["code"]:
+                    line = line + "  "
                 text[now["lang"]] += item_parser(line, now, before) + "\n"
             before["line"] = line
 

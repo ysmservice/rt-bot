@@ -35,7 +35,7 @@ def _require_not_expired(function):
 def _is_target(function):
     # 操作可能ユーザーなら実行するようにするデコレータです。Embedsで使用。
     @wraps(function)
-    def new(self, view, button, interaction):
+    async def new(self, view, button, interaction):
         ok = False
         if self.target == "bot_everyone":
             ok = True
@@ -288,7 +288,6 @@ class Embeds:
         if mode == "init":
             self.last_update = t
             self.message = m
-            print(m)
         elif mode == "last_update":
             return self.last_update
         elif mode == "timeout":
@@ -355,7 +354,6 @@ class EmbedsCog(commands.Cog):
             if isinstance(embeds, list):
                 embeds = Embeds(embeds=embeds)
             elif not hasattr(embeds, "_rtlib_embeds"):
-                print(embeds)
                 raise ValueError("`rtlib.ext.embeds.Embeds`ではないものが入れられました。")
             # Embedsの一番目をキーワード引数のembedに入れる。
             if embeds.embeds == []:

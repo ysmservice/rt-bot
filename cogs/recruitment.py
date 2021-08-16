@@ -21,12 +21,12 @@ class Recruitment(commands.Cog):
                          "en": "..."},
             "parent": "ServerPanel"
         },
-        aliases=["recruit", "rm"]
+        aliases=["recruit", "rct"]
     )
     async def recruitment(self, ctx, title, max_: int, deadline: int, *, description = ""):
         """!lang ja
         --------
-        募集パネルを作ります。。
+        募集パネルを作ります。
 
         Parameters
         ----------
@@ -47,6 +47,11 @@ class Recruitment(commands.Cog):
         集合場所：RTサーバー
         希望人材：かっこいい奴
         ```
+        [実行結果](http://tasuren.syanari.com/RT/help/ServerPanel/recruitment.jpg)
+
+        Aliases
+        -------
+        recruit, rct
         
         !lang en
         --------

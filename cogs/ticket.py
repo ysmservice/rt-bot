@@ -45,7 +45,7 @@ class Ticket(commands.Cog):
 
         Examples
         --------
-        `rt!ticket 問い合わせ  モデレーター`"""
+        `rt!ticket 問い合わせ モデレーター`"""
         if ctx.guild and ctx.channel.category and str(ctx.channel.type) == "text":
             embed = discord.Embed(
                 title=title,

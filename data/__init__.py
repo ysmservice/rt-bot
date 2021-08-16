@@ -17,6 +17,20 @@ data = {
 }
 
 
+HEADERS = {
+    "Access-Control-Allow-Origin": "https://rt-bot.com",
+    "Access-Control-Allow-Credentials": "true"
+}
+TEST_HEADERS = {
+    "Access-Control-Allow-Origin": "http://127.0.0.1:5500",
+    # "Access-Control-Allow-Origin": "http://192.168.1.14",
+    "Access-Control-Allow-Credentials": "true"
+}
+def get_headers(bot) -> dict:
+    # 上のものを取得する関数です。
+    return TEST_HEADERS if bot.test else HEADERS
+
+
 def is_admin(user_id=None):
     def check(ctx):
         if isinstance(user_id, int):

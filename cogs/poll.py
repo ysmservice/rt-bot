@@ -48,11 +48,17 @@ class Poll(commands.Cog):
         NYN姉貴
         🤭 野獣先輩
         ```
-        好きな人を問う投票パネルを一人一票までとして作ります。
+        好きな人を問う投票パネルを一人一票までとして作ります。  
+        [実行結果](http://tasuren.syanari.com/RT/help/ServerPanel/poll.jpg)
         
         !lang en
         --------
         上にあるものの英語版です。"""
+        if content.count("\n") > 25:
+            return await ctx.reply(
+                {"ja": "項目が多すぎるため投票パネルを作れませんでした。最大25個までです。",
+                 "en": "..."}
+            )
         description, emojis = self.make_description(content)
 
         embed = discord.Embed(
@@ -65,7 +71,7 @@ class Poll(commands.Cog):
                   "en": "..."}
         )
         mes = await ctx.webhook_send(
-            "".join(("RT投票パネル", " (一人一票)" if only_one else "", "\n📊 **[...]**")),
+            "".join(("RT投票パネル", " (一人一票)" if only_one else "", "\n📊 [...]")),
             wait=True, embed=embed, username=ctx.author.display_name,
             avatar_url=ctx.author.avatar.url,
         )
@@ -117,7 +123,7 @@ class Poll(commands.Cog):
                 and any(str(payload.emoji) == str(reaction.emoji)
                         for reaction in payload.message.reactions))
 
-    def graph(self, p: dict, size: int = 35) -> str:
+    def graph(self, p: dict, size: int = 28) -> str:
         # グラフを作るための関数です。
         r, t = '[', len(p)
 
@@ -161,7 +167,7 @@ class Poll(commands.Cog):
                     payload.message_id, embed=embed,
                     content="".join(
                         (payload.message.content[:payload.message.content.find("\n")],
-                         "\n📊 **", self.graph(emojis), "**"))
+                         "\n📊 ", self.graph(emojis), ""))
                 )
         del description, emojis
 

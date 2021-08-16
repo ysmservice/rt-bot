@@ -35,6 +35,7 @@ class Language(commands.Cog):
         self.cache = {}
         self.bot.cogs["OnSend"].add_event(self._new_send, "on_send")
         self.bot.cogs["OnSend"].add_event(self._new_send, "on_webhook_send")
+        self.bot.cogs["OnSend"].add_event(self._new_send, "on_webhook_message_edit")
         self.bot.cogs["OnSend"].add_event(self._new_send, "on_edit")
 
     async def _new_send(self, channel, *args, **kwargs):
@@ -58,7 +59,7 @@ class Language(commands.Cog):
         # contentなどの文字列が言語データにないか検索をする。
         if (content := kwargs.get("content", False)):
             kwargs["content"] = self.get_text(kwargs["content"], lang)
-        if args:
+        if args and not isinstance(args[0], int):
             args = (self.get_text(args[0], lang),)
         if kwargs.get("embed", False):
             kwargs["embed"] = self.get_text(kwargs["embed"], lang)
@@ -214,6 +215,24 @@ class Language(commands.Cog):
     async def language(self, ctx, language):
         """!lang ja
         --------
+        Change the language setting for RT.
+
+        Parameters
+        ----------
+        language : Language code, `ja` or `en`
+            Code for the language to change.  
+            You can use the Japanese `ja` or the English `en`.
+
+        Raises
+        ------
+        ValueError : Occurs if an invalid language code is inserted.
+
+        Examples
+        --------
+        `rt!language en`
+
+        !lang en
+        --------
         RTの言語設定を変更します。
 
         Parameters
@@ -226,18 +245,9 @@ class Language(commands.Cog):
         ------
         ValueError : もし無効な言語コードが入れられた場合発生します。
 
-        ## English
-        Change the language setting for RT.
-
-        Parameters
-        ----------
-        language : Language code, `ja` or `en`
-            Code for the language to change.  
-            You can use the Japanese `ja` or the English `en`.
-
-        Raises
-        ------
-        ValueError : Occurs if an invalid language code is inserted."""
+        Examples
+        --------
+        `rt!language ja`"""
         # 言語コードが使えない場合はValueErrorを発生する。
         if language not in self.LANGUAGES:
             code = "invalid language code is inserted. 無効な言語コードです。"

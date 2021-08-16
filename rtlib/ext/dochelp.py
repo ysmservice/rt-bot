@@ -67,6 +67,7 @@ async def soudayo(ctx, mode="便乗"):
 
 from typing import Callable, Tuple, List, Literal
 from discord.ext import commands
+import discord
 
 from aiofiles import open as async_open
 from ujson import loads, dumps
@@ -85,7 +86,77 @@ class DocHelp(commands.Cog):
         self.dp.add_event(self._set_parent, "parent")
         self.indent_type = " "
         self.indent = 4
-        self.data = {}
+        self._prefix = None
+
+    def convert_embed(self, command_name: str, doc: str, **kwargs) -> List[discord.Embed]:
+        """渡されたコマンド名とヘルプ(マークダウン)をEmbedにします。
+
+        Parameters
+        ----------
+        command_name : str
+            コマンド名です。
+        doc : str
+            内容です。
+        **kwargs : dict
+            Embedに渡すキーワード引数です。
+
+        Returns
+        -------
+        List[discord.Embed]"""
+        now, text, embed, embeds, field_length = ["description", 0], "", None, [], 0
+        onecmd = "## " not in doc
+        make_embed = lambda text: discord.Embed(
+            title=f"**{command_name}**", description=text, **kwargs)
+
+        for line in (docs := doc.splitlines()):
+            is_item = line.startswith("## ")
+            # Embedやフィールドを作るか作るないか。
+            if is_item:
+                if now[0] == "description":
+                    embed = make_embed(text[:-1])
+                now = ["field", len(embed.fields)]
+            if now[0] == "field":
+                if field_length == 25:
+                    embeds.append(embed)
+                    embed, now = None, ["description", 0]
+                else:
+                    embed.add_field(
+                        name=f"‌\n**{line[3:]}**", value="", inline=False)
+                    now[0] = "field_name"
+            # 文字列を整える。
+            if line.startswith("### "):
+                line = "**#** " + line[4:]
+            if line.endswith("  "):
+                line = line[:-2]
+            if line.count("*") > 3 and line[2] != "#":
+                line = line.replace("**", "*`", 1).replace("**", "`", 1) + "*"
+            # フィールドのテキストにlineを追加する。
+            if now[0] == "field_name" and not is_item:
+                embed.set_field_at(
+                    now[1], name=embed.fields[now[1]].name,
+                    value=embed.fields[now[1]].value + line + "\n",
+                    inline=False
+                )
+            # Embedのdescriptionに追加予定の変数にlineを追記する。
+            if embed is None:
+                text += f"{line}\n"
+
+        # fieldが一つでもないとEmbedが作られない、そのためEmbedが空の場合作る。
+        if embed is None:
+            embed = make_embed(text[:-1])
+        # Embed一つに25個までフィールドが追加可能で25に達しないと上では結果リストにEmbedを追加しない。
+        # だからEmbedを追加しておく。
+        if field_length < 25 and embed is not None:
+            embeds.append(embed)
+        return embeds
+
+    @property
+    def prefix(self):
+        if self._prefix is None:
+            self._prefix = self.bot.command_prefix
+            if isinstance(self._prefix, (tuple, list)):
+                self._prefix = self._prefix[0]
+        return self._prefix
 
     @commands.Cog.listener()
     async def on_command_add(self, command):
@@ -109,7 +180,8 @@ class DocHelp(commands.Cog):
             if isinstance(session_id, int):
                 # 親コマンドがいるコマンドのヘルプを親コマンドに追記する。
                 for lang in data:
-                    doc[lang] = f"\n## {command.qualified_name}\n" + data[lang]
+                    doc[lang] = (f"\n## {self.prefix}{command.qualified_name}\n"
+                                 + data[lang])
                 cmd_parent = ("I wanna be the guy!" if command.parent.name is None
                               else command.parent.name)
                 # 親コマンドのヘルプを探します。親コマンドのヘルプは下のelseで登録されます。

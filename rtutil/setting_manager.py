@@ -11,6 +11,7 @@ from functools import wraps
 from copy import copy
 
 from rtlib import OAuth, WebManager
+from data import get_headers
 
 
 class SettingItem(TypedDict):
@@ -67,14 +68,6 @@ class SettingManager(commands.Cog):
         "list": "list"
     }
     NOT_FOUND_SETTING = "({}なんて設定は)ないです。(NYN姉貴風)"
-    HEADERS = {
-        "Access-Control-Allow-Origin": "https://rt-bot.com",
-        "Access-Control-Allow-Credentials": "true"
-    }
-    TEST_HEADERS = {
-        "Access-Control-Allow-Origin": "http://127.0.0.1:5500",
-        "Access-Control-Allow-Credentials": "true"
-    }
 
     def __init__(self, bot):
         self.bot = bot
@@ -288,8 +281,7 @@ class SettingManager(commands.Cog):
                 403
             )
         return response.json(
-            return_data,
-            headers=self.TEST_HEADERS if self.bot.test else self.HEADERS
+            return_data, headers=get_headers(self.bot)
         )
 
     async def _update_setting(
@@ -340,8 +332,7 @@ class SettingManager(commands.Cog):
                 {"guild": guild, "author": member})
             del guild, member
             return response.json(
-                {"status": "ok"},
-                headers=self.TEST_HEADERS if self.bot.test else self.HEADERS
+                {"status": "ok"}, headers=get_headers(self.bot)
             )
         else:
             raise exceptions.SanicException(
@@ -359,8 +350,7 @@ class SettingManager(commands.Cog):
         user = request.ctx.user
         await self._update_setting("user", request.json, {"author": user})
         return response.json(
-            {"status": "ok"},
-            headers=self.TEST_HEADERS if self.bot.test else self.HEADERS
+            {"status": "ok"}, headers=get_headers(self.bot)
         )
 
 

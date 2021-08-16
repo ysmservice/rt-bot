@@ -1,21 +1,13 @@
 # rtutil - OAuth Manager
 
 from discord.ext import commands
+
+from data import get_headers
 from rtlib import OAuth
 import sanic
 
 
 class OAuthCog(commands.Cog):
-
-    HEADERS = {
-        "Access-Control-Allow-Origin": "https://rt-bot.com",
-        "Access-Control-Allow-Credentials": "true"
-    }
-    TEST_HEADERS = {
-        "Access-Control-Allow-Origin": "http://127.0.0.1:5500",
-        "Access-Control-Allow-Credentials": "true"
-    }
-
     def __init__(self, bot):
         self.bot = bot
 
@@ -34,7 +26,7 @@ class OAuthCog(commands.Cog):
             data["icon_url"] = str(request.ctx.user.avatar.url)
             data["login"] = True
         return sanic.response.json(
-            data, headers=self.TEST_HEADERS if self.bot.test else self.HEADERS
+            data, headers=get_headers(self.bot)
         )
 
     @commands.Cog.route("/account/login")

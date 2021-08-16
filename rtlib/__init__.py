@@ -33,7 +33,13 @@ async def webhook_send(
     wb = (wb if (wb := discord.utils.get(
             await channel.webhooks(), name=webhook_name))
           else await channel.create_webhook(name=webhook_name))
-    return await wb.send(*args, **kwargs)
+    try:
+        return await wb.send(*args, **kwargs)
+    except discord.InvalidArgument as e:
+        if webhook_name == "RT-Tool":
+            return await webhook_send(channel, *args, webhook_name="R2-Tool", **kwargs)
+        else:
+            raise e
 
 
 discord.abc.Messageable.webhook_send = webhook_send

@@ -27,15 +27,17 @@ def log(mode: str = "normal"):
                         guild.text_channels
                 )
 
-                embed = await func(self, first_arg, *args, **kwargs)
-                if embed:
-                    embed.set_footer(
-                        text=f"RTログ | {datetime.now().strftime('%Y-%m-%d %H:%M')}"
-                    )
-                    try:
-                        await channel.send(embed=embed)
-                    except discord.errors.Forbidden:
-                        pass
+                if channel:
+                    embed = await func(self, first_arg, *args, **kwargs)
+                    if embed:
+                        embed.set_footer(
+                            text=f"RTログ | {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+                        )
+                        try:
+                            await channel.send(embed=embed)
+                        except (discord.errors.Forbidden,
+                                discord.errors.HTTPException):
+                            pass
         return new_function
     return decorator
 

@@ -79,7 +79,9 @@ class News(commands.Cog):
     async def news(self, ctx):
         """!lang ja
         --------
-        最新のニュースを表示します。
+        最新のニュースを表示します。  
+        `rt!news`だけでいいです。  
+        下にあるadd/removeはRT管理者のみ実行可能です。
 
         !lang en
         --------
@@ -107,12 +109,11 @@ class News(commands.Cog):
         """!lang ja
         --------
         ニュースに新しくなにかを追加します。  
-        ※管理者用コマンドよって英語説明は不要です。
 
         Parameters
         ----------
         image : str
-            写真のURLです。です。  
+            写真のURLです。  
             写真がないのなら`None`を入れてください。
         content : str
             ニュースに追加する文字列です。"""
@@ -124,6 +125,10 @@ class News(commands.Cog):
     async def remove(self, ctx, id_: int):
         """!lang ja
         --------
+        ニュースを削除します。
+
+        Parameters
+        ----------
         id : int
             削除するニュースのidです。"""
         await self._remove_news(id_)
