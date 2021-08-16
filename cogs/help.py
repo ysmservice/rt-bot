@@ -45,8 +45,8 @@ class Help(commands.Cog):
     @OAuth.login_want()
     async def help_detail(self, request, category, command_name):
         category = self.CATEGORIES.get(category, category)
-        if request.ctx.user:
-            lang = self.bot.cogs["Language"].get(request.ctx.user.id)
+        lang = (self.bot.cogs["Language"].get(request.ctx.user.id)
+                if request.ctx.user else "ja")
         if command_name:
             data = {"g-title": category, "status": "Not found"}
             data["content"] = (f"# {command_name}\n"
