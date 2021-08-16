@@ -26,9 +26,21 @@ TEST_HEADERS = {
     # "Access-Control-Allow-Origin": "http://192.168.1.14",
     "Access-Control-Allow-Credentials": "true"
 }
-def get_headers(bot) -> dict:
+def get_headers(bot, request) -> dict:
     # 上のものを取得する関数です。
-    return TEST_HEADERS if bot.test else HEADERS
+    if bot.test:
+        headers = TEST_HEADERS
+        if "192.168.1.14" in request.url:
+            headers["Access-Control-Allow-Origin"] = "http://192.168.1.14"
+        elif "127.0.0.1" in request.url:
+            headers["Access-Control-Allow-Origin"] = "http://127.0.0.1:5500"
+        elif "tasuren" in request.url:
+            headers["Access-Control-Allow-Origin"] = "http://tasuren.f5.si:5500"
+        else:
+            headers["Access-Control-Allow-Origin"] = "http://localhost"
+    else:
+        headers = HEADERS
+    return headers
 
 
 def is_admin(user_id=None):

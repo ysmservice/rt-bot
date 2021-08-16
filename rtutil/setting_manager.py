@@ -281,7 +281,7 @@ class SettingManager(commands.Cog):
                 403
             )
         return response.json(
-            return_data, headers=get_headers(self.bot)
+            return_data, headers=get_headers(self.bot, request)
         )
 
     async def _update_setting(
@@ -332,7 +332,7 @@ class SettingManager(commands.Cog):
                 {"guild": guild, "author": member})
             del guild, member
             return response.json(
-                {"status": "ok"}, headers=get_headers(self.bot)
+                {"status": "ok"}, headers=get_headers(self.bot, request)
             )
         else:
             raise exceptions.SanicException(
@@ -350,7 +350,7 @@ class SettingManager(commands.Cog):
         user = request.ctx.user
         await self._update_setting("user", request.json, {"author": user})
         return response.json(
-            {"status": "ok"}, headers=get_headers(self.bot)
+            {"status": "ok"}, headers=get_headers(self.bot, request)
         )
 
 

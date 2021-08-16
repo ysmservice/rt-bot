@@ -26,7 +26,7 @@ class OAuthCog(commands.Cog):
             data["icon_url"] = str(request.ctx.user.avatar.url)
             data["login"] = True
         return sanic.response.json(
-            data, headers=get_headers(self.bot)
+            data, headers=get_headers(self.bot, request)
         )
 
     @commands.Cog.route("/account/login")

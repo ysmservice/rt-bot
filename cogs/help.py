@@ -66,7 +66,7 @@ class Help(commands.Cog):
             } if category in self.help else {}
             data["status"] = "ok" if data else "Not found"
             data["title"] = category
-        return json(data, headers=get_headers(self.bot))
+        return json(data, headers=get_headers(self.bot, request))
 
     @commands.command(
         extras={
