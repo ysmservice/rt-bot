@@ -46,7 +46,7 @@ def _is_target(function):
                        else self.target.id)
             ok = interaction.user.id == user_id
         if ok:
-            return function(self, view, button, interaction)
+            return await function(self, view, button, interaction)
     return new
 
 

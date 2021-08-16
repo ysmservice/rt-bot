@@ -135,7 +135,18 @@ class Help(commands.Cog):
     async def on_select(self, select, interaction):
         # カテゴリー選択がされたら。
         ctx = await self.bot.get_context(interaction.message)
-        if select.values and select.values[0] != "None":
+        if interaction.message.content:
+            user = interaction.message.guild.get_member(
+                int(interaction.message.content
+                    .replace("<@", "").replace(">", "").replace("!", ""))
+            )
+        elif interaction.message.reference.cached_message:
+            user = interaction.message.reference.cached_message.author
+        else:
+            return await interaction.response.send_message(
+                "メッセージが古すぎるため操作を行うことができませんでした。")
+        if (select.values and select.values[0] != "None" and user
+                and user.id == interaction.user.id):
             # 選択されたものを引数としてdhelpのコマンドを実行する。
             await self.dhelp(ctx, word=select.values[0],
                              interaction=interaction)
@@ -166,7 +177,7 @@ class Help(commands.Cog):
 
     def make_view(self, user, lang, category=None):
         # Viewを作るための関数です。
-        view = componesy.View("HelpView", timeout=60, target=user.id)
+        view = componesy.View("HelpView", timeout=60)
         for _, func, kwargs in self.get_view_args(lang, category):
             view.add_item("Select", func, **kwargs)
         return view
@@ -232,9 +243,7 @@ class Help(commands.Cog):
                 kwargs = {"embed": embed, "view": view}
             elif perfect:
                 # もしコマンド名が一致したなら。
-                user_id = getattr(
-                    getattr(interaction, "user", None), "id", None
-                ) or ctx.author.id
+                user = getattr(interaction, "user", None) or ctx.author
                 embeds = Embeds(
                     "HelpCommandDetails", target=user.id,
                     embeds=self.bot.cogs["DocHelp"].convert_embed(
@@ -244,8 +253,13 @@ class Help(commands.Cog):
                 )
                 edit, reply = False, False
                 await ctx.message.delete()
-                embeds.items = embeds.items + self.get_view_args(lang, c)
-                kwargs = {"embeds": embeds, "target": user_id}
+                if len(embeds.embeds) == 1:
+                    kwargs = {"embed": embeds.embeds[0], "view": self.make_view(user, lang, c),
+                              "target": user.id}
+                    del embeds
+                else:
+                    embeds.items = embeds.items + self.get_view_args(lang, c)
+                    kwargs = {"embeds": embeds, "target": user.id}
             else:
                 # もし何も一致しないなら検索結果を表示する。
                 embed = discord.Embed(
