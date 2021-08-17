@@ -3,6 +3,7 @@ LICENSE : ./LICENSE
 README  : ./readme.md
 """
 
+from aiohttp import ClientSession
 from os import listdir
 from sys import argv
 import discord
@@ -24,6 +25,11 @@ prefixes = data["prefixes"][argv[1]]
 
 # Backendのセットアップをする。
 def on_init(bot):
+    bot.session = ClientSession(raise_for_status=True, loop=bot.loop)
+    @bot.listener()
+    async def on_close(loop):
+        await bot.session.close()
+
     bot.mysql = bot.data["mysql"] = rtlib.mysql.MySQLManager(
         loop=bot.loop, user=secret["mysql"]["user"],
         password=secret["mysql"]["password"], db="mysql",
