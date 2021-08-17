@@ -26,7 +26,7 @@ prefixes = data["prefixes"][argv[1]]
 # Backendのセットアップをする。
 def on_init(bot):
     bot.session = ClientSession(raise_for_status=True, loop=bot.loop)
-    @bot.listener()
+    @bot.listen()
     async def on_close(loop):
         await bot.session.close()
 

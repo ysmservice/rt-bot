@@ -7,13 +7,13 @@ voices = {
     "mei": {
         "path": "cogs/tts/lib/OpenJTalk/mei.htsvoice",
         "name": "メイ",
-        "description": 'HTS Voice "Mei" Copyright (c) 2009-2018 Nagoya Insitute of Technology, Department of Computer Science',
+        "description": 'Copyright (c) 2009-2018 Nagoya Insitute of Technology Department of Computer Science',
         "mode": "OpenJTalk"
     },
     "man": {
         "path": "cogs/tts/lib/OpenJTalk/nitech_jp_atr503_m001.htsvoice",
         "name": "男の人",
-        "description": 'The Nitech Japanese Speech Database "NIT ATR503 M001", Copyright (c) 2003-2012 Nagoya Insitute of Technology',
+        "description": 'Copyright (c) 2003-2012 Nagoya Insitute of Technology Department of Computer Science',
         "mode": "OpenJTalk"
     },
     "reimu": {

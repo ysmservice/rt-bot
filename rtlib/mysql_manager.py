@@ -116,7 +116,7 @@ class Cursor:
         if commit:
             await self.connection.commit()
 
-    def _get_column_args(self, values: Dict[str, Any], format_text: str = "{} = %s AND") -> Tuple[str, list]:
+    def _get_column_args(self, values: Dict[str, Any], format_text: str = "{} = %s AND ") -> Tuple[str, list]:
         conditions, args = "", []
         for key in values:
             conditions += format_text.format(key)

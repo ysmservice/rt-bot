@@ -221,9 +221,6 @@ class BotGeneral(commands.Cog):
             title = "403 Forbidden"
             description = {"ja": "あなたはこのコマンドの実行に必要な役職を持っていないため、このコマンドを実行できません。",
                            "en": "..."}
-        elif isinstance(error, commands.errors.CommandError):
-            title = "400 Bad Request"
-            description = str(error)
         else:
             error_message = "".join(
                 TracebackException.from_exception(error).format())

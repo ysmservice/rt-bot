@@ -1,6 +1,9 @@
 # RT TTS - Data Manager
 
-from rtlib.mysql import MySQLManager, Cursor
+from rtlib import mysql
+
+
+MySQLManager, Cursor = mysql.MySQLManager, mysql.Cursor
 
 
 class DataManager:
@@ -58,8 +61,13 @@ class DataManager:
             対象のユーザーIDです。"""
         async with self.db.get_cursor() as cursor:
             if await self.check_exists(cursor, "voice", user_id):
-                return (await cursor.get_data(
-                    "tts", {"type": "voice", "id": user_id}))[-1]
+                row = await cursor.get_data(
+                    "tts", {"type": "voice", "id": user_id}
+                )
+                if row:
+                    return row[-1]
+                else:
+                    return "mei"
             else:
                 return "mei"
 
@@ -91,8 +99,10 @@ class DataManager:
             サーバーIDです。"""
         async with self.db.get_cursor() as cursor:
             if await self.check_exists(cursor, "dictionary", guild_id):
-                return (
-                    await cursor.get_data("tts", {"type": "dictionary", "id": guild_id})
-                )[-1]
+                row = await cursor.get_data("tts", {"type": "dictionary", "id": guild_id})
+                if row:
+                    return row[-1]
+                else:
+                    return {}
             else:
                 return {}

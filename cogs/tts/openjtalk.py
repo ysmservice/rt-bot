@@ -34,7 +34,9 @@ async def synthe(
         stderr=asyncio.subprocess.PIPE
     )
     # 実行結果を取得する。
-    stdout, stderr = await proc.communicate(text.encode())
+    stdout, stderr = await proc.communicate(
+        bytes(text, encoding='utf-8')
+    )
     # 実行結果を出力する。
     if stdout:
         print("OpenJTalk :", stdout)

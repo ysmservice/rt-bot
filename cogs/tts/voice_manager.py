@@ -15,14 +15,14 @@ from . import voiceroid
 
 
 # 辞書を読み込む。
-with open("./dic/allow_characters.csv") as f:
+with open("cogs/tts/dic/allow_characters.csv") as f:
     ALLOW_CHARACTERS = f.read().split()
-with open("./dic/dictionary.json", "r") as f:
+with open("cogs/tts/dic/dictionary.json", "r") as f:
     dic = load(f)
 gime = {}
-for name in listdir("./dic/gime"):
+for name in listdir("cogs/tts/dic/gime"):
     if name[0] == "g":
-        with open(f"./dic/gime/{name}", "r") as f:
+        with open(f"cogs/tts/dic/gime/{name}", "r") as f:
             content = f.read()
         for line in content.splitlines():
             line = line.split()
@@ -61,7 +61,7 @@ class VoiceManager:
             読み上げる文字列です。
         file_path : str
             ファイルのパスです。
-        dictionary : str, default "/var/lib/mecab/dic/open-jtalk/naist-jdic",
+        dictionary : str, default "/var/lib/mecab/dic/open-jtalk/naist-jdic"
             OpenJTalkの辞書のパスです。
         speed : float, default 1.0
             読み上げスピードです。"""
@@ -79,7 +79,7 @@ class VoiceManager:
             await aquestalk.synthe(voice, file_path, text, 180 * (speed or 1.0))
         elif data["mode"] == "OpenJTalk":
             await openjtalk.synthe(
-                data["path"], dictionary, file_path, speed=speed or 1.0
+                data["path"], dictionary, file_path, text, speed=speed or 1.0
             )
         elif data["mode"] == "VOICEROID":
             return await voiceroid.get_url(
@@ -130,7 +130,7 @@ class VoiceManager:
                 after = soup.find(class_='katakana-string').string.replace('\n', '')
                 dic[result] = after
 
-                async with async_open("./dic/dictionary.json", "w") as f:
+                async with async_open("cogs/tts/dic/dictionary.json", "w") as f:
                     await f.write(dumps(dic))
 
                 text = text.replace(result, after)

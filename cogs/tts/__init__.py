@@ -3,11 +3,13 @@
 from discord.ext import commands
 import discord
 
+from typing import Dict, List, Type
 from rtlib.ext import componesy
-from typing import Dict
-from funtools import wraps
+from aiofiles.os import remove
+from functools import wraps
+from time import time
 
-from .voice_manager import VoiceManager
+from .voice_manager import VoiceManager, voiceroid
 from .data_manager import DataManager
 from data import voices as VOICES
 
@@ -32,15 +34,20 @@ def require_connected(coro):
 
 
 class TTS(commands.Cog, VoiceManager, DataManager):
+
+    VOICE_FORMAT: Dict[str, List[str]] = {
+        "wav": ["mei", "man", "reimu", "marisa"]
+    }
+
     def __init__(self, bot):
         self.bot = bot
-        self.voices: Dict[int, str] = {}
-        self.now = {}
-        super(commands.Cog, self).__init__(bot.session, voices)
+        self.cache: Dict[int, dict] = {}
+        self.now: Dict[int, dict] = {}
+        super(commands.Cog, self).__init__(bot.session, VOICES)
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.db = await bot.data["mysql"].get_database()
+        self.db = await self.bot.data["mysql"].get_database()
         super(VoiceManager, self).__init__(self.db)
         await self.init_table()
 
@@ -64,7 +71,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         !lang en
         --------
         ..."""
-        if not ctx.subcommand_invoked:
+        if not ctx.invoked_subcommand:
             await ctx.reply(
                 {"ja": "使用方法が違います。",
                  "en": "..."}
@@ -94,16 +101,21 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                 "en": "..."
             }
         else:
-            self.now[ctx.guild.id] = {
-                "guild": ctx.guild,
-                "dictionary": await self.read_dictionary(ctx.guild.id),
-                "queue": []
-            }
-            await ctx.author.voice.channel.connect()
             data = {
                 "ja": "接続しました。",
                 "en": "..."
             }
+
+            self.now[ctx.guild.id] = {
+                "guild": ctx.guild,
+                "dictionary": await self.read_dictionary(ctx.guild.id),
+                "queue": [],
+                "playing": False
+            }
+            await ctx.author.voice.channel.connect()
+            for member in ctx.author.voice.channel.members:
+                await self.on_member("join", member)
+
         await ctx.reply(data)
 
     @tts.command(aliases=["disconnect", "dis", "切断", "せつだん"])
@@ -127,23 +139,77 @@ class TTS(commands.Cog, VoiceManager, DataManager):
              "en": "..."}
         )
 
+    async def after_playing(
+            self, guild: discord.Guild, file_path: str, e: Type[Exception]
+        ) -> None:
+        # 読み上げ後は読み上げたファイルを削除してもう一度playを実行します。
+        if not file_path.startswith("http"):
+            # 声がVOICEROIDの場合はダウンロードリンクを直接使い読み上げる。
+            # それ以外の声の場合は音声ファイルを作成するので削除する必要がある。
+            await remove(file_path)
+        self.now[guild.id]["playing"] = False
+        # もう一度再生をする。
+        await self.play(guild)
+
+    async def play(self, guild: discord.Guild) -> None:
+        # キューにメッセージがあるなら再生を行います。
+        if self.now[guild.id]["queue"]:
+            self.now[guild.id]["playing"] = True
+            # 色々必要なデータなどを取り出す。
+            message = self.now[guild.id]["queue"].pop(0)
+            text = message.clean_content
+            data = self.now[guild.id]
+
+            # カスタム辞書にあるものを交換する。
+            for word in data["dictionary"]:
+                text = text.replace(word, data["dictionary"][word])
+
+            # ファイル名を用意する。
+            voice = self.cache[message.author.id]["voice"]
+            if voice in self.VOICE_FORMAT["wav"]:
+                ext = "wav"
+            else:
+                ext = "ogg"
+            file_path = f"cogs/tts/outputs/{message.channel.id}_{message.id}.{ext}"
+
+            # 音声合成をする。
+            url = await self.synthe(voice, text, file_path) or file_path
+            kwargs = {}
+            if ext == "ogg":
+                kwargs["options"] = f"-ss {voiceroid.VOICEROIDS[voice]['zisa'] - 0.8}"
+
+            # 音声を再生する。
+            guild.voice_client.play(
+                discord.FFmpegPCMAudio(url, **kwargs),
+                after=lambda e: self.bot.loop.create_task(
+                    self.after_playing(guild, url, e)
+                )
+            )
+
     @commands.Cog.listener()
-    async def on_message(self, message) -> None:
-        if (message.guild.id in self.now and message.author.id in self.voices
+    async def on_message(self, message: discord.Message) -> None:
+        if not message.guild:
+            return
+
+        if (message.guild.id in self.now and message.author.id in self.cache
                 and discord.utils.get(
                     message.guild.voice_client.channel.members,
                     id=message.author.id
-                )):
+                ) and message.content):
             # 読み上げをします。
-            pass
+            self.now[message.guild.id]["queue"].append(message)
+            if not self.now[message.guild.id]["playing"]:
+                await self.play(message.guild)
 
     async def on_member(self, event_type: str, member: discord.Member) -> None:
         # メンバーがボイスチャンネルに接続または切断した際に呼び出される関数です。
         # そのメンバーが設定している声のキャッシュを取得または削除をします。
         if event_type == "join":
-            self.voices[member.id] = await self.read_voice(member.id)
+            self.cache[member.id] = {
+                "voice": await self.read_voice(member.id)
+            }
         elif member.id in self.voices:
-            del self.voices[member.id]
+            del self.cache[member.id]
 
     @commands.Cog.listener()
     async def on_voice_state_update(
@@ -176,8 +242,8 @@ class TTS(commands.Cog, VoiceManager, DataManager):
     async def on_select_voice(self, select, interaction):
         # もしvoiceコマンドで声の種類を設定されたら呼び出される関数です。
         if select.values:
-            if interaction.user.id in self.voices:
-                self.voices[interaction.user.id] = select.values[0]
+            if interaction.user.id in self.cache:
+                self.cache[interaction.user.id]["voice"] = select.values[0]
             await self.write_voice(interaction.user.id, select.values[0])
             await interaction.message.channel.send(
                 {"ja": f"{interaction.user.mention}, 設定しました。",
@@ -205,13 +271,13 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         view.add_item(
             "Select", self.on_select_voice,
             options=[
-                discod.SelectOption(
+                discord.SelectOption(
                     label=VOICES[voice]["name"], value=voice,
                     description=VOICES[voice]["description"]
                 ) for voice in VOICES
             ], placeholder="声の種類を選択 / Select Voice"
         )
-        await ctx.reply(view=view)
+        await ctx.reply("下のメニューバーから声を選択してください。", view=view)
 
 
 def setup(bot):
