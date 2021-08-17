@@ -144,6 +144,7 @@ class Cursor:
             await cursor.post_data("tasuren_friends", values)"""
         conditions, args = self._get_column_args(values, "{}, ")
         query = ("%s, " * len(args))[:-2]
+        print(conditions, query)
         await self.cursor.execute(
             f"INSERT INTO {table} ({conditions[:-2]}) VALUES ({query})",
             [ujson.dumps(arg) if isinstance(arg, dict) else arg for arg in args]
@@ -167,6 +168,7 @@ class Cursor:
             更新後に自動で`MySQLManager.commit`を実行するかどうかです。"""
         values, values_args = self._get_column_args(values)
         conditions, conditions_args = self._get_column_args(targets)
+        print(0, conditions)
         await self.cursor.execute(
             f"UPDATE {table} SET {values[:-4]} WHERE {conditions[:-4]}",
             values_args + conditions_args

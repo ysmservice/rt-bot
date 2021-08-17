@@ -5,6 +5,7 @@ from aiohttp import ClientSession
 from bs4 import BeautifulSoup
 from ujson import load, dumps
 from typing import Optional
+from alkana import get_kana
 from pykakasi import kakasi
 from os import listdir
 from re import findall
@@ -19,14 +20,6 @@ with open("cogs/tts/dic/allow_characters.csv") as f:
     ALLOW_CHARACTERS = f.read().split()
 with open("cogs/tts/dic/dictionary.json", "r") as f:
     dic = load(f)
-gime = {}
-for name in listdir("cogs/tts/dic/gime"):
-    if name[0] == "g":
-        with open(f"cogs/tts/dic/gime/{name}", "r") as f:
-            content = f.read()
-        for line in content.splitlines():
-            line = line.split()
-            gime[line[1].lower()] = line[0]
 # pykakasiの準備をする。
 kks = kakasi()
 
@@ -76,7 +69,7 @@ class VoiceManager:
             text = await self.text_parser(text)
         # 音声合成をする。
         if data["mode"] == "AquesTalk":
-            await aquestalk.synthe(voice, file_path, text, 180 * (speed or 1.0))
+            await aquestalk.synthe(voice, file_path, text, int(180 * (speed or 1.0)))
         elif data["mode"] == "OpenJTalk":
             await openjtalk.synthe(
                 data["path"], dictionary, file_path, text, speed=speed or 1.0
@@ -114,15 +107,20 @@ class VoiceManager:
         text : str
             対象の文字列です。"""
         text = text.lower()
-        results = findall("[^a-zA-Z]", text)
+        results = findall("[a-zA-Z]+", text)
+
         for result in results:
-            after = gime.get(result)
+            if result == "":
+                continue
+            # alkanaで英単語を交換する。
+            after = get_kana(result)
+
             if not after:
+                # もしalkanaで交換できないなら辞書から取り出す。
                 after = dic.get(result)
-            if after:
-                text = text.replace(result, after)
-            else:
-                # もし辞書にないなら読み方を取得する。
+
+            if not after:
+                # もしalkanaにも辞書にもないなら読み方を取得する。
                 url = f"https://www.sljfaq.org/cgi/e2k_ja.cgi?word={result.replace(' ', '+')}"
                 async with self.session.get(url, headers=self.HEADERS) as r:
                     soup = BeautifulSoup(await r.text(), "html.parser")
@@ -131,9 +129,9 @@ class VoiceManager:
                 dic[result] = after
 
                 async with async_open("cogs/tts/dic/dictionary.json", "w") as f:
-                    await f.write(dumps(dic))
+                    await f.write(dumps(dic, indent=2, ensure_ascii=False))
 
-                text = text.replace(result, after)
+            text = text.replace(result, after)
         return text
 
 

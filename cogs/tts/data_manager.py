@@ -44,6 +44,7 @@ class DataManager:
             声の名前です。"""
         async with self.db.get_cursor() as cursor:
             if await self.check_exists(cursor, "voice", user_id):
+                print(1)
                 await cursor.update_data(
                     "tts", {"content": name}, {"type": "voice", "id": user_id}
                 )

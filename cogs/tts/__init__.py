@@ -17,7 +17,7 @@ from data import voices as VOICES
 def require_connected(coro):
     # 接続していないと実行できないコマンドに付けるデコレータです。
     @wraps(coro)
-    async def new_coro(self, ctx, *args, **kargs):
+    async def new_coro(self, ctx, *args, **kwargs):
         if not ctx.author.voice:
             await ctx.reply(
                 {"ja": "ボイスチャンネルに接続していません。",
@@ -208,6 +208,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
             self.cache[member.id] = {
                 "voice": await self.read_voice(member.id)
             }
+            print(self.cache)
         elif member.id in self.voices:
             del self.cache[member.id]
 
