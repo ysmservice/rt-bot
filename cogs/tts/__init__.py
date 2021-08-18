@@ -479,7 +479,8 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         Notes
         -----
         添付できる音声は3MBまでで7秒以内の必要があります。  
-        そして登録できるネタボイスは20個までです。
+        そして登録できるネタボイスは20個までです。  
+        対応しているフォーマットは`wav`と`ogg`です。
 
         Parameters
         ----------
@@ -511,7 +512,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                     {"ja": "アップロードできる音声は約3MBまでです。",
                      "en": "..."}
                 )
-            elif ctx.message.attachments[0].url.endswith((".mp3", ".wav", ".ogg")):
+            elif ctx.message.attachments[0].url.endswith((".wav", ".ogg")):
                 # セーブする。
                 path = f"cogs/tts/routine/{ctx.author.id}-{ctx.message.attachments[0].filename}"
                 await ctx.message.attachments[0].save(path)
