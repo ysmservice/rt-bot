@@ -27,16 +27,11 @@ voices = {
         "name": "ゆっくり魔理沙",
         "description": "AquesTalk 評価版, (株)アクエストの音声合成ライブラリAquesTalkによるものです。",
         "mode": "AquesTalk"
-    },
-    "kiritan": {
-        "path": "kiritan",
-        "name": "東北きりたん",
-        "description": "VOICEROID デモ音源",
-        "mode": "VOICEROID"
     }
 }
 # Voiceroidをvoicesに追加する。
 for key in voiceroid.VOICEROIDS:
+    continue # まだベータだから
     voices[key] = {
         "path": key,
         "name": voiceroid.VOICEROIDS[key]["name"],

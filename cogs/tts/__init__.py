@@ -1,12 +1,13 @@
 # RT - TTS
 
-from discord.ext import commands
+from discord.ext import commands, tasks
 import discord
 
 from typing import Dict, List, Type
 from rtlib.ext import componesy
 from aiofiles.os import remove
 from functools import wraps
+from os import listdir
 from time import time
 
 from .voice_manager import VoiceManager, voiceroid
@@ -110,7 +111,8 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                 "guild": ctx.guild,
                 "dictionary": await self.read_dictionary(ctx.guild.id),
                 "queue": [],
-                "playing": False
+                "playing": False,
+                "channels": [ctx.channel.id]
             }
             await ctx.author.voice.channel.connect()
             for member in ctx.author.voice.channel.members:
@@ -132,7 +134,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         !lang en
         --------
         ..."""
-        await ctx.author.voice.channel.disconnect()
+        await ctx.guild.voice_client.disconnect()
         del self.now[ctx.guild.id]
         await ctx.reply(
             {"ja": "切断しました。",
@@ -143,7 +145,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
             self, guild: discord.Guild, file_path: str, e: Type[Exception]
         ) -> None:
         # 読み上げ後は読み上げたファイルを削除してもう一度playを実行します。
-        if not file_path.startswith("http"):
+        if not file_path.startswith("http") and file_path != "None":
             # 声がVOICEROIDの場合はダウンロードリンクを直接使い読み上げる。
             # それ以外の声の場合は音声ファイルを作成するので削除する必要がある。
             await remove(file_path)
@@ -174,17 +176,28 @@ class TTS(commands.Cog, VoiceManager, DataManager):
 
             # 音声合成をする。
             url = await self.synthe(voice, text, file_path) or file_path
-            kwargs = {}
-            if ext == "ogg":
-                kwargs["options"] = f"-ss {voiceroid.VOICEROIDS[voice]['zisa'] - 0.8}"
+            # 再生終了後に実行する関数を用意する。
+            after = lambda e: self.bot.loop.create_task(
+                self.after_playing(guild, url, e))
 
-            # 音声を再生する。
-            guild.voice_client.play(
-                discord.FFmpegPCMAudio(url, **kwargs),
-                after=lambda e: self.bot.loop.create_task(
-                    self.after_playing(guild, url, e)
+            if url != "None":
+                # もし文字列が存在するなら再生する。
+                vol = 4.5 if voice in ("reimu", "marisa") else 7.5
+                kwargs = {"options": f'-filter:a "volume={vol}"'}
+                if ext == "ogg":
+                    kwargs["options"] += f" -ss {voiceroid.VOICEROIDS[voice]['zisa'] - 0.8}"
+
+                # 音声を再生する。
+                source = discord.PCMVolumeTransformer(
+                    discord.FFmpegPCMAudio(url, **kwargs),
+                    volume=self.now.get("volume", 1.0)
                 )
-            )
+                if source:
+                    guild.voice_client.play(source, after=after)
+                else:
+                    after(None)
+            else:
+                after(None)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
@@ -195,11 +208,93 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                 and discord.utils.get(
                     message.guild.voice_client.channel.members,
                     id=message.author.id
-                ) and message.content):
+                ) and message.content
+                and message.channel.id in self.now[message.guild.id]["channels"]):
             # 読み上げをします。
             self.now[message.guild.id]["queue"].append(message)
             if not self.now[message.guild.id]["playing"]:
                 await self.play(message.guild)
+
+    @tts.group(aliases=["ch", "ちゃんねる"])
+    @require_connected
+    async def channel(self, ctx):
+        """!lang ja
+        --------
+        読み上げ対象のチャンネルを管理します。  
+        `rt!tts channel`と実行すると現在読み上げ対象となっているチャンネル一覧が表示されます。
+
+        Aliases
+        -------
+        ch, ちゃんねる
+
+        !lang en
+        --------
+        ..."""
+        if not ctx.invoked_subcommand:
+            await ctx.reply(
+                "* " + "\n* ".join(
+                    f"<#{ch}>" for ch in self.now[ctx.guild.id]["channels"]
+                ), replace_language=False
+            )
+
+    @channel.command(name="add", aliases=["あどど", "ad"])
+    @require_connected
+    async def add_channel(self, ctx):
+        """!lang ja
+        --------
+        読み上げ対象のチャンネルを追加します。  
+        5個まで登録できます。
+
+        Aliases
+        -------
+        あどど, ad
+
+        !lang en
+        --------
+        ..."""
+        if len(self.now[cts.guild.id]["channels"]) == 5:
+            await ctx.reply(
+                {"ja": "五個まで追加可能です。",
+                 "en": "..."}
+            )
+        else:
+            self.now[ctx.guild.id]["channels"].append(ctx.channel.id)
+            await ctx.reply(
+                {"ja": "読み上げ対象チャンネルを追加しました。",
+                 "en": "..."}
+            )
+
+    @channel.command(name="remove", aliases=["rm", "りむーぶ", "さくじょ"])
+    @require_connected
+    async def remove_channel(self, ctx):
+        """!lang ja
+        --------
+        読み上げ対象のチャンネルを削除します。
+
+        Aliases
+        -------
+        rm, りむーぶ, さくじょ
+
+        !lang en
+        --------
+        ..."""
+        if len(self.now[ctx.guild.id]["channels"]) == 1:
+            await ctx.reply(
+                {"ja": "読み上げ対象のチャンネルがなくなってしまいます。",
+                 "en": "..."}
+            )
+        else:
+            if ctx.channel.id in self.now[ctx.guild]:
+                self.now[ctx.guild.id]["channels"].remove(ctx.channel.id)
+                await ctx.reply(
+                    {"ja": "読み上げ対象チャンネルを削除しました。",
+                     "en": "..."}
+                )
+            else:
+                await ctx.reply(
+                    {"ja": "このチャンネルは読み上げ対象ではありません。",
+                     "en": "..."}
+                )
 
     async def on_member(self, event_type: str, member: discord.Member) -> None:
         # メンバーがボイスチャンネルに接続または切断した際に呼び出される関数です。
@@ -208,7 +303,6 @@ class TTS(commands.Cog, VoiceManager, DataManager):
             self.cache[member.id] = {
                 "voice": await self.read_voice(member.id)
             }
-            print(self.cache)
         elif member.id in self.voices:
             del self.cache[member.id]
 
@@ -219,26 +313,14 @@ class TTS(commands.Cog, VoiceManager, DataManager):
             after: discord.VoiceState
         ) -> None:
         # on_member_join/leaveのどっちかを呼び出すためのものです。
-        channel_id = getattr(member.guild.voice_client, "channel.id", 0)
-        if (channel_id == member.voice.channel.id
-                and member.guild.id in self.now):
-            join = len(before.channel.members) < len(after.channel.members)
-            members = (after.channel.members if join
-                        else before.channel.members)
-            for member in members:
-                target = bool(
-                    discord.utils.get(
-                        (before.channel.members
-                            if join else after.channel.members),
-                        id=member.id
-                    )
-                )
-                if join and target:
-                    # もしメンバーがボイスチャンネルに接続したなら。
-                    await self.on_member("join", member)
-                elif not join and not target:
-                    # もしメンバーがボイスチャンネルから切断したなら。
-                    await self.on_member("leave", member)
+
+        if member.guild.id in self.now:
+            if not before.channel:
+                # もしメンバーがボイスチャンネルに接続したなら。
+                await self.on_member("join", member)
+            elif not after.channel:
+                # もしメンバーがボイスチャンネルから切断したなら。
+                await self.on_member("leave", member)
 
     async def on_select_voice(self, select, interaction):
         # もしvoiceコマンドで声の種類を設定されたら呼び出される関数です。
@@ -279,6 +361,19 @@ class TTS(commands.Cog, VoiceManager, DataManager):
             ], placeholder="声の種類を選択 / Select Voice"
         )
         await ctx.reply("下のメニューバーから声を選択してください。", view=view)
+
+    def cog_unload(self):
+        self.now = {}
+        self.delete_files.cancel()
+
+    @tasks.loop(minutes=1)
+    async def delete_files(self):
+        # 削除されていないファイルがあるならそのファイルを削除する。
+        for file_name in listdir("cogs/tts/outputs"):
+            try:
+                await remove(file_name)
+            except Exception as e:
+                print("Passed error on TTS:", e)
 
 
 def setup(bot):

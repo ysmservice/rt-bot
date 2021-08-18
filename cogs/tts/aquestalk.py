@@ -24,7 +24,7 @@ def load_libs(paths: dict) -> None:
 
 
 async def synthe(
-        voice: str, file_path: str, text: str, speed: int = 180
+        voice: str, file_path: str, text: str, speed: int = 130
     ) -> None:
     """AquesTalkを使用して音声合成を行います。　　
     使用するライブラリは`load_libs`で読み込んだものが使われます。
@@ -56,7 +56,8 @@ async def synthe(
         text.encode('cp932', errors='ignore'),
         speed, ctypes.byref(size_callback)
     )
-    if wav_address is None:
+
+    if not wav_address:
         # もし生成できない場合はエラーを起こす。
         raise SyntheError(f"音声合成に失敗しました。ERR:{size_callback.value}")
 

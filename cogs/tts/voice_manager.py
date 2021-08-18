@@ -7,8 +7,8 @@ from ujson import load, dumps
 from typing import Optional
 from alkana import get_kana
 from pykakasi import kakasi
+from re import findall, sub
 from os import listdir
-from re import findall
 
 from . import aquestalk
 from . import openjtalk
@@ -28,6 +28,10 @@ class VoiceManager:
     """音声合成を簡単に行うためのクラスです。"""
 
     HEADERS = {'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:47.0) Gecko/20100101 Firefox/47.0'}
+    REPLACE_CHARACTERS = {
+        "ぁ": "あ", "ぃ": "い", "ぅ": "う", "ぇ": "え", "ぉ": "お",
+        "ァ": "あ", "ィ": "い", "ゥ": "う", "ェ": "え", "ォ": "お"
+    }
 
     def __init__(self, session: ClientSession, voices: dict):
         self.session: ClientSession = session
@@ -58,26 +62,34 @@ class VoiceManager:
             OpenJTalkの辞書のパスです。
         speed : float, default 1.0
             読み上げスピードです。"""
-        # 音声合成をします。
         data = self.voices[voice]
+        # URLがあれば交換する。
+        text = sub(
+            "https?://[\\w/:%#\\$&\\?\\(\\)~\\.=\\+\\-]+",
+            "ゆーあーるえる", text
+        )
         # 文字列を最適な文字列にする。
-        if data["mode"] == "AquesTalk":
-            text = self.delete_disallow(
-                self.convert_kanji(await self.text_parser(text))
-            )
-        else:
-            text = await self.text_parser(text)
+        if len(text) > 40:
+            text = text[:41] + " いかしょうりゃく"
+        text = self.delete_disallow(
+            self.convert_kanji(await self.text_parser(text))
+        )
         # 音声合成をする。
-        if data["mode"] == "AquesTalk":
-            await aquestalk.synthe(voice, file_path, text, int(180 * (speed or 1.0)))
-        elif data["mode"] == "OpenJTalk":
-            await openjtalk.synthe(
-                data["path"], dictionary, file_path, text, speed=speed or 1.0
-            )
-        elif data["mode"] == "VOICEROID":
-            return await voiceroid.get_url(
-                self.session, data["path"], text, speed=speed or 1.0
-            )
+        if text:
+            if data["mode"] == "AquesTalk":
+                await aquestalk.synthe(
+                    voice, file_path, text, int(95 * (speed or 1.0))
+                )
+            elif data["mode"] == "OpenJTalk":
+                await openjtalk.synthe(
+                    data["path"], dictionary, file_path, text, speed=speed or 1.0
+                )
+            elif data["mode"] == "VOICEROID":
+                return await voiceroid.get_url(
+                    self.session, data["path"], text, speed=speed or 1.0
+                )
+        else:
+            return "None"
 
     def delete_disallow(self, text: str) -> str:
         """文字列のひらがな以外を削除します。
@@ -86,6 +98,8 @@ class VoiceManager:
         ----------
         text : str
             対象の文字列です。"""
+        for char in self.REPLACE_CHARACTERS:
+            text = text.replace(char, self.REPLACE_CHARACTERS[char])
         return "".join(char for char in text if char in ALLOW_CHARACTERS)
 
     def convert_kanji(self, text: str) -> str:
@@ -106,12 +120,10 @@ class VoiceManager:
         ----------
         text : str
             対象の文字列です。"""
-        text = text.lower()
+        text = text.replace("\n", "、").lower()
         results = findall("[a-zA-Z]+", text)
 
         for result in results:
-            if result == "":
-                continue
             # alkanaで英単語を交換する。
             after = get_kana(result)
 
