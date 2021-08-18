@@ -125,8 +125,7 @@ class Cursor:
             conditions += format_text.format(key)
             args.append(
                 ujson.dumps(values[key])
-                if (json_dump and isinstance(values[key], str)
-                    and values[key] and values[key][0] == "{")
+                if json_dump and isinstance(values[key], dict)
                 else values[key]
             )
         return conditions, args
