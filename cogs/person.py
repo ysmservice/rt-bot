@@ -8,6 +8,7 @@ from aiohttp import ClientSession
 from datetime import timedelta
 from bs4 import BeautifulSoup
 from rtlib.ext import Embeds
+import asyncio
 
 
 class Person(commands.Cog):

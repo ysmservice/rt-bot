@@ -208,7 +208,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                         kwargs["options"] += \
                             f" -ss {voiceroid.VOICEROIDS[voice]['zisa'] - 0.8}"
                 else:
-                    kwargs = {"options": '-filter:a "volume=6"'}
+                    kwargs = {"options": '-filter:a "volume=5.3"'}
 
                 # 音声を再生する。
                 source = discord.PCMVolumeTransformer(
