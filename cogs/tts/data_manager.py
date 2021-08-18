@@ -99,7 +99,61 @@ class DataManager:
             サーバーIDです。"""
         async with self.db.get_cursor() as cursor:
             if await self.check_exists(cursor, "dictionary", guild_id):
-                row = await cursor.get_data("tts", {"type": "dictionary", "id": guild_id})
+                rows = await cursor.get_data("tts", {"type": "dictionary", "id": guild_id})
+                if rows:
+                    return rows[-1]
+                else:
+                    return {}
+            else:
+                return {}
+
+    async def write_routine_mode(self, user_id: int, b: bool) -> None:
+        """指定したユーザーIDのネタモードの切り替えをします。"""
+        async with self.db.get_cursor() as cursor:
+            if await self.check_exists(cursor, "routine", user_id):
+                await cursor.update_data(
+                    "tts", {"content": str(int(b))},
+                    {"type": "routine", "id": user_id}
+                )
+            else:
+                await cursor.insert_data(
+                    "tts", {"content": str(int(b)), "type": "routine",
+                            "id": user_id}
+                )
+
+    async def read_routine_mode(self, user_id: int) -> bool:
+        """指定したユーザーのIDのネタモードを調べます。"""
+        async with self.db.get_cursor() as cursor:
+            if await self.check_exists(cursor, "routine", user_id):
+                row = await cursor.get_data(
+                    "tts", {"type": "routine", "id": user_id}
+                )
+                if row:
+                    return bool(int(row[-1]))
+                else:
+                    return False
+            else:
+                return False
+
+    async def write_routine(self, user_id: int, data: dict) -> None:
+        async with self.db.get_cursor() as cursor:
+            if await self.check_exists(cursor, "custom", user_id):
+                await cursor.update_data(
+                    "tts", {"content": data},
+                    {"type": "custom", "id": user_id}
+                )
+            else:
+                await cursor.insert_data(
+                    "tts", {"content": data, "type": "custom",
+                            "id": user_id}
+                )
+
+    async def read_routine(self, user_id: int) -> dict:
+        async with self.db.get_cursor() as cursor:
+            if await self.check_exists(cursor, "custom", user_id):
+                row = await cursor.get_data(
+                    "tts", {"type": "custom", "id": user_id}
+                )
                 if row:
                     return row[-1]
                 else:

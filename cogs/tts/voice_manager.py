@@ -1,14 +1,15 @@
 # RT TTS - Voice Manager
 
 from aiofiles import open as async_open
+from emoji import UNICODE_EMOJI_ENGLISH
+from ujson import loads, load, dumps
 from aiohttp import ClientSession
 from bs4 import BeautifulSoup
-from ujson import load, dumps
+from os import listdir, path
 from typing import Optional
 from alkana import get_kana
 from pykakasi import kakasi
 from re import findall, sub
-from os import listdir
 
 from . import aquestalk
 from . import openjtalk
@@ -32,6 +33,8 @@ class VoiceManager:
         "ぁ": "あ", "ぃ": "い", "ぅ": "う", "ぇ": "え", "ぉ": "お",
         "ァ": "あ", "ィ": "い", "ゥ": "う", "ェ": "え", "ォ": "お"
     }
+    NULL_CHARS = ("ー", "、", "。", "っ", "ゃ", "ゅ", "ょ",
+                  "ッ", "ャ", "ュ", "ョ")
 
     def __init__(self, session: ClientSession, voices: dict):
         self.session: ClientSession = session
@@ -44,6 +47,11 @@ class VoiceManager:
                 if voices[name]["mode"] == "AquesTalk"
             }
         )
+
+    async def reload_dictionary(self) -> None:
+        """辞書を再読み込みします。"""
+        async with async_open("cogs/tts/dic/dictionary.json", "r") as f:
+            dic = loads(await f.read())
 
     async def synthe(self, voice: str, text: str, file_path: str,
                      dictionary: str = "/var/lib/mecab/dic/open-jtalk/naist-jdic",
@@ -71,6 +79,8 @@ class VoiceManager:
         # 文字列を最適な文字列にする。
         if len(text) > 40:
             text = text[:41] + " いかしょうりゃく"
+        text = text.replace("()", "かっこしっしょう")
+        text = text.replace("(笑)", "かっこわらい")
         text = self.delete_disallow(
             self.convert_kanji(await self.text_parser(text))
         )
@@ -100,7 +110,15 @@ class VoiceManager:
             対象の文字列です。"""
         for char in self.REPLACE_CHARACTERS:
             text = text.replace(char, self.REPLACE_CHARACTERS[char])
-        return "".join(char for char in text if char in ALLOW_CHARACTERS)
+        new_text, first = "", True
+        for char in text:
+            if char in self.NULL_CHARS:
+                if first:
+                    continue
+            elif first:
+                first = False
+            new_text += char
+        return "".join(char for char in new_text if char in ALLOW_CHARACTERS)
 
     def convert_kanji(self, text: str) -> str:
         """文字列にある漢字をひらがなに置き換えます。

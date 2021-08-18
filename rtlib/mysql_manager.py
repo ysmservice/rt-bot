@@ -116,11 +116,16 @@ class Cursor:
         if commit:
             await self.connection.commit()
 
-    def _get_column_args(self, values: Dict[str, Any], format_text: str = "{} = %s AND ") -> Tuple[str, list]:
+    def _get_column_args(
+            self, values: Dict[str, Any], format_text: str = "{} = %s AND ",
+            json_dump: bool = False
+        ) -> Tuple[str, list]:
         conditions, args = "", []
         for key in values:
             conditions += format_text.format(key)
-            args.append(values[key])
+            args.append(
+                ujson.dumps(values[key]) if json_dump else values[key]
+            )
         return conditions, args
 
     async def insert_data(self, table: str, values: Dict[str, Any], commit: bool = True) -> None:
@@ -165,7 +170,7 @@ class Cursor:
             更新するデータの条件です。
         commit : bool, default True
             更新後に自動で`MySQLManager.commit`を実行するかどうかです。"""
-        values, values_args = self._get_column_args(values)
+        values, values_args = self._get_column_args(values, json_dump=True)
         conditions, conditions_args = self._get_column_args(targets)
         await self.cursor.execute(
             f"UPDATE {table} SET {values[:-4]} WHERE {conditions[:-4]}",
@@ -242,17 +247,23 @@ class Cursor:
             f"SELECT * FROM {table}{conditions}{' ' + custom if custom else custom}",
             args)
         if _fetchall:
-            rows = await self.cursor.fetchall()
+            list_rows = await self.cursor.fetchall()
         else:
-            rows = [await self.cursor.fetchone()]
-        if rows:
-            for row in rows:
-                if isinstance(row, str):
-                    row = [ujson.loads(data) if data[0] == "{" and data[-1] == "}"
-                           else data for data in row]
-                yield row
-                if not _fetchall:
-                    break
+            list_rows = [await self.cursor.fetchone()]
+        if list_rows:
+            for rows in list_rows:
+                if rows is None:
+                    yield []
+                else:
+                    rows = [
+                        ((ujson.loads(row) if row[0] == "{" and row[-1] == "}"
+                            else row) if isinstance(row, str)
+                                else row)
+                        for row in rows if row is not None
+                    ]
+                    yield rows
+                    if not _fetchall:
+                        break
         else:
             yield []
 

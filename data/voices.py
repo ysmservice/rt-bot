@@ -27,6 +27,36 @@ voices = {
         "name": "ゆっくり魔理沙",
         "description": "AquesTalk 評価版, (株)アクエストの音声合成ライブラリAquesTalkによるものです。",
         "mode": "AquesTalk"
+    },
+    "miku": {
+        "path": "cogs/tts/lib/OpenJTalk/Miku-Type-a.htsvoice",
+        "name": "初音ミク",
+        "description": "著作権：CUBE370",
+        "mode": "OpenJTalk"
+    },
+    "wacky": {
+        "path": "cogs/tts/lib/OpenJTalk/wacky.htsvoice",
+        "name": "Wacky~▲",
+        "description": "音響モデル：zeta, 音声データ：Wacky~▲",
+        "mode": "OpenJTalk"
+    },
+    "kaoru": {
+        "path": "cogs/tts/lib/OpenJTalk/京歌カオル.htsvoice",
+        "name": "京歌カオル",
+        "description": "音響モデル：アキヒロ, 音声データ：ななかお(kei)",
+        "mode": "OpenJTalk"
+    },
+    "nero": {
+        "path": "cogs/tts/lib/OpenJTalk/蒼歌ネロ.htsvoice",
+        "name": "蒼歌ネロ",
+        "description": "音響モデル：アキヒロ, 音声データ作成者：楓夜",
+        "mode": "OpenJTalk"
+    },
+    "homu": {
+        "path": "cogs/tts/lib/OpenJTalk/沙音ほむ.htsvoice",
+        "name": "沙音ほむ",
+        "description": "音響モデル：アキヒロ, 音声データ：ほむ",
+        "mode": "OpenJTalk"
     }
 }
 # Voiceroidをvoicesに追加する。

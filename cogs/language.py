@@ -38,6 +38,9 @@ class Language(commands.Cog):
         self.bot.cogs["OnSend"].add_event(self._new_send, "on_webhook_message_edit")
         self.bot.cogs["OnSend"].add_event(self._new_send, "on_edit")
 
+        with open("data/replies.json") as f:
+            self.replies = loads(f.read())
+
     async def _new_send(self, channel, *args, **kwargs):
         # 元のsendにつけたしをする関数。rtlib.libs.on_sendを使う。
         # このsendが返信に使われたのなら返信先のメッセージの送信者(実行者)の言語設定を読み込む。
@@ -103,7 +106,7 @@ class Language(commands.Cog):
                 for word in results:
                     result = result.replace("$$", word, 1)
             else:
-                if isinstance(text, str):
+                if isinstance(text, str) and text[0] == "{" and text[-1] == "}":
                     text = loads(text.replace('"', r'\"').replace("'", '"'))
                 result = text.get(lang, text["ja"])
 
@@ -185,8 +188,6 @@ class Language(commands.Cog):
             await cursor.create_table("language", columns)
             # キャッシュを更新しておく。
             await self.update_cache(cursor)
-        # 言語データを読み込んでおく。
-        await self.update_language()
 
     def get(self, ugid: int) -> Literal["ja", "en"]:
         """渡されたIDになんの言語が設定されているか取得できます。  

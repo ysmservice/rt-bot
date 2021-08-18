@@ -59,6 +59,7 @@ async def synthe(
 
     if not wav_address:
         # もし生成できない場合はエラーを起こす。
+        print(text)
         raise SyntheError(f"音声合成に失敗しました。ERR:{size_callback.value}")
 
     # 音声データのunsigned *charをunsigned *byteにキャストする。

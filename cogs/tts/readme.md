@@ -1,11 +1,12 @@
 # 読み上げ (tts)
+## 読み上げに必要なもの
+* OpenJTalk
+* AquesTalk 評価版 (`cogs/tts/lib/AquesTalk`)
+置き方はtasurenに聞いて。
 ## ファイルマップ
+GitHubにないファイルはtasurenに頼めばくれるかもしれません。
 ### dic
 辞書などを入れるフォルダです。
-#### gime
-https://github.com/KEINOS/google-ime-user-dictionary-ja-en/tree/master/Google-ime-jp-カタカナ英語辞典  
-にあるものです。  
-英語を読みのひらがなに置き換えるための辞書です。
 #### allow_characters.csv
 ゆっくりの読み上げで有効な文字です。  
 空白で区切ります。
