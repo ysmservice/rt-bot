@@ -65,12 +65,17 @@ kwargs = {
     "on_init_bot": on_init,
     "intents": intents
 }
-if argv[1] == "test":
+if argv[1] in ("test", "alpha"):
     bot = rtlib.Backend(*args, **kwargs)
     bot.test = True
 elif argv[1] == "production":
     bot = rtlib.AutoShardedBackend(*args, **kwargs)
     bot.test = False
+
+
+server = (eval(argv[2]) if len(argv) > 2 else True)
+
+
 bot.data = data
 bot.colors = data["colors"]
 bot.is_admin = is_admin
@@ -83,4 +88,4 @@ bot.is_owner = _is_owner
 del is_admin, _is_owner
 
 
-bot.run(TOKEN, host="0.0.0.0", port=80)
+bot.run(TOKEN, host="0.0.0.0" if server else "127.0.0.1", port=80)

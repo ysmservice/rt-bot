@@ -7,7 +7,8 @@ from .voices import *
 data = {
     "prefixes": {
         "test": ["r2!", "R2!", "r2.", "R2.", "りっちゃん２　", "りっちゃん2 "],
-	    "production": ["rt!", "Rt!", "RT!", "rt.", "Rt.", "RT.", "りつ！", "りつ.", "りっちゃん　", "りっちゃん "]
+        "production": ["rt!", "Rt!", "RT!", "rt.", "Rt.", "RT.", "りつ！", "りつ.", "りっちゃん　", "りっちゃん "],
+        "alpha": ["r3!"]
     },
     "colors": {
         "normal": 0x0066ff,
