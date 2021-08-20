@@ -275,7 +275,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         !lang en
         --------
         ..."""
-        if len(self.now[cts.guild.id]["channels"]) == 5:
+        if len(self.now[ctx.guild.id]["channels"]) == 5:
             await ctx.reply(
                 {"ja": "五個まで追加可能です。",
                  "en": "..."}
