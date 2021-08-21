@@ -232,7 +232,9 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                     message.guild.voice_client.channel.members,
                     id=message.author.id
                 ) and message.content
-                and message.channel.id in self.now[message.guild.id]["channels"]):
+                and message.channel.id in self.now[message.guild.id]["channels"]
+                and not message.content.startswith(tuple(self.bot.command_prefix))
+                and not message.content.startswith(("!", "?", ".", "#", "sb#", "sb."))):
             # 読み上げをします。
             self.now[message.guild.id]["queue"].append(message)
             if not self.now[message.guild.id]["playing"]:
