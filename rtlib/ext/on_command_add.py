@@ -33,7 +33,6 @@ class OnCommandAdd(commands.Cog):
             # オーバーライドされたオリジナルを実行する。
             command = original(original_self, command) or command
             self.bot.dispatch(f"command_{mode}", command)
-            print(mode, parent, command.qualified_name)
             return command
 
         return new_function
