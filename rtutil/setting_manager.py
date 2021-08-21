@@ -140,7 +140,8 @@ class SettingManager(commands.Cog):
         return all(getattr(member.guild_permissions, permission_name)
                    for permission_name in permissions)
 
-    async def anext(self, coro: Coroutine, default: Any = Exception):
+    @staticmethod
+    async def anext(coro: Coroutine, default: Any = Exception):
         # nextを非同期版で使うための関数です。run_callbackで使用した。
         try:
             return await coro.__anext__()
@@ -164,8 +165,15 @@ class SettingManager(commands.Cog):
         coro = coro(*args)
         # 走らせる。
         if create_task_:
-            create_task(self.anext(coro, None))
-            yield None
+            data = await self.anext(coro, None)
+            if isinstance(data, dict):
+                raise exceptions.SanicException(
+                    message=data.get(self.bot.cogs["Language"].get(args[0].author.id),
+                                     data["ja"]),
+                    status_code=500
+                )
+            else:
+                yield data
         else:
             async for result in coro:
                 yield result
@@ -306,7 +314,7 @@ class SettingManager(commands.Cog):
             await self.run_callback(
                 mode, command_name,
                 self.data[mode][command_name]["callback"],
-                (type("Context", (), ctx_attrs), "write", 
+                (type("Context", (), ctx_attrs), "write",
                  ((key, request_data[command_name][key] \
                      [self.ITEMS[request_data[command_name][key]["item_type"]]])
                   for key in request_data[command_name])

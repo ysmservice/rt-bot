@@ -536,7 +536,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                     )
             else:
                 await ctx.reply(
-                    {"ja": "ファイルのフォーマットは`mp3`, `wav`, `ogg`のどれかの必要があります。",
+                    {"ja": "ファイルのフォーマットは`wav`, `ogg`のどれかの必要があります。",
                      "en": "..."}
                 )
         else:
