@@ -65,32 +65,38 @@ async def soudayo(ctx, mode="便乗"):
 
 # 上のコマンドにあるドキュメンテーションがヘルプリストに自動で追加されます。"""
 
-from typing import Callable, Tuple, List, Literal
 from discord.ext import commands
 import discord
 
 from aiofiles import open as async_open
 from ujson import loads, dumps
+from typing import Dict, List
+from inspect import ismethod
+from copy import copy, deepcopy
 
 from .util import DocParser
 
 
 class DocHelp(commands.Cog):
+
+    ALLOW_LANGUAGES = ("ja", "en")
+
     def __init__(self, bot):
         self.bot = bot
         self.data: dict = {}
+        self.tree: Dict[str, List[str]] = {}
+        self.categories: Dict[str, str] = {}
+        self.queue: Dict[str, List[commands.Command]] = {}
         if "OnCommandAdd" not in self.bot.cogs:
             self.bot.load_extension("rtlib.ext.on_command_add")
 
         self.dp = DocParser()
-        self.dp.add_event(self._set_parent, "parent")
         self.indent_type = " "
         self.indent = 4
         self._prefix = None
 
     def convert_embed(self, command_name: str, doc: str, **kwargs) -> List[discord.Embed]:
         """渡されたコマンド名とヘルプ(マークダウン)をEmbedにします。
-
         Parameters
         ----------
         command_name : str
@@ -99,59 +105,51 @@ class DocHelp(commands.Cog):
             内容です。
         **kwargs : dict
             Embedに渡すキーワード引数です。
-
         Returns
         -------
         List[discord.Embed]"""
-        now, text, embed, embeds, field_length = ["description", 0], "", None, [], 0
-        onecmd = "## " not in doc
+        text, embeds, length = "", [], 0
         make_embed = lambda text: discord.Embed(
             title=f"**{command_name}**", description=text, **kwargs)
 
-        for line in (docs := doc.splitlines()):
+        for line in doc.splitlines():
             is_item = line.startswith("## ")
             # Embedやフィールドを作るか作るないか。
             if is_item:
-                if now[0] == "description":
-                    embed = make_embed(text[:-1])
-                now = ["field", len(embed.fields)]
-            if now[0] == "field":
-                if field_length == 25:
-                    embeds.append(embed)
-                    embed, now = None, ["description", 0]
-                else:
-                    embed.add_field(
-                        name=f"‌\n**{line[3:]}**", value="", inline=False)
-                    now[0] = "field_name"
+                line = f"\n**{line[3:]}**"
             # 文字列を整える。
-            if line.startswith("### "):
+            elif line.startswith("### "):
                 line = "**#** " + line[4:]
-            if line.endswith("  "):
+            elif line.endswith("  "):
                 line = line[:-2]
-            if line.count("*") > 3 and line[2] != "#":
+            elif line.count("*") > 3 and line[2] != "#":
                 line = line.replace("**", "*`", 1).replace("**", "`", 1) + "*"
-            # フィールドのテキストにlineを追加する。
-            if now[0] == "field_name" and not is_item:
-                embed.set_field_at(
-                    now[1], name=embed.fields[now[1]].name,
-                    value=embed.fields[now[1]].value + line + "\n",
-                    inline=False
-                )
-            # Embedのdescriptionに追加予定の変数にlineを追記する。
-            if embed is None:
-                text += f"{line}\n"
+            length += (now_length := len(line))
+
+            # もしtextの文字数が2000超えてしまうなら新しくEmbedを作る。
+            if length > 2000:
+                embeds.append(make_embed(text[:-1]))
+                text, length = "", now_length
+
+            text += f"{line}\n"
 
         # fieldが一つでもないとEmbedが作られない、そのためEmbedが空の場合作る。
-        if embed is None:
-            embed = make_embed(text[:-1])
-        # Embed一つに25個までフィールドが追加可能で25に達しないと上では結果リストにEmbedを追加しない。
-        # だからEmbedを追加しておく。
-        if field_length < 25 and embed is not None:
-            embeds.append(embed)
+        if length <= 2000:
+            embeds.append(make_embed(text[:-1]))
+
         return embeds
+
+    def parse(self, command: commands.Command) -> dict:
+        # コマンドのドキュメンテーションを辞書に変換します。
+        return self.dp.parse(
+            command.callback.__doc__,
+            first_indent_count=int(bool(ismethod(command.__call__))) + 1,
+            indent=self.indent, indent_type=self.indent_type
+        )
 
     @property
     def prefix(self):
+        # Botの一番最初にあるプリフィックスを取得します。
         if self._prefix is None:
             self._prefix = self.bot.command_prefix
             if isinstance(self._prefix, (tuple, list)):
@@ -159,88 +157,65 @@ class DocHelp(commands.Cog):
         return self._prefix
 
     @commands.Cog.listener()
-    async def on_command_add(self, command):
-        doc = command.callback.__doc__
-        if doc:
-            # 親コマンドがいるかいないかなどを判定する。
-            # もし親コマンドがいないのならセッションIDにコマンド名を入れる。
-            session_id = 0
-            if (isinstance(command, commands.Group)
-                    or isinstance(command, commands.Command)):
-                if not command.parents:
-                    session_id = command.name
-
-            # ドキュメンテーションをマークダウンにする。
-            first_indent_count = 2 if command.cog else 1
-            data = self.dp.parse(doc, first_indent_count=first_indent_count,
-                                 indent=self.indent, indent_type=self.indent_type,
-                                 session_id=session_id)
-
-            wrote, doc = False, {}
-            if isinstance(session_id, int):
-                # 親コマンドがいるコマンドのヘルプを親コマンドに追記する。
+    async def on_command_add(self, command, after: bool = False):
+        if command.callback.__doc__:
+            if command.extras and not after:
+                # ドキュメンテーションをマークダウンにする。
+                data = self.parse(command)
+                # もしカテゴリーが設定されているならそのカテゴリーコマンドを入れる。
+                if (category := command.extras.get("parent", "Others")) not in self.data:
+                    self.data[category] = {}
+                # self.treeにカテゴリ名がわかるように保存しておく。
+                if command.name not in self.categories:
+                    self.categories[command.name] = category
+                    self.tree[command.name] = []
+                # コマンドのデータを作っていく。
+                self.data[category][command.name] = {
+                    lang: {} for lang in self.ALLOW_LANGUAGES
+                }
                 for lang in data:
-                    doc[lang] = (f"\n## {self.prefix}{command.qualified_name}\n"
-                                 + data[lang])
-                cmd_parent = ("I wanna be the guy!" if command.parent.name is None
-                              else command.parent.name)
-                # 親コマンドのヘルプを探します。親コマンドのヘルプは下のelseで登録されます。
-                for category_name in self.data:
-                    if cmd_parent in self.data[category_name]:
-                        for lang in self.data[category_name][command.parent.name]:
-                            if lang in data:
-                                # 親コマンドのヘルプにコマンドのヘルプを追記する。
-                                self.data[category_name][command.parent.name][lang][1] += doc[lang]
-                                wrote = True
-                        break
-                # もしカテゴリーが見つからないのならOtherカテゴリーにする。
-                if not wrote:
-                    n = (command.name if command.parent.name == "I wanna be the guy!"
-                         else command.parent.name)
-                    for lang in doc:
-                        self.data["Other"][n][lang][1] = "\n" + doc[lang][2:]
-            else:
-                # 親コマンドがいないコマンドの場合コマンドのヘルプを新しく書き込む。
-                # もしコマンドのヘルプに`!parent`があるならself._set_parentが呼ばれます。
-                # `!parent`は親コマンドがいないコマンドに置きます。
-                # そして`self._set_parent`が呼ばれそこでカテゴリーが登録されます。
-                # そのカテゴリーに親コマンドがいないコマンドのヘルプを書き込みます。
-                # 例：`!parent 安全`
-                for lang in data:
-                    headdings = command.extras.get("headding", {})
-                    data[lang] = [headdings.get(lang, ""), data[lang]]
-                for category_name in self.data:
-                    if session_id in self.data[category_name]:
-                        self.data[category_name][session_id] = data
-                        wrote = True
-                        break
-                # もしカテゴリーが割り振られなかった場合はotherカテゴリーを作りそこに入れる。
-                # この際commands.command(extras=ここ)のここでparentを指定されたらそこからカテゴリーをとる。
-                if not wrote:
-                    parent = "Other" if (parent := command.extras.get("parent")) is None else parent
-                    if parent not in self.data:
-                        self.data[parent] = {}
-                    self.data[parent][session_id] = data
+                    self.data[category][command.name][lang] = [
+                        command.extras.get("headding", {}).get(lang, "..."),
+                        copy(data[lang])
+                    ]
+                # もしこのグループコマンドに子コマンドがいるならそのコマンドも追加したい。
+                # なのでここの関数を実行する。
+                if command.name in self.queue:
+                    for child in self.queue[command.name]:
+                        await self.on_command_add(child, after=True)
+                    del self.queue[command.name]
+            elif (parent := command.root_parent):
+                parent = parent.name
+                if after:
+                    # ドキュメンテーションをマークダウンにする。
+                    data = self.parse(command)
+                    # もしグループコマンドの子コマンドなら親コマンドのヘルプに追記する。
+                    if parent in self.tree:
+                        if command.qualified_name not in self.tree[parent]:
+                            category = self.categories[parent]
+
+                            for lang in list(self.data[category][parent].keys()):
+                                self.data[category][parent][lang][1] += \
+                                    (f"\n## {self.prefix}{command.qualified_name}\n"
+                                     + f"{data.get(lang, data['ja'])}")
+                            self.tree[parent].append(command.qualified_name)
+                else:
+                    # グループコマンドはそのグループの子コマンドが追加された後に追加される。
+                    # そしてグループコマンドが追加された後に子コマンドのヘルプの追加をしたい。
+                    # なのでキューに追加してグループが追加された際にそのキューをイベントに渡す。
+                    # その渡す際にグループコマンド追加後の子コマンドのイベントだと知らせる必要がある。
+                    # そのためにここの関数にはafterというキーワード引数を付ける。
+                    if parent not in self.queue:
+                        self.queue[parent] = []
+                    self.queue[parent].append(command)
 
     @commands.Cog.listener()
     async def on_command_remove(self, command):
         # もしコマンドが削除されたならそのコマンドのヘルプも削除する。
         # コマンドがグループコマンドではない場合は何もしない。
-        if command:
-            for category_name in self.data:
-                if command.name in self.data[category_name]:
-                    del self.data[category_name][command.name]
-                    break
-
-    def _set_parent(self, line: str, now: dict, before: dict) -> Literal[None, False]:
-        # コマンドのドキュメンテーションでもし!parentがある際に呼び出される関数です。
-        if isinstance(now["session_id"], str):
-            # もし親コマンドがいないならカテゴリー名を取り出してヘルプリストに追加する。
-            category_name = before["line"].replace("!parent ", "")
-            if category_name not in self.data:
-                self.data[category_name] = {}
-            self.data[category_name][now["session_id"]] = {}
-            return False
+        if command.name in self.categories:
+            del self.data[self.categories[command.name]][command.name]
+            del self.tree[command.name]
 
     async def output(self, path: str) -> None:
         """作ったヘルプのデータをjson形式でファイルに出力します。

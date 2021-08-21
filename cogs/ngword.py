@@ -50,7 +50,7 @@ class DataManager:
 class NgWord(commands.Cog, DataManager):
     def __init__(self, bot):
         self.bot = bot
-        super(DataManager, self).__init__(self.bot.data["mysql"])
+        super(commands.Cog, self).__init__(self.bot.data["mysql"])
 
     @commands.group(aliases=["えぬじーわーど"])
     async def ngword(self, ctx):
