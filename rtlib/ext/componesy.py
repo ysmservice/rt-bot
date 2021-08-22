@@ -65,7 +65,7 @@ class View:
                 item = getattr(discord.ui, item)
 
         if callback:
-            if callback.__self__ is None:
+            if getattr(callback, "__self__", None) is None:
                 new_callback = callback
             else:
                 # もしクラスのメソッドならViewを継承したクラスに設定できないのでラップする。

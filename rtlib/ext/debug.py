@@ -22,7 +22,12 @@ class Printer:
     def __init__(self, max_characters: int = 2000):
         self.output: str = ""
         self.length: int = 0
-        self.stdout = type("PrinterStdout", (), {"__init__": lambda *args, **kwargs: None, "write": self.write})
+        self.stdout = type(
+            "PrinterStdout", (), {
+                "__init__": lambda *args, **kwargs: None,
+                "write": self.write
+            }
+        )
         self._max = max_characters
 
     def write(self, text: str):
