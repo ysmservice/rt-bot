@@ -251,8 +251,9 @@ class Help(commands.Cog):
                         color=self.bot.colors["normal"]
                     )
                 )
-                edit, reply = False, False
-                await ctx.message.delete()
+                edit, reply = False, not bool(interaction)
+                if not reply:
+                    await ctx.message.delete()
                 if len(embeds.embeds) == 1:
                     kwargs = {"embed": embeds.embeds[0], "view": self.make_view(user, lang, c),
                               "target": user.id}
