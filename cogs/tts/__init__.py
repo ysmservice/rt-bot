@@ -3,8 +3,8 @@
 from discord.ext import commands, tasks
 import discord
 
+from typing import Optional, Type, Dict, List, Tuple
 from aiofiles.os import remove as async_remove
-from typing import Dict, List, Tuple, Type
 from rtlib.ext import componesy, Embeds
 from os import listdir, remove
 from pydub import AudioSegment
@@ -40,6 +40,9 @@ class TTS(commands.Cog, VoiceManager, DataManager):
     VOICE_FORMAT: Dict[str, List[str]] = {
         "wav": ["mei", "man", "reimu", "marisa",
                 "miku", "nero", "homu", "kaoru", "wacky"]
+    }
+    EMOJIS = {
+        "error": "<:error:878914351338246165>"
     }
 
     def __init__(self, bot):
@@ -146,14 +149,17 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         )
 
     async def after_playing(
-            self, guild: discord.Guild, file_path: str, e: Type[Exception]
+            self, guild: discord.Guild, file_path: str, e: Optional[Type[Exception]]
         ) -> None:
         # 読み上げ後は読み上げたファイルを削除してもう一度playを実行します。
         if (not file_path.startswith("http") and file_path != "None"
                 and "routine" not in file_path):
             # 声がVOICEROIDの場合はダウンロードリンクを直接使い読み上げる。
             # それ以外の声の場合は音声ファイルを作成するので削除する必要がある。
-            await async_remove(file_path)
+            try:
+                await async_remove(file_path)
+            except FileNotFoundError:
+                pass
 
         if guild.id in self.now:
             self.now[guild.id]["playing"] = False
@@ -193,7 +199,15 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                 file_path = f"cogs/tts/outputs/{message.channel.id}_{message.id}.{ext}"
 
                 # 音声合成をする。
-                url = await self.synthe(voice, text, file_path) or file_path
+                try:
+                    url = await self.synthe(voice, text, file_path) or file_path
+                except Exception as e:
+                    print("TTS Error: ", e)
+                    await self.after_playing(guild, url, None)
+                    try:
+                        await message.add_reaction(self.EMOJIS["error"])
+                    except:
+                        pass
 
             # 再生終了後に実行する関数を用意する。
             after = lambda e: self.bot.loop.create_task(

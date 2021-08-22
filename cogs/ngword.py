@@ -3,49 +3,30 @@
 from discord.ext import commands
 import discord
 
+from rtlib import mysql, DatabaseLocker
 from rtutil import SettingManager
-from functools import wraps
 from typing import List
-from rtlib import mysql
-import asyncio
 
 
-def wait_until_unlock(coro):
-    @wraps(coro)
-    async def new_coro(self, *args, **kwargs):
-        await self.lock.wait()
-        self.lock.clear()
-        data = await coro(self, *args, **kwargs)
-        self.lock.set()
-        return data
-    return new_coro
-
-
-class DataManager:
+class DataManager(DatabaseLocker):
     def __init__(self, db: mysql.MySQLManager):
         self.db: mysql.MySQLManager = db
-        self.lock: asyncio.Event = asyncio.Event()
-        self.lock.set()
 
-    @wait_until_unlock
     async def init_table(self) -> None:
         async with self.db.get_cursor() as cursor:
             await cursor.create_table(
                 "ngword", {"id": "BIGINT", "word": "TEXT"}
             )
 
-    @wait_until_unlock
     async def get(self, guild_id: int) -> List[str]:
         async with self.db.get_cursor() as cursor:
             return [row[-1] async for row in cursor.get_datas(
                 "ngword", {"id": guild_id}) if row]
 
-    @wait_until_unlock
     async def exists(self, guild_id: int) -> bool:
         async with self.db.get_cursor() as cursor:
             return await cursor.exists("ngword", {"id": guild_id})
 
-    @wait_until_unlock
     async def add(self, guild_id: int, word: str) -> None:
         async with self.db.get_cursor() as cursor:
             values = {"word": word, "id": guild_id}
@@ -54,7 +35,6 @@ class DataManager:
             else:
                 await cursor.insert_data("ngword", values)
 
-    @wait_until_unlock
     async def remove(self, guild_id: int, word: str) -> None:
         async with self.db.get_cursor() as cursor:
             targets = {"id": guild_id, "word": word}
@@ -159,7 +139,7 @@ class NgWord(commands.Cog, DataManager):
         if not message.guild:
             return
 
-        if message.author.guild_permissions.administrator:
+        if getattr(message.author, "guild_permissions.administrator", True):
             for word in await self.get(message.guild.id):
                 if word in message.content:
                     await message.delete()

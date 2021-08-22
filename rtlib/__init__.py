@@ -5,7 +5,9 @@ from discord.ext import commands
 import discord
 
 from typing import Union, Tuple, List
+from functools import wraps
 from copy import copy
+import asyncio
 
 from .web_manager import WebManager
 from .backend import *
@@ -65,3 +67,38 @@ def setup(bot, only: Union[Tuple[str, ...], List[str]] = []):
                 bot.load_extension("rtlib.ext." + name)
             except commands.errors.ExtensionAlreadyLoaded:
                 pass
+
+
+class DatabaseLocker:
+    def __init_subclass__(cls) -> None:
+        super().__init_subclass__()
+        if not hasattr(cls, "lock"):
+            for name in dir(cls.__mro__[-3]):
+                if not name.startswith("_"):
+                    coro = getattr(cls, name)
+                    if asyncio.iscoroutinefunction(coro):
+                        setattr(cls, name, cls.wait_until_unlock(coro))
+            cls.lock = None
+
+    @staticmethod
+    def wait_until_unlock(coro):
+        @wraps(coro)
+        async def new_coro(self, *args, **kwargs):
+            if self.lock is None:
+                self.lock = asyncio.Event(
+                    loop=getattr(getattr(self, "db", None), "loop", None)
+                )
+                self.lock.set()
+            await self.lock.wait()
+            self.lock.clear()
+            try:
+                data = await asyncio.wait_for(
+                    coro(self, *args, **kwargs), timeout=0.3
+                )
+            except asyncio.TimeoutError:
+                print(f"DatabaseLocker Warnings: {coro.__name__} has stopped.")
+                data = None
+            finally:
+                self.lock.set()
+            return data
+        return new_coro

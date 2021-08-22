@@ -258,9 +258,13 @@ class Cursor:
                     yield []
                 else:
                     rows = [
-                        ((ujson.loads(row) if row[0] == "{" and row[-1] == "}"
-                            else row) if isinstance(row, str)
-                                else row)
+                        (
+                            (ujson.loads(row)
+                            if (row and row[0] == "{"
+                                and row[-1] == "}")
+                            else row)
+                            if isinstance(row, str) else row
+                        )
                         for row in rows if row is not None
                     ]
                     yield rows

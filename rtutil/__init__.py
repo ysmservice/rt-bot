@@ -7,7 +7,6 @@ from typing import List
 import discord
 
 
-
 def check_int(v: str) -> bool:
     # 渡された文字列が整数かどうかをチェックします。
     try:

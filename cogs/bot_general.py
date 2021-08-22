@@ -109,7 +109,10 @@ class BotGeneral(commands.Cog):
 
     def _get_ping(self) -> int:
         # pingを返します。
-        return round(self.bot.latency * 1000)
+        try:
+            return round(self.bot.latency * 1000)
+        except OverflowError:
+            return 200
 
     def cog_unload(self) -> None:
         self.status_updater.cancel()
@@ -181,7 +184,8 @@ class BotGeneral(commands.Cog):
             color = self.bot.colors["unknown"]
         elif isinstance(error, (commands.errors.BadArgument,
                         commands.errors.MissingRequiredArgument,
-                        commands.errors.ArgumentParsingError)):
+                        commands.errors.ArgumentParsingError,
+                        commands.errors.TooManyArguments)):
             title = "400 Bad Request"
             description = {"ja": "コマンドの引数が適切ではありません。\nまたは必要な引数が足りません。",
                            "en": "..."}

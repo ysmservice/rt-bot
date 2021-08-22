@@ -1,12 +1,12 @@
 # RT TTS - Data Manager
 
-from rtlib import mysql
+from rtlib import mysql, DatabaseLocker
 
 
 MySQLManager, Cursor = mysql.MySQLManager, mysql.Cursor
 
 
-class DataManager:
+class DataManager(DatabaseLocker):
     def __init__(self, db: MySQLManager):
         self.db: MySQLManager = db
 
@@ -20,7 +20,7 @@ class DataManager:
         async with self.db.get_cursor() as cursor:
             await cursor.create_table("tts", columns)
 
-    async def check_exists(self, cursor: Cursor, type_: str, some_id: int):
+    async def _check_exists(self, cursor: Cursor, type_: str, some_id: int):
         """指定されたtypeでsome_idのデータがあるか確認します。
 
         Parameters
@@ -43,7 +43,7 @@ class DataManager:
         name : str
             声の名前です。"""
         async with self.db.get_cursor() as cursor:
-            if await self.check_exists(cursor, "voice", user_id):
+            if await self._check_exists(cursor, "voice", user_id):
                 await cursor.update_data(
                     "tts", {"content": name}, {"type": "voice", "id": user_id}
                 )
@@ -60,7 +60,7 @@ class DataManager:
         usre_id : int
             対象のユーザーIDです。"""
         async with self.db.get_cursor() as cursor:
-            if await self.check_exists(cursor, "voice", user_id):
+            if await self._check_exists(cursor, "voice", user_id):
                 row = await cursor.get_data(
                     "tts", {"type": "voice", "id": user_id}
                 )
@@ -81,7 +81,7 @@ class DataManager:
         guild_id : int
             サーバーのIDです。"""
         async with self.db.get_cursor() as cursor:
-            if await self.check_exists(cursor, "dictionary", guild_id):
+            if await self._check_exists(cursor, "dictionary", guild_id):
                 await cursor.update_data(
                     "tts", {"content": data}, {"type": "dictionary", "id": guild_id}
                 )
@@ -98,7 +98,7 @@ class DataManager:
         guild_id : int
             サーバーIDです。"""
         async with self.db.get_cursor() as cursor:
-            if await self.check_exists(cursor, "dictionary", guild_id):
+            if await self._check_exists(cursor, "dictionary", guild_id):
                 rows = await cursor.get_data("tts", {"type": "dictionary", "id": guild_id})
                 if rows:
                     return rows[-1]
@@ -110,7 +110,7 @@ class DataManager:
     async def write_routine_mode(self, user_id: int, b: bool) -> None:
         """指定したユーザーIDのネタモードの切り替えをします。"""
         async with self.db.get_cursor() as cursor:
-            if await self.check_exists(cursor, "routine", user_id):
+            if await self._check_exists(cursor, "routine", user_id):
                 await cursor.update_data(
                     "tts", {"content": str(int(b))},
                     {"type": "routine", "id": user_id}
@@ -124,7 +124,7 @@ class DataManager:
     async def read_routine_mode(self, user_id: int) -> bool:
         """指定したユーザーのIDのネタモードを調べます。"""
         async with self.db.get_cursor() as cursor:
-            if await self.check_exists(cursor, "routine", user_id):
+            if await self._check_exists(cursor, "routine", user_id):
                 row = await cursor.get_data(
                     "tts", {"type": "routine", "id": user_id}
                 )
@@ -137,7 +137,7 @@ class DataManager:
 
     async def write_routine(self, user_id: int, data: dict) -> None:
         async with self.db.get_cursor() as cursor:
-            if await self.check_exists(cursor, "custom", user_id):
+            if await self._check_exists(cursor, "custom", user_id):
                 await cursor.update_data(
                     "tts", {"content": data},
                     {"type": "custom", "id": user_id}
@@ -150,7 +150,7 @@ class DataManager:
 
     async def read_routine(self, user_id: int) -> dict:
         async with self.db.get_cursor() as cursor:
-            if await self.check_exists(cursor, "custom", user_id):
+            if await self._check_exists(cursor, "custom", user_id):
                 row = await cursor.get_data(
                     "tts", {"type": "custom", "id": user_id}
                 )
