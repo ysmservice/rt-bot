@@ -61,7 +61,7 @@ def setup(bot, only: Union[Tuple[str, ...], List[str]] = []):
     only : Union[Tuple[str, ...], List[str]], optional
         読み込むエクステンションを限定します。  
         例：`("componesy", "embeds")`とすれば`componesy`と`embeds`のみを正しい順番で読み込みます。"""
-    for name in ("embeds", "on_full_reaction", "dochelp"):
+    for name in ("embeds", "on_full_reaction", "dochelp", "debug"):
         if name in only or only == []:
             try:
                 bot.load_extension("rtlib.ext." + name)
