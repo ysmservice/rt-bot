@@ -62,9 +62,49 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         await self.init_table()
         self.worker.start()
 
-    @commands.command()
+    @commands.command(
+        extras={
+            "headding": {
+                "ja": "いつも下にくるメッセージ。強制ピン留めメッセージ機能。",
+                "en": "..."
+            },
+            "parent": "ServerTool"
+        },
+        aliases=["ピン留め", "ぴんどめ", "fpm", "forcepinmessage"]
+    )
     @commands.has_permissions(manage_messages=True)
     async def pin(self, ctx, onoff: bool, *, content=""):
+        """!lang ja
+        --------
+        いつも下にくるメッセージを作ることができます。  
+        メッセージ削除権限権限を持つ人のみ実行可能です。  
+        別名強制ピン留めメッセージです。
+
+        Parameters
+        ----------
+        onoff : bool
+            onにすると強制ピン留めメッセージを作ります。  
+            もし強制ピン留めメッセージを無効にした際はこれをoffにしてください。
+        content : str
+            いつも下にくるメッセージの内容です。  
+            onoffをoffにした際はこれは書かなくて良いです。
+
+        Aliases
+        -------
+        fpm, forcepinmessage, ピン留め, ぴんどめ
+
+        Examples
+        --------
+        ```
+        rt!pin on 自己紹介テンプレート：
+        名前：
+        性別：
+        一言：
+        ```
+
+        !lang en
+        --------
+        ..."""
         await self.setting(
             ctx.guild.id, ctx.channel.id, 0, ctx.author.id, onoff, content
         )

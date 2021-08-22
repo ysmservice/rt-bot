@@ -40,4 +40,12 @@ Helpに追加
 * RepryptのAPI
 ## person.py
 * userinfo
-まだ他にも作る予定。
+* yahoo検索
+## ngword.py
+* NGワード
+## force_pinned_message.py
+* 強制ピン留め
+## minesweeper.py
+* マインスイーパー
+## tts.py
+* 読み上げ
