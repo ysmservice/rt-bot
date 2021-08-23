@@ -90,4 +90,6 @@ bot.is_owner = _is_owner
 del is_admin, _is_owner
 
 
-bot.run(TOKEN, host="0.0.0.0" if server else "127.0.0.1", port=80)
+bot.run(
+    TOKEN, host="0.0.0.0" if server else "127.0.0.1",
+    port=80 if server else 5500)

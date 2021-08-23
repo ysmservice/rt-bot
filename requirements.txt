@@ -4,12 +4,14 @@ jinja2
 flask-misaka
 aiofiles
 ujson
-discord.py
+git+https://github.com/Rapptz/discord.py
 aiomysql
 # rtutilで必要なモジュール
 ## OAuth
 reprypt
 # RT本プログラムで必要なモジュール
+pillow
+jishaku
 emoji
 youtube_dl
 bs4

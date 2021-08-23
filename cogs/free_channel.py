@@ -192,7 +192,7 @@ class FreeChannel(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
         if (not message.guild or not hasattr(message.channel, "topic")
-                and not message.content):
+                or not message.content or not message.channel.topic):
             return
 
         topic = message.channel.topic if message.channel.topic else ""

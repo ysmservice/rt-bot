@@ -215,14 +215,14 @@ class TTS(commands.Cog, VoiceManager, DataManager):
 
             if url != "None":
                 # もし文字列が存在するなら再生する。
-                if "routine" not in url:
-                    vol = 4.5 if voice in ("reimu", "marisa") else 7.5
+                if "routine" in url:
+                    kwargs = {"options": '-filter:a "volume=1.5"'}
+                else:
+                    vol = 2.2 if voice in ("reimu", "marisa") else 5.5
                     kwargs = {"options": f'-filter:a "volume={vol}"'}
                     if ext == "ogg":
                         kwargs["options"] += \
                             f" -ss {voiceroid.VOICEROIDS[voice]['zisa'] - 0.8}"
-                else:
-                    kwargs = {"options": '-filter:a "volume=5.3"'}
 
                 # 音声を再生する。
                 source = discord.PCMVolumeTransformer(
