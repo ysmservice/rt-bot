@@ -56,7 +56,8 @@ class NgWord(commands.Cog, DataManager):
 
     async def show_ngwords(self, ctx, mode, items):
         if mode == "read":
-            yield {"text": "\n".join(await self.get(ctx.guild.id)), "multiple": True}
+            yield {"text": "\n".join(await self.get(ctx.guild.id)),
+                   "multiple": True}
 
     @SettingManager.setting(
         "guild", "Add NG Word",

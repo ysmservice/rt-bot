@@ -22,6 +22,24 @@ class DataManager(DatabaseLocker):
                 }
             )
 
+    async def save(self, channel: discord.TextChannel, mode: str,
+                   role_id: int, extras: dict) -> None:
+        async with self.db.get_cursor() as cursor:
+            target = {"GuildID": channel.guild.id}
+            if await cursor.exists("captcha", target):
+                await cursor.delete("captcha", target)
+            target.update({"ChannelID": channel.id, "Mode": mode,
+                           "RoleID": role_id, "Extras": extras})
+            await cursor.insert("captcha", target)
+
+    async def load(self, guild_id: int) -> tuple:
+        async with self.db.get_cursor() as cursor:
+            target = {"GuildID": guild_id}
+            if await cursor.exists("captcha", target):
+                if (row := await cursor.get_data("captcha", target)):
+                    return row
+            return ()
+
 
 class Captcha(commands.Cog, DataManager):
     def __init__(self, bot):
