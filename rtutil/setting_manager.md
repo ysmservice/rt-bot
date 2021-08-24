@@ -98,17 +98,17 @@ API仕様はこの下にあります。
     "status": "ok",
     "settings": {
         "コマンド名/設定名": {
-	    "description": "コマンド/設定の説明",
-	    "items": {
-	        "設定項目名": {
-		        "item_type": "設定項目の種類",
-		        "display_name": "ウェブで表示する設定項目の名前"
-		        "設定項目の種類": {
-		        // その設定に既に書き込まれている内容。
-		        // ここは上の設定の項目の説明でだしたjsonが入る。
+    	    "description": "コマンド/設定の説明",
+    	    "items": {
+    	        "設定項目名": {
+    		        "item_type": "設定項目の種類",
+    		        "display_name": "ウェブで表示する設定項目の名前"
+    		        "設定項目の種類": {
+    		            // その設定に既に書き込まれている内容。
+        		        // ここは上の設定の項目の説明でだしたjsonが入る。
                     }
-	    	    }
-	        }
+    	 	    }
+    	    }
 	    }
     }
 }
@@ -116,7 +116,7 @@ API仕様はこの下にあります。
 
 ### /api/settings/update/guild/<guild_id> POST
 `<guild_id>`のサーバーの設定を更新します。  
-このAPIを叩く際にログインしているユーザーの権限`で設定更新を試みます。  
+このAPIを叩く際にログインしているユーザーの権限で設定更新を試みます。  
 (ですが上のAPIで取得した設定一覧はユーザーが設定更新に必要な権限を持っている設定のみなので気にする必要はないです。)  
 以下のようにデータをPOSTしてください。
 ```js
@@ -134,7 +134,7 @@ API仕様はこの下にあります。
 POSTするデータの形式は上と同じです。
 
 ## バックエンド
-以下のようにコグ内でコマンドにデコレータをつけることで設定を登録することができます。
+以下のようにコグ内でコマンドのextrasから設定を登録することができます。
 ```python
 from rtutil import SettingManager
 
@@ -143,19 +143,24 @@ from rtutil import SettingManager
 class Cog(commands.Cog):
     #...
 
-    async def コールバック(self, ctx, mode, items):
-        if mode == "read":
-	        # ...
-    	elif mode == "write":
-	        # ...
+    async def callback(self, ctx, item):
+        print(ctx.mode, item.name, ctx.author.name,
+              getattr(ctx.guild, "id", "サーバーはなし"))
+        return item
 
-    @commands.command()
-    @SettingManager.setting(
-        "guildまたはuser", "コマンド名", "説明", [必要なけんげんの名前リスト],
-    	コールバック, アイテムの辞書
+    @commands.command(
+        extras={
+            "setting": SettingData(
+                "guild", {"ja": "テスト", "en": "test"}, callback,
+                TextBox("item1", {"ja": "テキストボックス", "en": "textbox"}, "デフォルト"),
+                RadioButton("item2", {"ja": "ラジオボタン", "en": "radio button"},
+                            dict(radio1=True, radio2=False)),
+                permissions=["administrator"]
+            )
+        }
     )
-    async def command_name(self, ctx):
-        # ...
+    async def _setting_api_test(self, ctx):
+        pass
 ```
 
 詳細は`rtutil/setting_manager.py`の`SettingManager.setting`のドキュメンテーション見ようね。  

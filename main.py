@@ -47,7 +47,7 @@ def on_init(bot):
     rtlib.setup(bot)
     bot.load_extension("jishaku")
     bot.load_extension("rtutil.oauth_manager")
-    bot.load_extension("rtutil.setting_manager")
+    bot.load_extension("rtutil.setting_api")
     # cogsフォルダにあるエクステンションを読み込む。
     for path in listdir("cogs"):
         if path[0] in ("#", "."):

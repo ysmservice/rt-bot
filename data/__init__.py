@@ -39,7 +39,7 @@ def get_headers(bot, request) -> dict:
         elif "tasuren" in request.url:
             headers["Access-Control-Allow-Origin"] = "http://tasuren.f5.si:5500"
         else:
-            headers["Access-Control-Allow-Origin"] = "http://localhost"
+            headers["Access-Control-Allow-Origin"] = "http://localhost:5500"
     else:
         headers = HEADERS
     return headers

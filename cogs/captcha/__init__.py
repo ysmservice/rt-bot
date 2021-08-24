@@ -51,3 +51,8 @@ class Captcha(commands.Cog, DataManager):
             await self.bot.mysql.get_database()
         )
         await self.init_table()
+
+
+def setup(bot):
+    return
+    bot.add_cog(Captcha(bot))

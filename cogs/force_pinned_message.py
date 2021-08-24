@@ -4,7 +4,6 @@ from discord.ext import commands, tasks
 import discord
 
 from rtlib import mysql, DatabaseLocker
-from rtutil import SettingManager
 from typing import Tuple, Dict
 from asyncio import Event
 

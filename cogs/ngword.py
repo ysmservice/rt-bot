@@ -4,7 +4,7 @@ from discord.ext import commands
 import discord
 
 from rtlib import mysql, DatabaseLocker
-from rtutil import SettingManager
+from rtutil.SettingAPI import *
 from typing import List
 
 
@@ -54,19 +54,22 @@ class NgWord(commands.Cog, DataManager):
         super(commands.Cog, self).__init__(self.db)
         await self.init_table()
 
-    async def show_ngwords(self, ctx, mode, items):
+    async def show_ngwords(self, ctx, item):
         if mode == "read":
-            yield {"text": "\n".join(await self.get(ctx.guild.id)),
-                   "multiple": True}
+            item.text = "\n".join(await self.get(ctx.guild.id))
+            item.multiple_line = True
+            return item
 
-    @SettingManager.setting(
-        "guild", "Add NG Word",
-        {"ja": "現在登録されているNGワードのリストです。\nここから設定変更はできません。",
-         "en": "..."},
-        [], show_ngwords,
-        {"text:text": {"ja": "NGワードリスト", "en": "NG Word list"}}
+    @commands.group(
+        aliases=["えぬじーわーど", "ng"],
+        extras={
+            "setting": SettingData(
+                "guild", {"ja": "NGワードのリストです。", "en": "NG word list."}, show_ngwords,
+                TextBox("item1", {"ja": "NGワードリスト", "en": "NGWords"}, ""),
+                permissions=[]
+            )
+        }
     )
-    @commands.group(aliases=["えぬじーわーど", "ng"])
     async def ngword(self, ctx):
         if not ctx.invoked_subcommand:
             embed = discord.Embed(
@@ -76,63 +79,68 @@ class NgWord(commands.Cog, DataManager):
             )
             await ctx.reply(embed)
 
-    async def add_ngword(self, ctx, mode, items):
+    async def add_ngword(self, ctx, item):
         # NGワードを追加する。
-        if mode == "read":
-            yield {"text": "", "multiple": True}
+        if ctx.mode == "read":
+            return item
         else:
-            _, item = items
-            for word in item["text"].splitlines():
+            for word in item.text.splitlines():
                 try:
                     await self.add(ctx.guild.id, word)
                 except ValueError:
                     pass
-            yield None
 
-    @SettingManager.setting(
-        "guild", "Add NG Word",
-        {"ja": "NGワードの追加をします。\n改行することで複数登録できます。",
-         "en": "..."},
-        ["manage_messages"], add_ngword,
-        {"text:text": {"ja": "NGワード", "en": "NG Words"}}
+    @ngword.command(
+        name="add", aliases=["あどど"], extras={
+            "setting": SettingData(
+                "guild", {"ja": "NGワードの登録ができます。改行で複数登録できます。", "en": "..."},
+                add_ngword,
+                TextBox("item1", {
+                        "ja": "NGワード登録ボックス", "en": "NGWords registration"
+                    }, ""),
+                permissions=["manage_messages"]
+            )
+        }
     )
-    @ngword.command(name="add", aliases=["あどど"])
     @commands.has_permissions(manage_messages=True)
     async def add_(self, ctx, *, words):
-        await self.add_ngword(ctx, "write", (0, {"text": words})).__anext__()
-        await ctx.reply("Ok")
+        await self.add_ngword(
+            Context("write", ctx.author),
+            TextBox("item1", "", words)
+        )
+        await ctx.send(f"{ctx.author.mention}, Ok", replace_language=False)
 
-    async def remove_ngword(self, ctx, mode, items):
+    async def remove_ngword(self, ctx, item):
         # NGワードを削除する。
-        if mode == "read":
-            yield {"text": "", "multiple": True}
+        if ctx.mode == "read":
+            return item
         else:
-            _, item = items
-            for word in item["text"].splitlines():
+            for word in item.text.splitlines():
                 try:
                     await self.remove(ctx.guild.id, word)
                 except ValueError:
-                    yield {"ja": f"{word}というNGワードが見つかりませんでした。",
-                           "en": "..."}
-            yield None
+                    SettingAPI.error(f"{word}が見つかりませんでした。 / Not found {word}.")
 
-    @SettingManager.setting(
-        "guild", "Remove NG Word",
-        {"ja": "NGワードの削除をします。\n改行することで複数選択が可能です。",
-         "en": "..."},
-        ["manage_messages"], add_ngword,
-        {"text:text": {"ja": "NGワードリスト", "en": "NG Word List"}}
+    @ngword.command(
+        name="remove", aliases=["りむーぶ", "rm", "delete", "del"],
+        extras={
+            "setting": SettingData(
+                "guild", {"ja": "NGワードの削除ができます。改行で複数登録できます。", "en": "..."},
+                remove_ngword,
+                TextBox("item1", {
+                        "ja": "NGワード削除ボックス", "en": "Remove ngwords"
+                    }, ""),
+                permissions=["manage_messages"]
+            )
+        }
     )
-    @ngword.command(name="remove", aliases=["りむーぶ", "rm", "delete", "del"])
     @commands.has_permissions(manage_messages=True)
     async def remove_(self, ctx, *, words):
-        callback = await SettingManager.anext(
-            self.remove_ngword(ctx, "write", (0, {"text": words})), None
+        await self.remove_ngword(
+            Context("write", ctx.author),
+            TextBox("item1", "", words)
         )
-        if callback is None:
-            await ctx.reply("Ok")
-        else:
-            await ctx.reply(callback)
+        await ctx.send(f"{ctx.author.mention}, Ok", replace_language=False)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
