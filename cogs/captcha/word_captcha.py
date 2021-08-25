@@ -1,17 +1,17 @@
 # RT - Captcha Word Manager
 
 from typing import Dict, Tuple
-from .__init__ import Captcha
+from time import time
 
 from discord.ext import commands
 import discord
 
 
 class WordCaptcha(commands.Cog):
-    def __init__(self, captcha_cog: Captcha):
-        self.cog: Captcha = captcha_cog
-        self.queue: Dict[str, Tuple[int, str]] = {}
-        self.cog.bot.add_litener(self.on_message, "on_message")
+    def __init__(self, captcha_cog):
+        self.cog = captcha_cog
+        self.queue: Dict[str, Tuple[Tuple[int, str], float]] = {}
+        self.cog.bot.add_listener(self.on_message, "on_message")
 
     async def captcha(self, channel: discord.TextChannel,
                       member: discord.Member) -> None:
@@ -21,11 +21,12 @@ class WordCaptcha(commands.Cog):
             target=member.id
         )
         row = await self.cog.load(channel.guild.id)
-        self.queue[f"{channel.id}-{member.id}"] = (row[3], row[4])
+        self.queue[f"{channel.id}-{member.id}"] = ((row[3], row[4]), time())
 
     async def on_message(self, message: discord.Message) -> None:
         if (row := self.queue.get(
-                f"{message.channel.id}-{message.author.id}")):
+                f"{message.channel.id}-{message.author.id}", (None,)))[0]:
+            row = row[0]
             if message.content == row[1]:
                 role = message.guild.get_role(row[0])
                 if role:

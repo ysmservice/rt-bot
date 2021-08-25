@@ -23,7 +23,11 @@ class OAuthCog(commands.Cog):
             data["icon_url"] = None
         else:
             data["user_name"] = str(request.ctx.user)
-            data["icon_url"] = str(request.ctx.user.avatar.url)
+            data["icon_url"] = (
+                str(request.ctx.user.avatar.url)
+                if request.ctx.user.avatar
+                else "http://tasuren.syanari.com/RT/Discord.jpg"
+            )
             data["login"] = True
         return sanic.response.json(
             data, headers=get_headers(self.bot, request)

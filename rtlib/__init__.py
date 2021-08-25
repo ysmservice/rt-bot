@@ -93,7 +93,7 @@ class DatabaseLocker:
             self.lock.clear()
             try:
                 data = await asyncio.wait_for(
-                    coro(self, *args, **kwargs), timeout=0.3
+                    coro(self, *args, **kwargs), timeout=5
                 )
             except asyncio.TimeoutError:
                 print(f"DatabaseLocker Warnings: {coro.__name__} has stopped.")

@@ -55,7 +55,7 @@ class NgWord(commands.Cog, DataManager):
         await self.init_table()
 
     async def show_ngwords(self, ctx, item):
-        if mode == "read":
+        if ctx.mode == "read":
             item.text = "\n".join(await self.get(ctx.guild.id))
             item.multiple_line = True
             return item

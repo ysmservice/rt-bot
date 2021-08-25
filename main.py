@@ -15,7 +15,7 @@ from data import data, is_admin
 
 # 設定ファイルの読み込み。
 with open("token.secret", "r", encoding="utf-8_sig") as f:
-    secret: dict = ujson.load(f)
+    secret = ujson.load(f)
 TOKEN = secret["token"][argv[1]]
 
 
@@ -41,6 +41,8 @@ def on_init(bot):
         bot, oauth_secret["client_id"], oauth_secret["client_secret"],
         oauth_secret["client_secret"]
     )
+    bot.secret = secret
+    bot.oauth_secret = secret["oauth"][argv[1]]
     del oauth_secret
 
     # エクステンションを読み込む。
@@ -60,6 +62,9 @@ def on_init(bot):
 
 # テスト時は普通のBackendを本番はシャード版Backendを定義する。
 intents = discord.Intents.default()
+intents.typing = False
+intents.guild_typing = False
+intents.dm_typing = False
 intents.members = True
 args = (prefixes,)
 kwargs = {

@@ -1,9 +1,10 @@
 # rtlib - OAuth
 
-from typing import Union, List, Tuple, Callable
+from typing import Union, Optional, List, Tuple, Callable
 from discord.ext import commands
 from random import randint
 from time import time
+import discord
 import aiohttp
 import reprypt
 import sanic
@@ -111,6 +112,16 @@ class OAuth:
             data = await r.json(loads=ujson.loads)
         return data
 
+    def get_user_from_cookies(self, cookie_data: str) -> Optional[discord.User]:
+        try:
+            userdata = ujson.loads(
+                reprypt.decrypt(cookie_data, self.secret_key)
+            )
+        except reprypt.DecryptError:
+            return None
+        else:
+            return self.bot.get_user(int(userdata["user_id"]))
+
     async def _callback(
             self, code: str, callback_url: str,
             callback_uri: str, scope: Union[List[str], Tuple[str, ...]]):
@@ -125,7 +136,9 @@ class OAuth:
 
         # クッキーに暗号化してから入れる。
         response = sanic.response.redirect(callback_uri)
-        response.cookies["session"] = reprypt.encrypt(ujson.dumps(cookie_data), self.secret_key)
+        response.cookies["session"] = reprypt.encrypt(
+            ujson.dumps(cookie_data), self.secret_key
+        )
 
         return response
 
@@ -146,11 +159,8 @@ class OAuth:
                 # その後またこのrouteにリダイレクトする。
                 try:
                     response = await self._callback(
-                        code, request.url[:request.url.find("?") + 1],
+                        code, request.url[:request.url.find("?")],
                         request.path, scope)
-                except ValueError as e:
-                    raise sanic.exceptions.SanicException(
-                        f"OAuth認証に失敗しました。\n> {e}", status_code=500)
                 except Exception as e:
                     raise sanic.exceptions.SanicException(
                         f"OAuth認証に失敗しました。\n> {e}", status_code=500)
@@ -159,12 +169,7 @@ class OAuth:
                 user = None
             elif userdata:
                 # もしログイン済みならクッキーに記録されてるユーザーデータを複合化して取得する。
-                try:
-                    userdata = ujson.loads(reprypt.decrypt(userdata, self.secret_key))
-                except reprypt.DecryptError:
-                    user = None
-                else:
-                    user = self.bot.get_user(int(userdata["user_id"]))
+                user = self.get_user_from_cookies(userdata)
             else:
                 user = None
 
@@ -180,7 +185,7 @@ class OAuth:
                             "OAuth認証に失敗しました。\n> ユーザーデータの取得に失敗しました。"
                             + "すみません、RTを使ってる人ですか...？(メイド風の喋り方で。)")
                 return sanic.response.redirect(
-                    await self.get_url(request.url[:request.url.find("?") + 1], scope))
+                    await self.get_url(request.url, scope))
 
             # routeに渡すrequestにユーザーオブジェクトを付け加える。
             args[request_index].ctx.user = user

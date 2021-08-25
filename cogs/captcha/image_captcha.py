@@ -2,14 +2,14 @@
 
 from jishaku.functools import executor_function
 from captcha.image import ImageCaptcha
+from typing import Type, Dict, Tuple
 from aiofiles.os import remove
-from typing import Type, Dict
 from random import randint
+from os import listdir
+from time import time
 
 from discord.ext import commands
 import discord
-
-from .__init__ import Captcha
 
 
 class ImageCaptcha(ImageCaptcha):
@@ -17,18 +17,19 @@ class ImageCaptcha(ImageCaptcha):
     PASSWORD_LENGTH = 5
 
     def __init__(
-            self, captcha_cog: Captcha,
+            self, captcha_cog,
             font_path: str = "data/captcha/SourceHanSans-Normal.otf"
             ):
-        self.cog: Captcha = captcha_cog
+        self.cog = captcha_cog
         super().__init__(fonts=[font_path])
-        self.queue: Dict[str, str] = {}
-        self.cog.bot.add_litener(self.on_message, "on_message")
+        self.queue: Dict[str, Tuple[str, float]] = {}
+        self.cog.bot.add_listener(self.on_message, "on_message")
+        self.cog.bot.add_listener(self.on_close, "on_close")
 
     @executor_function
     def create_image(
             self, path: str, characters: str = "".join(
-                randint(0, 9)
+                str(randint(0, 9))
                 for _ in range(PASSWORD_LENGTH))
             ) -> str:
         self.write(characters, path)
@@ -37,11 +38,11 @@ class ImageCaptcha(ImageCaptcha):
     async def captcha(self, channel: discord.TextChannel,
                       member: discord.Member) -> None:
         name = f"{channel.id}-{member.id}"
-        path = f"/data/captcha/{name}.png"
-        self.queue[name] = await self.create_image(path)
+        path = f"data/captcha/{name}.png"
+        self.queue[name] = (await self.create_image(path), time())
         await channel.send(
-            {"ja": "画像にある数字を入力してください。",
-             "en": "Please, type number on the picture."},
+            {"ja": f"{member.mention}, 画像にある数字を入力してください。",
+             "en": f"{member.mention}, Please, type number on the picture."},
             target=member.id, file=discord.File(path)
         )
         await remove(path)
@@ -49,8 +50,7 @@ class ImageCaptcha(ImageCaptcha):
     async def on_message(self, message: discord.Message) -> None:
         name = f"{message.channel.id}-{message.author.id}"
         if name in self.queue and len(message.content) == self.PASSWORD_LENGTH:
-            if message.content == self.queue[name]:
-                await message.channel.typing()
+            if message.content == self.queue[name][0]:
                 row = await self.cog.load(message.guild.id)
                 role = message.guild.get_role(row[3])
 
@@ -79,3 +79,9 @@ class ImageCaptcha(ImageCaptcha):
                     {"ja": "認証に失敗しました。\n番号があっているか確認してください。",
                      "en": "..."}
                 )
+
+    async def on_close(self, _):
+        # Bot終了時にもし画像認証の画像が残っているのなら削除しておく。
+        for name in listdir("data/captcha"):
+            if name.endswith(".png"):
+                await remove(f"data/captcha/{name}")
