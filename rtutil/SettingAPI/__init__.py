@@ -98,7 +98,7 @@ class SettingAPI(commands.Cog):
                 str(guild.id): {
                     "name": guild.name, "icon": (
                         guild.icon.url if guild.icon
-                        else "http://tasuren.syanari.com/RT/Discord.jpg"),
+                        else None),
                     "commands": await self.get_commands(
                         self.bot.cogs["Language"].get(request.ctx.user),
                         "guild", "read", member
