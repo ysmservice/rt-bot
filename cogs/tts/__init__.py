@@ -529,6 +529,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                      "en": "..."}
                 )
             elif ctx.message.attachments[0].url.endswith((".wav", ".ogg")):
+                await ctx.trigger_typing()
                 # セーブする。
                 path = f"cogs/tts/routine/{ctx.author.id}-{ctx.message.attachments[0].filename}"
                 await ctx.message.attachments[0].save(path)

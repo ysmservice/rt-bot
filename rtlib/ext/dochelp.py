@@ -237,7 +237,8 @@ class DocHelp(commands.Cog):
         async with async_open(path, "r") as f:
             self.data.update(loads(await f.read()))
 
-    def add_help(self, category: str, help_name: str, lang: str, content: str) -> None:
+    def add_help(self, category: str, help_name: str, lang: str,
+                 headding: str, content: str) -> None:
         """ヘルプを追加します。
 
         Parameters
@@ -250,13 +251,15 @@ class DocHelp(commands.Cog):
         lang : str
             言語名です。  
             もし日本語なら`ja`を入れましょう。
+        headding : str
+            見出しです。
         content : str
             ヘルプの内容です。"""
         if category not in self.data:
             self.data[category] = {}
         if help_name not in self.data[category]:
             self.data[category][help_name] = {}
-        self.data[category][help_name][lang] = content
+        self.data[category][help_name][lang] = (headding, content)
 
     def remove_category(self, category: str) -> None:
         """ヘルプリストのカテゴリーを削除します。
