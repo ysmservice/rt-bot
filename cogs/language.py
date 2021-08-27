@@ -37,6 +37,7 @@ class Language(commands.Cog):
         self.bot.cogs["OnSend"].add_event(self._new_send, "on_webhook_send")
         self.bot.cogs["OnSend"].add_event(self._new_send, "on_webhook_message_edit")
         self.bot.cogs["OnSend"].add_event(self._new_send, "on_edit")
+        self.bot.cogs["OnSend"].add_event(self._new_send, "on_interaction_response")
 
         with open("data/replies.json") as f:
             self.replies = loads(f.read())
@@ -49,6 +50,8 @@ class Language(commands.Cog):
             if (reference := channel.reference) is not None:
                 if reference.cached_message:
                     lang = self.get(reference.cached_message.author.id)
+        elif isinstance(channel, discord.InteractionResponse):
+            lang = self.get(channel._parent.user.id)
         elif (reference := kwargs.get("reference")) is not None:
             lang = self.get(reference.author.id)
         if (target := kwargs.pop("target", False)):
