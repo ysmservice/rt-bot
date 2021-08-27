@@ -37,6 +37,14 @@ class SettingItem:
             on_init(*args, **kwargs)
 
 
+ITEM_MAINS = {
+    "text": "text",
+    "check": "checked",
+    "radios": "checked",
+    "list": "index"
+}
+
+
 class SettingData:
     def __init__(self, setting_type: SettingType,
                  description: Union[str, Dict[str, str]],
@@ -75,13 +83,16 @@ class SettingData:
 
     async def update_setting(
             self, cog: Union[None, commands.Cog], item_name: str,
-            data: dict, member: discord.Member) -> None:
+            data: str, member: discord.Member) -> None:
         for item in self.data:
             if item.name == item_name:
                 item = copy(item)
-                for key in data[data["item_type"]]:
-                    if key not in IGNORE_VALUES:
-                        setattr(item, key, data[data["item_type"]][key])
+                if item.ITEM_TYPE == "radios":
+                    setattr(item, data, True)
+                else:
+                    setattr(
+                        item, ITEM_MAINS[item.ITEM_TYPE], data
+                    )
                 await self.run_callback(
                     Context("write", member), item,
                     cog=cog

@@ -121,23 +121,24 @@ class SettingAPI(commands.Cog):
         }
 
     async def update_setting(self, request, setting_type, member):
-        for cmd_name, data in request.json.items():
+        for command_name, data in request.json.items():
+            cmd_name, item_name = command_name.split(".")
             if setting_type == "user" or self.check_permissions(
-                member, self.data[setting_type][cmd_name]["data"].permissions
-                ):
-                for item_name, data in data.items():
-                    try:
-                        await self.data[setting_type][cmd_name]["data"] \
-                            .update_setting(
-                                self.data[setting_type][cmd_name]["command"]
-                                    .cog, item_name, data, member
-                            )
-                    except exceptions.SanicException as e:
-                        return {
-                            "status": "error",
-                            "code": e.code,
-                            "message": e.message
-                        }
+                    member, self.data[setting_type][cmd_name]["data"]
+                        .permissions
+                    ):
+                try:
+                    await self.data[setting_type][cmd_name]["data"] \
+                        .update_setting(
+                            self.data[setting_type][cmd_name]["command"]
+                                .cog, item_name, data, member
+                        )
+                except exceptions.SanicException as e:
+                    return {
+                        "status": "error",
+                        "code": e.code,
+                        "message": e.message
+                    }
         return {"status": "ok"}
 
     @commands.Cog.route("api/settings/update/guild/<guild_id>", methods=["POST"])
