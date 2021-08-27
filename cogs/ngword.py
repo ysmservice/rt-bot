@@ -65,7 +65,7 @@ class NgWord(commands.Cog, DataManager):
         extras={
             "setting": SettingData(
                 "guild", {"ja": "NGワードのリストです。", "en": "NG word list."}, show_ngwords,
-                TextBox("item1", {"ja": "NGワードリスト", "en": "NGWords"}, ""),
+                TextBox("item1", {"ja": "NGワードリスト", "en": "NGWords"}, "", True),
                 permissions=[]
             )
         }
@@ -97,7 +97,7 @@ class NgWord(commands.Cog, DataManager):
                 add_ngword,
                 TextBox("item1", {
                         "ja": "NGワード登録ボックス", "en": "NGWords registration"
-                    }, ""),
+                    }, "", True),
                 permissions=["manage_messages"]
             )
         }
@@ -129,7 +129,7 @@ class NgWord(commands.Cog, DataManager):
                 remove_ngword,
                 TextBox("item1", {
                         "ja": "NGワード削除ボックス", "en": "Remove ngwords"
-                    }, ""),
+                    }, "", True),
                 permissions=["manage_messages"]
             )
         }
