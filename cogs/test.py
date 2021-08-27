@@ -6,7 +6,7 @@ import discord
 from rtlib.slash import Option
 
 
-class SettingTest(commands.Cog):
+class SlashTest(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -30,4 +30,4 @@ class SettingTest(commands.Cog):
 
 
 def setup(bot):
-    bot.add_cog(SettingTest(bot))
+    bot.add_cog(SlashTest(bot))

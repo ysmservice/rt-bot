@@ -169,7 +169,7 @@ class SlashCommand(commands.Cog):
                         or (not (group := 2)
                             if option["id"] in (1, 2)
                             else False)
-                    for option in interaction.data["options"]
+                    for option in interaction.data.get("options", ())
                 ]
                 await executor(
                     self.bot, application, application.command,

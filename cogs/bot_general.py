@@ -138,7 +138,8 @@ class BotGeneral(commands.Cog):
     @commands.command(
         extras={"headding": {"ja": "レイテンシを表示します。", "en": "Show you RT latency."},
                 "parent": "RT"},
-        slash_command=True)
+        slash_command=True,
+        description="レイテンシを表示します。 / Show you RT latency.")
     async def ping(self, ctx):
         """!lang ja
         --------
@@ -150,7 +151,7 @@ class BotGeneral(commands.Cog):
         You can view RT latency.  
         If latency is over to 400, network is bad."""
         await ctx.reply(
-            {"ja": f"現在のRTのレイテンシ：${self._get_ping()}$ms",
+            {"ja": f"現在のRTのレイテンシ：{self._get_ping()}ms",
              "en": f"Pong! {self._get_ping()}ms"}
         )
 
