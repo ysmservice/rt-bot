@@ -67,6 +67,7 @@ def setup(bot, only: Union[Tuple[str, ...], List[str]] = []):
                 bot.load_extension("rtlib.ext." + name)
             except commands.errors.ExtensionAlreadyLoaded:
                 pass
+    bot.load_extension("rtlib.slash")
 
 
 class DatabaseLocker:

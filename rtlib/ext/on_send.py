@@ -51,7 +51,8 @@ class OnSend(commands.Cog):
             "on_send": [],
             "on_edit": [],
             "on_webhook_send": [],
-            "on_webhook_message_edit": []
+            "on_webhook_message_edit": [],
+            "on_interaction_response": []
         }
         self._dpy_injection()
 
@@ -70,6 +71,8 @@ class OnSend(commands.Cog):
         default_send = copy(discord.abc.Messageable.send)
         default_edit = copy(discord.Message.edit)
         default_webhook_edit_message = copy(discord.Webhook.edit_message)
+        default_interaction_response = copy(discord.InteractionResponse.send_message)
+
         if hasattr(discord.abc.Messageable, "webhook_send"):
             default_webhook_send = copy(discord.abc.Messageable.webhook_send)
         else:
@@ -105,10 +108,17 @@ class OnSend(commands.Cog):
             args, kwargs = await self._run_event(
                 "on_webhook_message_edit", webhook, *args, **kwargs)
             return await default_webhook_edit_message(webhook, *args, **kwargs)
-        
+
+        async def new_interaction_response(ir, *args, **kwargs):
+            args, kwargs = await self._run_event(
+                "on_interaction_response", ir, *args, **kwargs
+            )
+            return await default_interaction_response(ir, *args, **kwargs)
+
         discord.abc.Messageable.send = new_send
         discord.Message.edit = new_edit
         discord.Webhook.edit_message = new_webhook_message_edit
+        discord.InteractionResponse.send_message = new_interaction_response
         if default_webhook_send:
             discord.abc.Messageable.webhook_send = new_webhook_send
 
