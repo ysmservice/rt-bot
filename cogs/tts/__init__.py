@@ -14,6 +14,7 @@ from time import time
 from .voice_manager import VoiceManager, voiceroid
 from .data_manager import DataManager
 from data import voices as VOICES
+from rtlib.slash import Option
 
 
 def require_connected(coro):
@@ -65,7 +66,9 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                          "en": "..."},
             "parent": "Entertainment"
         },
-        aliases=["yomi", "yomiage", "読み上げ", "よみあげ"]
+        aliases=["yomi", "yomiage", "読み上げ", "よみあげ"],
+        slash_command=True,
+        description="TTS"
     )
     async def tts(self, ctx):
         """!lang ja
@@ -85,7 +88,10 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                  "en": "..."}
             )
 
-    @tts.command(aliases=["connect", "じょいん", "接続"])
+    @tts.command(
+        aliases=["connect", "じょいん", "接続"],
+        description="読み上げを開始します。 / Start tts."
+    )
     async def join(self, ctx):
         """!lang ja
         --------
@@ -127,7 +133,10 @@ class TTS(commands.Cog, VoiceManager, DataManager):
 
         await ctx.reply(data)
 
-    @tts.command(aliases=["disconnect", "dis", "切断", "せつだん"])
+    @tts.command(
+        aliases=["disconnect", "dis", "切断", "せつだん"],
+        description="読み上げを終了します。 / Stop tts."
+    )
     @require_connected
     async def leave(self, ctx):
         """!lang ja
@@ -254,7 +263,10 @@ class TTS(commands.Cog, VoiceManager, DataManager):
             if not self.now[message.guild.id]["playing"]:
                 await self.play(message.guild)
 
-    @tts.group(aliases=["ch", "ちゃんねる"])
+    @tts.group(
+        aliases=["ch", "ちゃんねる"],
+        description="読み上げ対象チャンネルの追加、削除コマンド。"
+    )
     @require_connected
     async def channel(self, ctx):
         """!lang ja
@@ -276,7 +288,10 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                 ), replace_language=False
             )
 
-    @channel.command(name="add", aliases=["あどど", "ad"])
+    @channel.command(
+        name="add", aliases=["あどど", "ad"],
+        description="読み上げ対象のチャンネルを追加します。 / Add tts target channel."
+    )
     @require_connected
     async def add_channel(self, ctx):
         """!lang ja
@@ -303,7 +318,10 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                  "en": "..."}
             )
 
-    @channel.command(name="remove", aliases=["rm", "りむーぶ", "さくじょ"])
+    @channel.command(
+        name="remove", aliases=["rm", "りむーぶ", "さくじょ"],
+        description="読み上げ対象のチャンネルを削除します。 / Remove tts target channel."
+    )
     @require_connected
     async def remove_channel(self, ctx):
         """!lang ja
@@ -335,7 +353,10 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                      "en": "..."}
                 )
 
-    @tts.group(name="dictionary", aliases=["dic", "じしょ", "辞書"])
+    @tts.group(
+        name="dictionary", aliases=["dic", "じしょ", "辞書"],
+        description="辞書の追加、削除コマンドです。 / Dictionary manage command."
+    )
     async def guild_dictionary(self, ctx):
         """!lang ja
         --------
@@ -380,9 +401,21 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                 await ctx.reply(embeds=embeds)
             del embeds
 
-    @guild_dictionary.command(name="set", aliases=["せっと"])
+    @guild_dictionary.command(
+        name="show", description="読み上げの辞書を表示します。")
+    async def show_dictionary(self, ctx):
+        ctx.invoked_subcommand = False
+        await self.guild_dictionary(ctx)
+
+    @guild_dictionary.command(
+        name="set", aliases=["せっと"],
+        description="読み上げの辞書の追加をします。"
+    )
     @commands.has_permissions(administrator=True)
-    async def set_dictionary(self, ctx, before, *, after):
+    async def set_dictionary(
+            self, ctx,
+            before: Option(str, "target", "交換対象とする文字列です。"),
+            *, after: Option(str, "replace", "交換する文字列です。")):
         """!lang ja
         --------
         辞書を設定します。  
@@ -419,9 +452,15 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                 self.now[ctx.guild.id]["dictionary"] = data
             await ctx.reply("Ok")
 
-    @guild_dictionary.command(name="delete", aliases=["でる", "rm", "remove", "del"])
+    @guild_dictionary.command(
+        name="delete", aliases=["でる", "rm", "remove", "del"],
+        description="読み上げの辞書を削除します。"
+    )
     @commands.has_permissions(administrator=True)
-    async def delete_dictionary(self, ctx, *, word):
+    async def delete_dictionary(
+                self, ctx, *,
+                word: Option(str, "target", "削除する辞書の交換対象名です。")
+            ):
         """!lang ja
         --------
         辞書を削除します。
@@ -451,13 +490,10 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                  "en": "..."}
             )
 
-    @tts.command(name="reload_dictionary")
-    @commands.cooldown(1, 10, commands.BucketType.user)
-    async def reload_dictionary_(self, ctx):
-        await self.reload_dictionary()
-        await ctx.reply("Ok")
-
-    @tts.group(aliases=["ねた", "ネタ"])
+    @tts.group(
+        aliases=["ねた", "ネタ"],
+        description="読み上げにネタ音声を追加、削除します。 / Add or remove routine voice."
+    )
     async def routine(self, ctx):
         """!lang ja
         -------
@@ -484,9 +520,24 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                 )
             await ctx.reply(embed=embed, replace_language=False)
 
-    @routine.command(name="add", aliases=["あどど"])
+    @routine.command(
+        name="show", description="読み上げに追加されているネタ音声を表示します。 / Show routine voices."
+    )
+    async def show_routine(self, ctx):
+        await self.routine(ctx)
+
+    @routine.command(
+        name="add", aliases=["あどど"],
+        description="ネタ音声を追加します。 / Add rutine voice."
+    )
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def add_routine(self, ctx, *, aliases):
+    async def add_routine(
+            self, ctx, *,
+            aliases: Option(
+                str, "triggers",
+                "ネタ音声の再生のトリガーとなる文字列です。空白で複数選択可能です。 / Aliases."
+            )
+        ):
         """!lang ja
         --------
         ネタボイスを登録します。  
@@ -560,8 +611,14 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                  "en": "..."}
             )
 
-    @routine.command(name="remove", aliases=["rm", "りむーぶ", "del", "delete"])
-    async def remove_routine(self, ctx, *, alias):
+    @routine.command(
+        name="remove", aliases=["rm", "りむーぶ", "del", "delete"],
+        description="ネタ音声を削除します。 / Remove routine voice."
+    )
+    async def remove_routine(
+            self, ctx, *,
+            alias: Option(str, "target", "削除するネタ音声に登録してる言葉です。")
+        ):
         """!lang ja
         --------
         登録したネタボイスを削除します。
@@ -631,7 +688,10 @@ class TTS(commands.Cog, VoiceManager, DataManager):
             )
             await interaction.message.delete()
 
-    @tts.command(aliases=["声", "こえ", "vcset", "vc"])
+    @tts.command(
+        aliases=["声", "こえ", "vcset", "vc"],
+        description="読み上げの声を変更します。 / Change tts voice."
+    )
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def voice(self, ctx):
         """!lang ja

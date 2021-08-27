@@ -90,8 +90,14 @@ class DatabaseLocker:
                     loop=getattr(getattr(self, "db", None), "loop", None)
                 )
                 self.lock.set()
+            # 他のデータベース操作が終わるまで待つ。
             await self.lock.wait()
+            # 今度はこっちがデータベースを操作する番ということで他が捜査できないようにする。
             self.lock.clear()
+            # もし自動でcursorを取得するように言われたならそうする。
+            if (auto_cursor := getattr(self, "auto_cursor", False)):
+                self.cursor = self.db.get_cursor()
+                await self.cursor.prepare_cursor()
             try:
                 data = await asyncio.wait_for(
                     coro(self, *args, **kwargs), timeout=5
@@ -100,6 +106,9 @@ class DatabaseLocker:
                 print(f"DatabaseLocker Warnings: {coro.__name__} has stopped.")
                 data = None
             finally:
+                if auto_cursor:
+                    await self.cursor.close()
+                # 違うやつが操作できるようにする。
                 self.lock.set()
             return data
         return new_coro

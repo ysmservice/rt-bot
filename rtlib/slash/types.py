@@ -69,3 +69,4 @@ class Context:
         self.reply = self.interaction.response.send_message
         self.trigger_typing = self.channel.trigger_typing
         self.typing = self.channel.typing
+        self.invoked_subcommand = False

@@ -1,7 +1,9 @@
 # rtlib.slash - Options
 
-from typing import Union, Optional, Any, List, Tuple
 from .types import get_option_type, ApplicationCommandOption
+from typing import Union, Optional, Any, List, Tuple
+
+from discord.ext import commands
 
 
 Choice = Union[
@@ -15,11 +17,12 @@ class CanNotUseChoice(Exception):
     pass
 
 
-class Option:
+class Option(commands.Converter):
     def __init__(
             self, type_: object, name: str, description: str,
             required: bool = True, choices: Optional[Choices] = None,
             value: Any = None):
+        self.annotation = type_
         self.type: int = get_option_type(type_)
         self.name: str = name
         self.description: str = description
@@ -36,11 +39,20 @@ class Option:
 
     @classmethod
     def from_dictionary(cls, data: ApplicationCommandOption) -> object:
-        cls.options = [cls.from_dictionary(option_data)
-                       for data in data.get("options", ())]
-        return cls(
+        new = cls(
             data["type"], data["name"], data.get("description", "..."),
             data.get("required", False),
             [(data["name"], data["value"]) for data in data.get("choices", ())],
             data.get("value")
         )
+        new.options = [cls.from_dictionary(data)
+                       for data in data.get("options", ())]
+        return new
+
+    def __str__(self):
+        return f"<Option {self.name} <Type {self.type}> <Options {' '.join(str(option) for option in self.options)}>>"
+
+    async def convert(self, *args, **kwargs):
+        return await getattr(
+            commands.converter, f"{self.annotation.__name__}Converter"
+        )(*args, **kwargs)

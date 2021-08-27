@@ -70,7 +70,7 @@ class Log(commands.Cog):
             name="Discord登録日",
             value=self.parse_time(member.created_at)
         )
-        embed.set_thumbnail(url=member.avatar.url)
+        embed.set_thumbnail(url=getattr(member.avatar, "url", ""))
         return embed
 
     @commands.Cog.listener()
@@ -82,7 +82,7 @@ class Log(commands.Cog):
             color=self.c
         )
         embed.add_field(name="ユーザーID", value=str(member.id))
-        embed.set_thumbnail(url=member.avatar.url)
+        embed.set_thumbnail(url=getattr(member.avatar, "url", ""))
         return embed
 
     @commands.Cog.listener()

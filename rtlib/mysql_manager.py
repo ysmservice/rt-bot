@@ -68,16 +68,18 @@ class Cursor:
         """Curosorを閉じます。"""
         if self.cursor is not None:
             await self.cursor.close()
+            self.cursor = None
 
     def __del__(self):
-        self.loop.create_task(self.close())
+        if not self.loop.is_closed():
+            self.loop.create_task(self.close())
 
     async def __aenter__(self):
         await self.prepare_cursor()
         return self
 
     async def __aexit__(self, ex_type, ex_value, trace):
-        await self.cursor.close()
+        await self.close()
 
     async def create_table(self, table: str, columns: Dict[str, str],
                            if_not_exists: bool = True, commit: bool = True) -> None:

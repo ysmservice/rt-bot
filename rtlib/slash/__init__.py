@@ -30,6 +30,29 @@ class SlashCommand(commands.Cog):
         # queue
         self.queue: List[Type[commands.Command]] = []
 
+    def check_list_same(
+            self, former: dict, latter: dict,
+            ignore: List[str], defaults: dict) -> bool:
+        # 渡された二つのリストが同じかどうかを調べます。
+        for data in former:
+            dictionary = isinstance(data, dict)
+            is_list = isinstance(data, list)
+            for latter_data in latter:
+                if dictionary and isinstance(latter_data, dict):
+                    if self.check_dictionary_same(
+                            data, latter_data, ignore, defaults):
+                        break
+                elif is_list and isinstance(latter_dat, dict):
+                    if self.check_list_same(
+                            data, latter_data, ignore, defaults):
+                        break
+                else:
+                    if data == latter_data:
+                        break
+            else:
+                return False
+        return True
+
     def check_dictionary_same(
             self, former: dict, latter: dict, ignore: List[str],
             defaults: dict
@@ -40,7 +63,15 @@ class SlashCommand(commands.Cog):
                 if isinstance(former[key], dict):
                     if isinstance((latter_cache := latter.get(key)), dict):
                         if not self.check_dictionary_same(
-                            former[key], latter_cache
+                            former[key], latter_cache, ignore, defaults
+                            ):
+                            return False
+                    else:
+                        return False
+                elif isinstance(former[key], list):
+                    if isinstance((latter_cache := latter.get(key)), list):
+                        if not self.check_list_same(
+                            former[key], latter_cache, ignore, defaults
                             ):
                             return False
                     else:
@@ -118,6 +149,11 @@ class SlashCommand(commands.Cog):
             # もしoptionのために呼び出されたのならそのoptionに対応したtypeを設定する。
             if option_mode:
                 data["type"] = 1
+
+        # もしoptionsが空なら削除する。
+        if not data["options"]:
+            del data["options"]
+
         return data
 
     async def _update_commands(
@@ -136,7 +172,7 @@ class SlashCommand(commands.Cog):
                     check_target = copy(already_command)
                     update = not self.check_dictionary_same(
                         check_target, data, ("id", "version"),
-                        {"required": False}
+                        {"required": False, "options": []}
                     )
                     break
             else:
@@ -151,7 +187,8 @@ class SlashCommand(commands.Cog):
                 )
             # コマンドにSlashCommandのインスタンスをコマンドにくっつける。
             command.application_command = ApplicationCommand(
-                self.bot, command, already_command)
+                self.bot, command, already_command
+            )
             self.commands[command.application_command.name] = command.application_command
             change_command = True
         if change_command:
@@ -163,17 +200,20 @@ class SlashCommand(commands.Cog):
             if interaction.data["name"] in self.commands:
                 application = copy(self.commands[interaction.data["name"]])
                 application.interaction = interaction
-                group = False
+
+                # 登録済みのコマンドのApplicaitonCommandのコピーにオプションを設定する。
+                # これを実行時に使う。
+                mode = 0
                 application.options = [
                     Option.from_dictionary(option)
-                        or (not (group := 2)
-                            if option["id"] in (1, 2)
-                            else False)
                     for option in interaction.data.get("options", ())
+                    if ((mode := 2) if option["type"] in (1, 2)
+                        else False) or True
                 ]
+
                 await executor(
                     self.bot, application, application.command,
-                    int(group), application.options
+                    mode, application.options
                 )
 
     async def _update_now_commands(self) -> None:

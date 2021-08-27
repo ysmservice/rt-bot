@@ -18,7 +18,6 @@ async def executor(
     ) -> None:
     if type_ == 2:
         # グループコマンドならコマンドをオプションの中から探し出しまたそれを実行する。
-        print(options)
         option = options[0]
         return await executor(
             bot, application,
@@ -43,6 +42,8 @@ async def executor(
                     ).parameters.values(),
                     options
                 ):
+            if parameter.name in ("self", "ctx"):
+                continue
             # 型変換を行う。
             if parameter.annotation == discord.User:
                 option.value = discord.User(
