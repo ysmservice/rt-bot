@@ -45,7 +45,7 @@ class Translator(commands.Cog, AsyncTranslator):
     @commands.command(
         name="translate", aliases=["trans", "ほんやく", "翻訳"],
         extras={
-            "headding": {"ja": "翻訳をします。", "en": "Translate"},
+            "headding": {"ja": "翻訳をします。", "en": "This can do translate."},
             "parent": "Individual"
         }
     )
@@ -78,12 +78,34 @@ class Translator(commands.Cog, AsyncTranslator):
 
         !lang en
         --------
+        This can do translate.
+
+        Parameters
+        ----------
+        lang : language code
+            The language code for which language to translate.
+            If you want use japanese you do `ja` and If you want to use English you do `en`.
+        content : str
+            Translate content
+        Examples
+        --------
+        `rt!translate ja I wanna be the guy!`
+        RT：男になりたい！
+
+        Aliases
+        -------
+        trans, ほんやく, ほんやく
+
+        See Also
+        --------
+        translate(チャンネルプラグイン) : 翻訳専用チャンネル機能。
+        translate(channel plugin):Only for translate channel.
         ..."""
         await ctx.trigger_typing()
         await ctx.reply(
             embed=discord.Embed(
                 title={"ja": "翻訳結果",
-                       "en": "..."},
+                       "en": "translate result"},
                 description=await self.translate(content, "", lang),
                 color=self.bot.colors["normal"]
             ).set_footer(
