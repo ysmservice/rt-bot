@@ -38,7 +38,7 @@ class Translator(commands.Cog, AsyncTranslator):
         # ヘルプにチャンネルプラグイン版翻訳を追加するだけ。
         for lang in CHP_HELP:
             self.bot.cogs["DocHelp"].add_help(
-                "ChannelPlugin", "翻訳チャンネル",
+                "ChannelPlugin", "TranslateChannel",
                 lang, *CHP_HELP[lang]
             )
 
