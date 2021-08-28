@@ -116,6 +116,8 @@ class Translator(commands.Cog, AsyncTranslator):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
+        if isinstance(message.channel, discord.Thread):
+            return
         if not message.guild or message.author.bot or not message.channel.topic:
             return
 

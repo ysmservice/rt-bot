@@ -213,7 +213,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                     url = await self.synthe(voice, text, file_path) or file_path
                 except Exception as e:
                     print("TTS Error: ", e)
-                    await self.after_playing(guild, url, None)
+                    await self.after_playing(guild, "None", None)
                     try:
                         await message.add_reaction(self.EMOJIS["error"])
                     except:

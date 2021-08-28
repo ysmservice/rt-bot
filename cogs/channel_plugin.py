@@ -36,6 +36,8 @@ class ChannelPluginGeneral(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        if isinstance(message.channel, discord.Thread):
+            return
         if not message.guild or message.author.bot:
             return
 

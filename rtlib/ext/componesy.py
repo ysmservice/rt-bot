@@ -122,7 +122,7 @@ class Componesy(commands.Cog):
         self.bot = bot
         if "OnSend" not in self.bot.cogs:
             self.bot.load_extension("rtlib.ext.on_send")
-        for name in ("on_send", "on_edit"):
+        for name in ("on_send", "on_edit", "on_interaction_response"):
             self.bot.cogs["OnSend"].add_event(self._new_send, name)
 
     async def _new_send(self, channel, *args, **kwargs):
