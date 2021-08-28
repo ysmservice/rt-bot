@@ -6,6 +6,7 @@ import discord
 from .classes import (SettingData, SettingItem, TextBox,
 	 				  CheckBox, ListBox, RadioButton, Context,
                       SettingType, ModeType, get_bylang)
+from . import utils
 
 from sanic import exceptions, response
 from typing import Type, List

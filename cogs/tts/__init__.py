@@ -150,7 +150,8 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         !lang en
         --------
         ..."""
-        await ctx.guild.voice_client.disconnect()
+        if ctx.guild.voice_client:
+            await ctx.guild.voice_client.disconnect()
         del self.now[ctx.guild.id]
         await ctx.reply(
             {"ja": "切断しました。",
@@ -251,6 +252,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
             return
 
         if (message.guild.id in self.now and message.author.id in self.cache
+                and message.guild.voice_client
                 and discord.utils.get(
                     message.guild.voice_client.channel.members,
                     id=message.author.id

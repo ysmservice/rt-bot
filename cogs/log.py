@@ -16,6 +16,8 @@ def log(mode: str = "normal"):
                 guild = self.bot.get_guild(first_arg.guild_id)
             elif mode == "guild":
                 guild = first_arg
+            elif isinstance(first_arg, discord.Guild):
+                guild = first_arg
             else:
                 guild = first_arg.guild
 
