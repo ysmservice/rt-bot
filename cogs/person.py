@@ -266,6 +266,9 @@ class Person(commands.Cog):
                         await self.yahoo_(await self.bot.get_context(message), word=word)
                 return
 
+        if isinstance(message.channel, discord.Thread):
+            return
+
         # もしtopicにrt>searchがあるならメッセージを検索する。
         if (message.guild and message.channel.topic
                 and "rt>search" in message.channel.topic):
