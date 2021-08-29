@@ -50,7 +50,7 @@ class GlobalBan(commands.Cog, DataManager):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        super().__init__(
+        super(commands.Cog, self).__init__(
             await self.bot.mysql.get_database()
         )
         await self.init_table()

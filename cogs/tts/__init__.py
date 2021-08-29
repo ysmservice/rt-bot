@@ -54,8 +54,9 @@ class TTS(commands.Cog, VoiceManager, DataManager):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.db = await self.bot.data["mysql"].get_database()
-        super(VoiceManager, self).__init__(self.db)
+        super(VoiceManager, self).__init__(
+            await self.bot.data["mysql"].get_database()
+        )
         await self.init_table()
 
         self.auto_leave.start()

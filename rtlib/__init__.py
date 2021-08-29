@@ -102,8 +102,9 @@ class DatabaseLocker:
                 data = await asyncio.wait_for(
                     coro(self, *args, **kwargs), timeout=5
                 )
-            except asyncio.TimeoutError:
-                print(f"DatabaseLocker Warnings: {coro.__name__} has stopped.")
+            except Exception as e:
+                print(f"DatabaseLocker Warnings: {coro.__name__} has stopped. :")
+                print(e)
                 data = None
             finally:
                 if auto_cursor:
