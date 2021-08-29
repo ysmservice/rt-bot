@@ -4,6 +4,7 @@ from .types import get_option_type, ApplicationCommandOption
 from typing import Union, Optional, Any, List, Tuple
 
 from discord.ext import commands
+import inspect
 
 
 Choice = Union[
@@ -52,7 +53,22 @@ class Option(commands.Converter):
     def __str__(self):
         return f"<Option {self.name} <Type {self.type}> <Options {' '.join(str(option) for option in self.options)}>>"
 
-    async def convert(self, *args, **kwargs):
-        return await getattr(
-            commands.converter, f"{self.annotation.__name__}Converter"
-        )(*args, **kwargs)
+    async def convert(self, ctx, *args, **kwargs):
+        if inspect.isbuiltin(self.annotation):
+            return self.annotation(*args, **kwargs)
+        else:
+            try:
+                return await getattr(
+                    commands.converter, f"{self.annotation.__name__}Converter"
+                )(ctx, *args, **kwargs)
+            except AttributeError:
+                if hasattr(self.annotation, "convert"):
+                    await self.annotation.convert(
+                        None, ctx, *args, **kwargs
+                    )
+                else:
+                    coro = self.annotation(*args, **kwargs)
+                    if inspect.iscoroutinefunction(self.annotation):
+                        return await coro
+                    else:
+                        return coro
