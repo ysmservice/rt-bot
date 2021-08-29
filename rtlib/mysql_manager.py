@@ -174,10 +174,10 @@ class Cursor:
             更新するデータの条件です。
         commit : bool, default True
             更新後に自動で`MySQLManager.commit`を実行するかどうかです。"""
-        values, values_args = self._get_column_args(values, json_dump=True)
+        values, values_args = self._get_column_args(values, "{} = %s, ", True)
         conditions, conditions_args = self._get_column_args(targets)
         await self.cursor.execute(
-            f"UPDATE {table} SET {values[:-4]} WHERE {conditions[:-4]}",
+            f"UPDATE {table} SET {values[:-2]} WHERE {conditions[:-4]}",
             values_args + conditions_args
         )
         if commit:
