@@ -28,7 +28,7 @@ class DataManager(DatabaseLocker):
 
     async def remove_user(self, user_id: int) -> None:
         target = {"UserID": user_id}
-        if await self.cursor.exitsts("gban", target):
+        if await self.cursor.exists("gban", target):
             await self.cursor.delete("gban", target)
         else:
             raise ValueError("そのユーザーが見つかりませんでした。")
