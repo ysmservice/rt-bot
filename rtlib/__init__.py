@@ -103,7 +103,7 @@ class DatabaseLocker:
                     coro(self, *args, **kwargs), timeout=5
                 )
             except Exception as e:
-                print(f"DatabaseLocker Warnings: {coro.__name__} has stopped. :")
+                print(f"DatabaseLocker Warnings: {coro.__name__}|{coro.__module__} has stopped. :")
                 print(e)
                 data = None
             finally:

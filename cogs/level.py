@@ -44,11 +44,11 @@ class DataManager(DatabaseLocker):
     async def get_notification(self, user_id: int) -> bool:
         target = {"UserID": user_id}
         if await self.cursor.exists("levelNotification", target):
-            return bool((
-                await self.cursor.get_data(
-                    "levelNotification", target
-                )
-            )[1])
+            if (row := await self.cursor.get_data(
+                    "levelNotification", target)):
+                return bool(row[1])
+            else:
+                return True
         else:
             return True
 

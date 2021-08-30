@@ -32,6 +32,11 @@ def on_init(bot):
     async def on_close(loop):
         await bot.session.close()
 
+    @bot.event
+    async def on_message(message):
+        if bot.is_ready():
+            await bot.process_commands(message)
+
     bot.mysql = bot.data["mysql"] = rtlib.mysql.MySQLManager(
         loop=bot.loop, user=secret["mysql"]["user"],
         password=secret["mysql"]["password"], db="mysql",
