@@ -89,6 +89,7 @@ class OriginalMenuMessage(commands.Cog, DataManager):
             }, "parent": "ServerPanel"
         }
     )
+    @commands.has_permissions(manage_messages=True)
     async def menu(self, ctx, *, content):
         """!lang ja
         --------
