@@ -113,7 +113,7 @@ class ForcePinnedMessage(commands.Cog, DataManager):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if not message.guild or "RT-" in message.author.name:
+        if not message.guild or "RT-" in message.author.name or not self.bot.is_ready():
             return
 
         fpm = await self.get(message.guild.id, message.channel.id)

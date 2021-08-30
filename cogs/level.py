@@ -362,7 +362,6 @@ class Level(commands.Cog, DataManager):
                                 )
                             else:
                                 error_code = ""
-                            print(role.name, error_code)
 
                 if error_code:
                     await message.reply(
@@ -372,7 +371,7 @@ class Level(commands.Cog, DataManager):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if not message.guild or message.author.bot:
+        if not message.guild or message.author.bot or not self.bot.is_ready():
             return
         if message.content.startswith(tuple(self.bot.command_prefix)):
             return
