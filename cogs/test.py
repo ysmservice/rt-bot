@@ -1,6 +1,6 @@
 # RT - Setting API Test
 
-from discord.ext import commands
+from discord.ext import commands, easy
 import discord
 
 from rtlib.slash import Option
@@ -27,6 +27,15 @@ class SlashTest(commands.Cog):
         await ctx.interaction.response.send_message(
             f"test {arg1} {arg2} {arg3} {arg4} {arg5}"
         )
+
+    async def callback(self, view, interaction):
+        await interaction.response.send_message("Hey")
+
+    @commands.command()
+    async def test_view(self, ctx):
+        view = easy.View("TestEasyView")
+        view.add_item(discord.ui.Button, self.callback, label="Don't touch me!")
+        await ctx.reply("`discord.ext.easy.View` test", view=view())
 
 
 def setup(bot):
