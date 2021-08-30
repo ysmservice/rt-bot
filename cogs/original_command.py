@@ -175,9 +175,15 @@ class OriginalCommand(commands.Cog, DataManager):
         `rt!command set Welcome! off Welcome to RT Server!!`
         `rt!command set Yes on Yes (free ride)`"""
         await ctx.trigger_typing()
-        await self.write(ctx.guild.id, command, content, auto_reply)
-        await self.update_cache()
-        await ctx.reply("Ok")
+        if len(self.data.get(ctx.guild.id, ())) == 50:
+            await ctx.reply(
+                {"ja": "五十個より多くは登録できません。",
+                 "en": "You cannot register more than 50."}
+            )
+        else:
+            await self.write(ctx.guild.id, command, content, auto_reply)
+            await self.update_cache()
+            await ctx.reply("Ok")
 
     @command.command("delete", aliases=["del", "rm", "さくじょ", "削除"])
     @commands.has_permissions(manage_messages=True)
