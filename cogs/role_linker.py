@@ -82,12 +82,14 @@ class RoleLinker(commands.Cog, DataManager):
         """!lang ja
         --------
         ロールリンカー、役職が付与/削除された際に他の役職も付与/削除するようにする機能です。  
-        認証機能にて複数の役職を付与するようにしたい際に使えます。
+        認証機能にて複数の役職を付与するようにしたい際に使えます。  
+        `rt!linker`と実行することで登録されてるロールリンクの一覧を表示できます。
 
         !lang en
         --------
         Ability to grant/delete other positions when they are granted/deleted.  
-        It can be use when you want set captcha role multiple."""
+        It can be use when you want set captcha role multiple.
+        You can do `rt!linker` to see role link that registerd list."""
         if not ctx.invoked_subcommand:
             await ctx.reply(
                 embed=discord.Embed(
@@ -105,7 +107,7 @@ class RoleLinker(commands.Cog, DataManager):
                 )
             )
 
-    @roles.command()
+    @linker.command()
     async def link(self, ctx, target: discord.Role, link_role: discord.Role):
         """!lang ja
         --------
@@ -149,7 +151,7 @@ class RoleLinker(commands.Cog, DataManager):
             await self.write(ctx.guild.id, target.id, link_role.id)
             await ctx.reply("Ok")
 
-    @roles.command()
+    @linker.command()
     async def unlink(self, ctx, target: discord.Role):
         """!lang ja
         --------
