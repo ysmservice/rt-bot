@@ -40,12 +40,30 @@ PERMISSION_TEXTS = {
     "use_voice_activation": "音声検出を使用",
     "priority_speaker": "優先スピーカー"
 }
+STAR_HELP = {
+    "ja": (
+        "スターボード機能",
+        "☆のリアクションをつけると`rt>star`がトピックにあるチャンネルにスターがついたメッセージとして送信されます。"
+    ),
+    "en": (
+        "Star board",
+        "When you give a ☆ reaction, it will be sent as a starred message to the channel with `rt>star` in the topic."
+    )
+}
 
 
 class ServerTool(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.trash_queue = []
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        for lang in STAR_HELP:
+            self.bot.cogs["DocHelp"].add_help(
+                "ChannelPlugin", "rt>star", lang,
+                *STAR_HELP[lang]
+            )
 
     @commands.command(
         aliases=["perm"], extras={
