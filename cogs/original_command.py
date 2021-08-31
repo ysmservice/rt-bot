@@ -228,6 +228,9 @@ class OriginalCommand(commands.Cog, DataManager):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
+        if not message.guild:
+            return
+
         if ((data := self.data.get(message.guild.id))
                 and message.author.id != self.bot.user.id
                 and not message.content.startswith(
