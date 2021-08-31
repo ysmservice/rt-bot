@@ -56,6 +56,30 @@ class DataManager(DatabaseLocker):
             raise KeyError("そのFunpが見つかりませんでした。")
 
 
+async def callback(view, interaction):
+    view = easy.View("FunpTwo")
+    view.add_item(
+        discord.ui.Button, None, label="サポートサーバーに行く。",
+        url="https://discord.gg/ugMGw5w"
+    )
+    await interaction.response.send_message(
+        ("Funpのメッセージを削除しました。\n通報する場合は下から行けます。"
+         f"\n通報する際は`{interaction.message.embeds[0].description}"
+         f" - {interaction.message.embeds[0].title}`"
+         "をRTサーバーの管理者に伝えてください。"),
+        view=view()
+    )
+    await interaction.message.delete()
+
+
+warn_view = easy.View("WarnButtonFunp", timeout=None)
+warn_view.add_item(
+    discord.ui.Button, callback, label="緊急メッセージ削除ボタン",
+    style=discord.ButtonStyle.danger, custom_id="warnbuttonfunp"
+)
+warn_view = warn_view()
+
+
 class Funp(commands.Cog, DataManager):
 
     MODES = {
@@ -71,6 +95,7 @@ class Funp(commands.Cog, DataManager):
 
     def __init__(self, bot):
         self.bot = bot
+        self.bot.add_view(warn_view)
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -78,21 +103,6 @@ class Funp(commands.Cog, DataManager):
             await self.bot.mysql.get_database()
         )
         await self.init_table()
-
-    async def callback(self, view, interaction):
-        view = easy.View("FunpTwo")
-        view.add_item(
-            discord.ui.Button, None, label="サポートサーバーに行く。",
-            url="https://discord.gg/ugMGw5w"
-        )
-        await interaction.response.send_message(
-            ("Funpのメッセージを削除しました。\n通報する場合は下から行けます。"
-             f"\n通報する際は`{interaction.message.embeds[0].description}"
-             f" - {interaction.message.embeds[0].title}`"
-             "をRTサーバーの管理者に伝えてください。"),
-            view=view()
-        )
-        await interaction.message.delete()
 
     MODE_OPTION = slash.Option(
         str, "category", "表示するみんなの画像のカテゴリーです。",
@@ -184,14 +194,8 @@ class Funp(commands.Cog, DataManager):
             )
             embed.set_image(url=row[2])
 
-            view = easy.View("WarnButtonFunp", timeout=30)
-            view.add_item(
-                discord.ui.Button, self.callback, label="緊急メッセージ削除ボタン",
-                style=discord.ButtonStyle.danger
-            )
-
             await ctx.reply(
-                embed=embed, view=view()
+                embed=embed, view=warn_view
             )
         else:
             await ctx.reply(
