@@ -81,6 +81,12 @@ class DatabaseLocker:
                         setattr(cls, name, cls.wait_until_unlock(coro))
             cls.lock = None
 
+    async def _close_cursor(self, auto_cursor):
+        if auto_cursor:
+            await self.cursor.close()
+        # 違うやつが操作できるようにする。
+        self.lock.set()
+
     @staticmethod
     def wait_until_unlock(coro):
         @wraps(coro)
@@ -98,18 +104,15 @@ class DatabaseLocker:
             if (auto_cursor := getattr(self, "auto_cursor", False)):
                 self.cursor = self.db.get_cursor()
                 await self.cursor.prepare_cursor()
+            # エラーが起きた際にカーソルを閉じれないということを防ぐためにエラーを一度回収する。
             try:
                 data = await asyncio.wait_for(
                     coro(self, *args, **kwargs), timeout=5
                 )
             except Exception as e:
-                print(f"DatabaseLocker Warnings: {coro.__name__}|{coro.__module__} has stopped. :")
-                print(e)
-                data = None
-            finally:
-                if auto_cursor:
-                    await self.cursor.close()
-                # 違うやつが操作できるようにする。
-                self.lock.set()
+                await self._close_cursor(auto_cursor)
+                raise e
+            else:
+                await self._close_cursor(auto_cursor)
             return data
         return new_coro

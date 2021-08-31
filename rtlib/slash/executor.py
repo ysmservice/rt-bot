@@ -37,13 +37,13 @@ async def executor(
         state = bot._connection
 
         for parameter, option in zip(
-                    signature(
-                        command.callback
-                    ).parameters.values(),
+                    list(
+                        signature(
+                            command.callback
+                        ).parameters.values()
+                    )[len(args):],
                     options
                 ):
-            if parameter.name in ("self", "ctx"):
-                continue
             # 型変換を行う。
             if parameter.annotation == discord.User:
                 option.value = discord.User(
