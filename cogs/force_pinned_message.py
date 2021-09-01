@@ -52,9 +52,10 @@ class ForcePinnedMessage(commands.Cog, DataManager):
     def __init__(self, bot):
         self.bot = bot
         self.queue: Dict[int, discord.Message] = {}
+        self.bot.loop.create_task(self.on_ready())
 
-    @commands.Cog.listener()
     async def on_ready(self):
+        await self.bot.wait_until_ready()
         super(commands.Cog, self).__init__(
             await self.bot.mysql.get_database()
         )
@@ -65,7 +66,7 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         extras={
             "headding": {
                 "ja": "いつも下にくるメッセージ。強制ピン留めメッセージ機能。",
-                "en": "..."
+                "en": "Messages that always come to the bottom. Force pinned message function."
             },
             "parent": "ServerTool"
         },
@@ -103,7 +104,31 @@ class ForcePinnedMessage(commands.Cog, DataManager):
 
         !lang en
         --------
-        ..."""
+        You can create a message that always comes at the bottom.  
+        This can only be done by someone with the Delete Message permission.  
+        Also known as a force pinned message.
+
+        Parameters
+        ----------
+        onoff : bool
+            When set to "on", this function creates a forced pinning message.  
+            If you want to disable the forced pinning message, set this to off.
+        content : str
+            The content of the message that always appears below.  
+            If you turn off onoff, you do not need to write this.
+
+        Aliases
+        -------
+        fpm, forcepinmessage
+
+        Examples
+        --------
+        ```
+        rt!pin on Self-introduction template:
+        Name:
+        Gender:
+        Comment:
+        ```"""
         await self.setting(
             ctx.guild.id, ctx.channel.id, 0, ctx.author.id, onoff, content
         )
