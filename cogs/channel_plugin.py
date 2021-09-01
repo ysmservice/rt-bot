@@ -18,7 +18,16 @@ HELPS = {
 `rt>ce`をチャンネルトピックに入れることで全部のメッセージが再送信されて編集できなくなります。  
 (権限がない限りであって他の人のメッセージを削除することができる人はメッセージの削除が可能です。)  
 失言を許さないサーバーオーナーは設定してみましょう。"""),
-    "en": ("...", "...")
+    "en": ("Image, URL Auto Spoiler", """# Automatic spoiler for images, URLs
+This will resend the message with spoilers for images and URLs by putting `rt>asp` in the channel topic, as the title says.  
+In addition to `rt>asp`, you can also spoil words by separating them with spaces and writing them on the right.
+
+### Warning
+If you use this, the message will be resent when it is spoiled and you will not be able to edit it.
+
+### Notes.
+If you put `rt>ce` in a channel topic, all messages will be resent and you will not be able to edit them.  
+(You can delete messages if you are not authorized to do so and can delete other people's messages.""")
 }
 
 
