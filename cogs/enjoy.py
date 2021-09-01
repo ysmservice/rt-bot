@@ -44,7 +44,20 @@ class Enjoy(commands.Cog):
 
         !lang en
         --------
-        ..."""
+        Search Minecraft JE User's skin and UUID.
+
+        Parameters
+        ----------
+        user_name : str
+            Minecraft JE user name.
+
+        Examples
+        --------
+        `rt!minecraft tasuren`
+
+        Aliases
+        -------
+        mc"""
         await ctx.trigger_typing()
         async with self.bot.session.get(
                 f"https://api.mojang.com/users/profiles/minecraft/{user}"
@@ -199,7 +212,18 @@ class Enjoy(commands.Cog):
 
         !lang en
         --------
-        ..."""
+        Create a package for your game.  
+        You can create an image like the one shown in the example by attaching your favorite image.
+
+        Parameters
+        ----------
+        mode : Name of the game console
+            Use `switch` for switch and `ps4` for PS4.
+
+        Examples
+        --------
+        `rt!game ps4` ([NYN sister's image](http://tasuren.syanari.com/RT/help/Entertainment/NYN姉貴.jpg) is attached and executed.)
+        -> [Execution result](http://tasuren.syanari.com/RT/help/Entertainment/ps4_NYN姉貴.png)"""
         if mode not in self.GAME_SUPPORT_MODES:
             return await ctx.reply(
                 {"ja": "そのゲームは対応していません。",
