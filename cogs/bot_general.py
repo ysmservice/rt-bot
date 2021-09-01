@@ -159,8 +159,10 @@ class BotGeneral(commands.Cog):
         )
 
     @commands.command(
-        extras={"headding": {"ja": "クレジットを表示します。", "en": "It can view credit."},
-                "parent": "RT"},
+        extras={"headding": {
+            "ja": "RTの招待リンクを含めた情報を表示します。",
+            "en": "Show you RT's invite link."
+        }, "parent": "RT"},
         aliases=["credit", "invite", "about", "情報", "じょうほう"])
     @commands.cooldown(1, 180, commands.BucketType.user)
     async def info(self, ctx, secret_arg = None):
@@ -172,7 +174,8 @@ class BotGeneral(commands.Cog):
         
         !lang en
         --------
-        ..."""
+        Show you RT's information.  
+        It inclued invite link."""
         if secret_arg is None:
             await ctx.reply(
                 embeds=Embeds("RtInfo", ctx.author, 180, self.info_embeds)
@@ -202,8 +205,8 @@ class BotGeneral(commands.Cog):
             description = {"ja": ("現在このコマンドはクールダウンとなっています。\n"
                                   + "{:.2f}秒後に実行できます。".format(
                                       error.retry_after)),
-                           "en": ("...\n"
-                                  + "{:.2f}".format(
+                           "en": ("Currently, this command is on cooldown.\n"
+                                  + "You can do this command after {:.2f} seconds.".format(
                                       error.retry_after))}
             color = self.bot.colors["unknown"]
         elif isinstance(error, (commands.errors.MemberNotFound,
@@ -224,7 +227,7 @@ class BotGeneral(commands.Cog):
             description = {"ja": ("指定された真偽値が無効です。\n"
                                   + "有効な真偽値：`on/off`, `true/false`, `True/False`"),
                            "en": ("The specified boolean value is invalid\n"
-                                  + "...:`on/off`, `true/false`, `True/False`")}
+                                  + "Valid boolean value:`on/off`, `true/false`, `True/False`")}
         elif isinstance(error, commands.errors.MissingPermissions):
             title = "403 Forbidden"
             description = {"ja": "あなたの権限ではこのコマンドを実行することができません。",
@@ -252,7 +255,7 @@ class BotGeneral(commands.Cog):
             description = {
                 "ja": (f"コマンドの実行中にエラーが発生しました。\n"
                        + f"```python\n{error_message}\n```"),
-                "en": (f"...\n"
+                "en": (f"I made an error!\n"
                        + f"```python\n{error_message}\n```"),
             }
 
