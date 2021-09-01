@@ -54,9 +54,10 @@ class DataManager(DatabaseLocker):
 class ChannelStatus(commands.Cog, DataManager):
     def __init__(self, bot):
         self.bot = bot
+        self.bot.loop.create_task(self.on_ready())
 
-    @commands.Cog.listener()
     async def on_ready(self):
+        await self.bot.wait_until_ready()
         super(commands.Cog, self).__init__(
             await self.bot.mysql.get_database()
         )
@@ -66,7 +67,7 @@ class ChannelStatus(commands.Cog, DataManager):
     @commands.command(extras={
         "headding": {
             "ja": "チャンネルにメンバー数などを表示する。",
-            "en": "..."
+            "en": "Displays the number of members and other information in the channel name."
         }, "parent": "ServerUseful"
     })
     @commands.has_permissions(manage_channels=True)
@@ -97,15 +98,35 @@ class ChannelStatus(commands.Cog, DataManager):
 
         !lang en
         --------
-        ..."""
+        Displays the number of members and other information in a text channel.  
+        This will be set to the channel that was executed.
+
+        Parameters
+        ----------
+        text : string or off to turn off
+            This is what will be displayed in the channel name.  
+            If you put something in the notes below, it will be automatically replaced with the corresponding number of members, etc.
+
+        Notes
+        -----
+        ```
+        !ch! Text channel count.
+        !mb! Member Count (Including Bot Count)
+        !bt! Bot Count
+        !us! User Count (Not including Bot Count)
+        ```
+
+        Examples
+        --------
+        `rt!status Members:!mb!`"""
         if text.lower() in ("false", "off", "disable", "0"):
             await self.delete(ctx.guild.id, ctx.channel.id)
             content = {"ja": "", "en": ""}
         else:
             await self.save(ctx.guild.id, ctx.channel.id, text)
             content = {
-                "ja": "\n五分に一回ステータスを更新するのでしばらく時間がかかる可能性があります。",
-                "en": "\n..."
+                "ja": "\n※五分に一回ステータスを更新するのでしばらくステータス更新に時間がかかる可能性があります。",
+                "en": "\n※Status update will late because RT will update status displayed in the channel every five minutes."
             }
         await ctx.reply(
             {"ja": f"設定しました。{content['ja']}",
@@ -138,7 +159,7 @@ class ChannelStatus(commands.Cog, DataManager):
                 if channel.name != (
                         text := self.replace_text(text, channel.guild)
                     ):
-                    await channel.edit(name=text, reason="ステータス更新のため。")
+                    await channel.edit(name=text, reason="ステータス更新のため。/To update status.")
 
 
 def setup(bot):
