@@ -49,7 +49,7 @@ class WebCaptcha:
                     "https://hcaptcha.com/siteverify",
                     data=data) as r:
                 data = await r.json(loads=ujson.loads)
-            print(data)
+
             if data["success"]:
                 # もしhCaptchaの認証が成功しているなら。
                 if ((guild := self.cog.bot.get_guild(userdata["guild_id"]))
@@ -62,22 +62,27 @@ class WebCaptcha:
                             await member.add_roles(role)
                         except Exception as e:
                             result = ("認証に失敗しました。"
-                                "付与する役職がRTの役職より下にあるか確認してください。")
+                                "付与する役職がRTの役職より下にあるか確認してください。\n"
+                                "Failed, make sure that the role position below the RT role position.")
                         else:
                             result = ("認証に成功しました。"
-                                      "役職が付与されました。")
+                                      "役職が付与されました。\n"
+                                      "Success!")
                             del self.queue[guild.id]
                     else:
                         result = ("うぅ、、役職が見つからなかったから認証できなかったのです。"
-                                  "すみません！！")
+                                  "すみません！！\n"
+                                  "Ah, I couldn't find the role to add to you.")
             else:
                 result = ("認証に失敗しました。"
-                    "あなたがロボットではないことの確認ができなかったです。")
+                    "あなたがロボットではないことの確認ができなかったです。\n"
+                    "Failed, I couldn't make sure you were not Robot. I'm sorry!")
         else:
             result = (
                 "あなたが誰なのかわからないので"
                 "認証に失敗しました。"
-                "Discordに戻ってもう一度URLを開いてください。"
+                "Discordに戻ってもう一度URLを開いてください。\n"
+                "Failed, Who are you? Please back to discord and open captcha link again."
             )
 
         return await self.cog.bot.web_manager.template(
@@ -92,8 +97,11 @@ class WebCaptcha:
                 "ja": "ウェブ認証", "en": "Web Captcha"
             },
             description={
-                "ja": (f"喋るには認証をしなければいけません。"
+                "ja": ("喋るには認証をしなければいけません。"
                     "\n認証を開始するには以下にアクセスしてください。\n"
+                    f"Captcha URL : {self.base_url}captcha"),
+                "en": ("You must do authentication to speak."
+                    "\nPlease access to that url to do authentication.n"
                     f"Captcha URL : {self.base_url}captcha")
             },
             color=self.cog.bot.colors["normal"]

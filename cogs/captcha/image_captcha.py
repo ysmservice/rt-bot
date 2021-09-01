@@ -62,22 +62,22 @@ class ImageCaptcha(ImageCaptcha):
                             {"ja": ("役職を付与することができませんでした。\n"
                                     "付与する役職の位置がRTより下にあるか確認してください。\n"
                                     f"エラーコード：`{e}`"),
-                             "en": "..."}
+                             "en": "Failed, make sure that the role position below the RT role position."}
                         )
                     else:
                         await message.reply(
                             {"ja": "認証に成功しました。",
-                             "en": "..."}
+                             "en": "Success!"}
                         )
                 else:
                     await message.reply(
                         {"ja": "設定されている役職が見つからないため認証に失敗しました。",
-                         "en": "..."}
+                         "en": "Failed, I couldn't find the role to add you."}
                     )
             else:
                 await message.reply(
                     {"ja": "認証に失敗しました。\n番号があっているか確認してください。",
-                     "en": "..."}
+                     "en": "Failed, Please confirm your number is true."}
                 )
 
     async def on_close(self, _):

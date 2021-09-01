@@ -65,13 +65,14 @@ class Captcha(commands.Cog, DataManager):
             if bot.test else
             "0a50268d-fa1e-405f-9029-710309aad1b0")
         self.queue_killer.start()
+        self.bot.loop.create_task(self.init_database())
 
     @commands.command(
         aliases=["ca", "認証", "きゃぷちゃ", "auth", "cpic"],
         extras={
             "headding": {
                 "ja": "画像認証, 合言葉認証, ウェブ認証をサーバーに設定します。",
-                "en": "..."
+                "en": "Image captcha, Password captcha, Web Captcha (hCaptcha)"
             },
             "parent": "ServerSafety"
         }
@@ -110,7 +111,32 @@ class Captcha(commands.Cog, DataManager):
 
         !lang en
         --------
-        ..."""
+        Set up authentication.  
+        By setting up authentication, you can allow people who join the server to speak if they are not self-bots (users who run automatically).  
+        The majority of auto-automated users are working for the purpose of trolling.  
+        You can also use the password authentication feature to allow only those who know the password to speak on the server by this function.  
+        The channel for authentication will be set to the channel where this command is executed, so this command should be executed on the channel where the welcome message will be sent.
+
+        Parameters
+        ----------
+        mode : image, web, or password if other than the two on the left
+            The type of authentication to set.  
+            `image` is image authentication, which means that you must correctly enter the numbers in the image sent to the channel you are running on.  
+            The `web` is full-fledged authentication on the web using hCaptcha.  
+            If you enter something other than two above, mode will be set `Password(You had entered word in this command.) Mode`.  
+        role : Name of the role or mention of the role
+            The name of the role to be assigned upon successful authentication.
+
+        Examples
+        --------
+        `rt!captcha web @authenticated`.  
+        Set web authentication to give the role `authenticated` on successful authentication.
+
+        Notes
+        -----
+        It is recommended to make the authenticating channel invisible to authenticated users and set slowmode.  
+        This way, if an automated vandal comes along, the authenticated users will not be affected by the vandalism.  
+        This command can only be executed by someone with administrative privileges."""
         extras = ""
         if mode not in self.captchas:
             extras = mode
@@ -118,8 +144,8 @@ class Captcha(commands.Cog, DataManager):
         await self.save(ctx.channel, mode, role.id, extras)
         await ctx.reply("Ok")
 
-    @commands.Cog.listener()
-    async def on_ready(self):
+    async def init_database(self):
+        await self.bot.wait_until_ready()
         super(commands.Cog, self).__init__(
             await self.bot.mysql.get_database()
         )

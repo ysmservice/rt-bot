@@ -17,7 +17,7 @@ class WordCaptcha(commands.Cog):
                       member: discord.Member) -> None:
         await channel.send(
             {"ja": f"{member.mention}, 合言葉を入力してください。",
-             "en": f"{member.mention}, ..."},
+             "en": f"{member.mention}, Please type password."},
             target=member.id
         )
         row = await self.cog.load(channel.guild.id)
@@ -37,20 +37,20 @@ class WordCaptcha(commands.Cog):
                             {"ja": ("認証に失敗しました。\n"
                                     "付与する役職がRTの役職より下にあるか確認してください。\n"
                                     f"エラーコード：{e}"),
-                             "en": "..."},
+                             "en": "Failed, make sure that the role position below the RT role position."},
                         )
                     else:
                         await message.reply(
                             {"ja": "認証に成功しました。",
-                            "en": "..."}
+                            "en": "Success!"}
                         )
                 else:
                     await message.reply(
                         {"ja": "役職が見つからないため認証に失敗しました。",
-                         "en": "..."}
+                         "en": "Failed, I couldn't find the role to add you."}
                     )
             else:
                 await message.reply(
                     {"ja": "合言葉が違います。",
-                     "en": "..."}
+                     "en": "That password is wrong."}
                 )
