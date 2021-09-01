@@ -13,25 +13,28 @@ ERROR_CHANNEL = 842744343911596062
 INFO_DESC = {
     "ja": """どうもRTという新時代Botです。
 このBotは既にある色々な機能や今までにない機能を取り入れた多機能型Botです。
-チャンネルステータスやウェルカムメッセージももちろん、変更可能このの読み上げや常に一番下にくるメッセージなど色々あります。
+チャンネルステータスやウェルカムメッセージももちろん、変更可能このの読み上げや常に一番下にくるメッセージなど色々あります。これ翻訳できず
 ほとんどこのBotで済むようなBotを目指してる。""",
-    "en": """..."""
+    "en": """Hi I am RTBOT. This is for new year.
+    This bot is many function and never before function in this Bot.
+    Of course channelstatus, welcome message
+    I am aiming for a bot that can almost be done with this bot"""
 }
-INFO_ITEMS = (("INVITE", {"ja": "招待リンク", "en": "..."}),
-              ("SS", {"ja": "サポートサーバー", "en": "..."}),
-              ("URL", {"ja": "RTのウェブサイト", "en": "..."}),
-              ("GITHUB", {"ja": "Github", "en": "..."}))
+INFO_ITEMS = (("INVITE", {"ja": "招待リンク", "en": "invite link"}),
+              ("SS", {"ja": "サポートサーバー", "en": "support server"}),
+              ("URL", {"ja": "RTのウェブサイト", "en": "RT offical website"}),
+              ("GITHUB", {"ja": "Github", "en": "Github"}))
 INFO_INVITE = "https://discord.com/api/oauth2/authorize?client_id=716496407212589087&permissions=8&scope=bot"
 INFO_SS, INFO_URL = "https://discord.gg/ugMGw5w", "https://rt-bot.com"
 INFO_GITHUB = """* [RT-Team](https://github.com/RT-Team)
 * [RT-Backend](https://github.com/RT-Team/rt-backend)
 * [RT-Frontend](https://github.com/RT-Team/rt-frontend)"""
 
-CREDIT_ITEMS = (("DEV", {"ja": "主な開発者", "en": "..."}),
-                ("DESIGN", {"ja": "絵文字デザイン", "en": "..."}),
-                ("ICON", {"ja": "RTのアイコン", "en": "..."}),
-                ("LANGUAGE", {"ja": "プログラミング言語", "en": "..."}),
-                ("SERVER", {"ja": "サーバーについて", "en": "..."}),
+CREDIT_ITEMS = (("DEV", {"ja": "主な開発者", "en": "main developer"}),
+                ("DESIGN", {"ja": "絵文字デザイン", "en": "emoji designer"}),
+                ("ICON", {"ja": "RTのアイコン", "en": "RT's icon"}),
+                ("LANGUAGE", {"ja": "プログラミング言語", "en": "programing language"}),
+                ("SERVER", {"ja": "サーバーについて", "en": "about server"}),
                 ("ETC", {"ja": "その他", "en": "etc"}))
 CREDIT_DEV = """<:tasren:731263470636498954> tasuren [WEBSITE](http://tasuren.f5.si)
 <:takkun:731263181586169857> Takkun [SERVER](https://discord.gg/VX7ceJw)
@@ -41,15 +44,15 @@ CREDIT_DESIGN = """<:yutam:732948166881575022> YUTAM
 CREDIT_ICON = "Made by Takkun `CC BY-SA 4.0`"
 CREDIT_LANGUAGE = {
     "ja": "使用言語：Python, 使用ライブラリ：discord.py",
-    "en": "..."
+    "en": "using language:Python, using library:discord.py"
 }
 CREDIT_SERVER = {
     "ja": "サーバーOS：Arch Linux\nSnavyさんが貸してくれています。感謝感激です！",
-    "en": "..."
+    "en": "server os:Arch Linux\nSnavy is lend server to me. Thank you to Snavy "
 }
 CREDIT_ETC = {
     "ja": "* Githubのコントリビューター達。\n* 主な翻訳協力者であるDMSくん。\nありがとうございます。",
-    "en": "..."
+    "en": "*Github's sontributors. \n* This bot is translate by DMS. \n Thank you"
 }
 
 
@@ -156,7 +159,7 @@ class BotGeneral(commands.Cog):
         )
 
     @commands.command(
-        extras={"headding": {"ja": "クレジットを表示します。", "en": "..."},
+        extras={"headding": {"ja": "クレジットを表示します。", "en": "It can view credit."},
                 "parent": "RT"},
         aliases=["credit", "invite", "about", "情報", "じょうほう"])
     @commands.cooldown(1, 180, commands.BucketType.user)
@@ -185,7 +188,7 @@ class BotGeneral(commands.Cog):
             title = "404 Not Found"
             description = {"ja": ("そのコマンドが見つかりませんでした。\n"
                                   + "`rt!help <word>`で検索が可能です。"),
-                           "en": "..."}
+                           "en": "It can't found that command.\n`rt!help <word>`This can search command"}
             color = self.bot.colors["unknown"]
         elif isinstance(error, (commands.errors.BadArgument,
                         commands.errors.MissingRequiredArgument,
@@ -193,7 +196,7 @@ class BotGeneral(commands.Cog):
                         commands.errors.TooManyArguments)):
             title = "400 Bad Request"
             description = {"ja": "コマンドの引数が適切ではありません。\nまたは必要な引数が足りません。",
-                           "en": "..."}
+                           "en": "It's command's function is bad."}
         elif isinstance(error, commands.errors.CommandOnCooldown):
             title = "429 Too Many Requests"
             description = {"ja": ("現在このコマンドはクールダウンとなっています。\n"
@@ -207,29 +210,29 @@ class BotGeneral(commands.Cog):
                         commands.errors.UserNotFound)):
             title = "400 Bad Request"
             description = {"ja": "指定されたユーザーが見つかりませんでした。",
-                           "en": "..."}
+                           "en": "I can't found that user."}
         elif isinstance(error, commands.errors.ChannelNotFound):
             title = "400 Bad Request"
             description = {"ja": "指定されたチャンネルが見つかりませんでした。",
-                           "en": "..."}
+                           "en": "I can't found that channel"}
         elif isinstance(error, commands.errors.RoleNotFound):
             title = "400 Bad Request"
             description = {"ja": "指定されたロールが見つかりませんでした。",
-                           "en": "..."}
+                           "en": "I can't found that role."}
         elif isinstance(error, commands.errors.BadBoolArgument):
             title = "400 Bad Request"
             description = {"ja": ("指定された真偽値が無効です。\n"
                                   + "有効な真偽値：`on/off`, `true/false`, `True/False`"),
-                           "en": ("...\n"
+                           "en": ("The specified boolean value is invalid\n"
                                   + "...:`on/off`, `true/false`, `True/False`")}
         elif isinstance(error, commands.errors.MissingPermissions):
             title = "403 Forbidden"
             description = {"ja": "あなたの権限ではこのコマンドを実行することができません。",
-                           "en": "..."}
+                           "en": "You can't do this command. Because you need permission"}
         elif isinstance(error, commands.errors.MissingRole):
             title = "403 Forbidden"
             description = {"ja": "あなたはこのコマンドの実行に必要な役職を持っていないため、このコマンドを実行できません。",
-                           "en": "..."}
+                           "en": "You can't do this command. Because you need permission"}
         else:
             error_message = "".join(
                 TracebackException.from_exception(error).format())
