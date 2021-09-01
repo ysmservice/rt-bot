@@ -8,6 +8,7 @@ from sanic.exceptions import SanicException
 from .image_captcha import ImageCaptcha
 from .word_captcha import WordCaptcha
 from .web_captcha import WebCaptcha
+from asyncio import sleep
 from time import time
 
 
