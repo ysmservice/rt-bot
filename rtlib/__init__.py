@@ -116,3 +116,35 @@ class DatabaseLocker:
                 await self._close_cursor(auto_cursor)
             return data
         return new_coro
+
+
+class DatabaseManager:
+    def __init_subclass__(cls) -> None:
+        super().__init_subclass__()
+        for name in dir(cls.__mro__[-3]):
+            if not name.startswith("_"):
+                coro = getattr(cls, name)
+                if asyncio.iscoroutinefunction(coro):
+                    setattr(cls, name, cls.prepare_cursor(coro))
+
+    async def _close(self, conn):
+        await self.cursor.close()
+        conn.close()
+
+    @staticmethod
+    def prepare_cursor(coro):
+        @wraps(coro)
+        async def new_coro(self, *args, **kwargs):
+            conn = await self.db.get_database()
+            self.cursor = conn.get_cursor()
+            await self.cursor.prepare_cursor()
+
+            try:
+                data = await coro(self, *args, **kwargs)
+            except Exception as e:
+                await self._close(conn)
+                raise e
+            else:
+                await self._close(conn)
+                return data
+        return new_coro

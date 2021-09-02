@@ -372,7 +372,7 @@ class MySQLManager:
         cursor = Cursor(self)
         return cursor
 
-    def close():
+    def close(self):
         """データベースとの接続を終了します。"""
         self.__del__()
 

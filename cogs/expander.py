@@ -1,0 +1,181 @@
+# RT - Message Link Expander
+
+from discord.ext import commands
+import discord
+
+from rtlib import DatabaseManager
+from re import findall
+
+
+class DataManager(DatabaseManager):
+
+    DB = "ExpandMessage"
+    IGNORE_DB = "ExpandIgnore"
+
+    def __init__(self, db):
+        self.db = db
+
+    async def init_table(self) -> None:
+        await self.cursor.create_table(
+            self.DB, {
+                "GuildID": "BIGINT", "OnOff": "TINYINT"
+            }
+        )
+        await self.cursor.create_table(
+            self.IGNORE_DB, {"ChannelID": "BIGINT", "OnOff": "TINYINT"}
+        )
+
+    async def read(self, guild_id: int, channel_id: int) -> tuple:
+        target = {"GuildID": guild_id}
+        ignore_target = {"ChannelID": channel_id}
+        if await self.cursor.exists(self.DB, target):
+            if (guild := await self.cursor.get_data(self.DB, target))[1]:
+                if await self.cursor.exists(self.IGNORE_DB, ignore_target):
+                    if (row := await self.cursor.get_data(self.IGNORE_DB, ignore_target)):
+                        return bool(row[1])
+                    return False
+                else:
+                    return guild[1]
+            return False
+        else:
+            return True
+
+    async def write(self, guild_id: int, onoff: bool) -> None:
+        target = {"GuildID": guild_id}
+        change = {"OnOff": int(onoff)}
+        if await self.cursor.exists(self.DB, target):
+            await self.cursor.update_data(self.DB, change, target)
+        else:
+            target.update(change)
+            await self.cursor.insert_data(self.DB, target)
+
+    async def set_ignore(self, channel_id: int, onoff: bool) -> None:
+        target = {"ChannelID": channel_id}
+        change = {"OnOff": int(onoff)}
+        if await self.cursor.exists(self.IGNORE_DB, target):
+            await self.cursor.update_data(self.IGNORE_DB, change, target)
+        else:
+            target.update(change)
+            await self.cursor.insert_data(self.IGNORE_DB, target)
+
+
+class Expander(commands.Cog, DataManager):
+
+    PATTERN =  (
+        "https://(ptb.|canary.)?discord(app)?.com/channels/"
+        "(?P<guild>[0-9]{18})/(?P<channel>[0-9]{18})/(?P<message>[0-9]{18})"
+    )
+
+    def __init__(self, bot):
+        self.bot = bot
+        self.bot.loop.create_task(self.on_ready())
+
+    async def on_ready(self):
+        await self.bot.wait_until_ready()
+        super(commands.Cog, self).__init__(
+            self.bot.mysql
+        )
+        await self.init_table()
+
+    @commands.command(
+        extras={
+            "headding": {
+                "ja": "メッセージリンク展開 on/off", "en": "message link expansion on/off"
+            }, "parent": "ServerUseful"
+        }
+    )
+    @commands.has_permissions(administrator=True)
+    async def expand(self, ctx, onoff: bool, mode = "g"):
+        """!lang ja
+        --------
+        メッセージリンクの展開のオンオフの切り替えコマンドです。  
+        このコマンドを使うことで指定したチャンネルではメッセージリンクを展開しないなどもできます。  
+        この機能はデフォルトでOnです。
+
+        Parameters
+        ----------
+        onoff : bool
+            onまたはoffです。
+        mode : str, default g
+            サーバーでの設定かチャンネルでの設定かです。  
+            もしこれをg以外にすると実行したチャンネルにonoffが設定されます。  
+            例えばこの機能がOnの状態で問い合わせチャンネルで`rt!expand off c`と実行すれば問い合わせチャンネルのみメッセージリンクが展開されなくなります。
+
+        Examples
+        --------
+        `rt!expand off` デフォルトでOnなのでいらない方はこれを実行しましょう。
+
+        !lang en
+        --------
+        This command toggles the message link expansion on and off.  
+        This command can also be used to disable message link expansion for a specified channel.  
+        This function is On by default.
+
+        Parameters
+        ----------
+        onoff : bool
+            On or off.
+        mode : str, default g
+            Either the server or the channel setting.  
+            If this is not g, onoff will be set on the channel where it is executed.  
+            For example, if this feature is on and you run `rt!expand off c` on a query channel, only the query channel will not expand message links.
+
+        Examples
+        --------
+        If you don't need this feature, you can use `rt!expand off`, which is on by default."""
+        if mode == "g":
+            await self.write(ctx.guild.id, onoff)
+        else:
+            await self.set_ignore(ctx.channel.id, onoff)
+        await ctx.reply("Ok")
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if not message.guild or message.author.bot:
+            return
+
+        datas = findall(self.PATTERN, message.content)
+        if datas:
+            if await self.read(message.guild.id, message.channel.id):
+                embeds = []
+                for data in datas:
+                    data, channel = data[2:], None
+
+                    if data[0] == str(message.guild.id):
+                        get_channel = message.guild.get_channel
+                    elif data[1] == str(message.channel.id):
+                        channel = message.channel
+                    else:
+                        get_channel = self.bot.get_channel
+                    if channel is None:
+                        channel = get_channel(int(data[1]))
+
+                    fetched_message = await channel.fetch_message(int(data[2]))
+                    embed = discord.Embed(
+                        description=fetched_message.content,
+                        color=fetched_message.author.color
+                    ).set_author(
+                        name=fetched_message.author.display_name,
+                        icon_url=fetched_message.author.avatar.url
+                    ).set_footer(
+                        text=fetched_message.guild.name,
+                        icon_url=fetched_message.guild.icon.url
+                    )
+                    if fetched_message.attachments:
+                        embed.set_image(url=fetched_message.attachments[0].url)
+                    embeds.append(embed)
+
+                if embeds:
+                    try:
+                        await message.channel.webhook_send(
+                            username=message.author.display_name,
+                            avatar_url=message.author.avatar.url,
+                            content=message.clean_content, embeds=embeds
+                        )
+                        await message.delete()
+                    except (discord.HTTPException, discord.NotFound):
+                        pass
+
+
+def setup(bot):
+    bot.add_cog(Expander(bot))
