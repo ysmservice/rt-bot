@@ -129,6 +129,7 @@ class Level(commands.Cog, DataManager):
             }, "parent": "ServerUseful"
         }, aliases=["ll", "lv", "れべる", "レベル", "れべ"]
     )
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def level(self, ctx):
         """!lang ja
         -------
@@ -161,20 +162,20 @@ class Level(commands.Cog, DataManager):
             global_row = await self.get_level(0, ctx.author.id)
             local_row = await self.get_level(ctx.guild.id, ctx.author.id)
 
-            embeds = Embeds("LevelRanking", target=ctx.author.id)
+            embeds = []
             for mode, row, rows in (
                     (("グローバル", "Global"), global_row, global_rows),
                     ((ctx.guild.name, ctx.guild.name), local_row, local_rows)
                 ):
-                embeds.add_embed(
+                embeds.append(
                     discord.Embed(
                         title={
                             "ja": f"レベルランキング - {mode[0]}",
                             "en": f"LevelRanking - {mode[1]}"
                         },
                         description="\n".join(
-                            (f'{getattr(self.bot.get_user(row[1]), "name", "???")}'
-                             f"：{row[3]}") for row in rows
+                            (f'{getattr(self.bot.get_user(r[1]), "name", "???")}'
+                             f"：{r[3]}") for r in rows
                         ),
                         color=self.bot.colors["normal"]
                     ).add_field(
@@ -182,7 +183,8 @@ class Level(commands.Cog, DataManager):
                         value=f"Level: {row[3]}\nExp: {row[2]}"
                     )
                 )
-            await ctx.reply(embeds=embeds)
+            for embed in embeds:
+                await ctx.send(embed=embed)
 
     @level.command(aliases=["notf", "nof", "通知"])
     async def notification(self, ctx, onoff: bool):

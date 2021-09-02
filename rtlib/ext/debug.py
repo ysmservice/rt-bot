@@ -3,9 +3,10 @@
 from discord.ext import commands
 import discord
 
+from jishaku.functools import executor_function
 from aiofiles import open as async_open, os
 from functools import wraps
-from io import StringIO
+import psutil
 
 
 def require_admin(coro):
@@ -77,6 +78,35 @@ class Debug(commands.Cog):
             )
         await ctx.reply(file=discord.File(self.OUTPUT_PATH))
         await os.remove(self.OUTPUT_PATH)
+
+    @executor_function
+    def make_monitor_embed(self):
+        embed = discord.Embed(
+            title="RT-Run info",
+            description="Running on Arch Linux",
+            color=0x0066ff
+        )
+        embed.add_field(
+            name="Memory",
+            value=f"{psutil.virtual_memory().percent}%"
+        )
+        embed.add_field(
+            name="CPU",
+            value=f"{psutil.cpu_percent(interval=1)}%"
+        )
+        embed.add_field(
+            name="Disk",
+            value=f"{psutil.disk_usage('/').percent}%"
+        )
+        return embed
+
+    @debug.command()
+    @require_admin
+    async def monitor(self, ctx):
+        await ctx.trigger_typing()
+        await ctx.reply(
+            embed=await self.make_monitor_embed()
+        )
 
 
 def setup(bot):
