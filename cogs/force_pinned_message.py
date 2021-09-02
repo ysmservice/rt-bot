@@ -36,7 +36,7 @@ class DataManager(DatabaseManager):
     async def get(self, guild_id: int, channel_id: int) -> Tuple[int, int, bool, str]:
         target = dict(GuildID=guild_id, ChannelID=channel_id)
         if await self.cursor.exists(self.TABLE, target):
-            if (row := await self.get_data(self.TABLE, target)):
+            if (row := await self.cursor.get_data(self.TABLE, target)):
                 return row[-4], row[-3], bool(row[-2]), row[-1]
             else:
                 return 0, 0, False, ""
