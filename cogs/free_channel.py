@@ -42,7 +42,7 @@ class FreeChannel(commands.Cog):
 
         !lang en
         --------
-        ..."""
+        Free Channel (like thread)"""
         if not ctx.invoked_subcommand:
             await ctx.send(
                 {"ja": f"{ctx.author.mention}, 使用方法が違います。",
@@ -76,18 +76,39 @@ class FreeChannel(commands.Cog):
 
         Aliases
         -------
-        `rg`"""
+        `rg`
+
+        !lang en
+        --------
+        This will make the channel you run into a dedicated channel for creating free channels.  
+        If you send `text:channel name` to the channel you ran this command on, it will create the channel.  
+        For a voice channel, you can use `voice:channel name`.  
+
+        Warnings
+        --------
+        This command can only be executed by someone with `channel management` privileges.  
+        Also, the free channel created will be in the category of the channel you run this command on.  
+        Therefore, this command can only be executed on channels that are in the category.
+
+        Parameters
+        ----------
+        max_channel : int, default 4
+            The maximum number of channels an individual can create.  
+            If not entered, the value will be 4.
+        lang : str, default ja
+            Whether to display the free channel description panel in Japanese or English.  
+            If you don't enter it, it is set to `en` if you want it to be in English."""
         if ctx.channel.category is None:
             await ctx.reply(
                 {"ja": "カテゴリーのあるチャンネルでのみこのコマンドは実行可能です。",
-                 "en": "..."}
+                 "en": "You can run this command on only channel that have category."}
             )
             return
         if (ctx.channel.topic and "RTフリーチャンネル" in ctx.channel.topic
                 and "作成者" not in ctx.channel.topic):
             await ctx.send(
                 {"ja": f"{ctx.author.mention}, 既にフリーチャンネル作成用チャンネルとなっています。",
-                 "en": f"{ctx.author.mention}, ..."},
+                 "en": f"{ctx.author.mention}, It is already a channel for creating free channels."},
                 delete_after=5, target=ctx.author.id
             )
             return
@@ -106,7 +127,18 @@ class FreeChannel(commands.Cog):
 テキストチャンネル：そのフリーチャンネルで`rt!remove`
 ボイスチャンネル：適当なチャンネルで`rt!remove ボイスチャンネル名`
 ※作成されるボイスチャンネルの名前には作成した人のIDが含まれますが、このIDは削除時にチャンネル名に入れる必要はないです。""",
-            "en": "..."
+            "en": """You can create a channel by sending the name of the channel you want.
+**#** How to create
+Text channel: `text channel name` in this channel
+Voice channel: `voice channel name` in this channel
+**#** How to rename
+Text channel: `rt!rename renamed name` in that free channel
+Voice channel: On a suitable channel, use `rt!rename voice channel name after renaming`.
+The name of the created voice channel will include the ID of the person who created it, but this ID does not need to be included in the channel name when renaming it.
+**#** How to delete
+Text channel: `rt!remove` on that free channel
+Voice channel: `rt!remove voice channel name` on an appropriate channel.
+The name of the created voice channel will include the ID of the person who created it, but this ID does not need to be included in the channel name when removing it."""
         }
 
         footer = {"ja": f"一人{max_channel}個までチャンネルを作成可能です。",

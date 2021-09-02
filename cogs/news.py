@@ -15,9 +15,10 @@ from data import is_admin
 class News(commands.Cog):
     def __init__(self, bot):
         self.bot, self.rt = bot, bot.data
-        self.bot.add_listener(self._on_ready, "on_ready")
+        self.bot.loop.create_task(self._on_ready())
 
     async def _on_ready(self):
+        await self.bot.wait_until_ready()
         self.db = await self.rt["mysql"].get_database()
         async with self.db.get_cursor() as cursor:
             await cursor.create_table(
@@ -85,7 +86,7 @@ class News(commands.Cog):
 
         !lang en
         --------
-        ..."""
+        Show RT's news."""
         if not ctx.invoked_subcommand:
             embeds, i = Embeds("News", ctx.author.id), 0
             async for row in self._get_news_all():

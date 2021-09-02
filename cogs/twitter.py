@@ -241,7 +241,7 @@ class Twitter(commands.Cog, DataManager):
                     await self.queue[key]["channel"].webhook_send(
                         username=f'RT - Twitter Notification',
                         avatar_url="http://tasuren.syanari.com/RT/rt_icon.png",
-                        content="\n".join(self.queue[key]["content"])
+                        content="\n".join(reversed(self.queue[key]["content"]))
                     )
                 except Exception as e:
                     if self.bot.test:

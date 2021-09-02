@@ -4,7 +4,7 @@ from discord.ext import commands
 import discord
 
 from datetime import datetime, timedelta
-from asyncio import TimeoutError
+from asyncio import TimeoutError, sleep
 from random import sample
 
 
@@ -56,9 +56,11 @@ class ServerTool(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.trash_queue = []
+        self.bot.loop.create_task(self.on_ready())
 
-    @commands.Cog.listener()
     async def on_ready(self):
+        await self.bot.wait_until_ready()
+        await sleep(1.3)
         for lang in STAR_HELP:
             self.bot.cogs["DocHelp"].add_help(
                 "ChannelPlugin", "rt>star", lang,
