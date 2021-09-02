@@ -3,53 +3,80 @@
 from discord.ext import commands
 import discord
 
-from aiofiles import open as async_open
-from ujson import loads, dumps
+from sanic.response import json
 from datetime import datetime
 from time import time
 
+from data import is_admin, get_headers
+from rtlib import DatabaseManager
 from rtlib.ext import Embeds
-from data import is_admin
 
 
-class News(commands.Cog):
+class DataManager(DatabaseManager):
+    def __init__(self, db):
+        self.db = db
+
+    async def init_table(self) -> None:
+        await self.cursor.create_table(
+            "news", {
+                "id": "BIGINT", "time": "TEXT",
+                "content": "TEXT", "image": "TEXT"
+            }
+        )
+
+    async def add_news(self, content: str, image: str) -> float:
+        # Newsを新しく追加します。
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        t = time()
+        await self.cursor.insert_data(
+            "news", {"id": t, "time": now, "content": content, "image": image}
+        )
+        return t
+
+    async def remove_news(self, id_: int) -> None:
+        # Newsを削除します。
+        await self.cursor.delete_data("news", {"id": id_})
+
+    async def get_news(self, id_: int) -> tuple:
+        # Newsを取得する。
+        return (await self.cursor.get_data("news", {"id": id_}))
+
+    async def get_news_all(self) -> list:
+        # Newsを全て取得する。
+        return [row async for row in self.cursor.get_datas(
+                "news", {}, custom="ORDER BY id DESC")
+                if row]
+
+
+class News(commands.Cog, DataManager):
     def __init__(self, bot):
         self.bot, self.rt = bot, bot.data
         self.bot.loop.create_task(self._on_ready())
 
     async def _on_ready(self):
         await self.bot.wait_until_ready()
-        self.db = await self.rt["mysql"].get_database()
-        async with self.db.get_cursor() as cursor:
-            await cursor.create_table(
-                "news", {"id": "BIGINT", "time": "TEXT",
-                         "content": "TEXT", "image": "TEXT"})
+        super(commands.Cog, self).__init__(self.bot.mysql)
 
-    async def _add_news(self, content: str, image: str) -> float:
-        # Newsを新しく追加します。
-        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        t = time()
-        async with self.db.get_cursor() as cursor:
-            await cursor.insert_data(
-                "news", {"id": t, "time": now, "content": content, "image": image})
-        return t
+    async def get_rows(self) -> list:
+        return reversed(await self.get_news_all())
 
-    async def _remove_news(self, id_: int) -> None:
-        # Newsを削除します。
-        async with self.db.get_cursor() as cursor:
-            await cursor.delete_data("news", {"id": id_})
-
-    async def _get_news(self, id_: int) -> tuple:
-        # Newsを取得する。
-        async with self.db.get_cursor() as cursor:
-            return (await cursor.get_data("news", {"id": id_}))
-
-    async def _get_news_all(self) -> tuple:
-        # Newsを全て取得する。
-        async with self.db.get_cursor() as cursor:
-            async for row in cursor.get_datas("news", {}, custom="ORDER BY id DESC"):
-                if row:
-                    yield row
+    @commands.Cog.route("/news/<number>")
+    async def news_api(self, request, number=None) -> None:
+        rows = await self.get_rows()
+        if number:
+            rows = list(rows)
+            row = rows[int(number) - 1]
+            data = {
+                "content": row[2], "date": row[1],
+                "status": "ok", "title": row[2][:row[2].find("\n") + 1]
+            }
+        else:
+            data = {
+                str(i): [row[2][:row[2].find("\n") + 1], row[1]]
+                for i, row in enumerate(rows)
+            }
+            data["status"] = "ok"
+        return json(data, headers=get_headers(self.bot, request))
 
     def convert_embed(self, doc: str) -> discord.Embed:
         # マークダウンをEmbedにする。
@@ -89,7 +116,7 @@ class News(commands.Cog):
         Show RT's news."""
         if not ctx.invoked_subcommand:
             embeds, i = Embeds("News", ctx.author.id), 0
-            async for row in self._get_news_all():
+            for row in await self.get_news_all():
                 i += 1
                 embed = self.convert_embed(row[2])
                 embed.title = f"{embed.title}"
@@ -118,7 +145,7 @@ class News(commands.Cog):
             写真がないのなら`None`を入れてください。
         content : str
             ニュースに追加する文字列です。"""
-        now = await self._add_news(content, image)
+        now = await self.add_news(content, image)
         await ctx.reply(f"Ok number:{now}")
 
     @news.command()
@@ -132,7 +159,7 @@ class News(commands.Cog):
         ----------
         id : int
             削除するニュースのidです。"""
-        await self._remove_news(id_)
+        await self.remove_news(id_)
         await ctx.reply("Ok")
 
 

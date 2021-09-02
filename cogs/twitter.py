@@ -199,30 +199,33 @@ class Twitter(commands.Cog, DataManager):
                     )
                     await self.delete_data(row)
                 elif "data" in data:
-                    # 取得したツイートはキューに入れる。
-                    # それを十秒毎にWorkerが送信する。
-                    for data in data["data"]:
-                        # キューの準備をする。
-                        if channel.id not in self.queue:
-                            self.queue[channel.id] = {
-                                "content": [],
-                                "length": 0,
-                                "channel": channel
-                            }
-                        # メッセージのURLの埋め込み表示は五つまでだから五つ登録されたら一番最初を削除する。
-                        if self.queue[channel.id]["length"] == 5:
-                            del self.queue[channel.id]["content"][0]
-                            self.queue[channel.id]["length"] -= 1
+                    try:
+                        # 取得したツイートはキューに入れる。
+                        # それを十秒毎にWorkerが送信する。
+                        for data in data["data"]:
+                            # キューの準備をする。
+                            if channel.id not in self.queue:
+                                self.queue[channel.id] = {
+                                    "content": [],
+                                    "length": 0,
+                                    "channel": channel
+                                }
+                            # メッセージのURLの埋め込み表示は五つまでだから五つ登録されたら一番最初を削除する。
+                            if self.queue[channel.id]["length"] == 5:
+                                del self.queue[channel.id]["content"][0]
+                                self.queue[channel.id]["length"] -= 1
 
-                        # 既に通知を送信したツイートじゃなければツイート通知をする。
-                        if not await self.check(channel.id, data["id"]):
-                            self.queue[channel.id]["content"].append(
-                                "https://twitter.com/{}".format(
-                                    f"{row[-1]}/status/{data['id']}"
+                            # 既に通知を送信したツイートじゃなければツイート通知をする。
+                            if not await self.check(channel.id, data["id"]):
+                                self.queue[channel.id]["content"].append(
+                                    "https://twitter.com/{}".format(
+                                        f"{row[-1]}/status/{data['id']}"
+                                    )
                                 )
-                            )
-                            await self.sended(channel.id, data["id"])
-                            self.queue[channel.id]["length"] += 1
+                                await self.sended(channel.id, data["id"])
+                                self.queue[channel.id]["length"] += 1
+                    except KeyError:
+                        pass
 
                 await asyncio.sleep(1.2)
 
@@ -279,7 +282,8 @@ class Twitter(commands.Cog, DataManager):
         Warnings
         --------
         デフォルトでは一つのサーバーにつき三つまで設定が可能です。  
-        もし要望があればプレミアム機能を作りプレミアムに加入している人のみ十設定可能にします。
+        もし要望があればプレミアム機能を作りプレミアムに加入している人のみ十設定可能にします。  
+        そしてこの機能はまだベータ版ですので不具合がある可能性があります。
 
         !lang en
         --------
@@ -300,7 +304,8 @@ class Twitter(commands.Cog, DataManager):
 
         Warnings
         --------
-        You can set than 3 notification channel per server."""
+        You can set than 3 notification channel per server.  
+        And this function is BETA!"""
         if word.lower() in ("off", "disable", "0", "false"):
             try:
                 await self.delete(ctx.guild.id, ctx.channel.id)
