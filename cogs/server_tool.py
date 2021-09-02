@@ -485,7 +485,7 @@ class ServerTool(commands.Cog):
             check=lambda mes: target is None or mes.author.id == target.id,
             bulk=True
         )
-        await ctx.reply("Ok", delete_after=3)
+        await ctx.send("Ok", delete_after=3)
 
     EMOJIS = {
         "star": ("⭐", "🌟"),
