@@ -3,49 +3,45 @@
 from discord.ext import commands, tasks
 import discord
 
-from rtlib import mysql, DatabaseLocker
+from rtlib import DatabaseManager
 from typing import Tuple, Dict
-from asyncio import Event
 
 
-class DataManager(DatabaseLocker):
+class DataManager(DatabaseManager):
 
     TABLE = "ForcePinnedMessage"
 
-    def __init__(self, db: mysql.MySQLManager):
-        self.db: mysql.MySQLManager = db
+    def __init__(self, db):
+        self.db = db
 
     async def init_table(self) -> None:
-        async with self.db.get_cursor() as cursor:
-            await cursor.create_table(
-                self.TABLE, dict(
-                    GuildID="BIGINT", ChannelID="BIGINT", AuthorID="BIGINT",
-                    MessageID="BIGINT", Bool="TINYINT", Text="TEXT"
-                )
+        await self.cursor.create_table(
+            self.TABLE, dict(
+                GuildID="BIGINT", ChannelID="BIGINT", AuthorID="BIGINT",
+                MessageID="BIGINT", Bool="TINYINT", Text="TEXT"
             )
+        )
 
     async def setting(
             self, guild_id: int, channel_id: int, message_id: int,
             author_id: int, onoff: bool, text: str) -> None:
-        async with self.db.get_cursor() as cursor:
-            value = dict(Bool=int(onoff), Text=text,
-                         AuthorID=author_id, MessageID=message_id)
-            target = dict(GuildID=guild_id, ChannelID=channel_id)
-            if await cursor.exists(self.TABLE, target):
-                await cursor.delete(self.TABLE, target)
-            value.update(target)
-            await cursor.insert_data(self.TABLE, value)
+        value = dict(Bool=int(onoff), Text=text,
+                        AuthorID=author_id, MessageID=message_id)
+        target = dict(GuildID=guild_id, ChannelID=channel_id)
+        if await self.cursor.exists(self.TABLE, target):
+            await self.cursor.delete(self.TABLE, target)
+        value.update(target)
+        await self.cursor.insert_data(self.TABLE, value)
 
     async def get(self, guild_id: int, channel_id: int) -> Tuple[int, int, bool, str]:
         target = dict(GuildID=guild_id, ChannelID=channel_id)
-        async with self.db.get_cursor() as cursor:
-            if await cursor.exists(self.TABLE, target):
-                if (row := await cursor.get_data(self.TABLE, target)):
-                    return row[-4], row[-3], bool(row[-2]), row[-1]
-                else:
-                    return 0, 0, False, ""
+        if await self.cursor.exists(self.TABLE, target):
+            if (row := await self.get_data(self.TABLE, target)):
+                return row[-4], row[-3], bool(row[-2]), row[-1]
             else:
                 return 0, 0, False, ""
+        else:
+            return 0, 0, False, ""
 
 
 class ForcePinnedMessage(commands.Cog, DataManager):
@@ -57,7 +53,7 @@ class ForcePinnedMessage(commands.Cog, DataManager):
     async def on_ready(self):
         await self.bot.wait_until_ready()
         super(commands.Cog, self).__init__(
-            await self.bot.mysql.get_database()
+            self.bot.mysql
         )
         await self.init_table()
         self.worker.start()

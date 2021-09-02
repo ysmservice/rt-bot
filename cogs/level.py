@@ -3,15 +3,14 @@
 from discord.ext import commands
 import discord
 
-from rtlib import mysql, DatabaseLocker
+from rtlib import mysql, DatabaseManager
 from rtlib.ext import Embeds
 from typing import Tuple
 
 
-class DataManager(DatabaseLocker):
+class DataManager(DatabaseManager):
     def __init__(self, db):
-        self.db: mysql.MySQLManager = db
-        self.auto_cursor = True
+        self.db = db
 
     async def init_table(self) -> None:
         await self.cursor.create_table(
@@ -117,7 +116,7 @@ class Level(commands.Cog, DataManager):
     async def on_ready(self):
         await self.bot.wait_until_ready()
         super(commands.Cog, self).__init__(
-            await self.bot.mysql.get_database()
+            self.bot.mysql
         )
         await self.init_table()
 
