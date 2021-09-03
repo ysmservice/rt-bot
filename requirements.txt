@@ -4,7 +4,7 @@ jinja2
 flask-misaka
 aiofiles
 ujson
-git+https://github.com/RT-Team/discord.rtpy
+git+https://github.com/Pycord-Development/pycord
 aiomysql
 # rtutilで必要なモジュール
 ## OAuth

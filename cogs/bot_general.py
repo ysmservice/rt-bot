@@ -24,7 +24,7 @@ INFO_ITEMS = (("INVITE", {"ja": "招待リンク", "en": "invite link"}),
               ("SS", {"ja": "サポートサーバー", "en": "support server"}),
               ("URL", {"ja": "RTのウェブサイト", "en": "RT offical website"}),
               ("GITHUB", {"ja": "Github", "en": "Github"}))
-INFO_INVITE = "https://discord.com/api/oauth2/authorize?client_id=716496407212589087&permissions=8&scope=bot"
+INFO_INVITE = "https://discord.com/api/oauth2/authorize?client_id=716496407212589087&permissions=8&redirect_uri=https%3A%2F%2Frt-bot.com&response_type=code&scope=bot%20applications.commands%20activities.read%20activities.write"
 INFO_SS, INFO_URL = "https://discord.gg/ugMGw5w", "https://rt-bot.com"
 INFO_GITHUB = """* [RT-Team](https://github.com/RT-Team)
 * [RT-Backend](https://github.com/RT-Team/rt-backend)
@@ -43,8 +43,8 @@ CREDIT_DESIGN = """<:yutam:732948166881575022> YUTAM
 <:omochi_nagamochi:733618053631311924> 餅。"""
 CREDIT_ICON = "Made by Takkun `CC BY-SA 4.0`"
 CREDIT_LANGUAGE = {
-    "ja": "使用言語：Python, 使用ライブラリ：discord.py",
-    "en": "using language:Python, using library:discord.py"
+    "ja": "使用言語：Python, 使用ライブラリ：Pycord",
+    "en": "using language:Python, using library:Pycord"
 }
 CREDIT_SERVER = {
     "ja": "サーバーOS：Arch Linux\nSnavyさんが貸してくれています。感謝感激です！",
