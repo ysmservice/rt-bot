@@ -213,9 +213,10 @@ class DocHelp(commands.Cog):
     async def on_command_remove(self, command):
         # もしコマンドが削除されたならそのコマンドのヘルプも削除する。
         # コマンドがグループコマンドではない場合は何もしない。
-        if command.name in self.categories:
-            del self.data[self.categories[command.name]][command.name]
-            del self.tree[command.name]
+        name = command if isinstance(command, str) else command.name
+        if name in self.categories:
+            del self.data[self.categories[name]][name]
+            del self.tree[name]
 
     async def output(self, path: str) -> None:
         """作ったヘルプのデータをjson形式でファイルに出力します。
