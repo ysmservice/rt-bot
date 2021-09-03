@@ -80,8 +80,8 @@ async def synthe(
 
 if __name__ == "__main__":
     paths = {
-        "f1": "cogs/tts/lib/f1/libAquesTalk.so",
-        "f2": "cogs/tts/lib/f2/libAquesTalk.so"
+        "f1": "cogs/tts/lib/AquesTalk/f1/libAquesTalk.so",
+        "f2": "cogs/tts/lib/AquesTalk/f2/libAquesTalk.so"
     }
     load_libs(paths)
     asyncio.run(
