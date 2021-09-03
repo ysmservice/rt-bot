@@ -45,7 +45,32 @@ class Ticket(commands.Cog):
 
         Examples
         --------
-        `rt!ticket 問い合わせ モデレーター`"""
+        `rt!ticket 問い合わせ モデレーター`
+
+        !lang en
+        --------
+        Creates a panel for creating a ticket channel.
+
+        Parameters
+        ----------
+        title : str, default 
+            The title of the ticket panel.
+        description : str
+            The text to put in the description field of the ticket panel.  
+            If you want to include line breaks or spaces, enclose the text with `"`.
+        role : name of the role or a mention of the role, optional
+            The role that can see the ticket channel being created.  
+            If not specified, only the administrator and the creator of the ticket channel will be able to see it.
+
+        Notes
+        -----
+        This command can only be executed by someone with channel admin rights.  
+        The ticket panel that is created will have a 🎫 reaction, and the ticket channel will be created by pressing this reaction.  
+        If you want to disable this panel, you can simply delete the created panel.
+
+        Examples
+        --------
+        `rt!ticket query moderator`"""
         if ctx.guild and ctx.channel.category and str(ctx.channel.type) == "text":
             embed = discord.Embed(
                 title=title,
@@ -87,7 +112,7 @@ class Ticket(commands.Cog):
             if (error := now - self.cooldown.get(payload.member.id, 0)) < 300:
                 await payload.message.channel.send(
                     {"ja": f"{payload.member.mention}, クールダウンが必要なため{error}秒待ってください。",
-                     "en": f"{payload.member.mention}, ..."},
+                     "en": f"{payload.member.mention}, It want cooldown, please wait for {error} seconds."},
                      delete_after=5, target=payload.member.id
                 )
                 return
@@ -100,7 +125,7 @@ class Ticket(commands.Cog):
                     {"ja": (f"{payload.member.mention}, "
                             + "あなたは既にチケットチャンネルを作成しています。"),
                      "en": (f"{payload.member.mention}, "
-                            + "...")},
+                            + "You have already created a ticket channel.")},
                     delete_after=5, target=payload.member.id
                 )
                 return
@@ -121,7 +146,7 @@ class Ticket(commands.Cog):
             )
             await channel.send(
                 {"ja": f"{payload.member.mention}, ここがあなたのチャンネルです。",
-                 "en": f"{payload.member.mention}, ..."},
+                 "en": f"{payload.member.mention}, Here!"},
                 target=payload.member.id
             )
         else:

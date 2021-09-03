@@ -12,6 +12,7 @@ import asyncio
 from .web_manager import WebManager
 from .backend import *
 from . import mysql_manager as mysql
+from .ext import componesy
 from .oauth import OAuth
 
 
@@ -45,6 +46,7 @@ async def webhook_send(
 
 
 discord.abc.Messageable.webhook_send = webhook_send
+discord.ext.easy = componesy
 
 
 def setup(bot, only: Union[Tuple[str, ...], List[str]] = []):

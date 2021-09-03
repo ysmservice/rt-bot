@@ -116,6 +116,9 @@ class View:
             view.add_item(item)
         return view
 
+    def __call__(self):
+        return self.get_view()
+
 
 class Componesy(commands.Cog):
     def __init__(self, bot):

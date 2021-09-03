@@ -53,7 +53,33 @@ class Poll(commands.Cog):
         
         !lang en
         --------
-        上にあるものの英語版です。"""
+        Creates a voting panel.
+        
+        Parameters
+        ----------
+        title : str
+            The title of the voting panel.  
+            If you want to include spaces in the title, please put double quotation marks between the titles.
+        only_one : bool
+            If this is turned on, only one vote per person is allowed.  
+            If you don't want to allow only one person to vote, turn it off.
+        content : str
+            This is the item to be included in the poll, separated by a new line.  
+            If you put an emoticon at the beginning of the line, the emoticon will be used in the voting panel.  
+            If no emoji is placed, an English emoji will be assigned automatically.
+
+        Examples
+        --------
+        ```
+        rt!poll "Who's your favorite?" on
+        😊 tasuren
+        Mystic Girl
+        Hubuki-chan
+        NYN sister
+        🤭 senior beast
+        ```
+        Create a voting panel asking who you like, with a limit of one vote per person.  
+        [Run result](http://tasuren.syanari.com/RT/help/ServerPanel/poll.jpg)"""
         if content.count("\n") > 25:
             return await ctx.reply(
                 {"ja": "項目が多すぎるため投票パネルを作れませんでした。最大25個までです。",
