@@ -70,12 +70,13 @@ class OriginalCommand(commands.Cog, DataManager):
     async def update_cache(self):
         self.data = {}
         for row in await self.read_all():
-            if row[0] not in self.data:
-                self.data[row[0]] = {}
-            self.data[row[0]][row[1]] = {
-                "content": row[2],
-                "reply": row[3]
-            }
+            if row:
+                if row[0] not in self.data:
+                    self.data[row[0]] = {}
+                self.data[row[0]][row[1]] = {
+                    "content": row[2],
+                    "reply": row[3]
+                }
 
     LIST_MES = {
         "ja": ("自動返信一覧", "部分一致"),
