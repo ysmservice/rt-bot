@@ -1,0 +1,147 @@
+# RT - What day is today
+
+from discord.ext import commands, tasks
+import discord
+
+from rtlib import DatabaseManager
+from bs4 import BeautifulSoup
+from datetime import time
+
+
+class DataManager(DatabaseManager):
+
+    DB = "Today"
+
+    def __init__(self, db):
+        self.db = db
+
+    async def init_table(self) -> None:
+        await self.cursor.create_table(
+            self.DB, {
+                "GuildID": "BIGINT", "ChannelID": "BIGINT"
+            }
+        )
+
+    async def write(self, guild_id: int, channel_id: int) -> None:
+        target = {
+            "GuildID": guild_id, "ChannelID": channel_id
+        }
+        if await self.cursor.exists(self.DB, target):
+            raise KeyError("既に設定されています。")
+        else:
+            await self.cursor.insert_data(self.DB, target)
+
+    async def delete(self, guild_id: int, channel_id: int) -> None:
+        await self.cursor.delete(
+            self.DB, {"GuildID": guild_id, "ChannelID": channel_id}
+        )
+
+    async def reads(self, guild_id: int = None) -> list:
+        target = {}
+        if guild_id is not None:
+            target["GuildID"] = guild_id
+        return [
+            row async for row in self.cursor.get_datas(
+                self.DB, target)
+            if row
+        ]
+
+
+class Today(commands.Cog, DataManager):
+
+    YAHOO_ICON = "http://www.google.com/s2/favicons?domain=www.yahoo.co.jp"
+
+    def __init__(self, bot):
+        self.bot = bot
+        self.bot.loop.create_task(self.init_database())
+
+    async def init_database(self):
+        await self.bot.wait_until_ready()
+        super(commands.Cog, self).__init__(self.bot.mysql)
+        await self.init_table()
+        self.today_notification.start()
+
+    async def get_today(self) -> discord.Embed:
+        # 今日はなんの日をyahooから持ってくる。
+        async with self.bot.session.get(
+            "https://kids.yahoo.co.jp/today"
+        ) as r:
+            day = BeautifulSoup(
+                await r.read(), "html.parser"
+            ).find("dl")
+
+            embed = discord.Embed(
+                title=day.find("span").text,
+                description=day.find("dd").text,
+                color=0xee373e
+            )
+            embed.set_footer(
+                text="Yahoo きっず",
+                icon_url=self.YAHOO_ICON
+            )
+        return embed
+
+    @commands.command(
+        extras={
+            "headding": {
+                "ja": "今日は何の日を表示、通知します。",
+                "en": "Sorry, This command is not supported."
+            }, "parent": "Entertainment"
+        }
+    )
+    @commands.cooldown(1, 10, commands.BucketType.guild)
+    async def today(self, ctx, setting: bool = None):
+        """!lang ja
+        --------
+        今日は何の日を表示または通知します。
+
+        Parameters
+        ----------
+        setting : bool, default False
+            通知を設定するかどうかです。  
+            これはデフォルトではoffとなっておりこれをoffにすると今日は何の日を表示します。  
+            もしこれをonにすると実行したチャンネルに通知を送るように設定をします。
+
+        Examples
+        --------
+        `rt!today` 今日は何の日を表示します。
+        `rt!today on` 実行したチャンネルに毎日朝九時に今日は何の日を送信します。"""
+        if setting is None:
+            await ctx.reply(embed=await self.get_today())
+        elif ctx.author.guild_permissions.manage_channels:
+            try:
+                await self.write(ctx.guild.id, ctx.channel.id)
+                if len(await self.reads(ctx.guild.id)) == 4:
+                    raise OverflowError(
+                        "一つのサーバーにつき三つまでしか設定できないようにする。"
+                    )
+            except (KeyError, OverflowError) as e:
+                await self.delete(ctx.guild.id, ctx.channel.id)
+                if isinstance(e, OverflowError):
+                    return await ctx.reply(
+                        "一つのサーバーにつき四つまで設定が可能です。"
+                    )
+            await ctx.reply("Ok")
+        else:
+            await ctx.reply("チャンネル管理権限がないと通知の設定はできません。")
+
+    def cog_unload(self):
+        self.today_notification.cancel()
+
+    @tasks.loop(time=time(9, 0))
+    async def today_notification(self):
+        # 今日はなんの日通知をする。
+        for row in await self.reads():
+            channel = self.bot.get_channel(row[1])
+            if channel:
+                try:
+                    await channel.send(embed=await self.get_today())
+                except (discord.HTTPException, discord.Forbidden):
+                    continue
+            else:
+                # もしチャンネルが見つからないなら設定を削除する。
+                await self.delete(row[0], row[1])
+
+
+def setup(bot):
+    bot.add_cog(Today(bot))
