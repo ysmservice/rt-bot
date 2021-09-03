@@ -3,8 +3,6 @@
 from aiofiles import open as async_open
 import asyncio
 
-import ctypes
-
 
 SyntheError = type("SyntheError", (Exception,), {})
 libs = {}
@@ -20,7 +18,7 @@ def load_libs(paths: dict) -> None:
     paths : Dict[str, str]
         読み込むAquesTalkのライブラリの名前とパスの辞書です。"""
     for name, path in paths.items():
-        libs[name] = ctypes.cdll.LoadLibrary(path)
+        libs[name] = path
 
 
 async def synthe(
@@ -50,38 +48,26 @@ async def synthe(
         音声合成が何かしらの理由で失敗した際に発生します。"""
     aqtk = libs[voice]
 
-    # 音声合成をする。
-    size_callback = ctypes.c_int(0)
-    wav_address = aqtk.AquesTalk_Synthe(
-        text.encode('cp932', errors='ignore'),
-        speed, ctypes.byref(size_callback)
+    cmd = f"./{aqtk} {speed} > {file_path}"
+    # コマンドを実行する。
+    proc = await asyncio.create_subprocess_shell(
+        cmd, stdin=asyncio.subprocess.PIPE,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE
     )
-
-    if not wav_address:
-        # もし生成できない場合はエラーを起こす。
-        print(text)
-        raise SyntheError(f"音声合成に失敗しました。ERR:{size_callback.value}")
-
-    # 音声データのunsigned *charをunsigned *byteにキャストする。
-    wav_address = ctypes.cast(
-        wav_address,
-        ctypes.POINTER(
-            ctypes.ARRAY(ctypes.c_ubyte, size_callback.value)
-        )
+    # 実行結果を取得する。
+    _, stderr = await proc.communicate(
+        bytes(text, encoding='utf-8')
     )
-
-    # 音声データの中身をPythonのbytearray型にして書き込む。
-    async with async_open(file_path, "wb") as f:
-        await f.write(bytearray(wav_address.contents))
-
-    # メモリにある音声データの領域をもう必要ないので解放する。
-    aqtk.AquesTalk_FreeWave(wav_address)
+    # 実行結果を出力する。
+    if stderr:
+        raise SyntheError(f"音声合成に失敗しました。ERR:{stderr}")
 
 
 if __name__ == "__main__":
     paths = {
-        "f1": "cogs/tts/lib/AquesTalk/f1/libAquesTalk.so",
-        "f2": "cogs/tts/lib/AquesTalk/f2/libAquesTalk.so"
+        "f1": "cogs/tts/lib/AquesTalk/f1",
+        "f2": "cogs/tts/lib/AquesTalk/f2"
     }
     load_libs(paths)
     asyncio.run(
