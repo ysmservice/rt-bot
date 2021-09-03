@@ -175,31 +175,31 @@ class Twitter(commands.Cog, DataManager):
         # Twitterの通知を行う関数です。
         while self.bot.is_ready() and self.do_notification:
             for row in await self.reads():
-                channel = self.bot.get_channel(row[1])
+                if row:
+                    channel = self.bot.get_channel(row[1])
 
-                if (channel is None
-                        or not (user_id := await self.get_user_id(row[-1]))):
-                    # もしチャンネルがみつからないならその設定を削除する。
-                    # またはユーザーが見つからない場合でも削除する。
-                    await self.delete_data(row)
-                    continue
+                    if (channel is None
+                            or not (user_id := await self.get_user_id(row[-1]))):
+                        # もしチャンネルがみつからないならその設定を削除する。
+                        # またはユーザーが見つからない場合でも削除する。
+                        await self.delete_data(row)
+                        continue
 
-                # ユーザーのツイートを取得する。
-                async with self.bot.session.get(
-                    self.ENDPOINT.format(user_id),
-                    headers=self.HEADERS
-                ) as r:
-                    data = await r.json(loads=loads)
+                    # ユーザーのツイートを取得する。
+                    async with self.bot.session.get(
+                        self.ENDPOINT.format(user_id),
+                        headers=self.HEADERS
+                    ) as r:
+                        data = await r.json(loads=loads)
 
-                if ("errors" in data and data["errors"]
-                        and data["errors"][0]["title"] == "Not Found Error"):
-                    # もしユーザーが見つからないならデータを消す。
-                    await channel.send(
-                        f"Error:{row[-1]}というユーザーのツイートを取得できませんでした。"
-                    )
-                    await self.delete_data(row)
-                elif "data" in data:
-                    try:
+                    if ("errors" in data and data["errors"]
+                            and data["errors"][0]["title"] == "Not Found Error"):
+                        # もしユーザーが見つからないならデータを消す。
+                        await channel.send(
+                            f"Error:{row[-1]}というユーザーのツイートを取得できませんでした。"
+                        )
+                        await self.delete_data(row)
+                    elif "data" in data:
                         # 取得したツイートはキューに入れる。
                         # それを十秒毎にWorkerが送信する。
                         for data in data["data"]:
@@ -224,10 +224,9 @@ class Twitter(commands.Cog, DataManager):
                                 )
                                 await self.sended(channel.id, data["id"])
                                 self.queue[channel.id]["length"] += 1
-                    except KeyError:
-                        pass
 
-                await asyncio.sleep(1.2)
+                    await asyncio.sleep(1.2)
+            await asyncio.sleep(1)
 
     def cog_unload(self):
         self.worker.cancel()
