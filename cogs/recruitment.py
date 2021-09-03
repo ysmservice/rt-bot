@@ -55,28 +55,54 @@ class Recruitment(commands.Cog):
         
         !lang en
         --------
-        上の英語版をここに"""
+        Create a recruitment panel.
+
+        Parameters
+        ----------
+        title : str
+            The title of the recruitment panel.  
+            If you want to include space into title, you have to sandwich the title in double quotation marks.
+        max : int
+            The maximum number of people to recruit.
+        deadline : int
+            The number of days to set the deadline.  
+            0 means no deadline.
+        description : str, optional
+            Description of the recruitment panel.
+
+        Examples
+        --------
+        ```
+        rt!recruitment "Recruiting people to pick up Ritsu-chan." 3 3
+        Meeting place: RT server
+        Desired Talent: Cool guys.
+        ```
+        [Run result](http://tasuren.syanari.com/RT/help/ServerPanel/recruitment.jpg)
+
+        Aliases
+        -------
+        recruit, rct"""
         embed = discord.Embed(
             title=title,
             description=description if description else discord.Embed.Empty,
             color=ctx.author.color
         )
         embed.add_field(
-            name={"ja": "参加者", "en": "..."},
+            name={"ja": "参加者", "en": "Participant"},
             value="今はいません。/ nobody now",
             inline=False
         )
         embed.add_field(
-            name={"ja": "最大募集人数", "en": "..."},
+            name={"ja": "最大募集人数", "en": "Max. number of people raised"},
             value=str(max_)
         )
         embed.add_field(
-            name={"ja": "締め切り", "en": "deadline"},
+            name={"ja": "締め切り", "en": "Deadline"},
             value=f"{deadline}日後" if deadline else "なし / None"
         )
         embed.set_footer(
             text={"ja": "※連打防止のため結果の反映には数秒かかります。",
-                  "en": "..."}
+                  "en": "※It will take a few seconds for the results to be reflected to prevent repeated hits."}
         )
         message = await ctx.webhook_send(
             content="RT募集パネル, ID:" + str(time() + 86400 * deadline),

@@ -45,7 +45,7 @@ class RolePanel(commands.Cog):
         Geometry dash
         🥰 サノバウィッチ
         😘 ナルキッソス
-        😊 闘神都市 II
+        闘神都市 II
         ```
 
         Notes
@@ -58,7 +58,39 @@ class RolePanel(commands.Cog):
 
         !lang en
         --------
-        上の説明の英語版をここに。"""
+        Create a role panel.  
+        This command can only be executed by a person who has administrative privileges.
+
+        Parameters
+        ----------
+        title : str
+            Title of the position panel.  
+            If you want to include spaces in the title, put them between double quotation marks.
+        content : str
+            The name of the role panel, separated by a new line.  
+            If you put an emoji at the beginning of the line, the emoji will be used in the position panel.  
+            If no emoji is placed, an English emoji will be assigned automatically.
+
+        Examples
+        --------
+        ```
+        rt!role "Game you are playing"
+        Minecraft
+        Fortnite
+        Geometry dash
+        Doki Doki Literary Club!
+        🥰 Sanova Witch
+        😊 Narcissus
+        闘神都市 II
+        ```
+
+        Notes
+        -----
+        You can get the template by pressing the 🛠 emoji.
+
+        Raises
+        ------
+        400 Bad Request : Occurs when a position cannot be found."""
         emojis = self.parse_description(content, ctx.guild)
         if emojis:
             embed = discord.Embed(
@@ -69,7 +101,7 @@ class RolePanel(commands.Cog):
             )
             embed.set_footer(
                 text={"ja": "※連打防止のため役職の付与は数秒遅れます。",
-                      "en": "..."}
+                      "en": "※There will be a delay of a few seconds in granting the position to prevent consecutive hits."}
             )
 
             message = await ctx.webhook_send(
@@ -81,7 +113,7 @@ class RolePanel(commands.Cog):
         else:
             raise commands.errors.CommandError(
                 {"ja": "何も役職を指定されていないため役職パネルを作れません。",
-                 "en": "..."}
+                 "en": "I can't make the role panel because nothing role."}
             )
 
     async def update_role(

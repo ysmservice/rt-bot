@@ -28,7 +28,7 @@ class Reprypt(commands.Cog):
 
         !lang en
         --------
-        ..."""
+        Encryption/Decryption by Reprypt."""
         if not ctx.invoked_subcommand:
             await ctx.reply(
                 {"ja": "使い方が違います。",
@@ -70,7 +70,35 @@ class Reprypt(commands.Cog):
 
         !lang en
         --------
-        ..."""
+        
+        Encrypts the specified text.
+
+        Parameters
+        ----------
+        key : str
+            The password required for decryption.
+        content : str
+            The text to be encrypted.
+
+        Examples
+        --------
+        `rt!reprypt encrypt tasuren My top secret!`
+
+        Aliases
+        -------
+        en
+
+        Notes
+        -----
+        This has an API.  
+        URI:`/api/reprypt` POST/OPTIONS
+        ```json
+        {
+            "mode": "encrypt",
+            "content": "Cipher to decrypt",
+            "password": "password"
+        }
+        ```"""
         result = reprypt.encrypt(content, key)
         await ctx.reply(
             f"```\n{result}\n```", replace_language=False,
@@ -112,7 +140,34 @@ class Reprypt(commands.Cog):
 
         !lang en
         --------
-        ..."""
+        Decrypts the text encrypted by Reprypt.
+
+        Parameters
+        ----------
+        key : str
+            The password used for encryption.
+        content : str
+            The encrypted text to be decrypted.
+
+        Aliases
+        -------
+        de
+
+        Examples
+        --------
+        `rt!reprypt encrypt tasuren ByGqa44We55B1u56e5oYO65FC77x`
+
+        Notes
+        -----
+        There is an API for this.  
+        URI:`/api/reprypt` POST/OPTIONS
+        ```json
+        {
+            "mode": "decrypt",
+            "content": "Cipher to decrypt",
+            "password": "password"
+        }
+        ```"""
         result = reprypt.decrypt(content, key)
         await ctx.reply(
             f"```\n{result}\n```", replace_language=False,

@@ -15,6 +15,7 @@ async def freechannel(ctx: commands.Context) -> bool:
     else:
         return ctx.category is not None
 
+
 class FreeChannel(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -28,7 +29,7 @@ class FreeChannel(commands.Cog):
         extras={
             "headding": {
                 "ja": "実行したチャンネルをフリーチャンネル作成専用のチャンネルにします。",
-                "en": "..."
+                "en": "Make the executed channel a dedicated channel for free channel creation."
             },
             "parent": "ServerPanel"
         },
