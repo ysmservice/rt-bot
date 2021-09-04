@@ -69,10 +69,10 @@ from discord.ext import commands
 import discord
 
 from aiofiles import open as async_open
+from copy import copy, deepcopy
 from ujson import loads, dumps
 from typing import Dict, List
 from inspect import ismethod
-from copy import copy, deepcopy
 
 from .util import DocParser
 
@@ -94,6 +94,11 @@ class DocHelp(commands.Cog):
         self.indent_type = " "
         self.indent = 4
         self._prefix = None
+
+    @commands.Cog.listener()
+    async def on_full_ready(self):
+        for command in self.bot.commands:
+            self.bot.dispatch("command_add", command)
 
     def convert_embed(self, command_name: str, doc: str, **kwargs) -> List[discord.Embed]:
         """渡されたコマンド名とヘルプ(マークダウン)をEmbedにします。

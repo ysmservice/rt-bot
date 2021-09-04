@@ -14,6 +14,7 @@ Now loading..."""
 print(desc)
 
 from aiohttp import ClientSession
+from asyncio import sleep
 from os import listdir
 from sys import argv
 import discord
@@ -61,17 +62,32 @@ def on_init(bot):
     bot.load_extension("rtutil.oauth_manager")
     bot.load_extension("rtutil.setting_api")
 
+    async def setting_up():
+        await sleep(3)
+        await bot.change_presence(
+            activity=discord.Activity(
+                name="起動中..."
+            ), status=discord.Status.dnd
+        )
+
+    bot._loaded = False
+
     @bot.event
     async def on_ready():
         # cogsフォルダにあるエクステンションを読み込む。
-        for path in listdir("cogs"):
-            if path[0] in ("#", "."):
-                continue
-            if path.endswith(".py"):
-                bot.load_extension("cogs." + path[:-3])
-            elif "." not in path and path != "__pycache__" and path[0] != ".":
-                bot.load_extension("cogs." + path)
-            bot.print("Loaded extension", path)
+        if not bot._loaded:
+            for path in listdir("cogs"):
+                if path[0] in ("#", "."):
+                    continue
+                if path.endswith(".py"):
+                    bot.load_extension("cogs." + path[:-3])
+                elif "." not in path and path != "__pycache__" and path[0] != ".":
+                    bot.load_extension("cogs." + path)
+                bot.print("Loaded extension", path)
+            bot.dispatch("full_ready")
+            bot._loaded = True
+
+    bot.loop.create_task(setting_up())
 
 # テスト時は普通のBackendを本番はシャード版Backendを定義する。
 intents = discord.Intents.default()
