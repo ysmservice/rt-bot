@@ -155,10 +155,9 @@ class Captcha(commands.Cog, DataManager):
         row = await self.load(member.guild.id)
         if row:
             captcha = self.captchas[row[2]]
-            await captcha.captcha(
-                discord.utils.get(member.guild.text_channels, id=row[1]),
-                member
-            )
+            channel = discord.utils.get(member.guild.text_channels, id=row[1])
+            if channel:
+                await captcha.captcha(channel, member)
 
     def cog_unload(self):
         self.queue.killer.cancel()

@@ -34,23 +34,23 @@ class WordCaptcha(commands.Cog):
                         await message.author.add_roles(role)
                     except Exception as e:
                         await message.reply(
-                            {"ja": ("認証に失敗しました。\n"
+                            {"ja": (f"{message.author.mention}, 認証に失敗しました。\n"
                                     "付与する役職がRTの役職より下にあるか確認してください。\n"
                                     f"エラーコード：{e}"),
-                             "en": "Failed, make sure that the role position below the RT role position."},
+                             "en": f"{message.author.mention}, Failed, make sure that the role position below the RT role position."},
                         )
                     else:
                         await message.reply(
-                            {"ja": "認証に成功しました。",
-                            "en": "Success!"}
+                            {"ja": f"{message.author.mention}, 認証に成功しました。",
+                             "en": f"{message.author.mention}, Success!"}
                         )
                 else:
                     await message.reply(
-                        {"ja": "役職が見つからないため認証に失敗しました。",
-                         "en": "Failed, I couldn't find the role to add you."}
+                        {"ja": f"{message.author.mention}, 役職が見つからないため認証に失敗しました。",
+                         "en": f"{message.author.mention}, Failed, I couldn't find the role to add you."}
                     )
             else:
                 await message.reply(
-                    {"ja": "合言葉が違います。",
-                     "en": "That password is wrong."}
+                    {"ja": f"{message.author.mention}, 合言葉が違います。",
+                     "en": f"{message.author.mention}, That password is wrong."}
                 )

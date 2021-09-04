@@ -240,16 +240,7 @@ class BotGeneral(commands.Cog):
             error_message = "".join(
                 TracebackException.from_exception(error).format())
 
-            # テストモードなら問答無用でエラーを出力する。
-            if self.bot.command_prefix[0] == "r2!":
-                print(error_message)
-            else:
-                # RTサーバーにエラーを通知する。
-                await self.on_error_channel.send(
-                    (f"**エラーが発生しました。**\nGuild: {ctx.guild.name}, "
-                    + f"User: {ctx.author.name}\nコマンド名：{ctx.command.qualified_name}"
-                    + content)
-                )
+            print(error_message)
 
             title = "500 Internal Server Error"
             description = {
