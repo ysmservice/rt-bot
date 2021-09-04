@@ -51,8 +51,8 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         self.cache: Dict[int, dict] = {}
         self.now: Dict[int, dict] = {}
         super(commands.Cog, self).__init__(bot.session, VOICES)
+        self.bot.loop.create_task(self.on_ready())
 
-    @commands.Cog.listener()
     async def on_ready(self):
         super(VoiceManager, self).__init__(
             self.bot.data["mysql"]
