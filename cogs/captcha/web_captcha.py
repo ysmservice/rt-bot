@@ -61,25 +61,25 @@ class WebCaptcha:
                         try:
                             await member.add_roles(role)
                         except Exception as e:
-                            result = (f"{message.author.mention}, 認証に失敗しました。"
+                            result = (f"{member.mention}, 認証に失敗しました。"
                                 "付与する役職がRTの役職より下にあるか確認してください。\n"
                                 "Failed, make sure that the role position below the RT role position.")
                         else:
-                            result = (f"{message.author.mention}, 認証に成功しました。"
+                            result = (f"{member.mention}, 認証に成功しました。"
                                       "役職が付与されました。\n"
                                       "Success!")
                             del self.queue[guild.id]
                     else:
-                        result = (f"{message.author.mention}, うぅ、、役職が見つからなかったから認証できなかったのです。"
+                        result = (f"{member.mention}, うぅ、、役職が見つからなかったから認証できなかったのです。"
                                   "すみません！！\n"
                                   "Ah, I couldn't find the role to add to you.")
             else:
-                result = (f"{message.author.mention}, 認証に失敗しました。"
+                result = (f"{member.mention}, 認証に失敗しました。"
                     "あなたがロボットではないことの確認ができなかったです。\n"
                     "Failed, I couldn't make sure you were not Robot. I'm sorry!")
         else:
             result = (
-                f"{message.author.mention}, あなたが誰なのかわからないので"
+                f"{member.mention}, あなたが誰なのかわからないので"
                 "認証に失敗しました。"
                 "Discordに戻ってもう一度URLを開いてください。\n"
                 "Failed, Who are you? Please back to discord and open captcha link again."

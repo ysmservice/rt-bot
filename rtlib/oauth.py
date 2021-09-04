@@ -135,6 +135,7 @@ class OAuth:
         cookie_data = {"user_id": data["id"], "name": data["username"]}
 
         # クッキーに暗号化してから入れる。
+        print(callback_url, callback_uri)
         response = sanic.response.redirect(callback_uri)
         response.cookies["session"] = reprypt.encrypt(
             ujson.dumps(cookie_data), self.secret_key
