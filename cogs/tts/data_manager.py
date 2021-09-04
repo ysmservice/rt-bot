@@ -16,7 +16,7 @@ class DataManager(DatabaseManager):
         }
         await self.cursor.create_table("tts", columns)
 
-    async def _check_exists(self, cursor: Cursor, type_: str, some_id: int):
+    async def _check_exists(self, cursor, type_: str, some_id: int):
         """指定されたtypeでsome_idのデータがあるか確認します。
 
         Parameters
