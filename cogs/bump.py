@@ -11,7 +11,7 @@ from ujson import loads
 from time import time
 
 
-class DataManager(DatabaseLocker):
+class DataManager(DatabaseManager):
     def __init__(self, db):
         self.db = db
 
