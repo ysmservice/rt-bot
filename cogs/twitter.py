@@ -40,7 +40,7 @@ class DataManager(DatabaseManager):
                 "RegTime": int(time())
             }
         )
-        rows = await self._get_sended(channel_id)
+        rows = await self._get_sended(cursor, channel_id)
         if len(rows) == 6:
             await cursor.delete(
                 self.LOG_DB,
