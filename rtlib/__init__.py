@@ -159,10 +159,11 @@ class DatabaseManager:
                 await self._close(conn, cursor)
                 return data
             finally:
-                self.bot.print(
-                    "[DEBUG]", f"[{coro.__name__}]",
-                    "Database Cursor Close",
-                    "Connection Count:", self.db.pool.size,
-                    "Connection Freesize:", self.db.pool.freesize
-                )
+                if self.bot.test:
+                    self.bot.print(
+                        "[DEBUG]", f"[{coro.__name__}]",
+                        "Database Cursor Close",
+                        "Connection Count:", self.db.pool.size,
+                        "Connection Freesize:", self.db.pool.freesize
+                    )
         return new_coro
