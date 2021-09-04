@@ -90,9 +90,7 @@ class DataManager(DatabaseManager):
         ----------
         guild_id : int
             サーバーIDです。"""
-        print(3)
         if await self._check_exists(cursor, "dictionary", guild_id):
-            print(4)
             rows = await cursor.get_data("tts", {"type": "dictionary", "id": guild_id})
             if rows:
                 return rows[-1]

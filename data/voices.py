@@ -17,13 +17,13 @@ voices = {
         "mode": "OpenJTalk"
     },
     "reimu": {
-        "path": "cogs/tts/lib/AquesTalk/f1/libAquesTalk.so",
+        "path": "cogs/tts/lib/AquesTalk/f1",
         "name": "ゆっくり霊夢",
         "description": "AquesTalk 評価版, (株)アクエストの音声合成ライブラリAquesTalkによるものです。",
         "mode": "AquesTalk"
     },
     "marisa": {
-        "path": "cogs/tts/lib/AquesTalk/f2/libAquesTalk.so",
+        "path": "cogs/tts/lib/AquesTalk/f2",
         "name": "ゆっくり魔理沙",
         "description": "AquesTalk 評価版, (株)アクエストの音声合成ライブラリAquesTalkによるものです。",
         "mode": "AquesTalk"

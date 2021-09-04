@@ -145,11 +145,6 @@ class DatabaseManager:
             conn = await self.db.get_database()
             cursor = conn.get_cursor()
             await cursor.prepare_cursor()
-            if self.bot.test:
-                self.bot.print(
-                    "[DEBUG]", f"[{coro.__name__}]",
-                    "Database Control", args
-                )
             try:
                 data = await coro(self, cursor, *args, **kwargs)
             except Exception as e:
@@ -158,12 +153,4 @@ class DatabaseManager:
             else:
                 await self._close(conn, cursor)
                 return data
-            finally:
-                if self.bot.test:
-                    self.bot.print(
-                        "[DEBUG]", f"[{coro.__name__}]",
-                        "Database Cursor Close",
-                        "Connection Count:", self.db.pool.size,
-                        "Connection Freesize:", self.db.pool.freesize
-                    )
         return new_coro
