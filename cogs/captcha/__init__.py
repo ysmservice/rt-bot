@@ -153,6 +153,9 @@ class Captcha(commands.Cog, DataManager):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
+        if not self.bot.ready():
+            return
+
         row = await self.load(member.guild.id)
         if row:
             captcha = self.captchas[row[2]]
