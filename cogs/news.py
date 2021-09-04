@@ -16,34 +16,34 @@ class DataManager(DatabaseManager):
     def __init__(self, db):
         self.db = db
 
-    async def init_table(self) -> None:
-        await self.cursor.create_table(
+    async def init_table(self, cursor) -> None:
+        await cursor.create_table(
             "news", {
                 "id": "BIGINT", "time": "TEXT",
                 "content": "TEXT", "image": "TEXT"
             }
         )
 
-    async def add_news(self, content: str, image: str) -> float:
+    async def add_news(self, cursor, content: str, image: str) -> float:
         # Newsを新しく追加します。
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         t = time()
-        await self.cursor.insert_data(
+        await cursor.insert_data(
             "news", {"id": t, "time": now, "content": content, "image": image}
         )
         return t
 
-    async def remove_news(self, id_: int) -> None:
+    async def remove_news(self, cursor, id_: int) -> None:
         # Newsを削除します。
-        await self.cursor.delete_data("news", {"id": id_})
+        await cursor.delete_data("news", {"id": id_})
 
-    async def get_news(self, id_: int) -> tuple:
+    async def get_news(self, cursor, id_: int) -> tuple:
         # Newsを取得する。
-        return (await self.cursor.get_data("news", {"id": id_}))
+        return (await cursor.get_data("news", {"id": id_}))
 
-    async def get_news_all(self) -> list:
+    async def get_news_all(self, cursor) -> list:
         # Newsを全て取得する。
-        return [row async for row in self.cursor.get_datas(
+        return [row async for row in cursor.get_datas(
                 "news", {}, custom="ORDER BY id DESC")
                 if row]
 

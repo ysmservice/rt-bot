@@ -15,23 +15,23 @@ class DataManager(DatabaseManager):
     def __init__(self, db):
         self.db = db
 
-    async def init_table(self) -> None:
-        await self.cursor.create_table(
+    async def init_table(self, cursor) -> None:
+        await cursor.create_table(
             self.DB, {
                 "GuildID": "BIGINT", "OnOff": "TINYINT"
             }
         )
-        await self.cursor.create_table(
+        await cursor.create_table(
             self.IGNORE_DB, {"ChannelID": "BIGINT", "OnOff": "TINYINT"}
         )
 
-    async def read(self, guild_id: int, channel_id: int) -> tuple:
+    async def read(self, cursor, guild_id: int, channel_id: int) -> tuple:
         target = {"GuildID": guild_id}
         ignore_target = {"ChannelID": channel_id}
-        if await self.cursor.exists(self.DB, target):
-            if (guild := await self.cursor.get_data(self.DB, target))[1]:
-                if await self.cursor.exists(self.IGNORE_DB, ignore_target):
-                    if (row := await self.cursor.get_data(self.IGNORE_DB, ignore_target)):
+        if await cursor.exists(self.DB, target):
+            if (guild := await cursor.get_data(self.DB, target))[1]:
+                if await cursor.exists(self.IGNORE_DB, ignore_target):
+                    if (row := await cursor.get_data(self.IGNORE_DB, ignore_target)):
                         return bool(row[1])
                     return False
                 else:
@@ -40,23 +40,23 @@ class DataManager(DatabaseManager):
         else:
             return True
 
-    async def write(self, guild_id: int, onoff: bool) -> None:
+    async def write(self, cursor, guild_id: int, onoff: bool) -> None:
         target = {"GuildID": guild_id}
         change = {"OnOff": int(onoff)}
-        if await self.cursor.exists(self.DB, target):
-            await self.cursor.update_data(self.DB, change, target)
+        if await cursor.exists(self.DB, target):
+            await cursor.update_data(self.DB, change, target)
         else:
             target.update(change)
-            await self.cursor.insert_data(self.DB, target)
+            await cursor.insert_data(self.DB, target)
 
-    async def set_ignore(self, channel_id: int, onoff: bool) -> None:
+    async def set_ignore(self, cursor, channel_id: int, onoff: bool) -> None:
         target = {"ChannelID": channel_id}
         change = {"OnOff": int(onoff)}
-        if await self.cursor.exists(self.IGNORE_DB, target):
-            await self.cursor.update_data(self.IGNORE_DB, change, target)
+        if await cursor.exists(self.IGNORE_DB, target):
+            await cursor.update_data(self.IGNORE_DB, change, target)
         else:
             target.update(change)
-            await self.cursor.insert_data(self.IGNORE_DB, target)
+            await cursor.insert_data(self.IGNORE_DB, target)
 
 
 class Expander(commands.Cog, DataManager):

@@ -12,38 +12,38 @@ class DataManager(DatabaseManager):
     def __init__(self, db):
         self.db = db
 
-    async def init_table(self) -> None:
-        await self.cursor.create_table(
+    async def init_table(self, cursor) -> None:
+        await cursor.create_table(
             "level", {
                 "GuildID": "BIGINT", "UserID": "BIGINT",
                 "Exp": "INTEGER", "Level": "INTEGER"
             }
         )
-        await self.cursor.create_table(
+        await cursor.create_table(
             "levelReward", {
                 "GuildID": "BIGINT", "Level": "INTEGER",
                 "Role": "BIGINT", "ReplaceRole": "BIGINT"
             }
         )
-        await self.cursor.create_table(
+        await cursor.create_table(
             "levelNotification", {
                 "UserID": "BIGINT", "Bool": "TINYINT"
             }
         )
 
-    async def set_notification(self, user_id: int, onoff: bool) -> None:
+    async def set_notification(self, cursor, user_id: int, onoff: bool) -> None:
         target = {"UserID": user_id}
         change = {"Bool": int(onoff)}
-        if await self.cursor.exists("levelNotification", target):
-            await self.cursor.update_data("levelNotification", change, target)
+        if await cursor.exists("levelNotification", target):
+            await cursor.update_data("levelNotification", change, target)
         else:
             target.update(change)
-            await self.cursor.insert_data("levelNotification", target)
+            await cursor.insert_data("levelNotification", target)
 
-    async def get_notification(self, user_id: int) -> bool:
+    async def get_notification(self, cursor, user_id: int) -> bool:
         target = {"UserID": user_id}
-        if await self.cursor.exists("levelNotification", target):
-            if (row := await self.cursor.get_data(
+        if await cursor.exists("levelNotification", target):
+            if (row := await cursor.get_data(
                     "levelNotification", target)):
                 return bool(row[1])
             else:
@@ -52,58 +52,58 @@ class DataManager(DatabaseManager):
             return True
 
     async def set_level(
-            self, guild_id: int, user_id: int,
+            self, cursor, guild_id: int, user_id: int,
             exp: int, level: int
         ) -> None:
         target = {"GuildID": guild_id, "UserID": user_id}
         change = {"Exp": exp, "Level": level}
-        if await self.cursor.exists("level", target):
-            await self.cursor.update_data("level", change, target)
+        if await cursor.exists("level", target):
+            await cursor.update_data("level", change, target)
         else:
             target.update(change)
-            await self.cursor.insert_data("level", target)
+            await cursor.insert_data("level", target)
 
-    async def get_level(self, guild_id: int, user_id: int) -> tuple:
+    async def get_level(self, cursor, guild_id: int, user_id: int) -> tuple:
         target = {"GuildID": guild_id, "UserID": user_id}
-        if await self.cursor.exists("level", target):
-            return await self.cursor.get_data("level", target)
+        if await cursor.exists("level", target):
+            return await cursor.get_data("level", target)
         else:
             return (guild_id, user_id, 0, 0)
 
-    async def get_levels(self, guild_id: int, limit: int = 10) -> tuple:
-        await self.cursor.cursor.execute(
+    async def get_levels(self, cursor, guild_id: int, limit: int = 10) -> tuple:
+        await cursor.cursor.execute(
             """SELECT * FROM level
                 WHERE GuildID = %s
                 ORDER BY Level DESC
                 LIMIT """ + str(limit),
             (guild_id,)
         )
-        return await self.cursor.cursor.fetchall()
+        return await cursor.cursor.fetchall()
 
     async def set_reward(
-            self, level: int, guild_id: int, role_id: int,
+            self, cursor, level: int, guild_id: int, role_id: int,
             replace_role_id: int = 0
         ) -> None:
         target = {"GuildID": guild_id, "Level": level}
         change = {"Role": role_id,
                   "ReplaceRole": replace_role_id}
-        if await self.cursor.exists("levelReward", target):
-            await self.cursor.update_data("levelReward", change, target)
+        if await cursor.exists("levelReward", target):
+            await cursor.update_data("levelReward", change, target)
         else:
             target.update(change)
-            await self.cursor.insert_data("levelReward", target)
+            await cursor.insert_data("levelReward", target)
 
-    async def delete_reward(self, guild_id: int, level:int) -> None:
+    async def delete_reward(self, cursor, guild_id: int, level:int) -> None:
         target = {"GuildID": guild_id, "Level": level}
-        if await self.cursor.exists("levelReward", target):
-            await self.cursor.delete("levelReward", target)
+        if await cursor.exists("levelReward", target):
+            await cursor.delete("levelReward", target)
         else:
             raise KeyError("そのレベルは設定されていません。")
 
-    async def get_reward(self, guild_id: int, level: int) -> tuple:
+    async def get_reward(self, cursor, guild_id: int, level: int) -> tuple:
         target = {"GuildID": guild_id, "Level": level}
-        if await self.cursor.exists("levelReward", target):
-            return await self.cursor.get_data("levelReward", target)
+        if await cursor.exists("levelReward", target):
+            return await cursor.get_data("levelReward", target)
         else:
             return ()
 

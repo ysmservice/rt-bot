@@ -12,77 +12,77 @@ class DataManager(DatabaseManager):
     def __init__(self, db):
         self.db = db
 
-    async def init_table(self) -> None:
-        await self.cursor.create_table(
+    async def init_table(self, cursor) -> None:
+        await cursor.create_table(
             "globalChat", {
                 "Name": "TEXT", "ChannelID": "BIGINT",
                 "Extras": "JSON"
             }
         )
 
-    async def load_globalchat_name(self, channel_id: int) -> list:
+    async def load_globalchat_name(self, cursor, channel_id: int) -> list:
         target = {"ChannelID": channel_id}
-        if await self.cursor.exists("globalChat", target):
-            return await self.cursor.get_data("globalChat", target)
+        if await cursor.exists("globalChat", target):
+            return await cursor.get_data("globalChat", target)
         else:
             return ()
 
-    async def load_globalchat_channels(self, name: str) -> list:
+    async def load_globalchat_channels(self, cursor, name: str) -> list:
         target = {"Name": name}
-        if await self.cursor.exists("globalChat", target):
+        if await cursor.exists("globalChat", target):
             return [
                 data
-                async for data in self.cursor.get_datas(
+                async for data in cursor.get_datas(
                     "globalChat", target
                 )
             ]
         else:
             return []
 
-    async def make_globalchat(self, name: str, channel_id: int, extras: dict) -> None:
+    async def make_globalchat(self, cursor, name: str, channel_id: int, extras: dict) -> None:
         target = {"Name": name, "ChannelID": channel_id, "Extras": extras}
-        if await self.cursor.exists("globalChat", {"Name": name}):
+        if await cursor.exists("globalChat", {"Name": name}):
             raise ValueError("既に追加されています。")
         else:
-            await self.cursor.insert_data("globalChat", target)
+            await cursor.insert_data("globalChat", target)
 
-    async def connect_globalchat(self, name: str, channel_id: int, extras: dict) -> None:
+    async def connect_globalchat(self, cursor, name: str, channel_id: int, extras: dict) -> None:
         target = {"Name": name, "ChannelID": channel_id}
-        if await self.cursor.exists("globalChat", target):
+        if await cursor.exists("globalChat", target):
             raise ValueError("既に接続しています。")
         else:
             target["Extras"] = extras
-            await self.cursor.insert_data("globalChat", target)
+            await cursor.insert_data("globalChat", target)
 
-    async def disconnect_globalchat(self, name: str, channel_id: int) -> None:
+    async def disconnect_globalchat(self, cursor, name: str, channel_id: int) -> None:
         target = {"Name": name, "ChannelID": channel_id}
-        if await self.cursor.exists("globalChat", target):
-            await self.cursor.delete("globalChat", target)
+        if await cursor.exists("globalChat", target):
+            await cursor.delete("globalChat", target)
         else:
             raise ValueError(
                 "そのグローバルチャットは存在していないまたはチャンネルは接続していません。"
             )
 
-    async def exists_globalchat(self, name: str) -> bool:
-        return await self.cursor.exists("globalChat", {"Name": name})
+    async def exists_globalchat(self, cursor, name: str) -> bool:
+        return await cursor.exists("globalChat", {"Name": name})
 
-    async def update_extras(self, name: str, extras: dict) -> None:
+    async def update_extras(self, cursor, name: str, extras: dict) -> None:
         target = {"Name": name}
         change = {"Extras": extras}
-        if await self.cursor.exists("globalChat", target):
-            await self.cursor.update("globalChat", change, target)
+        if await cursor.exists("globalChat", target):
+            await cursor.update("globalChat", change, target)
         else:
             raise ValueError("グローバルチャットが存在しません。")
 
-    async def delete_globalchat(self, name: str) -> None:
-        await self.cursor.delete("globalChat", {"Name": name})
+    async def delete_globalchat(self, cursor, name: str) -> None:
+        await cursor.delete("globalChat", {"Name": name})
 
 
 def require_guild(coro):
     @wraps(coro)
-    async def new_coro(self, ctx, *args, **kwargs):
+    async def new_coro(self, cursor, ctx, *args, **kwargs):
         if ctx.guild:
-            return await coro(self, ctx, *args, **kwargs)
+            return await coro(self, cursor, ctx, *args, **kwargs)
         else:
             return await ctx.reply(
                 {"ja": "サーバーのみ実行可能です。",
@@ -93,10 +93,10 @@ def require_guild(coro):
 
 def require_globalchat(coro):
     @wraps(coro)
-    async def new_coro(self, ctx, *args, **kwargs):
+    async def new_coro(self, cursor, ctx, *args, **kwargs):
         if (row := await self.load_globalchat_name(ctx.channel.id)):
             ctx.row = row
-            return await coro(self, ctx, *args, **kwargs)
+            return await coro(self, cursor, ctx, *args, **kwargs)
         else:
             return await ctx.reply(
                 {"ja": "このチャンネルはグローバルチャットではありません。",

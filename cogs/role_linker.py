@@ -14,8 +14,8 @@ class DataManager(DatabaseManager):
     def __init__(self, db):
         self.db = db
 
-    async def init_table(self) -> None:
-        await self.cursor.create_table(
+    async def init_table(self, cursor) -> None:
+        await cursor.create_table(
             self.DB, {
                 "GuildID": "BIGINT", "Original": "BIGINT",
                 "Role": "BIGINT"
@@ -23,37 +23,37 @@ class DataManager(DatabaseManager):
         )
 
     async def write(
-        self, guild_id: int, original_role_id: int,
+        self, cursor, guild_id: int, original_role_id: int,
         role_id: int
     ) -> None:
         target = {
             "GuildID": guild_id, "Original": original_role_id
         }
         change = dict(Role=role_id)
-        if await self.cursor.exists(self.DB, target):
-            await self.cursor.update_data(self.DB, change, target)
+        if await cursor.exists(self.DB, target):
+            await cursor.update_data(self.DB, change, target)
         else:
             target.update(change)
-            await self.cursor.insert_data(self.DB, target)
+            await cursor.insert_data(self.DB, target)
 
-    async def delete(self, guild_id: int, original_role_id: int) -> None:
+    async def delete(self, cursor, guild_id: int, original_role_id: int) -> None:
         target = {"GuildID": guild_id, "Original": original_role_id}
-        if await self.cursor.exists(self.DB, target):
-            await self.cursor.delete(self.DB, target)
+        if await cursor.exists(self.DB, target):
+            await cursor.delete(self.DB, target)
         else:
             raise KeyError("そのロールリンクは見つかりませんでした。")
 
-    async def read(self, guild_id: int, original_role_id: int) -> Optional[int]:
+    async def read(self, cursor, guild_id: int, original_role_id: int) -> Optional[int]:
         target = {"GuildID": guild_id, "Original": original_role_id}
-        if await self.cursor.exists(self.DB, target):
-            if (row := await self.cursor.get_data(self.DB, target)):
+        if await cursor.exists(self.DB, target):
+            if (row := await cursor.get_data(self.DB, target)):
                 return row[-1]
         return None
 
-    async def get_all(self, guild_id: int) -> list:
+    async def get_all(self, cursor, guild_id: int) -> list:
         target = dict(GuildID=guild_id)
-        if await self.cursor.exists(self.DB, target):
-            return [row async for row in self.cursor.get_datas(self.DB, target)]
+        if await cursor.exists(self.DB, target):
+            return [row async for row in cursor.get_datas(self.DB, target)]
         else:
             return []
 

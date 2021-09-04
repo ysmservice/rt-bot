@@ -12,31 +12,31 @@ class DataManager(DatabaseManager):
     def __init__(self, db):
         self.db = db
 
-    async def init_table(self) -> None:
-        await self.cursor.create_table(
+    async def init_table(self, cursor) -> None:
+        await cursor.create_table(
             "ngword", {"id": "BIGINT", "word": "TEXT"}
         )
 
-    async def get(self, guild_id: int) -> List[str]:
+    async def get(self, cursor, guild_id: int) -> List[str]:
         return [
-            row[-1] async for row in self.cursor.get_datas(
+            row[-1] async for row in cursor.get_datas(
             "ngword", {"id": guild_id}) if row
         ]
 
-    async def exists(self, guild_id: int) -> bool:
-        return await self.cursor.exists("ngword", {"id": guild_id})
+    async def exists(self, cursor, guild_id: int) -> bool:
+        return await cursor.exists("ngword", {"id": guild_id})
 
-    async def add(self, guild_id: int, word: str) -> None:
+    async def add(self, cursor, guild_id: int, word: str) -> None:
         values = {"word": word, "id": guild_id}
-        if await self.cursor.exists("ngword", values):
+        if await cursor.exists("ngword", values):
             raise ValueError("すでに追加されています。")
         else:
-            await self.cursor.insert_data("ngword", values)
+            await cursor.insert_data("ngword", values)
 
-    async def remove(self, guild_id: int, word: str) -> None:
+    async def remove(self, cursor, guild_id: int, word: str) -> None:
         targets = {"id": guild_id, "word": word}
-        if await self.cursor.exists("ngword", targets):
-            await self.cursor.delete("ngword", targets)
+        if await cursor.exists("ngword", targets):
+            await cursor.delete("ngword", targets)
         else:
             raise ValueError("そのNGワードはありません。")
 

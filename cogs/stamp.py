@@ -14,41 +14,41 @@ class DataManager(DatabaseManager):
     def __init__(self, db):
         self.db = db
 
-    async def init_table(self) -> None:
-        await self.cursor.create_table(
+    async def init_table(self, cursor) -> None:
+        await cursor.create_table(
             self.DB, {
                 "GuildID": "BIGINT", "Name": "TEXT", "Url": "TEXT"
             }
         )
 
-    async def write(self, guild_id: int, name: str, url: str) -> None:
+    async def write(self, cursor, guild_id: int, name: str, url: str) -> None:
         target = {"GuildID": guild_id, "Name": name}
         change = {"Url": url}
-        if await self.cursor.exists(self.DB, target):
-            await self.cursor.update_data(self.DB, change, target)
+        if await cursor.exists(self.DB, target):
+            await cursor.update_data(self.DB, change, target)
         else:
             target.update(change)
-            await self.cursor.insert_data(self.DB, target)
+            await cursor.insert_data(self.DB, target)
 
-    async def delete(self, guild_id: int, name: str) -> None:
+    async def delete(self, cursor, guild_id: int, name: str) -> None:
         target = {"GuildID": "BIGINT", "Name": name}
-        if await self.cursor.exists(self.DB, target):
-            await self.cursor.delete(self.DB, target)
+        if await cursor.exists(self.DB, target):
+            await cursor.delete(self.DB, target)
         else:
             raise KeyError("そのスタンプが見つかりませんでした。")
 
-    async def read(self, guild_id: int) -> Optional[tuple]:
+    async def read(self, cursor, guild_id: int) -> Optional[tuple]:
         target = {"GuildID": guild_id}
-        if await self.cursor.exists(self.DB, target):
+        if await cursor.exists(self.DB, target):
             return [
                 row
-                async for row in self.cursor.get_datas(
+                async for row in cursor.get_datas(
                     self.DB, target
                 )
             ]
 
-    async def reads(self) -> list:
-        return [row async for row in self.cursor.get_datas(self.DB, {})]
+    async def reads(self, cursor) -> list:
+        return [row async for row in cursor.get_datas(self.DB, {})]
 
 
 class Stamp(commands.Cog, DataManager):

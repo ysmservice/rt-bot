@@ -219,6 +219,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                         await message.add_reaction(self.EMOJIS["error"])
                     except:
                         pass
+                    url = "None"
 
             # 再生終了後に実行する関数を用意する。
             after = lambda e: self.bot.loop.create_task(

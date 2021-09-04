@@ -18,14 +18,14 @@ class DataManager(DatabaseManager):
     def __init__(self, db):
         self.db = db
 
-    async def init_table(self) -> None:
-        await self.cursor.create_table(
+    async def init_table(self, cursor) -> None:
+        await cursor.create_table(
             self.DB, {
                 "GuildID": "BIGINT", "ChannelID": "BIGINT",
                 "UserName": "TEXT"
             }
         )
-        await self.cursor.create_table(
+        await cursor.create_table(
             self.LOG_DB, {
                 "ChannelID": "BIGINT",
                 "TweetID": "BIGINT",
@@ -33,8 +33,8 @@ class DataManager(DatabaseManager):
             }
         )
 
-    async def sended(self, channel_id: int, tweet_id: int) -> None:
-        await self.cursor.insert_data(
+    async def sended(self, cursor, channel_id: int, tweet_id: int) -> None:
+        await cursor.insert_data(
             self.LOG_DB, {
                 "ChannelID": channel_id, "TweetID": tweet_id,
                 "RegTime": int(time())
@@ -42,64 +42,64 @@ class DataManager(DatabaseManager):
         )
         rows = await self._get_sended(channel_id)
         if len(rows) == 6:
-            await self.cursor.delete(
+            await cursor.delete(
                 self.LOG_DB,
                 {"ChannelID": channel_id, "TweetID": rows[0][1]}
             )
 
     async def _get_sended(self, channel_id: int) -> list:
-        await self.cursor.cursor.execute(
+        await cursor.cursor.execute(
             """SELECT * FROM {}
                 WHERE ChannelID = %s
                 ORDER BY RegTime ASC
                 LIMIT 6""".format(self.LOG_DB),
             (channel_id,)
         )
-        return await self.cursor.cursor.fetchall()
+        return await cursor.cursor.fetchall()
 
-    async def check(self, channel_id: int, tweet_id: int) -> bool:
-        return await self.cursor.exists(
+    async def check(self, cursor, channel_id: int, tweet_id: int) -> bool:
+        return await cursor.exists(
             self.LOG_DB, {"ChannelID": channel_id, "TweetID": tweet_id}
         )
 
-    async def delete_sended(self, channel_id: int) -> None:
+    async def delete_sended(self, cursor, channel_id: int) -> None:
         target = {"ChannelID": channel_id}
-        if await self.cursor.exists(self.LOG_DB, target):
-            await self.cursor.delete(self.LOG_DB, target)
+        if await cursor.exists(self.LOG_DB, target):
+            await cursor.delete(self.LOG_DB, target)
 
     async def write(
-        self, guild_id: int, channel_id: int, username: str
+        self, cursor, guild_id: int, channel_id: int, username: str
     ) -> None:
         target = {
             "GuildID": guild_id, "ChannelID": channel_id
         }
         change = {"UserName": username}
-        if await self.cursor.exists(self.DB, target):
-            await self.cursor.update_data(self.DB, change, target)
+        if await cursor.exists(self.DB, target):
+            await cursor.update_data(self.DB, change, target)
         else:
             target.update(change)
-            await self.cursor.insert_data(self.DB, target)
+            await cursor.insert_data(self.DB, target)
 
-    async def delete(self, guild_id: int, channel_id: int) -> None:
+    async def delete(self, cursor, guild_id: int, channel_id: int) -> None:
         target = {"GuildID": guild_id, "ChannelID": channel_id}
-        if await self.cursor.exists(self.DB, target):
-            await self.cursor.delete(self.DB, target)
+        if await cursor.exists(self.DB, target):
+            await cursor.delete(self.DB, target)
         else:
             raise KeyError("その設定はされていません。")
 
-    async def read(self, guild_id: int, channel_id: int) -> tuple:
+    async def read(self, cursor, guild_id: int, channel_id: int) -> tuple:
         target = dict(GuildID=guild_id, ChannelID=channel_id)
-        if await self.cursor.exists(self.DB, target):
-            return await self.cursor.get_data(self.DB, target)
+        if await cursor.exists(self.DB, target):
+            return await cursor.get_data(self.DB, target)
         else:
             return ()
 
-    async def reads(self) -> list:
-        return [row async for row in self.cursor.get_datas(self.DB, {})]
+    async def reads(self, cursor) -> list:
+        return [row async for row in cursor.get_datas(self.DB, {})]
 
-    async def reads_by_guild_id(self, guild_id: int) -> list:
+    async def reads_by_guild_id(self, cursor, guild_id: int) -> list:
         return [
-            row async for row in self.cursor.get_datas(
+            row async for row in cursor.get_datas(
                 self.DB, {"GuildID": guild_id}
             )
         ]

@@ -14,26 +14,26 @@ class DataManager(DatabaseManager):
     def __init__(self, db):
         self.db = db
 
-    async def init_table(self) -> None:
-        await self.cursor.create_table(
+    async def init_table(self, cursor) -> None:
+        await cursor.create_table(
             self.DB, {
                 "UserID": "BIGINT", "Name": "TEXT",
                 "Url": "TEXT", "Mode": "TEXT"
             }
         )
 
-    async def write(self, user_id: int, name: str, url: str, mode: str) -> None:
+    async def write(self, cursor, user_id: int, name: str, url: str, mode: str) -> None:
         target = {
             "UserID": user_id, "Name": name,
             "Url": url, "Mode": mode
         }
-        if await self.cursor.exists(self.DB, target):
+        if await cursor.exists(self.DB, target):
             raise ValueError("既にその画像は登録されています。")
         else:
-            await self.cursor.insert_data(self.DB, target)
+            await cursor.insert_data(self.DB, target)
 
-    async def read(self, mode: str) -> tuple:
-        await self.cursor.cursor.execute(
+    async def read(self, cursor, mode: str) -> tuple:
+        await cursor.cursor.execute(
             """SELECT * FROM Funp
                 WHERE Mode = %s
                 ORDER BY RAND()
@@ -41,16 +41,16 @@ class DataManager(DatabaseManager):
             (mode,)
         )
         return choice(
-            [row for row in await self.cursor.cursor.fetchall()
+            [row for row in await cursor.cursor.fetchall()
              if row is not None]
         )
 
-    async def delete(self, user_id: int, name: str, mode: str) -> None:
+    async def delete(self, cursor, user_id: int, name: str, mode: str) -> None:
         target = {
             "UserID": user_id, "Name": name, "Mode": mode
         }
-        if await self.cursor.exists(self.DB, target):
-            await self.cursor.delete(self.DB, target)
+        if await cursor.exists(self.DB, target):
+            await cursor.delete(self.DB, target)
         else:
             raise KeyError("そのFunpが見つかりませんでした。")
 

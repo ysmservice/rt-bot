@@ -13,8 +13,8 @@ class DataManager(DatabaseManager):
         self.db = db
         self.maxsize = maxsize
 
-    async def init_table(self) -> None:
-        await self.cursor.create_table(
+    async def init_table(self, cursor) -> None:
+        await cursor.create_table(
             "originalMenu", {
                 "GuildID": "BIGINT", "ChannelID": "BIGINT",
                 "MessageID": "BIGINT", "Data": "JSON",
@@ -23,23 +23,23 @@ class DataManager(DatabaseManager):
         )
 
     async def write(
-            self, guild_id: int, channel_id: int,
+            self, cursor, guild_id: int, channel_id: int,
             message_id: int, data: dict) -> None:
-        await self.cursor.cursor.execute(
+        await cursor.cursor.execute(
             """SELECT * FROM originalMenu
                 WHERE GuildID = %s
                 ORDER BY RegTime DESC""",
             (guild_id,)
         )
-        if len(rows := await self.cursor.cursor.fetchall()) == self.maxsize:
+        if len(rows := await cursor.cursor.fetchall()) == self.maxsize:
             # もし十個作っているなら最初に作ったやつを消す。
-            await self.cursor.delete(
+            await cursor.delete(
                 "originalMenu", {
                     "GuildID": rows[-1][0], "ChannelID": rows[-1][1],
                     "MessageID": rows[-1][2]
                 }
             )
-        await self.cursor.insert_data(
+        await cursor.insert_data(
             "originalMenu", {
                 "GuildID": guild_id, "ChannelID": channel_id,
                 "MessageID": message_id, "data": data,
@@ -48,14 +48,14 @@ class DataManager(DatabaseManager):
         )
 
     async def read(
-        self, guild_id: int, channel_id: int,
+        self, cursor, guild_id: int, channel_id: int,
         message_id: int) -> tuple:
         target = {
             "GuildID": guild_id, "ChannelID": channel_id,
             "MessageID": message_id
         }
-        if await self.cursor.exists("originalMenu", target):
-            if (row := await self.cursor.get_data("originalMenu", target)):
+        if await cursor.exists("originalMenu", target):
+            if (row := await cursor.get_data("originalMenu", target)):
                 return row
         raise KeyError("そのメニューメッセージは見つかりませんでした。")
 

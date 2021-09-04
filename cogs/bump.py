@@ -15,56 +15,56 @@ class DataManager(DatabaseManager):
     def __init__(self, db):
         self.db = db
 
-    async def init_table(self) -> None:
-        await self.cursor.create_table(
+    async def init_table(self, cursor) -> None:
+        await cursor.create_table(
             "bump", {
                 "GuildID": "BIGINT", "Mode": "TEXT",
                 "Data": "TEXT"
             }
         )
-        await self.cursor.create_table(
+        await cursor.create_table(
             "bumpRanking", {
                 "UserID": "BIGINT", "Mode": "TEXT", "Count": "INTEGER"
             }
         )
 
-    async def save(self, guild_id: int, mode: str, data: dict) -> None:
+    async def save(self, cursor, guild_id: int, mode: str, data: dict) -> None:
         target = {"GuildID": guild_id, "Mode": mode}
-        if await self.cursor.exists("bump", target):
-            await self.cursor.delete("bump", target)
+        if await cursor.exists("bump", target):
+            await cursor.delete("bump", target)
         target["data"] = data
-        await self.cursor.insert_data("bump", target)
+        await cursor.insert_data("bump", target)
 
-    async def load(self, guild_id: int, mode: str) -> list:
+    async def load(self, cursor, guild_id: int, mode: str) -> list:
         target = {"GuildID": guild_id, "Mode": mode}
-        if await self.cursor.exists("bump", target):
-            return await self.cursor.get_data("bump", target)
+        if await cursor.exists("bump", target):
+            return await cursor.get_data("bump", target)
         else:
             return [guild_id, mode, {"onoff": True}]
 
-    async def save_ranking(self, user_id: int, mode: str, count: int) -> None:
+    async def save_ranking(self, cursor, user_id: int, mode: str, count: int) -> None:
         target = {"UserID": user_id, "Mode": mode}
         change = {"Count": count}
-        if await self.cursor.exists("bumpRanking", target):
-            await self.cursor.update_data("bumpRanking", change, target)
+        if await cursor.exists("bumpRanking", target):
+            await cursor.update_data("bumpRanking", change, target)
         else:
             target.update(change)
-            await self.cursor.insert_data("bumpRanking", target)
+            await cursor.insert_data("bumpRanking", target)
 
-    async def load_ranking(self, user_id: int, mode: str) -> int:
+    async def load_ranking(self, cursor, user_id: int, mode: str) -> int:
         target = {"UserID": user_id, "Mode": mode}
-        if await self.cursor.exists("bumpRanking", target):
-            if (row := await self.cursor.get_data("bumpRanking", target)):
+        if await cursor.exists("bumpRanking", target):
+            if (row := await cursor.get_data("bumpRanking", target)):
                 return row[-1]
             else:
                 return 0
         else:
             return 0
 
-    async def execute(self, cmd: str, args: tuple, fetch: bool = True) -> Any:
-        await self.cursor.cursor.execute(cmd, args)
+    async def execute(self, cursor, cmd: str, args: tuple, fetch: bool = True) -> Any:
+        await cursor.cursor.execute(cmd, args)
         if fetch:
-            return await self.cursor.cursor.fetchall()
+            return await cursor.cursor.fetchall()
 
 
 def get_extras(mode: str, callback) -> dict:

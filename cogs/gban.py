@@ -15,30 +15,30 @@ class DataManager(DatabaseManager):
     def __init__(self, db):
         self.db: mysql.MySQLManager = db
 
-    async def init_table(self):
-        await self.cursor.create_table(
+    async def init_table(self, cursor):
+        await cursor.create_table(
             "gban", {"UserID": "BIGINT", "Reason": "TEXT"}
         )
 
-    async def add_user(self, user_id: int, reason: str) -> None:
-        await self.cursor.insert_data(
+    async def add_user(self, cursor, user_id: int, reason: str) -> None:
+        await cursor.insert_data(
             "gban", {"UserID": user_id, "Reason": reason}
         )
 
-    async def remove_user(self, user_id: int) -> None:
+    async def remove_user(self, cursor, user_id: int) -> None:
         target = {"UserID": user_id}
-        if await self.cursor.exists("gban", target):
-            await self.cursor.delete("gban", target)
+        if await cursor.exists("gban", target):
+            await cursor.delete("gban", target)
         else:
             raise ValueError("そのユーザーが見つかりませんでした。")
 
-    async def getall(self) -> list:
-        return [row async for row in self.cursor.get_datas("gban", {})]
+    async def getall(self, cursor) -> list:
+        return [row async for row in cursor.get_datas("gban", {})]
 
-    async def get(self, user_id: int) -> tuple:
+    async def get(self, cursor, user_id: int) -> tuple:
         target = {"UserID": user_id}
-        if await self.cursor.exists("gban", target):
-            return await self.cursor.get_data("gban", target)
+        if await cursor.exists("gban", target):
+            return await cursor.get_data("gban", target)
         else:
             return ()
 

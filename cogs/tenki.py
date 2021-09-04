@@ -21,32 +21,32 @@ class DataManager(DatabaseManager):
     def __init__(self, db):
         self.db = db
 
-    async def init_table(self) -> None:
-        await self.cursor.create_table(
+    async def init_table(self, cursor) -> None:
+        await cursor.create_table(
             self.DB, {
                 "UserID": "BIGINT", "Code": "TEXT",
                 "NofTime": "TEXT"
             }
         )
 
-    async def write(self, user_id: int, code: str, nof_time: str) -> None:
+    async def write(self, cursor, user_id: int, code: str, nof_time: str) -> None:
         target = {"UserID": user_id}
         change = {"Code": code, "NofTime": nof_time}
-        if await self.cursor.exists(self.DB, target):
-            await self.cursor.update_data(self.DB, change, target)
+        if await cursor.exists(self.DB, target):
+            await cursor.update_data(self.DB, change, target)
         else:
             target.update(change)
-            await self.cursor.insert_data(self.DB, target)
+            await cursor.insert_data(self.DB, target)
 
-    async def delete(self, user_id: int) -> None:
+    async def delete(self, cursor, user_id: int) -> None:
         target = {"UserID": user_id}
-        if await self.cursor.exists(self.DB, target):
-            await self.cursor.delete(self.DB, target)
+        if await cursor.exists(self.DB, target):
+            await cursor.delete(self.DB, target)
         else:
             raise KeyError("そのユーザーは設定していません。")
 
-    async def reads(self) -> list:
-        return [row async for row in self.cursor.get_datas(self.DB, {})]
+    async def reads(self, cursor) -> list:
+        return [row async for row in cursor.get_datas(self.DB, {})]
 
 i = -1
 PREFECTURES = [(data["@title"], i)

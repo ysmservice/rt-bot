@@ -12,27 +12,27 @@ class DataManager(DatabaseManager):
     def __init__(self, db):
         self.db: mysql.MySQLManager = db
 
-    async def init_table(self):
-        await self.cursor.create_table(
+    async def init_table(self, cursor):
+        await cursor.create_table(
             "Locker", {"ChannelID": "BIGINT", "Time": "BIGINT"}
         )
 
-    async def save(self, channel_id: int, time_: int) -> None:
+    async def save(self, cursor, channel_id: int, time_: int) -> None:
         target = {"ChannelID": channel_id}
-        if not await self.cursor.exists("Locker", target):
+        if not await cursor.exists("Locker", target):
             target["Time"] = time_
-            await self.cursor.insert_data("Locker", target)
+            await cursor.insert_data("Locker", target)
 
-    async def delete(self, channel_id: int) -> None:
+    async def delete(self, cursor, channel_id: int) -> None:
         target = {"ChannelID": channel_id}
-        if await self.cursor.exists("Locker", target):
-            await self.cursor.delete("Locker", target)
+        if await cursor.exists("Locker", target):
+            await cursor.delete("Locker", target)
 
-    async def exists(self, channel_id: int) -> None:
-        return await self.cursor.exists("Locker", {"ChannelID": channel_id})
+    async def exists(self, cursor, channel_id: int) -> None:
+        return await cursor.exists("Locker", {"ChannelID": channel_id})
 
-    async def loads(self) -> list:
-        return [row async for row in self.cursor.get_datas("Locker", {})]
+    async def loads(self, cursor) -> list:
+        return [row async for row in cursor.get_datas("Locker", {})]
 
 
 class Locker(commands.Cog, DataManager):

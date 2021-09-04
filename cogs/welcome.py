@@ -14,34 +14,34 @@ class DataManager(DatabaseManager):
     def __init__(self, db):
         self.db = db
 
-    async def init_table(self) -> None:
-        await self.cursor.create_table(
+    async def init_table(self, cursor) -> None:
+        await cursor.create_table(
             self.DB, {
                 "GuildID": "BIGINT", "ChannelID": "BIGINT",
                 "Content": "TEXT"
             }
         )
 
-    async def write(self, guild_id: int, channel_id: int, content: str) -> None:
+    async def write(self, cursor, guild_id: int, channel_id: int, content: str) -> None:
         target = {"GuildID": guild_id}
         change = {"ChannelID": channel_id, "Content": content}
-        if await self.cursor.exists(self.DB, target):
-            await self.cursor.update_data(self.DB, change, target)
+        if await cursor.exists(self.DB, target):
+            await cursor.update_data(self.DB, change, target)
         else:
             target.update(change)
-            await self.cursor.insert_data(self.DB, target)
+            await cursor.insert_data(self.DB, target)
 
-    async def delete(self, guild_id: int) -> None:
+    async def delete(self, cursor, guild_id: int) -> None:
         target = {"GuildID": guild_id}
-        if await self.cursor.exists(self.DB, target):
-            await self.cursor.delete(self.DB, target)
+        if await cursor.exists(self.DB, target):
+            await cursor.delete(self.DB, target)
         else:
             raise KeyError("そのサーバーは設定していません。")
 
-    async def read(self, guild_id: int) -> tuple:
+    async def read(self, cursor, guild_id: int) -> tuple:
         target = {"GuildID": guild_id}
-        if await self.cursor.exists(self.DB, target):
-            return await self.cursor.get_data(self.DB, target)
+        if await cursor.exists(self.DB, target):
+            return await cursor.get_data(self.DB, target)
         else:
             return ()
 

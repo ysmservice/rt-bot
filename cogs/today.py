@@ -15,33 +15,33 @@ class DataManager(DatabaseManager):
     def __init__(self, db):
         self.db = db
 
-    async def init_table(self) -> None:
-        await self.cursor.create_table(
+    async def init_table(self, cursor) -> None:
+        await cursor.create_table(
             self.DB, {
                 "GuildID": "BIGINT", "ChannelID": "BIGINT"
             }
         )
 
-    async def write(self, guild_id: int, channel_id: int) -> None:
+    async def write(self, cursor, guild_id: int, channel_id: int) -> None:
         target = {
             "GuildID": guild_id, "ChannelID": channel_id
         }
-        if await self.cursor.exists(self.DB, target):
+        if await cursor.exists(self.DB, target):
             raise KeyError("既に設定されています。")
         else:
-            await self.cursor.insert_data(self.DB, target)
+            await cursor.insert_data(self.DB, target)
 
-    async def delete(self, guild_id: int, channel_id: int) -> None:
-        await self.cursor.delete(
+    async def delete(self, cursor, guild_id: int, channel_id: int) -> None:
+        await cursor.delete(
             self.DB, {"GuildID": guild_id, "ChannelID": channel_id}
         )
 
-    async def reads(self, guild_id: int = None) -> list:
+    async def reads(self, cursor, guild_id: int = None) -> list:
         target = {}
         if guild_id is not None:
             target["GuildID"] = guild_id
         return [
-            row async for row in self.cursor.get_datas(
+            row async for row in cursor.get_datas(
                 self.DB, target)
             if row
         ]

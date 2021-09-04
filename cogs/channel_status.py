@@ -10,40 +10,40 @@ class DataManager(DatabaseManager):
     def __init__(self, db):
         self.db = db
 
-    async def init_table(self) -> None:
-        await self.cursor.create_table(
+    async def init_table(self, cursor) -> None:
+        await cursor.create_table(
             "channelStatus", {
                 "GuildID": "BIGINT", "ChannelID": "BIGINT",
                 "Text": "TEXT"
             }
         )
 
-    async def load(self, guild_id: int) -> list:
-        await self.cursor.cursor.execute(
+    async def load(self, cursor, guild_id: int) -> list:
+        await cursor.cursor.execute(
             """SELECT * FROM channelStatus
                 WHERE GuildID = ?""", (guild_id,)
         )
-        return await self.cursor.cursor.fetchall()
+        return await cursor.cursor.fetchall()
 
-    async def load_all(self) -> list:
-        await self.cursor.cursor.execute(
+    async def load_all(self, cursor) -> list:
+        await cursor.cursor.execute(
             "SELECT * FROM channelStatus"
         )
-        return await self.cursor.cursor.fetchall()
+        return await cursor.cursor.fetchall()
 
-    async def save(self, guild_id: int, channel_id: int, text: str) -> None:
+    async def save(self, cursor, guild_id: int, channel_id: int, text: str) -> None:
         target = {"GuildID": guild_id, "ChannelID": channel_id}
         change = {"Text": text}
-        if await self.cursor.exists("channelStatus", target):
-            await self.cursor.update_data("channelStatus", change, target)
+        if await cursor.exists("channelStatus", target):
+            await cursor.update_data("channelStatus", change, target)
         else:
             target.update(change)
-            await self.cursor.insert_data("channelStatus", target)
+            await cursor.insert_data("channelStatus", target)
 
-    async def delete(self, guild_id: int, channel_id: int) -> None:
+    async def delete(self, cursor, guild_id: int, channel_id: int) -> None:
         target = {"GuildID": guild_id, "ChannelID": channel_id}
-        if await self.cursor.exists("channelStatus", target):
-            await self.cursor.delete("channelStatus", target)
+        if await cursor.exists("channelStatus", target):
+            await cursor.delete("channelStatus", target)
 
 
 class ChannelStatus(commands.Cog, DataManager):

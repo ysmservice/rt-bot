@@ -11,7 +11,7 @@ class DatabaseManager(commands.Cog):
         self.bot, self.rt = bot, bot.data
 
     @commands.Cog.listener()
-    async def on_ready(self):
+    async def on_ready(self, cursor):
         self.db = await self.rt["mysql"].get_database()
         # テスト用のテーブルを作る。
         async with self.db.get_cursor() as cursor:
@@ -29,7 +29,7 @@ class DatabaseManager(commands.Cog):
                                      "en": "Database management commands"},
                         "parent": "Admin"
                     })
-    async def database(self, ctx):
+    async def database(self, cursor, ctx):
         """!lang ja
         --------
         データベースを操作するための管理者用のコマンドです。
@@ -42,7 +42,7 @@ class DatabaseManager(commands.Cog):
 
     @database.command()
     @is_admin()
-    async def create_table(self, ctx, table, columns, ine: bool = True, commit: bool = True):
+    async def create_table(self, cursor, ctx, table, columns, ine: bool = True, commit: bool = True):
         """
         !lang ja
         --------
@@ -93,7 +93,7 @@ class DatabaseManager(commands.Cog):
 
     @database.command()
     @is_admin()
-    async def drop_table(self, ctx, table, commit: bool = True):
+    async def drop_table(self, cursor, ctx, table, commit: bool = True):
         """!lang ja
         --------
         データベースからテーブルを削除します。
@@ -110,7 +110,7 @@ class DatabaseManager(commands.Cog):
 
     @database.command()
     @is_admin()
-    async def insert_data(self, ctx, table, values, commit: bool = True):
+    async def insert_data(self, cursor, ctx, table, values, commit: bool = True):
         """!lang ja
         --------
         データベースに新しくデータを追加します。
@@ -137,7 +137,7 @@ class DatabaseManager(commands.Cog):
 
     @database.command()
     @is_admin()
-    async def update_data(self, ctx, table, values, targets, commit: bool = True):
+    async def update_data(self, cursor, ctx, table, values, targets, commit: bool = True):
         """!lang ja
         --------
         データベースにあるデータの更新をします。
@@ -165,7 +165,7 @@ class DatabaseManager(commands.Cog):
 
     @database.command()
     @is_admin()
-    async def exists(self, ctx, table, targets):
+    async def exists(self, cursor, ctx, table, targets):
         """!lang ja
         --------
         データベースに指定した条件に一致するデータが存在するかどうかを調べます。
@@ -187,7 +187,7 @@ class DatabaseManager(commands.Cog):
 
     @database.command()
     @is_admin()
-    async def delete(self, ctx, table, targets, commit: bool = True):
+    async def delete(self, cursor, ctx, table, targets, commit: bool = True):
         """!lang ja
         --------
         データベースにあるデータを削除します。
@@ -211,7 +211,7 @@ class DatabaseManager(commands.Cog):
 
     @database.command()
     @is_admin()
-    async def get_data(self, ctx, table, targets, fetchall: bool = False):
+    async def get_data(self, cursor, ctx, table, targets, fetchall: bool = False):
         """!lang ja
         --------
         データベースからデータを取得します。
@@ -241,7 +241,7 @@ class DatabaseManager(commands.Cog):
 
     @database.command()
     @is_admin()
-    async def execute(self, ctx, *, cmd):
+    async def execute(self, cursor, ctx, *, cmd):
         """!lang ja
         --------
         データベースで任意のコマンドを実行します。

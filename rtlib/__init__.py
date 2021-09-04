@@ -123,30 +123,46 @@ class DatabaseLocker:
 class DatabaseManager:
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
-        for name in dir(cls.__mro__[-3]):
-            if not name.startswith("_"):
-                coro = getattr(cls, name)
-                if asyncio.iscoroutinefunction(coro):
-                    setattr(cls, name, cls.prepare_cursor(coro))
+        for c in cls.__mro__:
+            if (cls.__name__.startswith("Data")
+                    and not c.__name__.startswith(
+                        ("DatabaseL", "DatabaseM"))):
+                for name in dir(c):
+                    if not name.startswith("_"):
+                        coro = getattr(cls, name)
+                        if asyncio.iscoroutinefunction(coro):
+                            setattr(cls, name, cls.prepare_cursor(coro))
 
-    async def _close(self, conn):
-        await self.cursor.close()
+    async def _close(self, conn, cursor):
+        await cursor.close()
         conn.close()
+        del cursor
 
     @staticmethod
     def prepare_cursor(coro):
         @wraps(coro)
         async def new_coro(self, *args, **kwargs):
             conn = await self.db.get_database()
-            self.cursor = conn.get_cursor()
-            await self.cursor.prepare_cursor()
-
+            cursor = conn.get_cursor()
+            await cursor.prepare_cursor()
+            if self.bot.test:
+                self.bot.print(
+                    "[DEBUG]", f"[{coro.__name__}]",
+                    "Database Control", args
+                )
             try:
-                data = await coro(self, *args, **kwargs)
+                data = await coro(self, cursor, *args, **kwargs)
             except Exception as e:
-                await self._close(conn)
+                await self._close(conn, cursor)
                 raise e
             else:
-                await self._close(conn)
+                await self._close(conn, cursor)
                 return data
+            finally:
+                self.bot.print(
+                    "[DEBUG]", f"[{coro.__name__}]",
+                    "Database Cursor Close",
+                    "Connection Count:", self.db.pool.size,
+                    "Connection Freesize:", self.db.pool.freesize
+                )
         return new_coro

@@ -14,8 +14,8 @@ class DataManager(DatabaseManager):
     def __init__(self, db):
         self.db = db
 
-    async def init_table(self) -> None:
-        await self.cursor.create_table(
+    async def init_table(self, cursor) -> None:
+        await cursor.create_table(
             self.TABLE, dict(
                 GuildID="BIGINT", ChannelID="BIGINT", AuthorID="BIGINT",
                 MessageID="BIGINT", Bool="TINYINT", Text="TEXT"
@@ -23,20 +23,20 @@ class DataManager(DatabaseManager):
         )
 
     async def setting(
-            self, guild_id: int, channel_id: int, message_id: int,
+            self, cursor, guild_id: int, channel_id: int, message_id: int,
             author_id: int, onoff: bool, text: str) -> None:
         value = dict(Bool=int(onoff), Text=text,
                         AuthorID=author_id, MessageID=message_id)
         target = dict(GuildID=guild_id, ChannelID=channel_id)
-        if await self.cursor.exists(self.TABLE, target):
-            await self.cursor.delete(self.TABLE, target)
+        if await cursor.exists(self.TABLE, target):
+            await cursor.delete(self.TABLE, target)
         value.update(target)
-        await self.cursor.insert_data(self.TABLE, value)
+        await cursor.insert_data(self.TABLE, value)
 
-    async def get(self, guild_id: int, channel_id: int) -> Tuple[int, int, bool, str]:
+    async def get(self, cursor, guild_id: int, channel_id: int) -> Tuple[int, int, bool, str]:
         target = dict(GuildID=guild_id, ChannelID=channel_id)
-        if await self.cursor.exists(self.TABLE, target):
-            if (row := await self.cursor.get_data(self.TABLE, target)):
+        if await cursor.exists(self.TABLE, target):
+            if (row := await cursor.get_data(self.TABLE, target)):
                 return row[-4], row[-3], bool(row[-2]), row[-1]
             else:
                 return 0, 0, False, ""

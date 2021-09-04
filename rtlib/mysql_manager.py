@@ -341,6 +341,7 @@ class MySQLManager:
         ..."""
     def __init__(self, pool: bool = False, _pool_c=False, **kwargs):
         self.connection, self.pool = None, None
+        self._real_pool = None
         self.loop = kwargs.get("loop", get_event_loop())
         self.loop.create_task(self._setup(pool, _pool_c, kwargs))
 
@@ -360,6 +361,7 @@ class MySQLManager:
         これはデータベースへの接続が終わってから実行してください。"""
         new = self.__class__(_pool_c=True, loop=self.loop)
         new.connection = await self.pool.acquire()
+        new._real_pool = self.pool
         new.use = True
         return new
 
@@ -378,6 +380,7 @@ class MySQLManager:
 
     def __del__(self):
         if self.connection is not None:
-            self.connection.close()
+            self._real_pool.release(self.connection)
+            self.connection = None
         if self.pool is not None:
             self.pool.close()
