@@ -45,6 +45,7 @@ class Language(commands.Cog):
     async def _new_send(self, channel, *args, **kwargs):
         # 元のsendにつけたしをする関数。rtlib.libs.on_sendを使う。
         # このsendが返信に使われたのなら返信先のメッセージの送信者(実行者)の言語設定を読み込む。
+        print(args, kwargs)
         lang = "ja"
         if isinstance(channel, discord.Message):
             if (reference := channel.reference) is not None:
@@ -72,6 +73,7 @@ class Language(commands.Cog):
         if "embeds" in kwargs:
             kwargs["embeds"] = [self.get_text(embed, lang)
                                 for embed in kwargs.get("embeds", [])]
+        print(args, kwargs)
 
         return args, kwargs
 
@@ -114,8 +116,11 @@ class Language(commands.Cog):
                         text = loads(text.replace('"', r'\"').replace("'", '"'))
                     except ValueError:
                         result = text
-                    else:
-                        result = text.get(lang, text["ja"])
+                    result = text.get(lang, text["ja"])
+                elif isinstance(text, dict):
+                    result = text.get(lang, text["ja"])
+                else:
+                    result = str(text)
 
         return result
 
