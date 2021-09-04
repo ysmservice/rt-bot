@@ -4,7 +4,7 @@ from discord.ext import commands
 import discord
 
 from rtlib.ext import componesy, Embeds
-from rtlib import OAuth
+from rtlib import OAuth, slash
 
 from sanic.response import json
 from typing import List, Tuple
@@ -67,51 +67,6 @@ class Help(commands.Cog):
             data["status"] = "ok" if data else "Not found"
             data["title"] = category
         return json(data, headers=get_headers(self.bot, request))
-
-    @commands.command(
-        extras={
-            "headding": {
-                "ja": "Helpが見れるウェブサイトのURLを表示します。",
-                "en": "This command returns the URL of the web page."
-            },
-            "parent": "RT"
-        }
-    )
-    async def help(self, ctx, *, word):
-        """!lang ja
-        --------
-        ウェブサイトのURLを返します。  
-        Discordからhelpを見たい場合は`dhelp`を実行してください。
-
-        Parameters
-        ----------
-        word : str, optional
-            この引数を指定するとこの引数に入れた言葉で検索をかけるウェブサイトのURLを返します。
-
-        See Also
-        --------
-        dhelp
-            Discord上でヘルプを閲覧します。
-
-        !lang en
-        --------
-        This command returns the URL of the web page where you can see the RT help.  
-        If you want help on Discord instead of the web, run `dhelp`.
-
-        Parameters
-        ----------
-        word : str, optional
-            Searches for help using the words in this argument.
- 
-        See Also
-        --------
-        dhelp : See help on Discord."""
-        embed = discord.Embed(
-            title="Helpが必要ですか？",
-            description="http://0.0.0.0" if self.bot.test else "https://rt-bot.com/help",
-            color=self.bot.data["colors"]["normal"]
-        )
-        await ctx.reply(embed=embed)
 
     def search(self, word: str, lang: str) -> Tuple[str, str, List[Tuple[str, str]], List[Tuple[str, str]]]:
         # 指定された言葉で検索またはヘルプの取得を行う関数です。
@@ -182,17 +137,20 @@ class Help(commands.Cog):
             view.add_item("Select", func, **kwargs)
         return view
 
-    @commands.command(aliases=["discord_help", "dh"],
-                      extras={
-                          "headding": {"ja": "DiscordからHelpを見ます。",
-                                       "en": "Get help from Discord."},
-                          "parent": "RT"
-                      })
-    @commands.cooldown(1, 13, commands.BucketType.user)
-    async def dhelp(self, ctx, *, word: str = None, interaction=None):
+    @commands.command(
+        name="help",
+        aliases=["h", "Help_me,_ERINNNNNN!!", "たすけて！"],
+        extras={
+              "headding": {"ja": "Helpを表示します。",
+                           "en": "Get help."},
+              "parent": "RT"
+        }
+    )
+    @commands.cooldown(1, 3, commands.BucketType.user)
+    async def _help(self, ctx, *, word: str = None, interaction=None):
         """!lang ja
         --------
-        Discordからヘルプを閲覧します。
+        コマンドの使い方が載っているヘルプを表示します。
 
         Parameters
         ----------
@@ -202,11 +160,17 @@ class Help(commands.Cog):
 
         Aliases
         -------
-        `discord_help`, `dh`
+        `h`, `たすけて！`, `Help_me,_ERINNNNNN!!`
 
         !lang en
         --------
-        上の英語バージョンをここに。"""
+        Displays a help page with information on how to use the command.
+
+        Parameters
+        ----------
+        word : command name/search word, optional
+            The command name of the help to be displayed.  
+            If a word that is not a command name is specified, a search will be performed."""
         lang = self.bot.cogs["Language"].get(ctx.author.id)
         edit = ctx.message.author.id == self.bot.user.id
         reply = True
@@ -215,7 +179,10 @@ class Help(commands.Cog):
             # もしカテゴリー一覧を表示すればいいだけなら。
             embed = discord.Embed(
                 title="Help - カテゴリー選択",
-                description="カテゴリーを選択するとそのカテゴリーにあるコマンドが表示されます。",
+                description=(
+                    "カテゴリーを選択するとそのカテゴリーにあるコマンドが表示されます。\nまたこちらからも見れます："
+                    "http://0.0.0.0" if self.bot.test else "https://rt-bot.com/help"
+                ),
                 color=self.bot.colors["normal"]
             )
             view = self.make_view(
