@@ -153,7 +153,12 @@ class ChannelStatus(commands.Cog, DataManager):
                 if channel.name != (
                         text := self.replace_text(text, channel.guild)
                     ):
-                    await channel.edit(name=text, reason="ステータス更新のため。/To update status.")
+                    try:
+                        await channel.edit(
+                            name=text, reason="ステータス更新のため。/To update status."
+                        )
+                    except discord.Forbidden:
+                        pass
 
 
 def setup(bot):
