@@ -42,11 +42,6 @@ def on_init(bot):
     async def on_close(loop):
         await bot.session.close()
 
-    @bot.event
-    async def on_message(message):
-        if bot.is_ready():
-            await bot.process_commands(message)
-
     bot.mysql = bot.data["mysql"] = rtlib.mysql.MySQLManager(
         loop=bot.loop, user=secret["mysql"]["user"],
         password=secret["mysql"]["password"], db="mysql",
@@ -76,7 +71,8 @@ def on_init(bot):
                 bot.load_extension("cogs." + path[:-3])
             elif "." not in path and path != "__pycache__" and path[0] != ".":
                 bot.load_extension("cogs." + path)
-            print("RT Extension -", path, "Loaded.")
+            bot.print("Loaded extension", path)
+        bot.print("RT is now up and running!")
 
 
 # テスト時は普通のBackendを本番はシャード版Backendを定義する。
