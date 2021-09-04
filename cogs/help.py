@@ -182,7 +182,7 @@ class Help(commands.Cog):
                 title="Help - カテゴリー選択",
                 description=(
                     "カテゴリーを選択するとそのカテゴリーにあるコマンドが表示されます。\nまたこちらからも見れます："
-                    "http://0.0.0.0" if self.bot.test else "https://rt-bot.com/help"
+                    "http://0.0.0.0" if self.bot.test else "https://rt-bot.com/help.html"
                 ),
                 color=self.bot.colors["normal"]
             )

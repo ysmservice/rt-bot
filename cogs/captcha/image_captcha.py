@@ -58,24 +58,24 @@ class ImageCaptcha(ImageCaptcha):
                     try:
                         await message.author.add_roles(role)
                     except Exception as e:
-                        await message.reply(
+                        await message.channel.send(
                             {"ja": (f"{message.author.mention}, 役職を付与することができませんでした。\n"
                                     "付与する役職の位置がRTより下にあるか確認してください。\n"
                                     f"エラーコード：`{e}`"),
                              "en": f"{message.author.mention}, Failed, make sure that the role position below the RT role position."}
                         )
                     else:
-                        await message.send(
+                        await message.channel.send(
                             {"ja": f"{message.author.mention}, 認証に成功しました。",
                              "en": f"{message.author.mention}, Success!"}
                         )
                 else:
-                    await message.reply(
+                    await message.channel.send(
                         {"ja": f"{message.author.mention}, 設定されている役職が見つからないため認証に失敗しました。",
                          "en": f"{message.author.mention}, Failed, I couldn't find the role to add you."}
                     )
             else:
-                await message.reply(
+                await message.channel.send(
                     message.author.mention,
                     embed=discord.Embed(
                         description={
