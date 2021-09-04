@@ -77,7 +77,7 @@ class ChannelPluginGeneral(commands.Cog):
                 elif cmd.startswith("rt>ce"):
                     # Can't Edit
                     await message.channel.webhook_send(
-                        content, files=[
+                        message.clean_content, files=[
                             await at.to_dict()
                             for at in message.attachments
                         ], username=message.author.display_name,
