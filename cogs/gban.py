@@ -64,7 +64,7 @@ class GlobalBan(commands.Cog, DataManager):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
-        if not self.bot.ready():
+        if not self.bot.is_ready():
             return
         if (row := await self.get(member.id)):
             await member.ban(reason=row[1])

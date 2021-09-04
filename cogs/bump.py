@@ -343,7 +343,7 @@ class Bump(commands.Cog, DataManager):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if not self.bot.ready():
+        if not self.bot.is_ready():
             return
 
         data = self.IDS.get(message.author.id)
