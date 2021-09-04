@@ -3,7 +3,7 @@
 from discord.ext import commands, easy, tasks
 import discord
 
-from rtlib import mysql, DatabaseLocker
+from rtlib import mysql, DatabaseManager
 from datetime import datetime
 from asyncio import sleep
 from ujson import loads
@@ -14,13 +14,12 @@ with open("data/area_code.json", "r") as f:
     AREA_CODE = loads(f.read())
 
 
-class DataManager(DatabaseLocker):
+class DataManager(DatabaseManager):
 
     DB = "TenkiData"
 
     def __init__(self, db):
         self.db = db
-        self.auto_cursor = True
 
     async def init_table(self) -> None:
         await self.cursor.create_table(
@@ -87,7 +86,7 @@ class Tenki(commands.Cog, DataManager):
     async def on_ready(self):
         await self.bot.wait_until_ready()
         super(commands.Cog, self).__init__(
-            await self.bot.mysql.get_database()
+            self.bot.mysql
         )
         await self.init_table()
 
