@@ -81,7 +81,7 @@ class ImageCaptcha(ImageCaptcha):
                         description={
                             "ja": "認証に失敗しました。\nもしできているはずなのにできない際はこちらを確認してください。\nhttp://tasuren.syanari.com/RT/careful.png",
                             "en": "Failed, Please confirm your number is true.\nNote that 1 and 7 are similar, so please pay attention to that."
-                        }, color=self.bot.colors["normal"]
+                        }, color=self.cog.bot.colors["normal"]
                     )
                 )
 
