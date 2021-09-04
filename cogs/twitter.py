@@ -223,7 +223,7 @@ class Twitter(commands.Cog, DataManager):
                                 await self.sended(channel.id, data["id"])
                                 self.queue[channel.id]["length"] += 1
 
-                    await asyncio.sleep(1.2)
+                    await asyncio.sleep(10)
             await asyncio.sleep(1)
 
     def cog_unload(self):

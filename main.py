@@ -42,6 +42,7 @@ def on_init(bot):
     @bot.listen()
     async def on_close(loop):
         await bot.session.close()
+        del bot.mysql
 
     bot.mysql = bot.data["mysql"] = rtlib.mysql.MySQLManager(
         loop=bot.loop, user=secret["mysql"]["user"],
@@ -65,8 +66,8 @@ def on_init(bot):
     async def setting_up():
         await sleep(3)
         await bot.change_presence(
-            activity=discord.Activity(
-                name="起動中..."
+            activity=discord.Game(
+                name="起動準備"
             ), status=discord.Status.dnd
         )
 
