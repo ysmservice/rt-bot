@@ -5,7 +5,7 @@ import discord
 
 from typing import Literal, Union, List, Tuple
 from aiofiles import open as async_open
-from ujson import loads
+from json import loads
 from copy import copy
 
 from data import is_admin
@@ -45,7 +45,6 @@ class Language(commands.Cog):
     async def _new_send(self, channel, *args, **kwargs):
         # 元のsendにつけたしをする関数。rtlib.libs.on_sendを使う。
         # このsendが返信に使われたのなら返信先のメッセージの送信者(実行者)の言語設定を読み込む。
-        print(args, kwargs)
         lang = "ja"
         if isinstance(channel, discord.Message):
             if (reference := channel.reference) is not None:
@@ -73,7 +72,6 @@ class Language(commands.Cog):
         if "embeds" in kwargs:
             kwargs["embeds"] = [self.get_text(embed, lang)
                                 for embed in kwargs.get("embeds", [])]
-        print(args, kwargs)
 
         return args, kwargs
 
@@ -113,10 +111,10 @@ class Language(commands.Cog):
             else:
                 if isinstance(text, str) and text[0] == "{" and text[-1] == "}":
                     try:
-                        text = loads(text.replace('"', r'\"').replace("'", '"'))
-                    except ValueError:
-                        result = text
-                    result = text.get(lang, text["ja"])
+                        result = eval(text)
+                    except ValueError as e:
+                        result = str(text)
+                    result = result.get(lang, result["ja"])
                 elif isinstance(text, dict):
                     result = text.get(lang, text["ja"])
                 else:
