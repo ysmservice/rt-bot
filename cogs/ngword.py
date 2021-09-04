@@ -3,45 +3,42 @@
 from discord.ext import commands
 import discord
 
-from rtlib import mysql, DatabaseLocker
+from rtlib import mysql, DatabaseManager
 from rtutil.SettingAPI import *
 from typing import List
 
 
-class DataManager(DatabaseLocker):
-    def __init__(self, db: mysql.MySQLManager):
-        self.db: mysql.MySQLManager = db
+class DataManager(DatabaseManager):
+    def __init__(self, db):
+        self.db = db
 
     async def init_table(self) -> None:
-        async with self.db.get_cursor() as cursor:
-            await cursor.create_table(
-                "ngword", {"id": "BIGINT", "word": "TEXT"}
-            )
+        await self.cursor.create_table(
+            "ngword", {"id": "BIGINT", "word": "TEXT"}
+        )
 
     async def get(self, guild_id: int) -> List[str]:
-        async with self.db.get_cursor() as cursor:
-            return [row[-1] async for row in cursor.get_datas(
-                "ngword", {"id": guild_id}) if row]
+        return [
+            row[-1] async for row in self.cursor.get_datas(
+            "ngword", {"id": guild_id}) if row
+        ]
 
     async def exists(self, guild_id: int) -> bool:
-        async with self.db.get_cursor() as cursor:
-            return await cursor.exists("ngword", {"id": guild_id})
+        return await self.cursor.exists("ngword", {"id": guild_id})
 
     async def add(self, guild_id: int, word: str) -> None:
-        async with self.db.get_cursor() as cursor:
-            values = {"word": word, "id": guild_id}
-            if await cursor.exists("ngword", values):
-                raise ValueError("すでに追加されています。")
-            else:
-                await cursor.insert_data("ngword", values)
+        values = {"word": word, "id": guild_id}
+        if await self.cursor.exists("ngword", values):
+            raise ValueError("すでに追加されています。")
+        else:
+            await self.cursor.insert_data("ngword", values)
 
     async def remove(self, guild_id: int, word: str) -> None:
-        async with self.db.get_cursor() as cursor:
-            targets = {"id": guild_id, "word": word}
-            if await cursor.exists("ngword", targets):
-                await cursor.delete("ngword", targets)
-            else:
-                raise ValueError("そのNGワードはありません。")
+        targets = {"id": guild_id, "word": word}
+        if await self.cursor.exists("ngword", targets):
+            await self.cursor.delete("ngword", targets)
+        else:
+            raise ValueError("そのNGワードはありません。")
 
 
 class NgWord(commands.Cog, DataManager):
@@ -50,9 +47,7 @@ class NgWord(commands.Cog, DataManager):
         self.bot.loop.create_task(self.on_ready())
 
     async def on_ready(self):
-        await self.bot.wait_until_ready()
-        self.db = await self.bot.mysql.get_database()
-        super(commands.Cog, self).__init__(self.db)
+        super(commands.Cog, self).__init__(self.bot.mysql)
         await self.init_table()
 
     async def show_ngwords(self, ctx, item):

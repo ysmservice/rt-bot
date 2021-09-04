@@ -3,88 +3,79 @@
 from discord.ext import commands
 import discord
 
-from rtlib import mysql, DatabaseLocker
+from rtlib import mysql, DatabaseManager
 from functools import wraps
 from time import time
 
 
-class DataManager(DatabaseLocker):
+class DataManager(DatabaseManager):
     def __init__(self, db):
-        self.db: mysql.MySQLManager = db
+        self.db = db
 
     async def init_table(self) -> None:
-        async with self.db.get_cursor() as cursor:
-            await cursor.create_table(
-                "globalChat", {
-                    "Name": "TEXT", "ChannelID": "BIGINT",
-                    "Extras": "JSON"
-                }
-            )
+        await self.cursor.create_table(
+            "globalChat", {
+                "Name": "TEXT", "ChannelID": "BIGINT",
+                "Extras": "JSON"
+            }
+        )
 
     async def load_globalchat_name(self, channel_id: int) -> list:
         target = {"ChannelID": channel_id}
-        async with self.db.get_cursor() as cursor:
-            if await cursor.exists("globalChat", target):
-                return await cursor.get_data("globalChat", target)
-            else:
-                return ()
+        if await self.cursor.exists("globalChat", target):
+            return await self.cursor.get_data("globalChat", target)
+        else:
+            return ()
 
     async def load_globalchat_channels(self, name: str) -> list:
         target = {"Name": name}
-        async with self.db.get_cursor() as cursor:
-            if await cursor.exists("globalChat", target):
-                return [
-                    data
-                    async for data in cursor.get_datas(
-                        "globalChat", target
-                    )
-                ]
-            else:
-                return []
+        if await self.cursor.exists("globalChat", target):
+            return [
+                data
+                async for data in self.cursor.get_datas(
+                    "globalChat", target
+                )
+            ]
+        else:
+            return []
 
     async def make_globalchat(self, name: str, channel_id: int, extras: dict) -> None:
         target = {"Name": name, "ChannelID": channel_id, "Extras": extras}
-        async with self.db.get_cursor() as cursor:
-            if await cursor.exists("globalChat", {"Name": name}):
-                raise ValueError("既に追加されています。")
-            else:
-                await cursor.insert_data("globalChat", target)
+        if await self.cursor.exists("globalChat", {"Name": name}):
+            raise ValueError("既に追加されています。")
+        else:
+            await self.cursor.insert_data("globalChat", target)
 
     async def connect_globalchat(self, name: str, channel_id: int, extras: dict) -> None:
         target = {"Name": name, "ChannelID": channel_id}
-        async with self.db.get_cursor() as cursor:
-            if await cursor.exists("globalChat", target):
-                raise ValueError("既に接続しています。")
-            else:
-                target["Extras"] = extras
-                await cursor.insert_data("globalChat", target)
+        if await self.cursor.exists("globalChat", target):
+            raise ValueError("既に接続しています。")
+        else:
+            target["Extras"] = extras
+            await self.cursor.insert_data("globalChat", target)
 
     async def disconnect_globalchat(self, name: str, channel_id: int) -> None:
         target = {"Name": name, "ChannelID": channel_id}
-        async with self.db.get_cursor() as cursor:
-            if await cursor.exists("globalChat", target):
-                await cursor.delete("globalChat", target)
-            else:
-                raise ValueError(
-                    "そのグローバルチャットは存在していないまたはチャンネルは接続していません。"
-                )
+        if await self.cursor.exists("globalChat", target):
+            await self.cursor.delete("globalChat", target)
+        else:
+            raise ValueError(
+                "そのグローバルチャットは存在していないまたはチャンネルは接続していません。"
+            )
 
     async def exists_globalchat(self, name: str) -> bool:
-        async with self.db.get_cursor() as cursor:
-            return await cursor.exists("globalChat", {"Name": name})
+        return await self.cursor.exists("globalChat", {"Name": name})
 
     async def update_extras(self, name: str, extras: dict) -> None:
         target = {"Name": name}
         change = {"Extras": extras}
-        async with self.db.get_cursor() as cursor:
-            if await cursor.exists("globalChat", target):
-                await cursor.update("globalChat", change, target)
-            else:
-                raise ValueError("グローバルチャットが存在しません。")
+        if await self.cursor.exists("globalChat", target):
+            await self.cursor.update("globalChat", change, target)
+        else:
+            raise ValueError("グローバルチャットが存在しません。")
 
     async def delete_globalchat(self, name: str) -> None:
-        async with self.db.get_cursor() as cursor:
-            await cursor.delete("globalChat", {"Name": name})
+        await self.cursor.delete("globalChat", {"Name": name})
 
 
 def require_guild(coro):
@@ -121,9 +112,8 @@ class GlobalChat(commands.Cog, DataManager):
         self.bot.loop.create_task(self.on_ready())
 
     async def on_ready(self):
-        await self.bot.wait_until_ready()
         super(commands.Cog, self).__init__(
-            await self.bot.mysql.get_database()
+            self.bot.mysql
         )
         await self.init_table()
 

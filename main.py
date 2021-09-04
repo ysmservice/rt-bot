@@ -72,8 +72,6 @@ def on_init(bot):
             elif "." not in path and path != "__pycache__" and path[0] != ".":
                 bot.load_extension("cogs." + path)
             bot.print("Loaded extension", path)
-        bot.print("RT is now up and running!")
-
 
 # テスト時は普通のBackendを本番はシャード版Backendを定義する。
 intents = discord.Intents.default()

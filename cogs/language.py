@@ -110,7 +110,10 @@ class Language(commands.Cog):
                     result = result.replace("$$", word, 1)
             else:
                 if isinstance(text, str) and text[0] == "{" and text[-1] == "}":
-                    text = loads(text.replace('"', r'\"').replace("'", '"'))
+                    try:
+                        text = loads(text.replace('"', r'\"').replace("'", '"'))
+                    except ValueError:
+                        pass
                 result = text.get(lang, text["ja"])
 
         return result
