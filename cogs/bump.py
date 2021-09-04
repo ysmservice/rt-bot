@@ -6,15 +6,14 @@ import discord
 from typing import Any
 
 from rtutil.SettingAPI import SettingData, ListBox, utils
-from rtlib import DatabaseLocker, mysql
+from rtlib import DatabaseManager, mysql
 from ujson import loads
 from time import time
 
 
 class DataManager(DatabaseLocker):
-    def __init__(self, db: mysql.MySQLManager):
-        self.db: mysql.MySQLManager = db
-        self.auto_cursor = True
+    def __init__(self, db):
+        self.db = db
 
     async def init_table(self) -> None:
         await self.cursor.create_table(
@@ -126,9 +125,8 @@ class Bump(commands.Cog, DataManager):
         self.bot.loop.create_task(self.on_ready())
 
     async def on_ready(self):
-        await self.bot.wait_until_ready()
         super(commands.Cog, self).__init__(
-            await self.bot.mysql.get_database()
+            self.bot.mysql
         )
         await self.init_table()
         self.notification.start()
@@ -331,15 +329,16 @@ class Bump(commands.Cog, DataManager):
                     channel = self.bot.get_channel(
                         int(row[-1]["channel"])
                     )
-                    role = channel.guild.get_role(row[-1].get("role", 0))
-                    mention = f"{role.mention}, " if role else ""
-                    await channel.send(
-                        f"{mention}{mode}の時間だよ！ / It's time to {mode}!"
-                    )
+                    if channel:
+                        role = channel.guild.get_role(row[-1].get("role", 0))
+                        mention = f"{role.mention}, " if role else ""
+                        await channel.send(
+                            f"{mention}{mode}の時間だよ！ / It's time to {mode}!"
+                        )
 
-                    # 通知時刻をまた通知しないようにゼロにする。
-                    row[-1]["notification"] = 0
-                    await self.save(channel.guild.id, mode, row[-1])
+                        # 通知時刻をまた通知しないようにゼロにする。
+                        row[-1]["notification"] = 0
+                        await self.save(channel.guild.id, mode, row[-1])
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
