@@ -82,7 +82,7 @@ def require_guild(coro):
     @wraps(coro)
     async def new_coro(self, ctx, *args, **kwargs):
         if ctx.guild:
-            return await coro(self, cursor, ctx, *args, **kwargs)
+            return await coro(self, ctx, *args, **kwargs)
         else:
             return await ctx.reply(
                 {"ja": "サーバーのみ実行可能です。",
