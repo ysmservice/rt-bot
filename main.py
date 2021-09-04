@@ -3,6 +3,16 @@ LICENSE : ./LICENSE
 README  : ./readme.md
 """
 
+desc = """
+  _____ _______   _____  _                       _   ____        _
+ |  __ \\__   __| |  __ \\(_)                     | | |  _ \\      | |
+ | |__) | | |    | |  | |_ ___  ___ ___  _ __ __| | | |_) | ___ | |_
+ |  _  /  | |    | |  | | / __|/ __/ _ \\| '__/ _` | |  _ < / _ \\| __|
+ | | \\ \\  | |    | |__| | \\__ \\ (_| (_) | | | (_| | | |_) | (_) | |_
+ |_|  \\_\\ |_|    |_____/|_|___/\\___\\___/|_|  \\__,_| |____/ \\___/ \\__|
+Now loading..."""
+print(desc)
+
 from aiohttp import ClientSession
 from os import listdir
 from sys import argv
@@ -55,14 +65,18 @@ def on_init(bot):
     bot.load_extension("jishaku")
     bot.load_extension("rtutil.oauth_manager")
     bot.load_extension("rtutil.setting_api")
-    # cogsフォルダにあるエクステンションを読み込む。
-    for path in listdir("cogs"):
-        if path[0] in ("#", "."):
-            continue
-        if path.endswith(".py"):
-            bot.load_extension("cogs." + path[:-3])
-        elif "." not in path and path != "__pycache__" and path[0] != ".":
-            bot.load_extension("cogs." + path)
+
+    @bot.event
+    async def on_ready():
+        # cogsフォルダにあるエクステンションを読み込む。
+        for path in listdir("cogs"):
+            if path[0] in ("#", "."):
+                continue
+            if path.endswith(".py"):
+                bot.load_extension("cogs." + path[:-3])
+            elif "." not in path and path != "__pycache__" and path[0] != ".":
+                bot.load_extension("cogs." + path)
+            print("RT Extension -", path, "Loaded.")
 
 
 # テスト時は普通のBackendを本番はシャード版Backendを定義する。

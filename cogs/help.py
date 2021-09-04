@@ -147,7 +147,7 @@ class Help(commands.Cog):
         }
     )
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def _help(self, ctx, *, word: str = None, interaction=None):
+    async def dhelp(self, ctx, *, word: str = None, interaction=None):
         """!lang ja
         --------
         コマンドの使い方が載っているヘルプを表示します。
