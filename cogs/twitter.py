@@ -2,7 +2,7 @@
 
 from discord.ext import commands, tasks
 
-from rtlib import DatabaseLocker
+from rtlib import DatabaseManager
 from bs4 import BeautifulSoup
 from urllib import parse
 from ujson import loads
@@ -10,14 +10,13 @@ from time import time
 import asyncio
 
 
-class DataManager(DatabaseLocker):
+class DataManager(DatabaseManager):
 
     DB = "Twitter"
     LOG_DB = "TwitterSended"
 
     def __init__(self, db):
         self.db = db
-        self.auto_cursor = True
 
     async def init_table(self) -> None:
         await self.cursor.create_table(
@@ -130,13 +129,12 @@ class Twitter(commands.Cog, DataManager):
 
     async def init_database(self):
         # いろいろ準備をするための関数です。
-        await self.bot.wait_until_ready()
 
         self.error_channel = self.bot.get_user(634763612535390209)
 
         # データベースを準備する。
         super(commands.Cog, self).__init__(
-            await self.bot.mysql.get_database()
+            self.bot.mysql
         )
         await self.init_table()
 

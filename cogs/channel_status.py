@@ -3,52 +3,47 @@
 from discord.ext import commands, tasks
 import discord
 
-from rtlib import mysql, DatabaseLocker
+from rtlib import mysql, DatabaseManager
 
 
-class DataManager(DatabaseLocker):
-    def __init__(self, db: mysql.MySQLManager):
-        self.db: mysql.MySQLManager = db
+class DataManager(DatabaseManager):
+    def __init__(self, db):
+        self.db = db
 
     async def init_table(self) -> None:
-        async with self.db.get_cursor() as cursor:
-            await cursor.create_table(
-                "channelStatus", {
-                    "GuildID": "BIGINT", "ChannelID": "BIGINT",
-                    "Text": "TEXT"
-                }
-            )
+        await self.cursor.create_table(
+            "channelStatus", {
+                "GuildID": "BIGINT", "ChannelID": "BIGINT",
+                "Text": "TEXT"
+            }
+        )
 
     async def load(self, guild_id: int) -> list:
-        async with self.db.get_cursor() as cursor:
-            await cursor.cursor.execute(
-                """SELECT * FROM channelStatus
-                    WHERE GuildID = ?""", (guild_id,)
-            )
-            return await cursor.cursor.fetchall()
+        await self.cursor.cursor.execute(
+            """SELECT * FROM channelStatus
+                WHERE GuildID = ?""", (guild_id,)
+        )
+        return await self.cursor.cursor.fetchall()
 
     async def load_all(self) -> list:
-        async with self.db.get_cursor() as cursor:
-            await cursor.cursor.execute(
-                "SELECT * FROM channelStatus"
-            )
-            return await cursor.cursor.fetchall()
+        await self.cursor.cursor.execute(
+            "SELECT * FROM channelStatus"
+        )
+        return await self.cursor.cursor.fetchall()
 
     async def save(self, guild_id: int, channel_id: int, text: str) -> None:
         target = {"GuildID": guild_id, "ChannelID": channel_id}
         change = {"Text": text}
-        async with self.db.get_cursor() as cursor:
-            if await cursor.exists("channelStatus", target):
-                await cursor.update_data("channelStatus", change, target)
-            else:
-                target.update(change)
-                await cursor.insert_data("channelStatus", target)
+        if await self.cursor.exists("channelStatus", target):
+            await self.cursor.update_data("channelStatus", change, target)
+        else:
+            target.update(change)
+            await self.cursor.insert_data("channelStatus", target)
 
     async def delete(self, guild_id: int, channel_id: int) -> None:
         target = {"GuildID": guild_id, "ChannelID": channel_id}
-        async with self.db.get_cursor() as cursor:
-            if await cursor.exists("channelStatus", target):
-                await cursor.delete("channelStatus", target)
+        if await self.cursor.exists("channelStatus", target):
+            await self.cursor.delete("channelStatus", target)
 
 
 class ChannelStatus(commands.Cog, DataManager):
@@ -57,9 +52,8 @@ class ChannelStatus(commands.Cog, DataManager):
         self.bot.loop.create_task(self.on_ready())
 
     async def on_ready(self):
-        await self.bot.wait_until_ready()
         super(commands.Cog, self).__init__(
-            await self.bot.mysql.get_database()
+            self.bot.mysql
         )
         await self.init_table()
         self.status_updater.start()

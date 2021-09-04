@@ -3,7 +3,7 @@
 from discord.ext import commands
 import discord
 
-from rtlib import mysql, DatabaseLocker
+from rtlib import mysql, DatabaseManager
 from rtlib.ext import componesy, Embeds
 from .bot_general import INFO_SS
 from typing import Optional
@@ -11,10 +11,9 @@ from random import choice
 from data import is_admin
 
 
-class DataManager(DatabaseLocker):
+class DataManager(DatabaseManager):
     def __init__(self, db):
         self.db: mysql.MySQLManager = db
-        self.auto_cursor = True
 
     async def init_table(self):
         await self.cursor.create_table(
@@ -50,9 +49,8 @@ class GlobalBan(commands.Cog, DataManager):
         self.bot.loop.create_task(self.on_ready())
 
     async def on_ready(self):
-        await self.bot.wait_until_ready()
         super(commands.Cog, self).__init__(
-            await self.bot.mysql.get_database()
+            self.bot.mysql
         )
         await self.init_table()
 

@@ -67,12 +67,62 @@ class YouTubeTogether(commands.Cog):
             choices=tuple((key, key) for key in APPLICATIONS)
         )
     ):
+        """!lang ja
+        --------
+        YouTube TogetherなどでボイスチャンネルでゲームやYouTubeを見ることができます。  
+        音楽プレイヤーとしても使えます。
+
+        Parameters
+        ----------
+        choice : str
+            使うアクティビティです。
+
+        Notes
+        -----
+        使用可能なアクティビティは以下の通りです。
+        ```
+        youtube
+        poker
+        betrayal
+        fishing
+        chess
+        ```
+        このコマンドはスラッシュコマンドに対応しています。
+
+        Examples
+        --------
+        `rt!activity youtube` YouTubeをボイスチャンネルでみんなと見ます。
+
+        !lang en
+        --------
+        You can watch games and YouTube with voice channels on YouTube Together, etc.  
+        It can also be used as a music player.
+
+        Parameters
+        ----------
+        choice : str
+            The activity to use.
+
+        Notes
+        -----
+        The available activities are as follows:
+        ```
+        youtube
+        poker
+        betrayal
+        fishing
+        chess
+        ```
+
+        Examples
+        --------
+        `rt!activity youtube`"""
         if (appid := self.APPLICATIONS.get(choice)):
             if ctx.author.voice:
                 await ctx.reply(
-                    await self.make_invite(
+                    (await self.make_invite(
                         ctx.author.voice.channel.id, appid,
-                    )
+                    )) + "\nもしし使えない場合はURLをクリックしてください。"
                 )
             else:
                 await ctx.reply(
