@@ -80,7 +80,7 @@ class DataManager(DatabaseManager):
 
 def require_guild(coro):
     @wraps(coro)
-    async def new_coro(self, cursor, ctx, *args, **kwargs):
+    async def new_coro(self, ctx, *args, **kwargs):
         if ctx.guild:
             return await coro(self, cursor, ctx, *args, **kwargs)
         else:
@@ -93,7 +93,7 @@ def require_guild(coro):
 
 def require_globalchat(coro):
     @wraps(coro)
-    async def new_coro(self, cursor, ctx, *args, **kwargs):
+    async def new_coro(self, ctx, *args, **kwargs):
         if (row := await self.load_globalchat_name(ctx.channel.id)):
             ctx.row = row
             return await coro(self, cursor, ctx, *args, **kwargs)
