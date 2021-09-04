@@ -113,8 +113,9 @@ class Language(commands.Cog):
                     try:
                         text = loads(text.replace('"', r'\"').replace("'", '"'))
                     except ValueError:
-                        pass
-                result = text.get(lang, text["ja"])
+                        result = text
+                    else:
+                        result = text.get(lang, text["ja"])
 
         return result
 

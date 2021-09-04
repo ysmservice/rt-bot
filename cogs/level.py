@@ -5,6 +5,7 @@ import discord
 
 from rtlib import mysql, DatabaseManager
 from rtlib.ext import Embeds
+from asyncio import sleep
 from typing import Tuple
 
 
@@ -46,10 +47,7 @@ class DataManager(DatabaseManager):
             if (row := await cursor.get_data(
                     "levelNotification", target)):
                 return bool(row[1])
-            else:
-                return True
-        else:
-            return True
+        return False
 
     async def set_level(
             self, cursor, guild_id: int, user_id: int,
@@ -331,16 +329,32 @@ class Level(commands.Cog, DataManager):
         else:
             return ""
 
+    async def remove_reaction(self, message: discord.Message, emoji: str) -> None:
+        await sleep(3)
+        try:
+            await message.remove_reaction(emoji, self.bot.user)
+        except Exception as e:
+            if self.bot.test:
+                print("Error on level:", e)
+
     async def on_levelup(
             self, level: int, guild_id: int,
             message: discord.Message) -> None:
         if await self.get_notification(message.author.id):
             # リアクションをつける。
-            await message.add_reaction(
-                ("<:level_up_global:876339471832997888>"
-                 if guild_id
-                 else "<:level_up_local:876339460252528710>")
-            )
+            try:
+                await message.add_reaction(
+                    (emoji := (
+                        "<:level_up_global:876339471832997888>"
+                        if guild_id
+                        else "<:level_up_local:876339460252528710>"))
+                )
+                self.bot.loop.create_task(
+                    self.remove_reaction(message, emoji)
+                )
+            except Exception as e:
+                if self.bot.test:
+                    print("Error on level:", e)
 
         if guild_id:
             # レベル報酬の付与をするところ。

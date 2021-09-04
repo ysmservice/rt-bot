@@ -39,11 +39,11 @@ class Help(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.help = self.bot.cogs["DocHelp"].data
 
     @commands.Cog.route("/help/<category>/<command_name>")
     @OAuth.login_want()
     async def help_detail(self, request, category, command_name):
+        self.help = self.bot.cogs["DocHelp"].data
         category = self.CATEGORIES.get(category, category)
         lang = (self.bot.cogs["Language"].get(request.ctx.user.id)
                 if request.ctx.user else "ja")
@@ -171,6 +171,7 @@ class Help(commands.Cog):
         word : command name/search word, optional
             The command name of the help to be displayed.  
             If a word that is not a command name is specified, a search will be performed."""
+        self.help = self.bot.cogs["DocHelp"].data
         lang = self.bot.cogs["Language"].get(ctx.author.id)
         edit = ctx.message.author.id == self.bot.user.id
         reply = True
