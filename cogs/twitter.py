@@ -47,7 +47,7 @@ class DataManager(DatabaseManager):
                 {"ChannelID": channel_id, "TweetID": rows[0][1]}
             )
 
-    async def _get_sended(self, channel_id: int) -> list:
+    async def _get_sended(self, cursor, channel_id: int) -> list:
         await cursor.cursor.execute(
             """SELECT * FROM {}
                 WHERE ChannelID = %s
