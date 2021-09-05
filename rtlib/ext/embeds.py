@@ -332,7 +332,6 @@ class EmbedsCog(commands.Cog):
         del now, delete
 
     def cog_unload(self):
-        del self.embeds, self.embeds_queue
         self.queue_killer.cancel()
 
     async def _on_sended(self, message, args, kwargs):
