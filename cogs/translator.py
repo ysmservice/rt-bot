@@ -32,9 +32,9 @@ class Translator(commands.Cog, AsyncTranslator):
     def __init__(self, bot):
         self.bot = bot
         super(commands.Cog, self).__init__()
+        self.add_help()
 
-    @commands.Cog.listener()
-    async def on_ready(self):
+    def add_help(self):
         # ヘルプにチャンネルプラグイン版翻訳を追加するだけ。
         for lang in CHP_HELP:
             self.bot.cogs["DocHelp"].add_help(
@@ -70,7 +70,7 @@ class Translator(commands.Cog, AsyncTranslator):
 
         Aliases
         -------
-        trans, ほんやく, ほんやく
+        trans, ほんやく, 翻訳
 
         See Also
         --------

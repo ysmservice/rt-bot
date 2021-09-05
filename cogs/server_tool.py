@@ -330,8 +330,11 @@ class ServerTool(commands.Cog):
         This is the false rule.
         ```"""
         await ctx.channel.webhook_send(
-            username=ctx.author.display_name, avatar_url=ctx.author.avatar.url,
-            embed=self.easy_embed(">>" + content)
+            username=ctx.author.display_name,
+            avatar_url=ctx.author.avatar.url,
+            embed=self.easy_embed(
+                ">>" + content, ctx.author.color
+            )
         )
 
     @commands.command(
