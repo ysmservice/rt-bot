@@ -73,7 +73,7 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         """!lang ja
         --------
         いつも下にくるメッセージを作ることができます。  
-        メッセージ削除権限権限を持つ人のみ実行可能です。  
+        メッセージ削除権限を持つ人のみ実行可能です。  
         別名強制ピン留めメッセージです。
 
         Parameters
