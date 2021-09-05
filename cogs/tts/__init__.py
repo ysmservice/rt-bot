@@ -589,7 +589,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                 path = f"cogs/tts/routine/{ctx.author.id}-{ctx.message.attachments[0].filename}"
                 await ctx.message.attachments[0].save(path)
                 # 時間が7秒以上じゃないか確認する。
-                if AudioSegment.from_file(path, path[path.rfind("."):]).duration_seconds <= 7:
+                if AudioSegment.from_file(path, path[path.rfind(".") + 1:]).duration_seconds <= 7:
                     data[path] = {
                         "aliases": aliases.split(),
                         "file_name": ctx.message.attachments[0].filename
