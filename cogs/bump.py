@@ -253,35 +253,6 @@ class Bump(commands.Cog, DataManager):
     @commands.command(
         extras={
             "headding": {
-                "ja": "Bump ランキング",
-                "en": "Bump ranking"
-            }, "parent": "Individual"
-        }, name="bumpers", aliases=["br", "bumprank", "ばんぷらんく"]
-    )
-    @commands.cooldown(1, 4, commands.BucketType.user)
-    async def bump_ranking(self, ctx, mode="bump"):
-        """!lang ja
-        --------
-        DisboardのBumpランキングです。
-
-        Aliases
-        -------
-        br, bumprank, ばんぷらんく
-
-        !lang en
-        --------
-        Show you Disboard Bump ranking.
-
-        Aliases
-        -------
-        br, bumprank"""
-        await ctx.reply(
-            embed=await self.make_ranking(ctx.author.id, mode)
-        )
-
-    @commands.command(
-        extras={
-            "headding": {
                 "ja": "Up ランキング",
                 "en": "Up ranking"
             }, "parent": "Individual"
@@ -323,22 +294,23 @@ class Bump(commands.Cog, DataManager):
             for row in await self.get_all(mode):
                 row = list(row)
                 row[-1] = loads(row[-1])
-                if (row[-1]["notification"] <= now
-                    and row[-1]["notification"] != 0):
-                    # もし通知時刻になっているなら通知をする。
-                    channel = self.bot.get_channel(
-                        int(row[-1]["channel"])
-                    )
-                    if channel:
-                        role = channel.guild.get_role(row[-1].get("role", 0))
-                        mention = f"{role.mention}, " if role else ""
-                        await channel.send(
-                            f"{mention}{mode}の時間だよ！ / It's time to {mode}!"
+                if "notification" in row:
+                    if (row[-1]["notification"] <= now
+                        and row[-1]["notification"] != 0):
+                        # もし通知時刻になっているなら通知をする。
+                        channel = self.bot.get_channel(
+                            int(row[-1]["channel"])
                         )
+                        if channel:
+                            role = channel.guild.get_role(row[-1].get("role", 0))
+                            mention = f"{role.mention}, " if role else ""
+                            await channel.send(
+                                f"{mention}{mode}の時間だよ！ / It's time to {mode}!"
+                            )
 
-                        # 通知時刻をまた通知しないようにゼロにする。
-                        row[-1]["notification"] = 0
-                        await self.save(channel.guild.id, mode, row[-1])
+                            # 通知時刻をまた通知しないようにゼロにする。
+                            row[-1]["notification"] = 0
+                            await self.save(channel.guild.id, mode, row[-1])
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
