@@ -69,15 +69,14 @@ class Tenki(commands.Cog, DataManager):
         count, options, true_count = 0, [], 0
         for name, value in PREFECTURES:
             count += 1
+            options.append(
+                discord.SelectOption(
+                    label=name, value=value
+                )
+            )
             if count == 25:
                 add_item(options, (true_count := true_count + 1))
                 count, options = 0, []
-            else:
-                options.append(
-                    discord.SelectOption(
-                        label=name, value=value
-                    )
-                )
         if count != 24:
             add_item(options, true_count + 1)
 
