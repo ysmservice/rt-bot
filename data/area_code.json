@@ -678,11 +678,13 @@
         "@title": "警報・注意報",
         "@source": "http://weather.livedoor.com/forecast/rss/warn/27.xml"
       },
-      "city": {
-        "@title": "大阪",
-        "@id": "270000",
-        "@source": "http://weather.livedoor.com/forecast/rss/area/270000.xml"
-      }
+      "city": [
+        {
+          "@title": "大阪",
+          "@id": "270000",
+          "@source": "http://weather.livedoor.com/forecast/rss/area/270000.xml"
+        }
+      ]
     },
     {
       "@title": "兵庫県",
@@ -876,11 +878,13 @@
         "@title": "警報・注意報",
         "@source": "http://weather.livedoor.com/forecast/rss/warn/37.xml"
       },
-      "city": {
-        "@title": "高松",
-        "@id": "370000",
-        "@source": "http://weather.livedoor.com/forecast/rss/area/370000.xml"
-      }
+      "city": [
+        {
+          "@title": "高松",
+          "@id": "370000",
+          "@source": "http://weather.livedoor.com/forecast/rss/area/370000.xml"
+        }
+      ]
     },
     {
       "@title": "愛媛県",
