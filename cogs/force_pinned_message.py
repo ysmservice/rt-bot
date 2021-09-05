@@ -98,6 +98,10 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         一言：
         ```
 
+        Notes
+        -----
+        下に来るメッセージは数秒毎に更新されるので数秒は下に来ないことがあります。
+
         !lang en
         --------
         You can create a message that always comes at the bottom.  
@@ -125,6 +129,7 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         Gender:
         Comment:
         ```"""
+        await ctx.trigger_typing()
         await self.setting(
             ctx.guild.id, ctx.channel.id, 0, ctx.author.id, onoff, content
         )

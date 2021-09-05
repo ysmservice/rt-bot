@@ -103,6 +103,7 @@ class Enjoy(commands.Cog):
         !lang en
         --------
         Ah, This command language is supported only japanese."""
+        await ctx.trigger_typing()
         data = await self.get_nhk()
         embeds = Embeds("NHKNews", ctx.author.id)
         for item in data["item"]:
@@ -153,6 +154,7 @@ class Enjoy(commands.Cog):
         !lang en
         --------
         Ah, This command language is supported only japanese."""
+        await ctx.trigger_typing()
         embeds = Embeds("JinNews", ctx.author.id)
         async for data in self.jin():
             embed = discord.Embed(
