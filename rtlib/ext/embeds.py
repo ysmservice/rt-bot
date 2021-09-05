@@ -80,7 +80,7 @@ class Embeds:
     timeout : int, default 60
         ユーザーが操作できなくなるタイムアウトです。  
         この数値を高くする場合は何度もEmbedsのメッセージを送信できないように設定した方が良いです。
-    embeds : List[discord.Embed]
+    embeds : List[discord.Embed], optional
         最初のうちに追加しておくEmbedです。
 
     Attributes
@@ -139,11 +139,11 @@ class Embeds:
     TARGET = Union[discord.User, discord.Member, Literal["everyone"]]
 
     def __init__(self, name: str, target: TARGET = "everyone",
-                 timeout: int = 60, embeds: List[discord.Embed] = []):
+                 timeout: int = 60, embeds: List[discord.Embed] = None):
         self.name: str = name
         self.target: self.TARGET = target
         self.timeout: int = timeout
-        self.embeds: List[discord.Embed] = embeds
+        self.embeds: List[discord.Embed] = [] if embeds is None else embeds
         self.last_update: float = time()
         self.expired: bool = False
         self.now: int = 0
