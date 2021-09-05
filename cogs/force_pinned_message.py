@@ -174,7 +174,10 @@ class ForcePinnedMessage(commands.Cog, DataManager):
                     avatar_url=member.avatar.url,
                     content=fpm[3], wait=True, replace_language=False
                 )
-            except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+            except (
+                discord.NotFound, discord.Forbidden,
+                discord.HTTPException, discord.errors.InvalidArgument
+            ):
                 pass
             await self.setting(
                 message.guild.id, message.channel.id,
