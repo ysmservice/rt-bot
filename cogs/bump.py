@@ -293,24 +293,29 @@ class Bump(commands.Cog, DataManager):
             mode = self.IDS[key]["mode"]
             for row in await self.get_all(mode):
                 row = list(row)
-                row[-1] = loads(row[-1])
-                if "notification" in row:
-                    if (row[-1]["notification"] <= now
-                        and row[-1]["notification"] != 0):
-                        # もし通知時刻になっているなら通知をする。
-                        channel = self.bot.get_channel(
-                            int(row[-1]["channel"])
-                        )
-                        if channel:
-                            role = channel.guild.get_role(row[-1].get("role", 0))
-                            mention = f"{role.mention}, " if role else ""
-                            await channel.send(
-                                f"{mention}{mode}の時間だよ！ / It's time to {mode}!"
+                try:
+                    row[-1] = loads(row[-1])
+                except Exception as e:
+                    if self.bot.test:
+                        print("Error on bump:", e)
+                else:
+                    if "notification" in row[-1]:
+                        if (row[-1]["notification"] <= now
+                            and row[-1]["notification"] != 0):
+                            # もし通知時刻になっているなら通知をする。
+                            channel = self.bot.get_channel(
+                                int(row[-1]["channel"])
                             )
+                            if channel:
+                                role = channel.guild.get_role(row[-1].get("role", 0))
+                                mention = f"{role.mention}, " if role else ""
+                                await channel.send(
+                                    f"{mention}{mode}の時間だよ！ / It's time to {mode}!"
+                                )
 
-                            # 通知時刻をまた通知しないようにゼロにする。
-                            row[-1]["notification"] = 0
-                            await self.save(channel.guild.id, mode, row[-1])
+                                # 通知時刻をまた通知しないようにゼロにする。
+                                row[-1]["notification"] = 0
+                                await self.save(channel.guild.id, mode, row[-1])
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
