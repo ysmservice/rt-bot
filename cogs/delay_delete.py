@@ -90,7 +90,11 @@ class DelayDelete(commands.Cog, DataManager):
         --------
         この機能で遅延削除するメッセージは最大160個まで覚えます。  
         それ以上遅延削除するメッセージを登録した場合最後に登録された遅延削除対象メッセージが削除されなくなります。  
-        悪用防止のためです。ご了承ください。"""
+        悪用防止のためです。ご了承ください。
+
+        Aliases
+        -------
+        dd, 遅延削除"""
         new = await ctx.webhook_send(
             username=ctx.author.display_name,
             avatar_url=getattr(ctx.author.avatar, "url", None),
