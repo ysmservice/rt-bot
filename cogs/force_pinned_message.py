@@ -26,12 +26,13 @@ class DataManager(DatabaseManager):
             self, cursor, guild_id: int, channel_id: int, message_id: int,
             author_id: int, onoff: bool, text: str) -> None:
         value = dict(Bool=int(onoff), Text=text,
-                        AuthorID=author_id, MessageID=message_id)
+                     AuthorID=author_id, MessageID=message_id)
         target = dict(GuildID=guild_id, ChannelID=channel_id)
         if await cursor.exists(self.TABLE, target):
-            await cursor.delete(self.TABLE, target)
-        value.update(target)
-        await cursor.insert_data(self.TABLE, value)
+            await cursor.update_data(self.TABLE, value, target)
+        else:
+            value.update(target)
+            await cursor.insert_data(self.TABLE, value)
 
     async def get(self, cursor, guild_id: int, channel_id: int) -> Tuple[int, int, bool, str]:
         target = dict(GuildID=guild_id, ChannelID=channel_id)
@@ -130,6 +131,7 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         Comment:
         ```"""
         await ctx.trigger_typing()
+        print(onoff)
         await self.setting(
             ctx.guild.id, ctx.channel.id, 0, ctx.author.id, onoff, content
         )
@@ -177,8 +179,9 @@ class ForcePinnedMessage(commands.Cog, DataManager):
             except (
                 discord.NotFound, discord.Forbidden,
                 discord.HTTPException, discord.errors.InvalidArgument
-            ):
-                pass
+            ) as e:
+                if self.bot.test:
+                    print("Error on ForcePinnedMessage:", e)
             await self.setting(
                 message.guild.id, message.channel.id,
                 getattr(new_message, "id", 0),
