@@ -135,9 +135,15 @@ class Bump(commands.Cog, DataManager):
         if getattr(ctx, "mode", "write") == "read":
             data = await self.load(ctx.guild.id, item.name)
             onoff = "on" if data else "off"
-            if onoff == "on" and data[-1]["role"]:
+            if onoff == "on" and data[-1].get("role"):
                 onoff = ctx.guild.get_role(data[-1]["role"])
-            item = utils.make_list(["on", "off"] + ctx.guild.roles, "name", onoff)
+            item = utils.make_list(
+                item.name, {
+                    "ja": f"{item.name}通知をするかどうかです。役職名を選択すれば役職メンションをして通知をします。",
+                    "en": "Whether to do notification or not. If you select role name, RT do mention when do notification."
+                },
+                ["on", "off"] + ctx.guild.roles, "name", onoff
+            )
             return item
         else:
             role = item.texts[item.index]
