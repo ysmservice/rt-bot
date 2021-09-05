@@ -66,7 +66,7 @@ class ChannelPluginGeneral(commands.Cog):
                     # もしスポイラーワードが設定されているならそれもスポイラーにする。
                     for word in cmd.split()[1:]:
                         content = content.replace(word, f"||{word}||")
-                    if message.content != content:
+                    if message.clean_content != content or message.attachments:
                         # 送信しなおす。
                         await message.channel.webhook_send(
                             content, files=new,
@@ -78,7 +78,7 @@ class ChannelPluginGeneral(commands.Cog):
                     # Can't Edit
                     await message.channel.webhook_send(
                         message.clean_content, files=[
-                            await at.to_dict()
+                            await at.to_file()
                             for at in message.attachments
                         ], username=message.author.display_name,
                         avatar_url=message.author.avatar.url

@@ -150,20 +150,21 @@ class Expander(commands.Cog, DataManager):
                     if channel is None:
                         channel = get_channel(int(data[1]))
 
-                    fetched_message = await channel.fetch_message(int(data[2]))
-                    embed = discord.Embed(
-                        description=fetched_message.content,
-                        color=fetched_message.author.color
-                    ).set_author(
-                        name=fetched_message.author.display_name,
-                        icon_url=fetched_message.author.avatar.url
-                    ).set_footer(
-                        text=fetched_message.guild.name,
-                        icon_url=fetched_message.guild.icon.url
-                    )
-                    if fetched_message.attachments:
-                        embed.set_image(url=fetched_message.attachments[0].url)
-                    embeds.append(embed)
+                    if channel:
+                        fetched_message = await channel.fetch_message(int(data[2]))
+                        embed = discord.Embed(
+                            description=fetched_message.content,
+                            color=fetched_message.author.color
+                        ).set_author(
+                            name=fetched_message.author.display_name,
+                            icon_url=fetched_message.author.avatar.url
+                        ).set_footer(
+                            text=fetched_message.guild.name,
+                            icon_url=fetched_message.guild.icon.url
+                        )
+                        if fetched_message.attachments:
+                            embed.set_image(url=fetched_message.attachments[0].url)
+                        embeds.append(embed)
 
                 if embeds:
                     try:
