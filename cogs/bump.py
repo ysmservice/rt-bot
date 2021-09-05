@@ -309,9 +309,13 @@ class Bump(commands.Cog, DataManager):
                             if channel:
                                 role = channel.guild.get_role(row[-1].get("role", 0))
                                 mention = f"{role.mention}, " if role else ""
-                                await channel.send(
-                                    f"{mention}{mode}の時間だよ！ / It's time to {mode}!"
-                                )
+                                try:
+                                    await channel.send(
+                                        f"{mention}{mode}の時間だよ！ / It's time to {mode}!"
+                                    )
+                                except Exception as e:
+                                    if self.bot.test:
+                                        print("Error on bump2:", e)
 
                                 # 通知時刻をまた通知しないようにゼロにする。
                                 row[-1]["notification"] = 0
