@@ -122,7 +122,7 @@ class RoleLinker(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!link 認証済み メンバー`
+        `rt!linker link 認証済み メンバー`
         認証済みの役職がついたらメンバーという役職をつけます。
 
         !lang en
@@ -139,7 +139,7 @@ class RoleLinker(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!link authenticated member`.
+        `rt!linker link authenticated member`.
         If the position is authenticated, it will be given the title member."""
         if len(await self.get_all(ctx.guild.id)) == 10:
             await ctx.reply(

@@ -83,6 +83,7 @@ class ChannelPluginGeneral(commands.Cog):
                         ], username=message.author.display_name,
                         avatar_url=message.author.avatar.url
                     )
+                    await message.delete()
 
 
 def setup(bot):
