@@ -236,6 +236,12 @@ class BotGeneral(commands.Cog):
             title = "403 Forbidden"
             description = {"ja": "あなたはこのコマンドの実行に必要な役職を持っていないため、このコマンドを実行できません。",
                            "en": "You can't do this command. Because you need permission"}
+        elif isinstance(error, discord.Forbidden):
+            title = "500 Internal Server Error"
+            description = {
+                "ja": "RTに権限がないため正常にコマンドを実行できませんでした。",
+                "en": "The command could not be executed successfully because RT does not have permissions."
+            }
         else:
             error_message = "".join(
                 TracebackException.from_exception(error).format())
