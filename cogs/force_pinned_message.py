@@ -3,8 +3,9 @@
 from discord.ext import commands, tasks
 import discord
 
+from typing import Tuple, Dict, List
 from rtlib import DatabaseManager
-from typing import Tuple, Dict
+from ujson import loads, dumps
 
 
 class DataManager(DatabaseManager):
@@ -49,6 +50,7 @@ class ForcePinnedMessage(commands.Cog, DataManager):
     def __init__(self, bot):
         self.bot = bot
         self.queue: Dict[int, discord.Message] = {}
+        self.remove_queue: List[int] = []
         self.bot.loop.create_task(self.on_ready())
 
     async def on_ready(self):
@@ -131,12 +133,20 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         Comment:
         ```"""
         await ctx.trigger_typing()
-        print(onoff)
+        if content.startswith(">>"):
+            content = "<" + dumps(
+                self.bot.cogs["ServerTool"].easy_embed(
+                    content, ctx.author.color
+                ).to_dict()
+            ) + ">"
         await self.setting(
-            ctx.guild.id, ctx.channel.id, 0, ctx.author.id, onoff, content
+            ctx.guild.id, ctx.channel.id, 0,
+            ctx.author.id, onoff, content
         )
         if not onoff and ctx.channel.id in self.queue:
             del self.queue[ctx.channel.id]
+            if ctx.channel.id not in self.remove_queue:
+                self.remove_queue.append(ctx.channel.id)
         await ctx.reply("Ok")
 
     @commands.Cog.listener()
@@ -144,9 +154,10 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         if not message.guild or "RT-" in message.author.name or not self.bot.is_ready():
             return
 
-        fpm = await self.get(message.guild.id, message.channel.id)
-        if fpm[2]:
-            self.queue[message.channel.id] = (message, fpm)
+        if message.channel.id not in self.remove_queue:
+            fpm = await self.get(message.guild.id, message.channel.id)
+            if fpm[2]:
+                self.queue[message.channel.id] = (message, fpm)
 
     def cog_unload(self):
         self.worker.cancel()
@@ -154,6 +165,8 @@ class ForcePinnedMessage(commands.Cog, DataManager):
     @tasks.loop(seconds=5)
     async def worker(self):
         for channel_id in list(self.queue.keys()):
+            if channel_id in self.remove_queue:
+                self.remove_queue.remove(channel_id)
             message, fpm = self.queue[channel_id]
             new_message = None
             try:
@@ -169,12 +182,19 @@ class ForcePinnedMessage(commands.Cog, DataManager):
                 del self.queue[channel_id]
             except KeyError:
                 pass
+
             member = message.guild.get_member(fpm[0])
+            content = fpm[3]
+            if content.startswith("<") and content.endswith(">"):
+                kwargs = {"embed": discord.Embed.from_dict(loads(content[1:-1]))}
+            else:
+                kwargs = {"content": content}
+
             try:
                 new_message = await message.channel.webhook_send(
                     username=f"{member.display_name} RT-ForcePinnedMessage",
-                    avatar_url=member.avatar.url,
-                    content=fpm[3], wait=True, replace_language=False
+                    avatar_url=member.avatar.url, wait=True, replace_language=False,
+                    **kwargs
                 )
             except (
                 discord.NotFound, discord.Forbidden,
@@ -182,6 +202,7 @@ class ForcePinnedMessage(commands.Cog, DataManager):
             ) as e:
                 if self.bot.test:
                     print("Error on ForcePinnedMessage:", e)
+
             await self.setting(
                 message.guild.id, message.channel.id,
                 getattr(new_message, "id", 0),

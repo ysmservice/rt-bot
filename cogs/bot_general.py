@@ -257,8 +257,12 @@ class BotGeneral(commands.Cog):
             )
             kwargs["view"] = view
 
+        if (length := len(description)) > 4096:
+            description = description[4096 - length + 1:]
+
         kwargs["embed"] = discord.Embed(
-            title=title, description=description, color=color)
+            title=title, description=description,
+            color=color)
         await ctx.send(f"{ctx.author.mention} " + content, **kwargs)
 
 
