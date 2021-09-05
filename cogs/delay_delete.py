@@ -127,16 +127,18 @@ class DelayDelete(commands.Cog, DataManager):
 
     @tasks.loop(seconds=30)
     async def delete_loop(self):
+        now = time()
         for row in await self.reads():
-            channel = self.bot.get_channel(row[0])
-            if channel:
-                try:
-                    message = await channel.fetch_message(row[1])
-                    await message.delete()
-                except Exception as e:
-                    if self.bot.test:
-                        print("Error on Delay Delete:", e)
-            await self.delete(row[0], row[1])
+            if row[-1] <= now:
+                channel = self.bot.get_channel(row[0])
+                if channel:
+                    try:
+                        message = await channel.fetch_message(row[1])
+                        await message.delete()
+                    except Exception as e:
+                        if self.bot.test:
+                            print("Error on Delay Delete:", e)
+                await self.delete(row[0], row[1])
 
 
 def setup(bot):
