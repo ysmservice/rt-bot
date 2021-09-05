@@ -30,11 +30,20 @@ class DataManager(DatabaseManager):
     async def save(self, cursor, channel: discord.TextChannel,
                    mode: str, role_id: int, extras: dict) -> None:
         target = {"GuildID": channel.guild.id}
+        change = {
+            "ChannelID": channel.id, "Mode": mode,
+            "RoleID": role_id, "Extras": extras
+        }
+        if await cursor.exists("captcha", target):
+            await cursor.update_data("captcha", change, target)
+        else:
+            target.update()
+            await cursor.insert_data("captcha", target)
+
+    async def delete(self, cursor, channel: discord.TextChannel) -> None:
+        target = {"GuildID": channel.guild.id, "ChannelID": channel.id}
         if await cursor.exists("captcha", target):
             await cursor.delete("captcha", target)
-        target.update({"ChannelID": channel.id, "Mode": mode,
-                       "RoleID": role_id, "Extras": extras})
-        await cursor.insert_data("captcha", target)
 
     async def load(self, cursor, guild_id: int) -> tuple:
         target = {"GuildID": guild_id}
@@ -76,7 +85,7 @@ class Captcha(commands.Cog, DataManager):
     )
     @commands.has_permissions(administrator=True)
     @commands.cooldown(1, 10, commands.BucketType.guild)
-    async def captcha(self, ctx, mode, *, role: discord.Role):
+    async def captcha(self, ctx, mode, *, role: discord.Role = None):
         """!lang ja
         --------
         認証を設定します。  
@@ -134,11 +143,14 @@ class Captcha(commands.Cog, DataManager):
         It is recommended to make the authenticating channel invisible to authenticated users and set slowmode.  
         This way, if an automated vandal comes along, the authenticated users will not be affected by the vandalism.  
         This command can only be executed by someone with administrative privileges."""
-        extras = ""
-        if mode not in self.captchas:
-            extras = mode
-            mode = "word"
-        await self.save(ctx.channel, mode, role.id, extras)
+        if role is None:
+            await self.delete(ctx.channel)
+        else:
+            extras = ""
+            if mode not in self.captchas:
+                extras = mode
+                mode = "word"
+            await self.save(ctx.channel, mode, role.id, extras)
         await ctx.reply("Ok")
 
     async def init_database(self):
