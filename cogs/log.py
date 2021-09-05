@@ -184,7 +184,9 @@ class Log(commands.Cog):
                 color=self.c
             )
             embed.add_field(name="招待リンク", value=invite.url)
-            embed.set_thumbnail(url=invite.inviter.avatar.url)
+            embed.set_thumbnail(
+                url=getattr(invite.inviter.avatar, "url", "")
+            )
             return embed
 
     @commands.Cog.listener()
