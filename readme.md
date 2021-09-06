@@ -1,4 +1,5 @@
 # RT Backend
+[![Discord Bots](https://top.gg/api/widget/status/716496407212589087.svg)](https://top.gg/bot/716496407212589087)
 DiscordのBotのRTのバックエンドです。  
 著作権表記：`(C) 2020 RT-Team`
 
