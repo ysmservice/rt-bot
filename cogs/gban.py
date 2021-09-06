@@ -123,7 +123,7 @@ class GlobalBan(commands.Cog, DataManager):
         Show you gban list."""
         embeds = Embeds("GbanList", target=ctx.author.id)
 
-        for row in await self.getall():
+        for i, row in enumerate(await self.getall()):
             if row:
                 user = await self.bot.fetch_user(row[0])
                 if user:
@@ -166,7 +166,21 @@ class GlobalBan(commands.Cog, DataManager):
     @gban.command("remove")
     @is_admin()
     async def remove_user_(self, ctx, user_id: int):
+        await ctx.trigger_typing()
         await self.remove_user(user_id)
+
+        for guild in self.bot.guilds:
+            for member in guild.members:
+                if member.id == user_id:
+                    try:
+                        await member.unban()
+                        if (channel := self.get_channel(guild)):
+                            await channel.send(
+                                f"{member.name}のBANを解除しました。"
+                            )
+                    except Exception as e:
+                        print("Error on ungban :", e)
+
         await ctx.reply("削除しました。")
 
 
