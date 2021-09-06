@@ -54,8 +54,8 @@ class News(commands.Cog, DataManager):
         self.bot.loop.create_task(self._on_ready())
 
     async def _on_ready(self):
-        await self.bot.wait_until_ready()
         super(commands.Cog, self).__init__(self.bot.mysql)
+        await self.init_table()
 
     async def get_rows(self) -> list:
         return reversed(await self.get_news_all())
