@@ -654,15 +654,16 @@ class TTS(commands.Cog, VoiceManager, DataManager):
             )
 
     async def on_member(self, event_type: str, member: discord.Member) -> None:
-        # メンバーがボイスチャンネルに接続または切断した際に呼び出される関数です。
-        # そのメンバーが設定している声のキャッシュを取得または削除をします。
-        if event_type == "join":
-            self.cache[member.id] = {
-                "voice": await self.read_voice(member.id),
-                "routine": await self.read_routine(member.id)
-            }
-        elif member.id in self.voices:
-            del self.cache[member.id]
+        if member.guild.id in self.now:
+            # メンバーがボイスチャンネルに接続または切断した際に呼び出される関数です。
+            # そのメンバーが設定している声のキャッシュを取得または削除をします。
+            if event_type == "join":
+                self.cache[member.id] = {
+                    "voice": await self.read_voice(member.id),
+                  "routine": await self.read_routine(member.id)
+                }
+            elif member.id in self.voices:
+                del self.cache[member.id]
 
     @commands.Cog.listener()
     async def on_voice_state_update(
@@ -671,13 +672,14 @@ class TTS(commands.Cog, VoiceManager, DataManager):
             after: discord.VoiceState
         ) -> None:
         # on_member_join/leaveのどっちかを呼び出すためのものです。
-        if member.guild.id in self.now:
-            if not before.channel:
-                # もしメンバーがボイスチャンネルに接続したなら。
-                await self.on_member("join", member)
-            elif not after.channel:
-                # もしメンバーがボイスチャンネルから切断したなら。
-                await self.on_member("leave", member)
+        if not before.channel:
+            # もしメンバーがボイスチャンネルに接続したなら。
+            self.bot.dispatch("voice_join", member, before, after)
+            await self.on_member("join", member)
+        elif not after.channel:
+            # もしメンバーがボイスチャンネルから切断したなら。
+            self.bot.dispatch("voice_leave", member, before, after)
+            await self.on_member("leave", member)
 
     async def on_select_voice(self, select, interaction):
         # もしvoiceコマンドで声の種類を設定されたら呼び出される関数です。
