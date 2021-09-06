@@ -27,7 +27,7 @@ class DataManager(DatabaseManager):
     async def add_news(self, cursor, content: str, image: str) -> float:
         # Newsを新しく追加します。
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        t = time()
+        t = int(time())
         await cursor.insert_data(
             "news", {"id": t, "time": now, "content": content, "image": image}
         )
@@ -35,7 +35,7 @@ class DataManager(DatabaseManager):
 
     async def remove_news(self, cursor, id_: int) -> None:
         # Newsを削除します。
-        await cursor.delete_data("news", {"id": id_})
+        await cursor.delete("news", {"id": id_})
 
     async def get_news(self, cursor, id_: int) -> tuple:
         # Newsを取得する。
