@@ -115,6 +115,10 @@ class VoiceRole(commands.Cog, DataManager):
         それと付与または剥奪する役職はRTの役職より下にある必要があります。  
         そうじゃないと権限の関係で付与または剥奪を実行できない可能性があります。
 
+        Aliases
+        -------
+        vr, ボイスロール, ぼいすろーる, 音声役職
+
         !lang en
         --------
         Voice Role function.  
@@ -148,7 +152,11 @@ class VoiceRole(commands.Cog, DataManager):
         This is to prevent people from repeatedly connecting and disconnecting, which can interfere with the RT process.  
         Please be aware of this.  
         Also, the role to be granted or revoked must be lower than the RT role.  
-        If not, it may not be possible to grant or revoke due to permissions."""
+        If not, it may not be possible to grant or revoke due to permissions.
+
+        Aliases
+        -------
+        vr"""
         await ctx.trigger_typing()
         try:
             mode = await self.write(ctx.guild.id, channel.id, role.id)
