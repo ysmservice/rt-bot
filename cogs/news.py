@@ -65,7 +65,7 @@ class News(commands.Cog, DataManager):
         rows = await self.get_rows()
         if number:
             rows = list(rows)
-            row = rows[int(number) - 1]
+            row = rows[int(number)]
             data = {
                 "content": row[2], "date": row[1],
                 "status": "ok", "title": row[2][:row[2].find("\n") + 1]
