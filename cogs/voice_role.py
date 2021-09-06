@@ -11,7 +11,7 @@ class DataManager(DatabaseManager):
 
     DB = "VoiceRole"
 
-    def __init__(self, db, maxsize: int = 15):
+    def __init__(self, db, maxsize: int = 30):
         self.db = db
         self._maxsize = maxsize
 
@@ -78,7 +78,7 @@ class VoiceRole(commands.Cog, DataManager):
     )
     async def voicerole(
         self, ctx, channel: Union[discord.VoiceChannel, discord.StageChannel],
-        role: discord.Role
+        *, role: discord.Role
     ):
         """!lang ja
         --------
@@ -100,8 +100,9 @@ class VoiceRole(commands.Cog, DataManager):
         Notes
         -----
         設定を削除する際は設定時と同じコマンドでできます。  
-        この機能で設定できるボイスロールの数は十五個までです。  
-        また削除されている役職の付与または剥奪をRTがしようとした場合はその設定は削除されます。
+        この機能で設定できるボイスロールの数は三十個までです。  
+        また削除されている役職の付与または剥奪をRTがしようとした場合はその設定は削除されます。  
+        また全てのチャンネルに設定したい場合は`rt!vrall 役職の名前またはメンション`で設定をすることができます。
 
         See Also
         --------
@@ -139,7 +140,7 @@ class VoiceRole(commands.Cog, DataManager):
         Notes
         -----
         If you want to delete a setting, you can do so with the same command you used to set it.  
-        The number of voice roles that can be set with this function is limited to 15.  
+        The number of voice roles that can be set with this function is limited to 30.  
         If RT tries to grant or revoke a deleted role, the setting will be deleted.
 
         See Also
@@ -164,6 +165,20 @@ class VoiceRole(commands.Cog, DataManager):
             await ctx.reply("VoiceRoleは15個まで設定が可能です。")
         else:
             await ctx.reply(f"Ok {mode}")
+
+    @commands.command()
+    async def vrall(self, ctx, *, role: discord.Role):
+        await ctx.trigger_typing()
+        for channel in ctx.guild.voice_channels:
+            try:
+                mode = await self.write(ctx.guild.id, channel.id, role.id)
+            except OverflowError:
+                await ctx.reply(
+                    "VoiceRoleは30個まで設定が可能です。\nなので一部は設定されませんでした。"
+                )
+                break
+        else:
+            await ctx.reply("Ok")
 
     @tasks.loop(seconds=5)
     async def worker(self):
