@@ -7,6 +7,7 @@ from typing import Any
 
 from rtutil.SettingAPI import SettingData, ListBox, utils
 from rtlib import DatabaseManager, mysql
+from asyncio import sleep
 from ujson import loads
 from time import time
 
@@ -327,12 +328,23 @@ class Bump(commands.Cog, DataManager):
                                 row[-1]["notification"] = 0
                                 await self.save(channel.guild.id, mode, row[-1])
 
+    async def delay_on_message(self, seconds: int, message: discord.Message) -> None:
+        # 遅れて再取得してもう一回on_messageを実行する。
+        await sleep(seconds)
+        message = await message.channel.fetch_message(message.id)
+        await self.on_message(message, True)
+
     @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
+    async def on_message(self, message: discord.Message, retry: bool = False):
         if not self.bot.is_ready():
             return
 
         data = self.IDS.get(message.author.id)
+        if (not retry and data
+                and message.type == discord.MessageType.application_command):
+            # もしDissokuなら数秒後に再取得してもう一度この関数on_messageを呼び出す。
+            self.bot.loop.create_task(self.delay_on_message(3, message))
+            return
         if not message.guild or not data or not message.embeds:
             return
 
