@@ -340,7 +340,7 @@ class Bump(commands.Cog, DataManager):
             return
 
         data = self.IDS.get(message.author.id)
-        if (not retry and data
+        if (not retry and data and data["mode"] != "bump"
                 and message.type == discord.MessageType.application_command):
             # もしDissokuなら数秒後に再取得してもう一度この関数on_messageを呼び出す。
             self.bot.loop.create_task(self.delay_on_message(3, message))
