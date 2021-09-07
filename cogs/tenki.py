@@ -4,7 +4,7 @@ from discord.ext import commands, easy, tasks
 import discord
 
 from rtlib import mysql, DatabaseManager
-from datetime import datetime
+from datetime import datetime, timedelta
 from asyncio import sleep
 from ujson import loads
 from copy import copy
@@ -220,7 +220,7 @@ class Tenki(commands.Cog, DataManager):
             await self.bot.wait_until_ready()
             await sleep(3)
 
-        now = datetime.now().strftime('%H:%M')
+        now = (datetime.now() + timedelta(hours=9)).strftime('%H:%M')
         for row in await self.reads():
             if row and row[2] == now:
                 user = self.bot.get_user(row[0])
