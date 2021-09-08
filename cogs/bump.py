@@ -343,7 +343,7 @@ class Bump(commands.Cog, DataManager):
         if (not retry and data and data["mode"] != "bump"
                 and message.type == discord.MessageType.application_command):
             # もしDissokuなら数秒後に再取得してもう一度この関数on_messageを呼び出す。
-            self.bot.loop.create_task(self.delay_on_message(3, message))
+            self.bot.loop.create_task(self.delay_on_message(5, message))
             return
         if not message.guild or not data or not message.embeds:
             return
