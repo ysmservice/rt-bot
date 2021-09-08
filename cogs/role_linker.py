@@ -18,18 +18,18 @@ class DataManager(DatabaseManager):
         await cursor.create_table(
             self.DB, {
                 "GuildID": "BIGINT", "Original": "BIGINT",
-                "Role": "BIGINT"
+                "Role": "BIGINT", "Reverse": "TINYINT"
             }
         )
 
     async def write(
         self, cursor, guild_id: int, original_role_id: int,
-        role_id: int
+        role_id: int, reverse: bool = False
     ) -> None:
         target = {
             "GuildID": guild_id, "Original": original_role_id
         }
-        change = dict(Role=role_id)
+        change = dict(Role=role_id, Reverse=int(reverse))
         if await cursor.exists(self.DB, target):
             await cursor.update_data(self.DB, change, target)
         else:
@@ -47,7 +47,7 @@ class DataManager(DatabaseManager):
         target = {"GuildID": guild_id, "Original": original_role_id}
         if await cursor.exists(self.DB, target):
             if (row := await cursor.get_data(self.DB, target)):
-                return row[-1]
+                return row[-2], row[-1]
         return None
 
     async def get_all(self, cursor, guild_id: int) -> list:
@@ -107,7 +107,7 @@ class RoleLinker(commands.Cog, DataManager):
             )
 
     @linker.command()
-    async def link(self, ctx, target: discord.Role, link_role: discord.Role):
+    async def link(self, ctx, target: discord.Role, link_role: discord.Role, reverse: bool = False):
         """!lang ja
         --------
         役職リンクを設定します。  
@@ -119,6 +119,9 @@ class RoleLinker(commands.Cog, DataManager):
             リンク対象の役職です。
         link_role : 役職のメンションまたは名前
             リンクする役職です。
+        reverse : bool
+            役職が付与されたら指定したlink_roleを剥奪するのように通常の逆にするかどうかです。  
+            onまたはoffを入れます。
 
         Examples
         --------
@@ -136,6 +139,9 @@ class RoleLinker(commands.Cog, DataManager):
             The position to link to.
         link_role : Mention or name of the role
             The role to link to.
+        reverse : bool
+            Whether or not to reverse the normal behavior, such as stripping the specified link_role when a role is granted.  
+            Can be on or off.
 
         Examples
         --------
@@ -147,7 +153,9 @@ class RoleLinker(commands.Cog, DataManager):
                  "en": "No more links can be made."}
             )
         else:
-            await self.write(ctx.guild.id, target.id, link_role.id)
+            await self.write(
+                ctx.guild.id, target.id, link_role.id, reverse
+            )
             await ctx.reply("Ok")
 
     @linker.command()
@@ -185,16 +193,26 @@ class RoleLinker(commands.Cog, DataManager):
         self, mode: str, role: discord.Role,
         member: discord.Member
     ) -> None:
-        link_role_id = await self.read(
+        row = await self.read(
             member.guild.id, role.id
         )
-        if link_role_id:
-            link_role = member.guild.get_role(link_role_id)
+        if row:
+            link_role = member.guild.get_role(row[0])
             if link_role:
-                if mode == "add" and not member.get_role(link_role_id):
-                    await member.add_roles(link_role)
-                elif mode == "remove" and member.get_role(link_role_id):
-                    await member.remove_roles(link_role)
+                role, coro = member.get_role(row[0]), None
+                if mode == "add":
+                    if not row[1] and not role:
+                        coro = member.add_roles(link_role)
+                    elif row[1] and role:
+                        coro = member.remove_roles(link_role)
+                elif mode == "remove":
+                    if not row[1] and role:
+                        coro = member.remove_roles(link_role)
+                    elif row[1] and not role:
+                        coro = member.add_roles(link_role)
+
+                if coro:
+                    await coro
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):

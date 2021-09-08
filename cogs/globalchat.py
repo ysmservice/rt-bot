@@ -315,7 +315,7 @@ class GlobalChat(commands.Cog, DataManager):
                             username=f"{message.author.name} {message.author.id}",
                             avatar_url=message.author.avatar.url,
                             content=message.clean_content, embed=embed,
-                            files=[await attachment.to_dict()
+                            files=[await attachment.to_file()
                                    for attachment in message.attachments]
                         )
                     except Exception as e:
