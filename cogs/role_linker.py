@@ -119,7 +119,7 @@ class RoleLinker(commands.Cog, DataManager):
             リンク対象の役職です。
         link_role : 役職のメンションまたは名前
             リンクする役職です。
-        reverse : bool
+        reverse : bool, default off
             役職が付与されたら指定したlink_roleを剥奪するのように通常の逆にするかどうかです。  
             onまたはoffを入れます。
 
@@ -139,7 +139,7 @@ class RoleLinker(commands.Cog, DataManager):
             The position to link to.
         link_role : Mention or name of the role
             The role to link to.
-        reverse : bool
+        reverse : bool, default off
             Whether or not to reverse the normal behavior, such as stripping the specified link_role when a role is granted.  
             Can be on or off.
 
