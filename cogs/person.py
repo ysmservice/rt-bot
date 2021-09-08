@@ -46,6 +46,7 @@ class Person(commands.Cog):
             }, "parent": "Individual"
         }, aliases=["ar", "自動反応", "おーとりあくしょん"]
     )
+    @commands.cooldown(1, 10, commands.BucketType.guild)
     async def autoreaction(self, ctx, message_content, *, emojis):
         """!lang ja
         --------
