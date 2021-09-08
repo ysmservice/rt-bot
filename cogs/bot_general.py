@@ -242,6 +242,10 @@ class BotGeneral(commands.Cog):
                 "ja": "RTに権限がないため正常にコマンドを実行できませんでした。",
                 "en": "The command could not be executed successfully because RT does not have permissions."
             }
+        elif isinstance(error, commands.errors.CheckFailure):
+            title = "403 Forbidden"
+            description = {"ja": "あなたはこのコマンドを実行することができません。",
+                           "en": "You can't do this command."}
         else:
             error_message = "".join(
                 TracebackException.from_exception(error).format())

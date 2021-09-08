@@ -37,6 +37,9 @@ class ChannelPluginGeneral(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+
+    @commands.Cog.listener()
+    async def on_command_added(self):
         for lang in HELPS:
             self.bot.cogs["DocHelp"].add_help(
                 "ChannelPlugin", "ChannelPlugin",

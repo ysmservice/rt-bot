@@ -4,10 +4,10 @@ from discord.ext import commands
 import discord
 
 from typing import Optional, List, Tuple
+
 from aiohttp import ClientSession
 from datetime import timedelta
 from bs4 import BeautifulSoup
-from rtlib.ext import Embeds
 import asyncio
 
 
@@ -30,10 +30,91 @@ class Person(commands.Cog):
         self.bot = bot
         self.session = ClientSession()
 
+    async def search_message(
+        self, channel: discord.TextChannel, original: discord.Message,
+        content: str, **kwargs
+    ) -> Optional[discord.Message]:
+        async for message in channel.history(**kwargs):
+            if message.id != original.id and content in message.clean_content:
+                return message
+
+    @commands.command(
+        extras={
+            "headding": {
+                "ja": "指定したメッセージに指定した絵文字を付与します。",
+                "en": "Auto Reaction"
+            }, "parent": "Individual"
+        }, aliases=["ar", "自動反応", "おーとりあくしょん"]
+    )
+    async def autoreaction(self, ctx, message_content, *, emojis):
+        """!lang ja
+        --------
+        自動で指定されたメッセージに指定された絵文字のリアクションを付与します。
+
+        Parameters
+        ----------
+        message_content : str
+            リアクションをつけるメッセージにある文字列です。
+        emojis : str
+            絵文字です。
+
+        Examples
+        --------
+        `rt!autoreaction how 👍 👎`
+
+        Aliases
+        -------
+        ar, 自動反応, おーとりあくしょん
+
+        !lang en
+        --------
+        Automatically adds the specified pictogram reaction to the specified message.
+
+        Parameters
+        ----------
+        message_content : str
+            The string in the message to be reacted.
+        emojis : str
+            Emojis.
+
+        Examples
+        --------
+        `rt!autoreaction how 👍 👎`
+
+        Aliases
+        -------
+        ar"""
+        message = await self.search_message(
+            ctx.channel, ctx.message, message_content
+        )
+        if message:
+            await ctx.trigger_typing()
+
+            errors, pass_count, did = "", 0, 0
+            for emoji in emojis:
+                did += 1
+                if pass_count:
+                    pass_count -= 1
+                elif emoji not in (" ", "　", "\n", ":"):
+                    if emoji == "<":
+                        emoji = emojis[did:emojis.find(">") + 1]
+                        pass_count = len(emoji)
+                    try:
+                        await message.add_reaction(emoji)
+                    except discord.HTTPException:
+                        errors += f"\n{emoji}を付与することができませんでした。"
+
+            await ctx.reply(f"Ok{errors}")
+        else:
+            await ctx.reply(
+                {"ja": "そのメッセージが見つかりませんでした。",
+                 "en": "That message is not found."}
+            )
+
     @commands.command(
         extras={
             "headding": {"ja": "指定されたユーザーIDまたはユーザー名からユーザー情報を取得します。",
-                         "en": ""},
+                         "en": "Search user by id or name."},
             "parent": "Individual"
         },
         aliases=["ui", "search_user", "ゆーざーいんふぉ！", "<-これかわいい！"]
@@ -42,8 +123,11 @@ class Person(commands.Cog):
     async def userinfo(self, ctx, *, user_name_id = None):
         """!lang ja
         --------
-        指定されたユーザーの名前またはユーザーIDからユーザー情報を取得します。  
-        ※ユーザー名の場合はRTが入っている何かしらのサーバーにいるユーザーでないと取得はできません。
+        指定されたユーザーの名前またはユーザーIDからユーザー情報を取得します。
+
+        Notes
+        -----
+        ユーザー名の場合はRTが入っている何かしらのサーバーにいるユーザーでないと取得はできません。
 
         Parameters
         ----------
@@ -53,6 +137,27 @@ class Person(commands.Cog):
         Aliases
         -------
         ui, search_user, ゆーざーいんふぉ！, <-これかわいい！
+
+        Examples
+        --------
+        `rt!userinfo tasuren`
+
+        !lang en
+        --------
+        Search user.
+
+        Notes
+        -----
+        In the case of a user name, you need to be a user on some kind of server that contains RT to get it.
+
+        Parameters
+        ----------
+        user : User ID or Name
+            Target user id or name.
+
+        Aliases
+        -------
+        ui, search_user
 
         Examples
         --------
