@@ -86,14 +86,17 @@ class DocHelp(commands.Cog):
         self.data: dict = {}
         self.tree: Dict[str, List[str]] = {}
         self.categories: Dict[str, str] = {}
-        self.queue: Dict[str, List[commands.Command]] = {}
-        if "OnCommandAdd" not in self.bot.cogs:
-            self.bot.load_extension("rtlib.ext.on_command_add")
 
         self.dp = DocParser()
         self.indent_type = " "
         self.indent = 4
         self._prefix = None
+
+    @commands.Cog.listener("on_command_add")
+    async def on_command_add_kari(self, command):
+        if hasattr(command, "commands"):
+            for cmd in command.commands:
+                self.bot.dispatch("command_add", cmd)
 
     @commands.Cog.listener()
     async def on_full_ready(self):
@@ -183,36 +186,20 @@ class DocHelp(commands.Cog):
                         command.extras.get("headding", {}).get(lang, "..."),
                         copy(data[lang])
                     ]
-                # もしこのグループコマンドに子コマンドがいるならそのコマンドも追加したい。
-                # なのでここの関数を実行する。
-                if command.name in self.queue:
-                    for child in self.queue[command.name]:
-                        await self.on_command_add(child, after=True)
-                    del self.queue[command.name]
             elif (parent := command.root_parent):
                 parent = parent.name
-                if after:
-                    # ドキュメンテーションをマークダウンにする。
-                    data = self.parse(command)
-                    # もしグループコマンドの子コマンドなら親コマンドのヘルプに追記する。
-                    if parent in self.tree:
-                        if command.qualified_name not in self.tree[parent]:
-                            category = self.categories[parent]
+                # ドキュメンテーションをマークダウンにする。
+                data = self.parse(command)
+                # もしグループコマンドの子コマンドなら親コマンドのヘルプに追記する。
+                if parent in self.tree:
+                    if command.qualified_name not in self.tree[parent]:
+                        category = self.categories[parent]
 
-                            for lang in list(self.data[category][parent].keys()):
-                                self.data[category][parent][lang][1] += \
-                                    (f"\n## {self.prefix}{command.qualified_name}\n"
-                                     + f"{data.get(lang, data['ja'])}")
-                            self.tree[parent].append(command.qualified_name)
-                else:
-                    # グループコマンドはそのグループの子コマンドが追加された後に追加される。
-                    # そしてグループコマンドが追加された後に子コマンドのヘルプの追加をしたい。
-                    # なのでキューに追加してグループが追加された際にそのキューをイベントに渡す。
-                    # その渡す際にグループコマンド追加後の子コマンドのイベントだと知らせる必要がある。
-                    # そのためにここの関数にはafterというキーワード引数を付ける。
-                    if parent not in self.queue:
-                        self.queue[parent] = []
-                    self.queue[parent].append(command)
+                        for lang in list(self.data[category][parent].keys()):
+                            self.data[category][parent][lang][1] += \
+                                (f"\n## {self.prefix}{command.qualified_name}\n"
+                                 + f"{data.get(lang, data['ja'])}")
+                        self.tree[parent].append(command.qualified_name)
 
     @commands.Cog.listener()
     async def on_command_remove(self, command):
