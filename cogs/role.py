@@ -208,7 +208,7 @@ class RolePanel(commands.Cog):
     @commands.Cog.listener()
     async def on_full_reaction_add(self, payload: discord.RawReactionActionEvent):
         if self.bot.is_ready():
-            if self.check(payload):
+            if self.check(payload) and not payload.member.bot:
                 emoji = str(payload.emoji)
                 # もしテンプレートの取得ならテンプレートを返す。
                 if payload.event_type == "REACTION_ADD":
@@ -226,10 +226,13 @@ class RolePanel(commands.Cog):
                             )
                         )
                         return
-                # キューに追加する。
-                i = f"{payload.channel_id}.{payload.message_id}.{payload.member.id}"
-                i += "." + emoji
-                self.queue[i] = payload
+                if emoji in payload.message.embeds[0].description:
+                    # キューに追加する。
+                    i = f"{payload.channel_id}.{payload.message_id}.{payload.member.id}"
+                    i += "." + emoji
+                    self.queue[i] = payload
+                else:
+                    await payload.message.remove_reaction(emoji, payload.member)
 
     @commands.Cog.listener()
     async def on_full_reaction_remove(self, payload: discord.RawReactionActionEvent):

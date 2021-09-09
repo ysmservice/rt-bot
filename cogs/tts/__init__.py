@@ -740,26 +740,31 @@ class TTS(commands.Cog, VoiceManager, DataManager):
     async def do_nothing(self, _):
         pass
 
+    @commands.Cog.listener()
+    async def on_voice_abandoned(self, voice_client):
+        # もしメンバーがいないのに接続されているチャンネルがあるなら自動で抜け出す。
+        if voice_client.channel.guild.id in self.now:
+            channel = self.bot.get_channel(
+                self.now[voice_client.channel.guild.id]["channels"][0]
+            )
+            ctx = type(
+                "Context", (), {
+                    "reply": self.do_nothing,
+                    "guild": voice_client.channel.guild,
+                    "author": voice_client.channel.members[0]
+                }
+            )
+            await self.leave(ctx)
+            await channel.send(
+                "誰もいないので読み上げを終了します。"
+            )
+
     @tasks.loop(seconds=10)
     async def auto_leave(self):
-        # もしメンバーがいないのに接続されているチャンネルがあるなら自動で抜け出す。
+        # メンバーがいないのに接続している際はそのイベントを呼び出す。
         for voice_client in self.bot.voice_clients:
-            if voice_client.channel.guild.id in self.now:
-                if all(member.bot for member in voice_client.channel.members):
-                    channel = self.bot.get_channel(
-                        self.now[voice_client.channel.guild.id]["channels"][0]
-                    )
-                    ctx = type(
-                        "Context", (), {
-                            "reply": self.do_nothing,
-                            "guild": voice_client.channel.guild,
-                            "author": voice_client.channel.members[0]
-                        }
-                    )
-                    await self.leave(ctx)
-                    await channel.send(
-                        "誰もいないので読み上げを終了します。 / ..."
-                    )
+            if all(member.bot for member in voice_client.channel.members):
+                self.bot.dispatch("voice_abandoned")
 
 
 def setup(bot):
