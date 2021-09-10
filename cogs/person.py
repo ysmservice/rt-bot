@@ -97,7 +97,8 @@ class Person(commands.Cog):
                 ctx.channel, ctx.message, message_content
             )
             if message:
-                await ctx.trigger_typing()
+                if not message:
+                    await ctx.trigger_typing()
 
                 errors, pass_count, did = "", 0, 0
                 for emoji in emojis:
