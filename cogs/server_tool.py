@@ -387,7 +387,12 @@ class ServerTool(commands.Cog):
         aliases=[
             "sm", "プレイ((", "スローモード", "すろーもーど",
             "cdn", "クールダウン", "くーるぽこ", "くーるだうん"
-        ]
+        ], extras={
+            "headding": {
+                "ja": "スローモードを設定します。",
+                "en": "Setting slow mode"
+            }, "parent": "ServerTool"
+        }
     )
     @commands.has_permissions(manage_channels=True)
     @commands.cooldown(1, 300, commands.BucketType.channel)
@@ -432,7 +437,13 @@ class ServerTool(commands.Cog):
         await ctx.reply("Ok")
 
     @commands.command(
-        aliases=["えっc", "安全じゃない", "だいじょばない", "っていう曲好き"]
+        aliases=["えっc", "安全じゃない", "だいじょばない", "っていう曲好き"],
+        extras={
+            "headding": {
+                "ja": "iOSユーザーのためのNSFWチャンネル設定コマンド",
+                "en": "Setting nsfw channel for iOS user."
+            }, "parent": "ServerTool"
+        }
     )
     @commands.has_permissions(manage_channels=True)
     @commands.cooldown(1, 300, commands.BucketType.channel)
