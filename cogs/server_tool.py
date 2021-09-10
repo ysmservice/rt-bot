@@ -344,7 +344,7 @@ class ServerTool(commands.Cog):
             }, "parent": "ServerTool"
         }
     )
-    async def lottery(self, ctx, count: int, role: discord.Role = None):
+    async def lottery(self, ctx, count: int, role: discord.Role = None, target=None):
         """!lang ja
         --------
         指定された人数抽選をします。
@@ -368,10 +368,11 @@ class ServerTool(commands.Cog):
         role : mention or position of the position, optional
             This is the role that must be held by the person who will be selected by lottery.  
             You don't need to select it."""
-        target = ctx.guild.members
-        if role:
-            target = [member for member in target
-                      if member.get_role(role.id)]
+        if target is None:
+            target = ctx.guild.members
+            if role:
+                target = [member for member in target
+                          if member.get_role(role.id)]
         embed = discord.Embed(
             title="抽選",
             description=", ".join(
@@ -381,6 +382,85 @@ class ServerTool(commands.Cog):
             color=self.bot.colors["normal"]
         )
         await ctx.reply(embed=embed)
+
+    @commands.command(
+        aliases=[
+            "sm", "プレイ((", "スローモード", "すろーもーど",
+            "cdn", "クールダウン", "くーるぽこ", "くーるだうん"
+        ]
+    )
+    @commands.has_permissions(manage_channels=True)
+    @commands.cooldown(1, 300, commands.BucketType.channel)
+    async def slowmode(self, ctx, t: int):
+        """!lang ja
+        --------
+        チャンネルにスローモードを設定します。  
+        一秒などをスローモードで設定したい際に使えます。
+
+        Parameters
+        ----------
+        time : int
+            スローモードを何秒で設定するかです。
+
+        Examples
+        --------
+        `rt!slowmode 2`
+
+        Aliases
+        -------
+        sm, プレイ((, スローモード, すろーもーど, cdn, くーるだうん, くーるぽこ, クールダウン
+
+        !lang en
+        --------
+        Sets the channel to slow mode.  
+        This can be used when you want to set one second or so in slow mode.
+
+        Parameters
+        ----------
+        time : int
+            Sets the number of seconds to set the slow mode.
+
+        Examples
+        --------
+        `rt!slowmode 2`.
+
+        Aliases
+        -------
+        sm"""
+        await ctx.trigger_typing()
+        await ctx.channel.edit(slowmode_delay=t)
+        await ctx.reply("Ok")
+
+    @commands.command(
+        aliases=["えっc", "安全じゃない", "だいじょばない", "っていう曲好き"]
+    )
+    @commands.has_permissions(manage_channels=True)
+    @commands.cooldown(1, 300, commands.BucketType.channel)
+    async def nsfw(self, ctx):
+        """!lang ja
+        --------
+        実行したチャンネルのNSFWの設定をするまたは解除をします。  
+        iOSでNSFWの設定ができないのでそのiOSユーザーのためのコマンドです。  
+        実行した時にNSFWに設定されていない場合はNSFWに設定して、NSFWに設定されている場合はNSFWを解除します。
+
+        Aliases
+        -------
+        えっち, 安全じゃない, だいじょばない, っていう曲好き
+
+        !lang en
+        --------
+        Set or unset nsfw for the channel you run. 
+        This command is for those iOS users who cannot set NSFW on iOS. 
+        It sets the channel to nsfw if it is not set to nsfw when executed, and unset nsfw if it is set to nsfw."""
+        if hasattr(ctx.channel, "topic"):
+            await ctx.trigger_typing()
+            await ctx.channel.edit(nsfw=not ctx.channel.nsfw)
+            await ctx.reply("Ok")
+        else:
+            await ctx.reply(
+                {"ja": "スレッドにNSFWは設定できません。",
+                 "en": "I can't set NSFW to the thread."}
+            )
 
     @commands.command(
         extras={
