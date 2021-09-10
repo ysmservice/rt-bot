@@ -47,7 +47,7 @@ class Person(commands.Cog):
         }, aliases=["ar", "自動反応", "おーとりあくしょん"]
     )
     @commands.cooldown(1, 10, commands.BucketType.guild)
-    async def autoreaction(self, ctx, message_content, *, emojis):
+    async def autoreaction(self, ctx, message_content, *, emojis, message = None):
         """!lang ja
         --------
         自動で指定されたメッセージに指定された絵文字のリアクションを付与します。
@@ -55,7 +55,9 @@ class Person(commands.Cog):
         Parameters
         ----------
         message_content : str
-            リアクションをつけるメッセージにある文字列です。
+            リアクションをつけるメッセージにある文字列です。  
+            ここを`ch`または`channel`にした場合はチャンネルに設定されて、そのチャンネルに送ったメッセージ全部にその絵文字がつくようになります。  
+            これをオフにする際はチャンネルトピックにある`rt>ar`から始まる行を削除することでオフにできます。
         emojis : str
             絵文字です。
 
@@ -85,32 +87,39 @@ class Person(commands.Cog):
         Aliases
         -------
         ar"""
-        message = await self.search_message(
-            ctx.channel, ctx.message, message_content
-        )
-        if message:
-            await ctx.trigger_typing()
-
-            errors, pass_count, did = "", 0, 0
-            for emoji in emojis:
-                did += 1
-                if pass_count:
-                    pass_count -= 1
-                elif emoji not in (" ", "　", "\n", ":"):
-                    if emoji == "<":
-                        emoji = emojis[did:emojis.find(">") + 1]
-                        pass_count = len(emoji)
-                    try:
-                        await message.add_reaction(emoji)
-                    except discord.HTTPException:
-                        errors += f"\n{emoji}を付与することができませんでした。"
-
-            await ctx.reply(f"Ok{errors}")
-        else:
-            await ctx.reply(
-                {"ja": "そのメッセージが見つかりませんでした。",
-                 "en": "That message is not found."}
+        if message_content in ("ch", "channel"):
+            await ctx.channel.edit(
+                topic="rt>ar " + emojis
             )
+            await ctx.reply("Ok")
+        else:
+            message = message or await self.search_message(
+                ctx.channel, ctx.message, message_content
+            )
+            if message:
+                await ctx.trigger_typing()
+
+                errors, pass_count, did = "", 0, 0
+                for emoji in emojis:
+                    did += 1
+                    if pass_count:
+                        pass_count -= 1
+                    elif emoji not in (" ", "　", "\n", ":"):
+                        if emoji == "<":
+                            emoji = emojis[did:emojis.find(">") + 1]
+                            pass_count = len(emoji)
+                        try:
+                            await message.add_reaction(emoji)
+                        except discord.HTTPException:
+                            errors += f"\n{emoji}を付与することができませんでした。"
+
+                if not message:
+                    await ctx.reply(f"Ok{errors}")
+            else:
+                await ctx.reply(
+                    {"ja": "そのメッセージが見つかりませんでした。",
+                    "en": "That message is not found."}
+                )
 
     @commands.command(
         extras={
@@ -344,6 +353,18 @@ class Person(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        if (not message.guild or not hasattr(message.channel, "topic")
+                or not message.channel.topic or message.author.bot):
+            return
+
+        # 自動リアクション
+        for line in message.channel.topic.splitlines():
+            if line.startswith("rt>ar "):
+                await self.autoreaction(
+                    await self.bot.get_context(message),
+                    "", emojis=line[6:], message=message
+                )
+
         # もし`OOOとは。`に当てはまるなら押したら検索を行うリアクションを付ける。
         for question in self.QUESTIONS:
             if message.content.endswith(question):
