@@ -2,6 +2,7 @@
 
 from discord.ext import commands, tasks
 
+from aiohttp import client_exceptions
 from rtlib import DatabaseManager
 from bs4 import BeautifulSoup
 from urllib import parse
@@ -145,25 +146,45 @@ class Twitter(commands.Cog, DataManager):
             name="TwitterNotificationLoop"
         )
 
+    HEADERS = {
+        "authority": "tweeterid.com",
+        "sec-ch-ua": "^\\^Microsoft",
+        "accept": "*/*",
+        "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "x-requested-with": "XMLHttpRequest",
+        "sec-ch-ua-mobile": "?0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36 Edg/93.0.961.38",
+        "sec-ch-ua-platform": "^\\^Windows^\\^",
+        "origin": "https://tweeterid.com",
+        "sec-fetch-site": "same-origin",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-dest": "empty",
+        "referer": "https://tweeterid.com/",
+        "accept-language": "ja,en;q=0.9,en-GB;q=0.8,en-US;q=0.7",
+    }
     ENDPOINT = "https://api.twitter.com/2/users/{}/tweets?max_results=5"
 
-    async def get_user_id(self, username: str) -> str:
+    async def get_user_id(self, username: str, retry: bool = False) -> str:
         # 指定されたユーザーのIDを取得する。
         if username in self.cache:
             return self.cache[username]
         else:
-            async with self.bot.session.get(
-                f"https://idtwi.com/search/{username}"
-            ) as r:
-                soup = BeautifulSoup(await r.text(), "html.parser")
-
             try:
-                p = soup.find("section", class_="container").find_all("p", class_="url")[1]
-            except KeyError:
-                return ""
-            else:
-                self.cache[username] = p.find("a").find("b").text
-                return await self.get_user_id(username)
+                async with self.bot.session.post(
+                    "https://tweeterid.com/ajax.php",
+                    headers=self.HEADERS, data={"input": username}
+                ) as r:
+                    if (user_id := await r.text()) == "error":
+                        return ""
+                    else:
+                        self.cache[username] = user_id
+                        return user_id
+            except client_exceptions.ClientOSError as e:
+                if retry:
+                    raise e
+                else:
+                    await asyncio.sleep(1)
+                    return await self.get_user_id(username, True)
 
     async def delete_data(self, row: tuple) -> None:
         await self.delete(row[0], row[1])
