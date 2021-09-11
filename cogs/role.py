@@ -134,7 +134,6 @@ class RolePanel(commands.Cog):
 
         if role:
             # 役職が存在するならリアクションの付与と剥奪をする。
-
             if payload.event_type == "REACTION_ADD":
                 await payload.member.add_roles(role)
             elif payload.event_type == "REACTION_REMOVE":
@@ -179,7 +178,8 @@ class RolePanel(commands.Cog):
                     role = discord.utils.get(guild.roles, name=result[emojis[-1]])
                     if role is None:
                         raise commands.errors.RoleNotFound(
-                            f"{name}という役職が見つかりませんでした。")
+                            f"{result[emojis[-1]]}という役職が見つかりませんでした。"
+                        )
                     else:
                         result[emojis[-1]] = role.mention
 
