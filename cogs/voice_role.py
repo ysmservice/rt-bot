@@ -198,7 +198,7 @@ class VoiceRole(commands.Cog, DataManager):
                     del self.queue[key][member.id]
 
     async def on_member(self, mode, member, after):
-        if member.guild:
+        if member.guild and after.channel:
             row = await self.read(member.guild.id, after.channel.id)
             if row:
                 role = member.guild.get_role(row[2])
