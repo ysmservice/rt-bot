@@ -193,7 +193,10 @@ class ForcePinnedMessage(commands.Cog, DataManager):
             member = message.guild.get_member(fpm[0])
             content = fpm[3]
             if content.startswith("<") and content.endswith(">"):
-                kwargs = {"embed": discord.Embed.from_dict(loads(content[1:-1]))}
+                try:
+                    kwargs = {"embed": discord.Embed.from_dict(loads(content[1:-1]))}
+                except ValueError:
+                    kwargs = {"content": content}
             else:
                 kwargs = {"content": content}
 
