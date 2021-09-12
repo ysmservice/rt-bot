@@ -3,7 +3,7 @@
 from discord.ext import commands
 import discord
 
-from rtlib import mysql, DatabaseManager
+from rtlib import DatabaseManager
 from asyncio import sleep
 
 
@@ -18,12 +18,15 @@ class DataManager(DatabaseManager):
         await cursor.create_table(
             self.DB, {
                 "GuildID": "BIGINT", "ChannelID": "BIGINT",
-                "Content": "TEXT"
+                "Content": "TEXT", "Mode": "TEXT"
             }
         )
 
-    async def write(self, cursor, guild_id: int, channel_id: int, content: str) -> None:
-        target = {"GuildID": guild_id}
+    async def write(
+        self, cursor, guild_id: int, channel_id: int,
+        content: str, mode: str
+    ) -> None:
+        target = {"GuildID": guild_id, "Mode": mode}
         change = {"ChannelID": channel_id, "Content": content}
         if await cursor.exists(self.DB, target):
             await cursor.update_data(self.DB, change, target)
@@ -31,15 +34,15 @@ class DataManager(DatabaseManager):
             target.update(change)
             await cursor.insert_data(self.DB, target)
 
-    async def delete(self, cursor, guild_id: int) -> None:
-        target = {"GuildID": guild_id}
+    async def delete(self, cursor, guild_id: int, mode: str) -> None:
+        target = {"GuildID": guild_id, "Mode": mode}
         if await cursor.exists(self.DB, target):
             await cursor.delete(self.DB, target)
         else:
             raise KeyError("そのサーバーは設定していません。")
 
-    async def read(self, cursor, guild_id: int) -> tuple:
-        target = {"GuildID": guild_id}
+    async def read(self, cursor, guild_id: int, mode: str) -> tuple:
+        target = {"GuildID": guild_id, "Mode": mode}
         if await cursor.exists(self.DB, target):
             return await cursor.get_data(self.DB, target)
         else:
@@ -67,14 +70,17 @@ class Welcome(commands.Cog, DataManager):
     )
     @commands.cooldown(1, 8, commands.BucketType.guild)
     @commands.has_permissions(administrator=True)
-    async def welcome(self, ctx, *, content):
+    async def welcome(self, ctx, mode, *, content):
         """!lang ja
         --------
-        ウェルカムメッセージを設定します。  
-        このコマンドを実行したチャンネルにメンバーがサーバーに参加した際に指定したメッセージが送信されるようになります。
+        ウェルカムメッセージを設定します。    
+        このコマンドを実行したチャンネルにメンバーがサーバーに参加した際に指定したメッセージが送信されるようになります。  
+        また退出時に送信するメッセージも設定できます。
 
         Parameters
         ----------
+        mode : str
+            参加時に送信するメッセージを設定する場合は`join`を、退出時に送信するメッセージを設定するなら`remove`を入力します。
         content : str
             ウェルカムメッセージの内容です。
 
@@ -91,7 +97,7 @@ class Welcome(commands.Cog, DataManager):
         Examples
         --------
         ```
-        rt!welcome $ment$, ようこそ！RTサーバーへ！！
+        rt!welcome join $ment$, ようこそ！RTサーバーへ！！
         あなたは$count$人目の参加者です。
         ```
 
@@ -102,10 +108,13 @@ class Welcome(commands.Cog, DataManager):
         !lang en
         --------
         Sets the welcome message.  
-        When a member joins the server on the channel where this command is executed, the specified message will be sent.
+        When a member joins the server on the channel where this command is executed, the specified message will be sent.  
+        You can also set a message to be sent when you leave the room.
 
         Parameters
         ----------
+        mode : str
+            Enter `join` to set a message to be sent when you join, or `remove` to set a message to be sent when you leave.
         content : str
             The content of the welcome message.
 
@@ -122,7 +131,7 @@ class Welcome(commands.Cog, DataManager):
         Examples
         --------
         ```
-        rt!welcome $ment$, Welcome to the RT server!
+        rt!welcome join $ment$, Welcome to the RT server!
         You are the $count$th participant.
         Welcome to the RT server!
         ```
@@ -130,24 +139,29 @@ class Welcome(commands.Cog, DataManager):
         Aliases
         -------
         wm"""
-        if content.lower() in ("off", "false", "disable", "0"):
-            try:
-                await self.delete(ctx.guild.id)
-            except KeyError:
-                await ctx.reply(
-                    {"ja": "まだ設定されていません。",
-                     "en": "Welcome has not set yet."}
-                )
+        if mode in ("join", "remove"):
+            if content.lower() in ("off", "false", "disable", "0"):
+                try:
+                    await self.delete(ctx.guild.id, mode)
+                except KeyError:
+                    await ctx.reply(
+                        {"ja": "まだ設定されていません。",
+                        "en": "Welcome has not set yet."}
+                    )
+                else:
+                    await ctx.reply("Ok")
             else:
+                await self.write(ctx.guild.id, ctx.channel.id, content, mode)
                 await ctx.reply("Ok")
         else:
-            await self.write(ctx.guild.id, ctx.channel.id, content)
-            await ctx.reply("Ok")
+            await ctx.reply(
+                {"ja": "モードは参加時の`join`と退出時の`remove`のみが使用できます。",
+                 "en": "The only modes available are `join` for joining and `remove` for leaving."}
+            )
 
-    @commands.Cog.listener()
-    async def on_member_join(self, member: discord.Member):
+    async def on_member_join_remove(self, mode: str, member: discord.Member):
         if self.bot.is_ready():
-            if (row := await self.read(member.guild.id)):
+            if (row := await self.read(member.guild.id, mode)):
                 row[2] = (row[2]
                     .replace("$ment$", member.mention)
                     .replace("$name$", member.name)
@@ -156,6 +170,14 @@ class Welcome(commands.Cog, DataManager):
                 if channel:
                     await sleep(1.5)
                     await channel.send(row[2])
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        await self.on_member_join_remove("join", member)
+
+    @commands.Cog.listener()
+    async def on_member_remove(self, member):
+        await self.on_member_join_remove("remove", member)
 
 
 def setup(bot):

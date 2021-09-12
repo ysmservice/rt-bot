@@ -65,7 +65,7 @@ class Enjoy(commands.Cog):
             if r.status == 204:
                 await ctx.reply(
                     {"ja": "そのユーザーが見つかりませんでした。",
-                        "en": "Not found that user."}
+                     "en": "Not found that user."}
                 )
             else:
                 data = await r.json()

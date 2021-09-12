@@ -32,6 +32,7 @@ def setup(bot: commands.AutoShardedBot):
 
     @bot.check
     async def has_role(ctx):
-        if (role := utils.find(lambda r: "RT-" in r.name, ctx.guild.roles)):
-            return bool(ctx.author.get_role(role.id))
+        if ctx.guild:
+            if (role := utils.find(lambda r: "RT-" in r.name, ctx.guild.roles)):
+                return bool(ctx.author.get_role(role.id))
         return True

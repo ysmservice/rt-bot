@@ -213,27 +213,40 @@ class ServerTool(commands.Cog):
         Parameters
         ----------
         day : int, default 1
-            It is how many days ago the message should be."""
+            It is how many days ago the message should be.
+
+        Aliases
+        -------
+        timem, tm, たいむましん, タイムマシン, バックトゥザフューチャー"""
         await ctx.trigger_typing()
 
-        async for message in ctx.channel.history(
-                limit=1, before=datetime.now() - timedelta(days=day)
-            ):
-            e = discord.Embed(
-                description=f"{message.content}\n[メッセージに行く]({message.jump_url})",
-                color=self.bot.colors["normal"]
-            )
-            e.set_author(
-                name=message.author.display_name,
-                icon_url=message.author.avatar.url
-            )
-            e.set_footer(text=f"{day}日前のメッセージ | タイムマシン機能")
-            await ctx.reply(embed=e)
-            break
+        if 0 < day:
+            try:
+                async for message in ctx.channel.history(
+                        limit=1, before=datetime.now() - timedelta(days=day)
+                    ):
+                    e = discord.Embed(
+                        description=f"{message.content}\n[メッセージに行く]({message.jump_url})",
+                        color=self.bot.colors["normal"]
+                    )
+                    e.set_author(
+                        name=message.author.display_name,
+                        icon_url=getattr(message.author.avatar, "url", "")
+                    )
+                    e.set_footer(text=f"{day}日前のメッセージ | タイムマシン機能")
+                    await ctx.reply(embed=e)
+                    break
+                else:
+                    raise discord.HTTPException("さかのぼりすぎた。")
+            except discord.HTTPException:
+                await ctx.reply(
+                    {"ja": "過去にさかのぼりすぎました。",
+                    "en": "I was transported back in time to another dimension."}
+                )
         else:
             await ctx.reply(
-                {"ja": "過去にさかのぼりすぎました。",
-                 "en": "I was transported back in time to another dimension."}
+                {"ja": "未来にはいけません。",
+                 "en": "I can't read messages that on the future."}
             )
 
     def easy_embed(
@@ -515,7 +528,7 @@ class ServerTool(commands.Cog):
         }
     )
     @commands.has_permissions(manage_messages=True)
-    @commands.cooldown(1, 5)
+    @commands.cooldown(1, 10, commands.BucketType.channel)
     async def purge(self, ctx, count: int, target: discord.Member = None):
         """!lang ja
         --------
@@ -533,6 +546,10 @@ class ServerTool(commands.Cog):
         Examples
         --------
         `rt!purge 10`
+
+        Notes
+        -----
+        削除できるメッセージの数は一回に200までです。
 
         Aliases
         -------
@@ -562,6 +579,10 @@ class ServerTool(commands.Cog):
         --------
         `rt!purge 10`.
 
+        Notes
+        -----
+        You can only delete up to 200 at a time.
+
         Aliases
         -------
         delmes, rm
@@ -575,7 +596,7 @@ class ServerTool(commands.Cog):
         await ctx.trigger_typing()
         await ctx.message.delete()
         await ctx.channel.purge(
-            limit=count,
+            limit=200 if count > 200 else count,
             check=lambda mes: target is None or mes.author.id == target.id,
             bulk=True
         )
@@ -638,7 +659,8 @@ class ServerTool(commands.Cog):
                 return
             else:
                 await payload.message.channel.purge(
-                    before=payload.message, after=new_payload.message, bulk=True
+                    before=payload.message, after=new_payload.message, bulk=True,
+                    limit=200
                 )
                 await payload.message.delete()
                 await new_payload.message.delete()
