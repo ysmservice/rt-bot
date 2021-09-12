@@ -112,7 +112,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
             }
         elif not ctx.author.voice:
             data = {
-                "ja": "ボイスチャンネにに接続してください。",
+                "ja": "ボイスチャンネルに接続してください。",
                 "en": "..."
             }
         else:
