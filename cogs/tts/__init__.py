@@ -764,7 +764,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         # メンバーがいないのに接続している際はそのイベントを呼び出す。
         for voice_client in self.bot.voice_clients:
             if all(member.bot for member in voice_client.channel.members):
-                self.bot.dispatch("voice_abandoned")
+                self.bot.dispatch("voice_abandoned", voice_client)
 
 
 def setup(bot):
