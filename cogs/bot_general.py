@@ -196,7 +196,8 @@ class BotGeneral(commands.Cog):
         elif isinstance(error, (commands.errors.BadArgument,
                         commands.errors.MissingRequiredArgument,
                         commands.errors.ArgumentParsingError,
-                        commands.errors.TooManyArguments)):
+                        commands.errors.TooManyArguments,
+                        commands.BadUnionArgument)):
             title = "400 Bad Request"
             description = {"ja": "コマンドの引数が適切ではありません。\nまたは必要な引数が足りません。",
                            "en": "It's command's function is bad."}

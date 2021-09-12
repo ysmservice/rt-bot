@@ -167,7 +167,7 @@ class Captcha(commands.Cog, DataManager):
             return
 
         row = await self.load(member.guild.id)
-        if row:
+        if len(row) >= 4:
             captcha = self.captchas[row[2]]
             channel = discord.utils.get(member.guild.text_channels, id=row[1])
             if channel:
