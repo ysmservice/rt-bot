@@ -1,7 +1,5 @@
 # RT - Auto Role
 
-from re import A
-from discord import guild
 from discord.ext import commands
 import discord
 
