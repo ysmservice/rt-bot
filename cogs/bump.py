@@ -366,12 +366,15 @@ class Bump(commands.Cog, DataManager):
                 await self.save(message.guild.id, data["mode"], new)
 
                 # bump/up実行者を取得して回数を一上げる。
-                user_id = int(
-                    desc[
-                        2:
-                        desc.find("," if data["mode"] == "bump" else "\n") - 1
-                    ]
-                )
+                try:
+                    user_id = int(
+                        desc[
+                            2:
+                            desc.find("," if data["mode"] == "bump" else "\n") - 1
+                        ]
+                    )
+                except ValueError:
+                    return
                 count = await self.load_ranking(user_id, data["mode"])
                 await self.save_ranking(user_id, data["mode"], count + 1)
 
