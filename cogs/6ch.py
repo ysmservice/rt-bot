@@ -1,6 +1,6 @@
 # RT Ext - 6ch
 
-from aiohttp import open as async_open
+from aiofiles import open as async_open
 from ujson import load, dumps
 from random import randint
 from datetime import date
