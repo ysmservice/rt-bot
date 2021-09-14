@@ -1,22 +1,21 @@
 # RT.music.cogs - Type
 
-from typing import TypedDIct, Type, Callable
+from typing import TypedDict, Optional, Type, Callable, Tuple
 
 import discord
 
 
-class uploaderData(TypedDict):
+class UploaderData(TypedDict):
     name: str
-    url: str
+    url: Optional[str]
 
 
-GetSource = Callable[[str], discord.FFmpegPCMAudio]
+GetSource = Callable[[], Tuple[Type[discord.FFmpegPCMAudio], Callable[[], None]]]
 
 
 class MusicRawData(TypedDict):
     url: str
     title: str
-    description: str
     thumbnail: str
     duration: int
     uploader: UploaderData

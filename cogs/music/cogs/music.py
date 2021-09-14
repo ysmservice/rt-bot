@@ -1,9 +1,11 @@
-# RT.music.cogs - Music
+# RT.music.cogs - Music ... 音楽のデータをまとめるためのクラスのモジュールです。
+
+from typing import Optional, Type
 
 from time import time
 import discord
 
-from .types import MusicRawData, UploaderData, GetSource
+from .classes import MusicRawData, UploaderData, GetSource
 
 
 class MusicData:
@@ -12,23 +14,48 @@ class MusicData:
         self.title: str = music["title"]
         self.uploader: UploaderData = music["uploader"]
         self.thumbnail: str = music["thumbnail"]
-        self.duration: int = music["duration"]
-        self.duration_str: str = self.time_str(self.duration)
+        self.duration: Optional[int] = music.get("duration")
+        self.duration_str: Optional[str] = (
+            self.time_str(self.duration) if self.duration else None
+        )
         self._get_source: GetSource = music["get_source"]
         self.author: discord.Member = author
+        self.raw_data: MusicRawData = music
 
         self.start: int = 0
 
-    async def get_source(self) -> discord.FFmpegPCMAudio:
-        return await self._get_source(self.url)
+    @property
+    def uploader_text(self) -> str:
+        # 音楽の投稿者の名前とURLを取得します。
+        name = self.uploader["name"]
+        if self.uploader["url"]:
+            name = f"[{self.uploader['name']}]({self.uploader['url']})"
+        return name
+
+    async def get_source(self) -> Type[discord.FFmpegPCMAudio]:
+        # AudioSourceを取得する関数です。
+        source, self._close = await self._get_source()
+        return source
+
+    def close(self):
+        # 音楽再生後に実行すべき関数です。
+        self._close()
+
+    @property
+    def title_url(self) -> str:
+        # タイトルをマークダウンのURLでカバーした文字列にして取得する関数です。
+        return f"[{self.title}]({self.url})"
 
     def start(self) -> None:
+        # 音楽再生時に呼び出すべき関数です。
         self.start = time()
 
     def time_str(self, t: int) -> str:
         # 秒数を`01:39`のような`分：秒数`の形にする。
         return ":".join(
-            map(lambda o: str(int(o)).zfill(2), (t // 60, t % 60))
+            map(lambda o: (
+                str(int(o)).zfill(2) if t <= 60 else self.time_str(t)
+            ), (t // 60, t % 60))
         )
 
     @property
@@ -41,11 +68,16 @@ class MusicData:
         # 何秒再生してから経過したかを文字列にして取得する関数です。
         return self.time_str(self.now)
 
+    @property
+    def elapsed(self) -> str:
+        # 何秒経過したかの文字列を取得する関数です。
+        return f"{self.now_str}/{self.duration_str}"
+
     def make_seek_bar(self, length: int = 30) -> str:
         # どれだけ音楽が再生されたかの絵文字によるシークバーを作る関数です。
         return "".join(
             (
                 base := "◾" * length
-            )[:(now := int(self.now // self.duration * length)],
+            )[:(now := int(self.now // self.duration * length))],
             "⬜", base[now:]
         )
