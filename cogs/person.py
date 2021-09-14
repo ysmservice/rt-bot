@@ -354,17 +354,8 @@ class Person(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if (not message.guild or not hasattr(message.channel, "topic")
-                or not message.channel.topic or message.author.bot):
+        if not message.guild or message.author.bot:
             return
-
-        # 自動リアクション
-        for line in message.channel.topic.splitlines():
-            if line.startswith("rt>ar "):
-                await self.autoreaction(
-                    await self.bot.get_context(message),
-                    "", emojis=line[6:], message=message
-                )
 
         # もし`OOOとは。`に当てはまるなら押したら検索を行うリアクションを付ける。
         for question in self.QUESTIONS:
@@ -393,6 +384,17 @@ class Person(commands.Cog):
                         # もしリアクションが押されたならコマンドを実行する。
                         await self.yahoo_(await self.bot.get_context(message), word=word)
                 return
+
+        if not hasattr(message.channel, "topic") or not message.channel.topic:
+            return
+
+        # 自動リアクション
+        for line in message.channel.topic.splitlines():
+            if line.startswith("rt>ar "):
+                await self.autoreaction(
+                    await self.bot.get_context(message),
+                    "", emojis=line[6:], message=message
+                )
 
         if isinstance(message.channel, discord.Thread):
             return
