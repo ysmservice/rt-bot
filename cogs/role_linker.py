@@ -29,6 +29,8 @@ class DataManager(DatabaseManager):
         target = {
             "GuildID": guild_id, "Original": original_role_id
         }
+        if reverse and await cursor.exists(self.DB, {"Original": role_id}):
+            raise ValueError("既に設定されているのでその役職で設定できません。")
         change = dict(Role=role_id, Reverse=int(reverse))
         if await cursor.exists(self.DB, target):
             await cursor.update_data(self.DB, change, target)
@@ -128,6 +130,11 @@ class RoleLinker(commands.Cog, DataManager):
         `rt!linker link 認証済み メンバー`
         認証済みの役職がついたらメンバーという役職をつけます。
 
+        Notes
+        -----
+        reverseをonにする場合は対象の役職を既にロールリンカーに登録されている役職に設定することはできません。  
+        理由はこうしなければループを作ることが可能になりRTを妨害できてしまうからです。ご了承ください。
+
         !lang en
         --------
         Sets the job title link.
@@ -136,9 +143,9 @@ class RoleLinker(commands.Cog, DataManager):
         Parameters
         ----------
         target : Mention or name of the position
-            The position to link to.
+            The role that triggers the grant or drop of the role.
         link_role : Mention or name of the role
-            The role to link to.
+            The role to be granted or removed when target is granted or removed.
         reverse : bool, default off
             Whether or not to reverse the normal behavior, such as stripping the specified link_role when a role is granted.  
             Can be on or off.
@@ -146,17 +153,29 @@ class RoleLinker(commands.Cog, DataManager):
         Examples
         --------
         `rt!linker link authenticated member`.
-        If the position is authenticated, it will be given the title member."""
+        If the role is authenticated, it will be given the role "member".
+
+        Notes
+        -----
+        If reverse is on, you cannot set the target role to a role that is already registered with the role linker.  
+        The reason is that if you don't do this, you can create loops and interfere with RT. Thank you for your understanding."""
         if len(await self.get_all(ctx.guild.id)) == 10:
             await ctx.reply(
                 {"ja": "これ以上リンクすることはできません。",
                  "en": "No more links can be made."}
             )
         else:
-            await self.write(
-                ctx.guild.id, target.id, link_role.id, reverse
-            )
-            await ctx.reply("Ok")
+            try:
+                await self.write(
+                    ctx.guild.id, target.id, link_role.id, reverse
+                )
+            except ValueError:
+                await ctx.reply(
+                    {"ja": "既にロールリンカーに登録されている役職を設定することはできません。",
+                     "en": "You can't set the target role to a role that is already registered."}
+                )
+            else:
+                await ctx.reply("Ok")
 
     @linker.command()
     async def unlink(self, ctx, target: discord.Role):
