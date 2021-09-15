@@ -139,22 +139,25 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         Gender:
         Comment:
         ```"""
-        await ctx.trigger_typing()
-        if content.startswith(">>"):
-            content = "<" + dumps(
-                self.bot.cogs["ServerTool"].easy_embed(
-                    content, ctx.author.color
-                ).to_dict()
-            ) + ">"
-        await self.setting(
-            ctx.guild.id, ctx.channel.id, 0,
-            ctx.author.id, onoff, content
-        )
-        if not onoff and ctx.channel.id in self.queue:
-            del self.queue[ctx.channel.id]
-            if ctx.channel.id not in self.remove_queue:
-                self.remove_queue.append(ctx.channel.id)
-        await ctx.reply("Ok")
+        if hasattr(ctx.channel, "topic"):
+            await ctx.trigger_typing()
+            if content.startswith(">>"):
+                content = "<" + dumps(
+                    self.bot.cogs["ServerTool"].easy_embed(
+                        content, ctx.author.color
+                    ).to_dict()
+                ) + ">"
+            await self.setting(
+                ctx.guild.id, ctx.channel.id, 0,
+                ctx.author.id, onoff, content
+            )
+            if not onoff and ctx.channel.id in self.queue:
+                del self.queue[ctx.channel.id]
+                if ctx.channel.id not in self.remove_queue:
+                    self.remove_queue.append(ctx.channel.id)
+            await ctx.reply("Ok")
+        else:
+            await ctx.reply("スレッドに設定することはできません。")
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -206,10 +209,7 @@ class ForcePinnedMessage(commands.Cog, DataManager):
                     avatar_url=member.avatar.url, wait=True, replace_language=False,
                     **kwargs
                 )
-            except (
-                discord.NotFound, discord.Forbidden,
-                discord.HTTPException, discord.errors.InvalidArgument
-            ) as e:
+            except Exception as e:
                 if self.bot.test:
                     print("Error on ForcePinnedMessage:", e)
 
