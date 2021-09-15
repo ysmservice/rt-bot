@@ -94,7 +94,7 @@ class Bump(commands.Cog, DataManager):
     IDS = {
         302050872383242240: {
             "mode": "bump",
-            "description": ["表示順をアップしたよ", "Bump done", "Bumpeado"],
+            "description": ["表示順をアップしたよ", "Bump done", "Bumpeado", "Bump effectué"],
             "time": 7200
         },
         761562078095867916: {
@@ -104,7 +104,7 @@ class Bump(commands.Cog, DataManager):
         },
         716496407212589087: {
             "mode": "bump",
-            "description": ["表示順をアップしたよ", "Bump done", "Bumpeado"],
+            "description": ["表示順をアップしたよ", "Bump done", "Bumpeado", "Bump effectué"],
             "time": 5
         },
         716496407212589087: {
