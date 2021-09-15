@@ -46,7 +46,7 @@ class MusicData:
         # タイトルをマークダウンのURLでカバーした文字列にして取得する関数です。
         return f"[{self.title}]({self.url})"
 
-    def start(self) -> None:
+    def started(self) -> None:
         # 音楽再生時に呼び出すべき関数です。
         self.start = time()
 
@@ -54,8 +54,10 @@ class MusicData:
         # 秒数を`01:39`のような`分：秒数`の形にする。
         return ":".join(
             map(lambda o: (
-                str(int(o)).zfill(2) if t <= 60 else self.time_str(t)
-            ), (t // 60, t % 60))
+                str(int(o[1])).zfill(2)
+                if o[0] or o[1] <= 60
+                else self.time_str(o[1])
+            ), ((0, t // 60), (1, t % 60)))
         )
 
     @property
@@ -75,9 +77,12 @@ class MusicData:
 
     def make_seek_bar(self, length: int = 30) -> str:
         # どれだけ音楽が再生されたかの絵文字によるシークバーを作る関数です。
-        return "".join(
+        return "".join((
             (
                 base := "◾" * length
             )[:(now := int(self.now // self.duration * length))],
-            "⬜", base[now:]
+            "⬜", base[now:])
         )
+
+    def __str__(self):
+        return f"<MusicData Title:{self.title} Elapsed:{self.elapsed} Url:{self.url}>"

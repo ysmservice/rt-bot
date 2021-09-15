@@ -34,6 +34,7 @@ async def executor(
         args = ([application.command.cog]
                 if application.command.cog else [])
         args.append(ctx)
+        kwargs = {}
         state = bot._connection
 
         for parameter, option in zip(
@@ -64,7 +65,7 @@ async def executor(
                     option.value = await coro
                 else:
                     option.value = coro
-            args.append(option.value)
+            kwargs[parameter.name] = option.value
 
         # 取り出した引数を使ってコマンドを実行する。
-        await command.callback(*args)
+        await command.callback(*args, **kwargs)

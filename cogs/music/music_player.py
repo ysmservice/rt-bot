@@ -51,9 +51,10 @@ class MusicPlayer:
         # 音楽を再生する関数です。
         if self.queues:
             queue = self.queues[0]
+            queue.started()
             self.vc.play(
                 await queue.get_source(),
-                after=lambda e:self.cog.bot.loop.create_task(
+                after=lambda e: self.cog.bot.loop.create_task(
                     self._after(e)
                 )
             )
@@ -76,8 +77,8 @@ class MusicPlayer:
         return self.loop
 
     EMBED_TITLE = {
-        "ja": "キュー",
-        "en": "Queues"
+        "ja": "現在再生中の音楽",
+        "en": "Now playing"
     }
 
     def embed(self, index: int = 0) -> Optional[discord.Embed]:

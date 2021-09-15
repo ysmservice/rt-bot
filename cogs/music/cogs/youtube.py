@@ -26,8 +26,12 @@ FLAT_OPTIONS = {
 }
 
 
-async def _get(url: str, options: dict, download: bool = False) -> dict:
+async def _get(
+    loop: asyncio.AbstractEventLoop, url: str,
+    options: dict, download: bool = False
+) -> dict:
     # 渡されたものからデータを取得する。
+    print(options)
     return await loop.run_in_executor(
         None, lambda : YoutubeDL(options).extract_info(
             url, download=download
@@ -35,10 +39,13 @@ async def _get(url: str, options: dict, download: bool = False) -> dict:
     )
 
 
-def _make_get_source(url: str, options: dict = DOWNLOAD_OPTIONS) -> GetSource:
+def _make_get_source(
+    loop: asyncio.AbstractEventLoop, url: str,
+    options: dict = DOWNLOAD_OPTIONS
+) -> GetSource:
     # AudioSourceを取得する関数を取得する関数です。
     async def _get_source():
-        data = await _get(options, url)
+        data = await _get(loop, url, options)
         return discord.PCMVolumeTransformer(
             discord.FFmpegPCMAudio(
                 data["url"], before_options=BEFORE_OPTIONS
@@ -47,13 +54,15 @@ def _make_get_source(url: str, options: dict = DOWNLOAD_OPTIONS) -> GetSource:
     return _get_source
 
 
-def _make_music_raw_data(data: dict) -> MusicRawData:
+def _make_music_raw_data(
+    loop: asyncio.AbstractEventLoop, data: dict
+) -> MusicRawData:
     return MusicRawData(
-        url=(url := f"https://www.youtube.com/watch?v={data['display_id']}"),
+        url=(url := f"https://www.youtube.com/watch?v={data.get('display_id', data.get('id'))}"),
         title=data["title"], thumbnail=data["thumbnail"],
         duration=data["duration"], uploader=UploaderData(
             name=data["uploader"], url=data.get("uploader_url")
-        ), get_source=_make_get_source(url)
+        ), get_source=_make_get_source(loop, url)
     )
 
 
@@ -64,28 +73,29 @@ async def get_music(
 ) -> MusicData:
     # 曲単体の情報を取得します。
     return MusicData(
-        _make_music_raw_data(await _get(url, FLAT_OPTIONS, download)), author
+        _make_music_raw_data(
+            loop,
+            await _get(loop, url, FLAT_OPTIONS, download)
+        ), author
     )
 
 
 async def get_playlist(
-    url: str, author: discord.Member, *,
-    loop: asyncio.AbstractEventLoop,
+    url: str, author: discord.Member,
+    loop: asyncio.AbstractEventLoop, *,
     download: bool = False
 ) -> List[MusicData]:
     # プレイリストにある曲の情報を取得します。またytsearchで検索もできます。
     loop = loop or asyncio.get_event_loop()
-    data = await _get(url, FLAT_OPTIONS)
+    data = await _get(loop, url, FLAT_OPTIONS)
     return [
         MusicData(
             _make_music_raw_data(
-                await _get(
-                    {
-                        "title": entrie["title"],
-                        "thumbnail": get_thumbnail_url(entrie["id"]),
-                        "duration": entrie["duration"], "uploader": entrie["uploader"]
-                    }, FLAT_OPTIONS, download
-                )
+                loop, {
+                    "title": entrie["title"], "id": entrie["id"],
+                    "thumbnail": get_thumbnail_url(entrie["id"]),
+                    "duration": entrie["duration"], "uploader": entrie["uploader"]
+                }
             ), author
         ) for entrie in data["entries"]
     ]

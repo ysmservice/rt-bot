@@ -1,6 +1,6 @@
 # RT.cogs.music - Normal
 
-from typing import List
+from typing import Dict
 
 from discord.ext import commands
 import discord
@@ -45,10 +45,19 @@ def require_dj(coro):
 
 
 class MusicNormal(commands.Cog, DataManager):
+
+    EMOJIS = {
+        "loading": "<a:now_loading:887681011905871872>"
+    }
+    NOW_LOADING = {
+        "ja": f"{EMOJIS['loading']} 読み込み中...",
+        "en": f"{EMOJIS['loading']} Now loading..."
+    }
+
     def __init__(self, bot):
         self.bot = bot
         self.bot.loop.create_task(self.init_database())
-        self.now: List[MusicPlayer] = []
+        self.now: Dict[int, MusicPlayer] = {}
 
     async def init_database(self):
         super(commands.Cog, self).__init__(self.bot.mysql)
@@ -59,8 +68,9 @@ class MusicNormal(commands.Cog, DataManager):
     ):
         # 検索結果を選択された際に呼び出される関数です。
         ctx = await self.bot.get_context(interaction.message)
-        ctx.reply = interaction.edit_original_message
+        ctx.reply = interaction.response.edit_message
         ctx.author = interaction.user
+        ctx.interaction = interaction
         await self.play(ctx, song=select.values[0])
 
     @commands.command(
@@ -71,9 +81,6 @@ class MusicNormal(commands.Cog, DataManager):
         self, ctx, *,
         song: Option(str, "song", "再生したい曲のURLまたは検索ワードです。")
     ):
-        if not hasattr(ctx, "interaction"):
-            await ctx.trigger_typing()
-
         if ctx.guild.id not in self.now:
             # もし接続していないなら接続をする。
             if ctx.author.voice:
@@ -85,9 +92,15 @@ class MusicNormal(commands.Cog, DataManager):
                      "en": "You must connect to voice channel."}
                 )
 
+        if hasattr(ctx, "interaction"):
+            await ctx.reply(content=self.NOW_LOADING)
+            ctx.reply = ctx.interaction.edit_original_message
+        else:
+            await ctx.trigger_typing()
+
         # 音楽を取得する。
-        datas = get_music(song, ctx.author, self.bot.loop)
-        if not isinstance(datas, list):
+        datas = await get_music(song, ctx.author, self.bot.loop)
+        if isinstance(datas, list):
             i = 0
 
             if not song.startswith(("https://", "http://")):
@@ -102,10 +115,9 @@ class MusicNormal(commands.Cog, DataManager):
                         for data in datas
                     ]
                 )
-                await ctx.reply(
-                    {"ja": "以下の音楽が見つかりました。何を再生するか選んでください。",
-                     "en": "The following music was found. Please choose what you want to play."},
-                    view=view, target=ctx.author.id
+                return await ctx.reply(
+                    content="以下の音楽が見つかりました。何を再生するか選んでください。",
+                    view=view()
                 )
         else:
             i = 1
@@ -127,13 +139,14 @@ class MusicNormal(commands.Cog, DataManager):
 
         # 再生をする。
         if await self.now[ctx.guild.id].play():
-            await ctx.reply(embed=self.now[ctx.guld.id].embed())
+            await ctx.reply(embed=self.now[ctx.guild.id].embed())
         else:
             length = f" Now:{i}"
             await ctx.reply(
-                {"ja": "➕ キューに追加しました。" + length + ext[0],
-                 "en": "➕ Added to queues." + length + ext[1]},
-                target=ctx.author.id
+                content={
+                    "ja": "➕ キューに追加しました。" + length + ext[0],
+                    "en": "➕ Added to queues." + length + ext[1]
+                }
             )
 
     @commands.command(
