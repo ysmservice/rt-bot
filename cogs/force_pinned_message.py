@@ -112,6 +112,12 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         フィールド内容
         ```
 
+        Warnings
+        --------
+        設定後はすぐに下にこないことがあります。  
+        しばらくしても下に来ない際はメッセージを送ってみてください。  
+        これはRTがメッセージを送りすぎてAPI制限になるということを防止するために発生するものでご了承ください。
+
         !lang en
         --------
         You can create a message that always comes at the bottom.  
@@ -138,7 +144,13 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         Name:
         Gender:
         Comment:
-        ```"""
+        ```
+
+        Warnings
+        --------
+        After setting it up, it may not come down immediately.  
+        If it doesn't come down after a while, please try sending a message.  
+        Please note that this is to prevent RTs from sending too many messages, which would limit the API."""
         if hasattr(ctx.channel, "topic"):
             await ctx.trigger_typing()
             if content.startswith(">>"):
