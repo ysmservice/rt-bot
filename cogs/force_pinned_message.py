@@ -222,8 +222,7 @@ class ForcePinnedMessage(commands.Cog, DataManager):
                     **kwargs
                 )
             except Exception as e:
-                if self.bot.test:
-                    print("Error on ForcePinnedMessage:", e)
+                print("(ignore) Error on ForcePinnedMessage:", e)
 
             await self.setting(
                 message.guild.id, message.channel.id,

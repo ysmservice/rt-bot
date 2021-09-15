@@ -80,10 +80,14 @@ def on_init(bot):
             for path in listdir("cogs"):
                 if path[0] in ("#", "."):
                     continue
-                if path.endswith(".py"):
-                    bot.load_extension("cogs." + path[:-3])
-                elif "." not in path and path != "__pycache__" and path[0] != ".":
-                    bot.load_extension("cogs." + path)
+                try:
+                    if path.endswith(".py"):
+                        bot.load_extension("cogs." + path[:-3])
+                    elif "." not in path and path != "__pycache__" and path[0] != ".":
+                        bot.load_extension("cogs." + path)
+                except discord.ext.commands.NoEntryPointError as e:
+                    if "setup" not in str(e):
+                        raise e
                 bot.print("Loaded extension", path)
             bot.dispatch("full_ready")
             bot._loaded = True
