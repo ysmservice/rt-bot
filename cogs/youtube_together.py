@@ -59,7 +59,12 @@ class YouTubeTogether(commands.Cog):
 
     @commands.command(
         slash_command=True,
-        description="YouTube Togetherなどの招待リンクを作ります。"
+        description="YouTube Togetherなどの招待リンクを作ります。", extras={
+            "headding": {
+                "ja": "ボイスチャンネル内でゲームをしたりYouTubeをみんなで視聴します。",
+                "en": "YouTube together, chess, etc... on voice channel."
+            }, "parent": "Entertainment"
+        }
     )
     async def activity(
         self, ctx, choice: Option(
