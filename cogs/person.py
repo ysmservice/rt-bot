@@ -203,7 +203,7 @@ class Person(commands.Cog):
                 ) if user.public_flags else "",
                 color=self.bot.colors["normal"]
             )
-            embed.set_thumbnail(url=user.avatar.url)
+            embed.set_thumbnail(url=getattr(user.avatar, "url", ""))
             embed.add_field(name="ID", value=f"`{user.id}`")
             embed.add_field(
                 name={
