@@ -13,10 +13,13 @@ class UploaderData(TypedDict):
 GetSource = Callable[[], Tuple[Type[discord.FFmpegPCMAudio], Callable[[], None]]]
 
 
-class MusicRawData(TypedDict):
+class MusicRawDataForJson(TypedDict):
     url: str
     title: str
     thumbnail: str
     duration: int
     uploader: UploaderData
+
+
+class MusicRawData(MusicRawDataForJson):
     get_source: GetSource

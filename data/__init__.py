@@ -20,7 +20,9 @@ data = {
     "colors": {
         "normal": 0x0066ff,
         "unknown": 0x80989b,
-        "error": 0xeb6ea5
+        "error": 0xeb6ea5,
+        "player": 0x2ca9e1,
+        "queue": 0x007bbb
     },
     "admins": [
         634763612535390209, 266988527915368448,

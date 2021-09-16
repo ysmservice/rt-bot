@@ -243,13 +243,14 @@ class Cursor:
         -----
         もし条件関係なく全てを取得したい場合は引数の`targets`を空である`{}`にしましょう。"""
         if targets:
-            conditions, args = self._get_column_args(targets)
+            conditions, args = self._get_column_args(targets, json_dump=True)
             conditions = " WHERE " + conditions[:-4]
         else:
             conditions, args = "", ()
         await self.cursor.execute(
             f"SELECT * FROM {table}{conditions}{' ' + custom if custom else custom}",
-            args)
+            args
+        )
         if _fetchall:
             list_rows = await self.cursor.fetchall()
         else:

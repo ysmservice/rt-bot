@@ -3,9 +3,12 @@
 from typing import Optional, Type
 
 from time import time
+from copy import copy
 import discord
 
-from .classes import MusicRawData, UploaderData, GetSource
+from .classes import (
+    MusicRawData, UploaderData, GetSource, MusicRawDataForJson
+)
 
 
 class MusicData:
@@ -23,6 +26,13 @@ class MusicData:
         self.raw_data: MusicRawData = music
 
         self.start: int = 0
+        self._stop = 0
+
+    def to_dict(self) -> MusicRawDataForJson:
+        # JSON形式で保存可能な辞書で音楽データを取得します。
+        data = copy(self.raw_data)
+        del data["get_source"]
+        return data
 
     @property
     def uploader_text(self) -> str:
@@ -46,9 +56,12 @@ class MusicData:
         # タイトルをマークダウンのURLでカバーした文字列にして取得する関数です。
         return f"[{self.title}]({self.url})"
 
-    def started(self) -> None:
+    def started(self, extras: int = 0) -> None:
         # 音楽再生時に呼び出すべき関数です。
-        self.start = time()
+        self.start = time() + self._stop
+
+    def stopped(self) -> None:
+        self._stop = time()
 
     def time_str(self, t: int) -> str:
         # 秒数を`01:39`のような`分：秒数`の形にする。
@@ -75,7 +88,7 @@ class MusicData:
         # 何秒経過したかの文字列を取得する関数です。
         return f"{self.now_str}/{self.duration_str}"
 
-    def make_seek_bar(self, length: int = 30) -> str:
+    def make_seek_bar(self, length: int = 15) -> str:
         # どれだけ音楽が再生されたかの絵文字によるシークバーを作る関数です。
         return "".join((
             (base := "◾" * length

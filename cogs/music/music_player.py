@@ -5,6 +5,8 @@ from typing import Optional, Union, Type, Callable, List
 from discord.ext import commands
 import discord
 
+from random import shuffle
+
 from .cogs.music import MusicData
 
 
@@ -15,7 +17,7 @@ class MusicPlayer:
     def __init__(self, cog: Type[commands.Cog], guild: discord.Guild):
         self.cog: Type[commands.Cog] = cog
         self.guild: discord.Guild = guild
-        self.vc: discord.VoiceClient = guild.voice_client
+        self.voice_client: discord.VoiceClient = guild.voice_client
 
         self.queues: List[MusicData] = []
         self.length: int = 0
@@ -49,10 +51,10 @@ class MusicPlayer:
 
     async def play(self) -> bool:
         # 音楽を再生する関数です。
-        if self.queues and not self.vc.is_playing():
+        if self.queues and not self.voice_client.is_playing():
             queue = self.queues[0]
             queue.started()
-            self.vc.play(
+            self.voice_client.play(
                 await queue.get_source(),
                 after=lambda e: self.cog.bot.loop.create_task(
                     self._after(e)
@@ -67,14 +69,22 @@ class MusicPlayer:
     def pause(self) -> bool:
         if self.voice_client.is_paused():
             self.voice_client.resume()
+            queue.started()
             return True
         else:
             self.voice_client.pause()
+            queue.stopped()
             return False
 
     def loop(self) -> bool:
         self._loop = not self._loop
         return self._loop
+
+    def shuffle(self) -> None:
+        if self.length > 1:
+            queues = self.queues[1:]
+            shuffle(queues)
+            self.queues = self.queues[:1] + queues
 
     EMBED_TITLE = {
         "ja": "現在再生中の音楽",
@@ -87,7 +97,7 @@ class MusicPlayer:
             embed = discord.Embed(
                 title=self.EMBED_TITLE,
                 description=queue.make_seek_bar(),
-                color=self.cog.bot.colors["normal"]
+                color=self.cog.bot.colors["player"]
             )
             embed.set_author(
                 name=queue.author.display_name,
