@@ -15,10 +15,10 @@ SC_OPTIONS["noplaylist"] = True
 
 
 def _make_music_raw_data(
-    loop: asyncio.AbstractEventLoop, data: dict
+    loop: asyncio.AbstractEventLoop, data: dict, url: str
 ) -> MusicRawData:
     return MusicRawData(
-        url=data["url"], title=data["title"], thumbnail=data["thumbnail"],
+        url=url, title=data["title"], thumbnail=data["thumbnail"],
         duration=data["duration"], uploader=UploaderData(
             name=data["uploader"], url=data["uploader_url"]
         ), get_source=_make_get_source(loop, data["url"], SC_OPTIONS)
@@ -31,6 +31,6 @@ async def get_music(
 ) -> MusicData:
     return MusicData(
         _make_music_raw_data(
-            loop, await _get(loop, url, FLAT_OPTIONS)
+            loop, await _get(loop, url, FLAT_OPTIONS), url
         ), author
     )

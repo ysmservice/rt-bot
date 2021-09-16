@@ -12,8 +12,10 @@ from .util import check_dj
 
 def split_list(list_: list, n: int = 10) -> List[list]:
     # リストを分ける関数です。
+    data = []
     for idx in range(0, len(list_), n):
-        yield list_[idx:idx + n]
+        data.append(list_[idx:idx + n])
+    return data
 
 
 class MusicListView(discord.ui.View):
@@ -33,9 +35,9 @@ class MusicListView(discord.ui.View):
         self, player: MusicPlayer,
         target: discord.Member, mode: str, *args, **kwargs
     ):
-        self.palyer: MusicPlayer = player
+        self.player: MusicPlayer = player
         self.queues: List[List[MusicData]] = split_list(player.queues)
-        self.now_queues: List[MusicData] = []
+        self.now_queues: List[MusicData] = self.queues[0]
         self.length: int = len(self.queues)
         self.music_count: int = len(player.queues)
         self.target: discord.Member = target
@@ -82,11 +84,11 @@ class MusicListView(discord.ui.View):
 
     @discord.ui.button(emoji="◀️")
     async def left(self, button, interaction):
-        await self.on_button(button, interaction)
+        await self.on_button("left", button, interaction)
 
     @discord.ui.button(emoji="▶️")
     async def right(self, button,interaction):
-        await self.on_button(button, interaction)
+        await self.on_button("right", button, interaction)
 
     async def on_update(self):
         ...
@@ -110,8 +112,10 @@ class MusicSelect(discord.ui.Select):
         self.cog = cog
         self.queues: List[MusicData] = queues
 
-        kwargs["max_values"] = max_
+        length = len(queues)
         kwargs["options"] = make_options(queues)
+        kwargs["max_values"] = max_ if length > max_ else length
+
         super().__init__(**kwargs)
 
 
@@ -122,9 +126,10 @@ class QueueSelect(MusicSelect):
                 self.cog.now[interaction.message.guild.id].remove_queue(
                     self.queues[int(value)]
                 )
-            await interaction.response.send_message(                    
+            await interaction.response.edit_message(                    
                 {"ja": f"{interaction.user.mention}, キューを削除しました。",
-                 "en": f"{interaction.user.mention}, Removed queue."}
+                 "en": f"{interaction.user.mention}, Removed queue."},
+                embed=None, view=None
             )
         else:
             await interaction.respone.send_message(
@@ -136,8 +141,11 @@ class QueueSelect(MusicSelect):
 class QueuesView(MusicListView):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.cog = self.player.cog
-        self.add_item(QueueSelect(self.cog, self.now_queues))
+        self.add_item(
+            QueueSelect(
+                self.player.cog, self.now_queues[1:], placeholder="キューの削除"
+            )
+        )
 
     async def on_update(self):
         for child in self.children:

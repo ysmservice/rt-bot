@@ -34,10 +34,7 @@ class Language(commands.Cog):
         self.bot = bot
         self.cache = {}
         self.bot.cogs["OnSend"].add_event(self._new_send, "on_send")
-        self.bot.cogs["OnSend"].add_event(self._new_send, "on_webhook_send")
-        self.bot.cogs["OnSend"].add_event(self._new_send, "on_webhook_message_edit")
         self.bot.cogs["OnSend"].add_event(self._new_send, "on_edit")
-        self.bot.cogs["OnSend"].add_event(self._new_send, "on_interaction_response")
 
         with open("data/replies.json") as f:
             self.replies = loads(f.read())

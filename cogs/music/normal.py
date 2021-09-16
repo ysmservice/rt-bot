@@ -71,6 +71,7 @@ class MusicNormal(commands.Cog, DataManager):
         ctx.reply = interaction.response.edit_message
         ctx.author = interaction.user
         ctx.interaction = interaction
+        ctx.selected = True
         await self.play(ctx, song=select.values[0])
 
     @commands.command(
@@ -93,13 +94,18 @@ class MusicNormal(commands.Cog, DataManager):
                 )
 
         if hasattr(ctx, "interaction"):
-            await ctx.reply(content=self.NOW_LOADING)
+            kwargs = {"content": self.NOW_LOADING}
+            if hasattr(ctx, "selected"):
+                kwargs["view"] = None
+            await ctx.reply(**kwargs)
             ctx.reply = ctx.interaction.edit_original_message
         else:
             await ctx.trigger_typing()
 
         # 音楽を取得する。
-        datas = await get_music(song, ctx.author, self.bot.loop)
+        datas = await get_music(
+            song, ctx.author, self.bot.loop, client=self.bot.session
+        )
         if isinstance(datas, list):
             i = 0
 
@@ -139,9 +145,14 @@ class MusicNormal(commands.Cog, DataManager):
 
         # 再生をする。
         if await self.now[ctx.guild.id].play():
-            await ctx.reply(embed=self.now[ctx.guild.id].embed())
+            await ctx.reply(
+                content={
+                    "ja": "▶️ 再生します。", "en": "▶️ Playing!"
+                },
+                embed=self.now[ctx.guild.id].embed()
+            )
         else:
-            length = f" Now:{i}"
+            length = f" Now:{i - 1}"
             await ctx.reply(
                 content={
                     "ja": "➕ キューに追加しました。" + length + ext[0],
@@ -188,7 +199,8 @@ class MusicNormal(commands.Cog, DataManager):
     async def loop(self, ctx):
         onoff = self.now[ctx.guild.id].loop()
         await ctx.reply(
-            f"🔁 {'Loop enabled!' if onoff else 'Loop disabled!'}"
+            {"ja": f"🔁 {'ループをONにしました。' if onoff else 'ループをOFFにしました。'}",
+             "en": f"🔁 {'Loop enabled!' if onoff else 'Loop disabled!'}"}
         )
 
     @commands.command(slash_command=True, description="曲を一時停止または再生を再開します。")
@@ -199,11 +211,17 @@ class MusicNormal(commands.Cog, DataManager):
     @commands.command(slash_command=True, description="現在キューに登録されている曲のリストを表示します。")
     @require_voice
     async def queue(self, ctx):
-        view = QueuesView(self.now[ctx.guild.id], ctx.author.id, "queues")
-        await ctx.reply(
-            embed=view.make_embed(),
-            view=view
-        )
+        if len(self.now[ctx.guild.id].queues) > 1:
+            view = QueuesView(self.now[ctx.guild.id], ctx.author.id, "queues")
+            await ctx.reply(
+                embed=view.make_embed(),
+                view=view
+            )
+        else:
+            await ctx.reply(
+                {"ja": "キューはありません。",
+                 "en": "There is no queue."}
+            )
 
 
 def setup(bot):

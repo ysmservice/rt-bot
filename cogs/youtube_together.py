@@ -70,7 +70,8 @@ class YouTubeTogether(commands.Cog):
         """!lang ja
         --------
         YouTube TogetherなどでボイスチャンネルでゲームやYouTubeを見ることができます。  
-        音楽プレイヤーとしても使えます。
+        音楽プレイヤーとしても使えます。  
+        なおパソコン限定です。
 
         Parameters
         ----------
@@ -96,7 +97,8 @@ class YouTubeTogether(commands.Cog):
         !lang en
         --------
         You can watch games and YouTube with voice channels on YouTube Together, etc.  
-        It can also be used as a music player.
+        It can also be used as a music player.  
+        Ah, You can use this command on PC only.
 
         Parameters
         ----------
@@ -122,7 +124,7 @@ class YouTubeTogether(commands.Cog):
                 await ctx.reply(
                     (await self.make_invite(
                         ctx.author.voice.channel.id, appid,
-                    )) + "\nもしし使えない場合はURLをクリックしてください。"
+                    )) + "\nもし使えない場合はURLをクリックしてください。"
                 )
             else:
                 await ctx.reply(

@@ -15,9 +15,12 @@ def get_thumbnail_url(video_id: str) -> str:
 
 
 BEFORE_OPTIONS = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
+OPTIONS = "-vn"
 DOWNLOAD_OPTIONS = {
     "format": "bestaudio/best",
     "default_search": "auto",
+    "logtostderr": False,
+    "cachedir": False,
     "source_address": "0.0.0.0"
 }
 FLAT_OPTIONS = {
@@ -31,7 +34,6 @@ async def _get(
     options: dict, download: bool = False
 ) -> dict:
     # 渡されたものからデータを取得する。
-    print(options)
     return await loop.run_in_executor(
         None, lambda : YoutubeDL(options).extract_info(
             url, download=download
@@ -48,7 +50,8 @@ def _make_get_source(
         data = await _get(loop, url, options)
         return discord.PCMVolumeTransformer(
             discord.FFmpegPCMAudio(
-                data["url"], before_options=BEFORE_OPTIONS
+                data["url"], before_options=BEFORE_OPTIONS,
+                options=OPTIONS
             )
         ), lambda : None
     return _get_source

@@ -78,9 +78,8 @@ class MusicData:
     def make_seek_bar(self, length: int = 30) -> str:
         # どれだけ音楽が再生されたかの絵文字によるシークバーを作る関数です。
         return "".join((
-            (
-                base := "◾" * length
-            )[:(now := int(self.now // self.duration * length))],
+            (base := "◾" * length
+            )[:(now := int(self.now / self.duration * length))],
             "⬜", base[now:])
         )
 

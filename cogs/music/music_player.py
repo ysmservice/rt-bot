@@ -19,7 +19,7 @@ class MusicPlayer:
 
         self.queues: List[MusicData] = []
         self.length: int = 0
-        self.loop: bool = False
+        self._loop: bool = False
 
     def add_queue(self, music: MusicData) -> None:
         if self.length == self.MAX:
@@ -43,13 +43,13 @@ class MusicPlayer:
         self.queues[0].close()
         if e:
             print("Error on Music:", e)
-        if not self.loop:
+        if not self._loop:
             self.remove_queue(0)
         await self.play()
 
     async def play(self) -> bool:
         # 音楽を再生する関数です。
-        if self.queues:
+        if self.queues and not self.vc.is_playing():
             queue = self.queues[0]
             queue.started()
             self.vc.play(
@@ -73,8 +73,8 @@ class MusicPlayer:
             return False
 
     def loop(self) -> bool:
-        self.loop = not self.loop
-        return self.loop
+        self._loop = not self._loop
+        return self._loop
 
     EMBED_TITLE = {
         "ja": "現在再生中の音楽",
@@ -86,18 +86,17 @@ class MusicPlayer:
             queue = self.queues[index]
             embed = discord.Embed(
                 title=self.EMBED_TITLE,
-                url=queue.url,
+                description=queue.make_seek_bar(),
                 color=self.cog.bot.colors["normal"]
             )
             embed.set_author(
                 name=queue.author.display_name,
                 icon_url=getattr(queue.author.avatar, "url", "")
             )
-            embed.set_footer(text=queue.make_seek_bar())
             embed.set_image(url=queue.thumbnail)
             embed.add_field(
                 name={"ja": "タイトル", "en": "Title"},
-                value=queue.title
+                value=f"[{queue.title}]({queue.url})"
             )
             embed.add_field(
                 name={"ja": "時間", "en": "Elapsed time"},

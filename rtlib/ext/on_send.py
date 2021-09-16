@@ -41,6 +41,7 @@ from discord.ext import commands
 import discord
 
 from traceback import print_exc
+from functools import wraps
 from copy import copy
 
 
@@ -52,9 +53,20 @@ class OnSend(commands.Cog):
             "on_edit": [],
             "on_webhook_send": [],
             "on_webhook_message_edit": [],
-            "on_interaction_response": []
+            "on_interaction_response": [],
+            "on_interaction_response_edit": []
         }
         self._dpy_injection()
+
+    def wrap_send(self, coro, event_name="on_send"):
+        default = copy(coro)
+        @wraps(default)
+        async def new(ir, *args, **kwargs):
+            args, kwargs = await self._run_event(
+                event_name, ir, *args, **kwargs
+            )
+            return await default(ir, *args, **kwargs)            
+        return new
 
     async def _run_event(self, event_name: str, arg, *args, **kwargs):
         # イベントを実行する。
@@ -70,8 +82,6 @@ class OnSend(commands.Cog):
     def _dpy_injection(self):
         default_send = copy(discord.abc.Messageable.send)
         default_edit = copy(discord.Message.edit)
-        default_webhook_edit_message = copy(discord.Webhook.edit_message)
-        default_interaction_response = copy(discord.InteractionResponse.send_message)
 
         if hasattr(discord.abc.Messageable, "webhook_send"):
             default_webhook_send = copy(discord.abc.Messageable.webhook_send)
@@ -104,21 +114,21 @@ class OnSend(commands.Cog):
             self.bot.dispatch("edited", message, args, kwargs)
             return message
 
-        async def new_webhook_message_edit(webhook, *args, **kwargs):
-            args, kwargs = await self._run_event(
-                "on_webhook_message_edit", webhook, *args, **kwargs)
-            return await default_webhook_edit_message(webhook, *args, **kwargs)
-
-        async def new_interaction_response(ir, *args, **kwargs):
-            args, kwargs = await self._run_event(
-                "on_interaction_response", ir, *args, **kwargs
-            )
-            return await default_interaction_response(ir, *args, **kwargs)
+        discord.Webhook.edit_message = self.wrap_send(
+            discord.Webhook.edit_message, "on_webhook_message_edit"
+        )
+        discord.InteractionResponse.send_message = self.wrap_send(
+            discord.InteractionResponse.send_message, "on_send"
+        )
+        discord.InteractionResponse.edit_message = self.wrap_send(
+            discord.InteractionResponse.edit_message, "on_edit"
+        )
+        discord.Interaction.edit_original_message = self.wrap_send(
+            discord.Interaction.edit_original_message, "on_edit"
+        )
 
         discord.abc.Messageable.send = new_send
         discord.Message.edit = new_edit
-        discord.Webhook.edit_message = new_webhook_message_edit
-        discord.InteractionResponse.send_message = new_interaction_response
         if default_webhook_send:
             discord.abc.Messageable.webhook_send = new_webhook_send
 

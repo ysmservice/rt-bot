@@ -5,7 +5,7 @@ import discord
 import asyncio
 
 from .classes import MusicRawData, UploaderData
-from .youtube import BEFORE_OPTIONS
+from .youtube import BEFORE_OPTIONS, OPTIONS
 from .music import MusicData
 
 
@@ -21,7 +21,8 @@ async def get_music(
         return discord.PCMVolumeTransformer(
             discord.FFmpegPCMAudio(
                 await nico.get_download_link(),
-                before_options=BEFORE_OPTIONS
+                before_options=BEFORE_OPTIONS,
+                options=OPTIONS
             )
         ), nico.close
 
