@@ -1,5 +1,7 @@
 # RT.cogs.music.cogs - ニコニコ動画 ... ニコニコ動画のAudioSourceを取得するためのモジュールです。
 
+from typing import TYPE_CHECKING
+
 from niconico_dl import NicoNicoVideoAsync
 import discord
 import asyncio

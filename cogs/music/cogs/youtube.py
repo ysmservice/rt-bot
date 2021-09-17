@@ -21,6 +21,7 @@ DOWNLOAD_OPTIONS = {
     "default_search": "auto",
     "logtostderr": False,
     "cachedir": False,
+    "ignoreerrors": True,
     "source_address": "0.0.0.0"
 }
 FLAT_OPTIONS = {

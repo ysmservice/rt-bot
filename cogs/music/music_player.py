@@ -8,6 +8,7 @@ import discord
 from random import shuffle
 
 from .cogs.music import MusicData
+from .cogs import make_get_source
 
 
 class MusicPlayer:
@@ -24,6 +25,7 @@ class MusicPlayer:
         self._loop: bool = False
 
     def add_queue(self, music: MusicData) -> None:
+        music._make_get_source = make_get_source
         if self.length == self.MAX:
             raise OverflowError("追加しすぎです。")
         else:

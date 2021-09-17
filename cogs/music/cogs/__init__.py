@@ -2,6 +2,7 @@
 
 from typing import Union, Optional, List
 
+from asyncio import get_running_loop
 from aiohttp import ClientSession
 import discord
 import asyncio
@@ -34,3 +35,15 @@ async def get_music(
         return await youtube.get_playlist(
             f"ytsearch{search_max_result}:{url}", author, loop, **kwargs
         )
+
+
+async def make_get_source(url: str, author: discord.Member):
+    loop = get_running_loop()
+    if "nico" in url:
+        return (
+            await niconico.get_music(
+                url, author, loop
+            )
+        )._get_source
+    else:
+        return youtube._make_get_source(loop, url)

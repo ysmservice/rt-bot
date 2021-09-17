@@ -78,6 +78,8 @@ class SlashCommand(commands.Cog):
                         return False
                 elif former[key] != latter.get(key, defaults.get(key, None)):
                     return False
+                elif key not in latter and key not in defaults:
+                    return False
         return True
 
     def _get_data_from_command(
@@ -223,7 +225,7 @@ class SlashCommand(commands.Cog):
         )
 
     @commands.Cog.listener()
-    async def on_ready(self, command=None):
+    async def on_full_ready(self, command=None):
         # 既に登録されているスラッシュコマンドを取得する。
         await self._update_now_commands()
         # Botに登録されているコマンドをすべて取得する。

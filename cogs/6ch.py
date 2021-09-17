@@ -29,7 +29,7 @@ class SixChannel(commands.Cog):
 
     async def save(self, path, data, indent):
         async with async_open(path, "w") as f:
-            await f.write(dumps(data), indent=indent)
+            await f.write(dumps(data, indent=indent))
 
     @commands.group(
         name="6ch", aliases=["ch"], extras={

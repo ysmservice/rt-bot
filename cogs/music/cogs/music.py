@@ -1,6 +1,6 @@
 # RT.music.cogs - Music ... 音楽のデータをまとめるためのクラスのモジュールです。
 
-from typing import Optional, Type
+from typing import TYPE_CHECKING, Optional, Type, Literal
 
 from time import time
 from copy import copy
@@ -9,10 +9,17 @@ import discord
 from .classes import (
     MusicRawData, UploaderData, GetSource, MusicRawDataForJson
 )
+if TYPE_CHECKING:
+    from .__init__ import make_get_source
+else:
+    make_get_source = None
 
 
 class MusicData:
-    def __init__(self, music: MusicRawData, author: discord.Member):
+    def __init__(
+        self, music: MusicRawData, author: discord.Member,
+        make_get_source: Literal[make_get_source, None] = None
+    ):
         self.url: str = music["url"]
         self.title: str = music["title"]
         self.uploader: UploaderData = music["uploader"]
@@ -27,6 +34,7 @@ class MusicData:
 
         self.start: int = 0
         self._stop = 0
+        self._make_get_source: Literal[make_get_source, None] = make_get_source
 
     def to_dict(self) -> MusicRawDataForJson:
         # JSON形式で保存可能な辞書で音楽データを取得します。
@@ -44,6 +52,14 @@ class MusicData:
 
     async def get_source(self) -> Type[discord.FFmpegPCMAudio]:
         # AudioSourceを取得する関数です。
+
+        if self._get_source is None:
+            # プレイリストから追加された音楽の場合はget_sourceがないので取得する。
+            self._get_source = await self._make_get_source(
+                self.url, self.author
+            )
+
+        # AudioSourceを作る。
         source, self._close = await self._get_source()
         return source
 

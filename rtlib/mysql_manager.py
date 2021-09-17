@@ -132,7 +132,10 @@ class Cursor:
             )
         return conditions, args
 
-    async def insert_data(self, table: str, values: Dict[str, Any], commit: bool = True) -> None:
+    async def insert_data(
+        self, table: str, values: Dict[str, Any],
+        commit: bool = True, json: bool = False
+    ) -> None:
         """特定のテーブルにデータを追加します。  
 
         Paremeters
@@ -151,17 +154,22 @@ class Cursor:
         async with db.get_cursor() as cursor:
             values = {"name": "Takkun", "data": {"detail": "愉快"}}
             await cursor.post_data("tasuren_friends", values)"""
-        conditions, args = self._get_column_args(values, "{}, ")
+        conditions, args = self._get_column_args(
+            values, "{}, ", json_dump=True
+        )
         query = ("%s, " * len(args))[:-2]
         await self.cursor.execute(
             f"INSERT INTO {table} ({conditions[:-2]}) VALUES ({query})",
-            [ujson.dumps(arg) if isinstance(arg, dict) else arg for arg in args]
+            args
         )
         if commit:
             await self.connection.commit()
 
-    async def update_data(self, table: str, values: Dict[str, Any],
-                          targets: Dict[str, Any], commit: bool = True) -> None:
+    async def update_data(
+        self, table: str, values: Dict[str, Any],
+        targets: Dict[str, Any], commit: bool = True,
+        json: bool = False
+    ) -> None:
         """特定のテーブルの特定のデータを更新します。
 
         Parameters
@@ -174,8 +182,12 @@ class Cursor:
             更新するデータの条件です。
         commit : bool, default True
             更新後に自動で`MySQLManager.commit`を実行するかどうかです。"""
-        values, values_args = self._get_column_args(values, "{} = %s, ", True)
-        conditions, conditions_args = self._get_column_args(targets)
+        values, values_args = self._get_column_args(
+            values, "{} = %s, ", True
+        )
+        conditions, conditions_args = self._get_column_args(
+            targets, json_dump=True
+        )
         await self.cursor.execute(
             f"UPDATE {table} SET {values[:-2]} WHERE {conditions[:-4]}",
             values_args + conditions_args
@@ -183,7 +195,7 @@ class Cursor:
         if commit:
             await self.connection.commit()
 
-    async def exists(self, table: str, targets: Dict[str, Any]) -> bool:
+    async def exists(self, table: str, targets: Dict[str, Any], json: bool = False) -> bool:
         """特定のテーブルに特定のデータが存在しているかどうかを確認します。
 
         Parameters
@@ -197,9 +209,12 @@ class Cursor:
         -------
         exists : bool
             存在しているならTrue、存在しないならFalseです。"""
-        return bool(await self.get_data(table, targets))
+        return bool(await self.get_data(table, targets, json=json))
 
-    async def delete(self, table: str, targets: Dict[str, Any], commit: bool = True) -> None:
+    async def delete(
+        self, table: str, targets: Dict[str, Any], commit: bool = True,
+        json: bool = False
+    ) -> None:
         """特定のテーブルにある特定のデータを削除します。
 
         Parameters
@@ -210,7 +225,7 @@ class Cursor:
             削除するデータの条件です。
         commit : bool, default True
             削除後に自動で`MySQLManager.commit`を実行するかどうかです。"""
-        conditions, args = self._get_column_args(targets)
+        conditions, args = self._get_column_args(targets, json_dump=True)
         await self.cursor.execute(
             f"DELETE FROM {table} WHERE {conditions[:-4]}",
             args
@@ -218,8 +233,11 @@ class Cursor:
         if commit:
             await self.connection.commit()
 
-    async def get_datas(self, table: str, targets: Dict[str, Any],
-                        _fetchall: bool = True, custom: str = "") -> list:
+    async def get_datas(
+        self, table: str, targets: Dict[str, Any],
+        _fetchall: bool = True, custom: str = "",
+        json: bool = False
+    ) -> list:
         """特定のテーブルにある特定の条件のデータを取得します。  
         見つからない場合は空である`[]`が返されます。  
         ジェネレーターです。
@@ -243,7 +261,9 @@ class Cursor:
         -----
         もし条件関係なく全てを取得したい場合は引数の`targets`を空である`{}`にしましょう。"""
         if targets:
-            conditions, args = self._get_column_args(targets, json_dump=True)
+            conditions, args = self._get_column_args(
+                targets, json_dump=True
+            )
             conditions = " WHERE " + conditions[:-4]
         else:
             conditions, args = "", ()
@@ -276,7 +296,7 @@ class Cursor:
         else:
             yield []
 
-    async def get_data(self, table: str, targets: Dict[str, Any]) -> list:
+    async def get_data(self, table: str, targets: Dict[str, Any], json: bool = False) -> list:
         """一つだけデータを取得します。  
         引数は`Cursor.get_datas`と同じです。
 
@@ -290,7 +310,7 @@ class Cursor:
                 # -> "Takkun"
                 print(row[-1])
                 # -> {"detail": "愉快"} (辞書データ)"""
-        return [row async for row in self.get_datas(table, targets, _fetchall=False)][0]
+        return [row async for row in self.get_datas(table, targets, _fetchall=False, json=json)][0]
 
 
 class MySQLManager:

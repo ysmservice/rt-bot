@@ -9,7 +9,9 @@ from rtlib.slash import Option
 from rtlib import componesy
 from functools import wraps
 
-from .views import QueuesView, PlaylistView, AddToPlaylist
+from .views import (
+    QueuesView, PlaylistView, AddToPlaylist, PlaylistSelect
+)
 from .music_player import MusicPlayer
 from .data_manager import DataManager
 from .cogs import get_music
@@ -67,11 +69,13 @@ class MusicNormal(commands.Cog, DataManager):
         view = easy.View("NowPlayingView")
 
         async def on_addto_playlist(_, __, interaction):
-            playlists = await self.get_playlists(interaction.user.id)
+            playlists = await self.get_playlists(
+                interaction.user.id
+            )
             if playlists:
                 await interaction.response.send_message(
                     "どのプレイリストに曲を追加しますか？", ephemeral=True,
-                    view=AddToPlaylist(self, interaction.user, musics, playlists)
+                    view=AddToPlaylist(self, musics, playlists)
                 )
             else:
                 await interaction.response.send_message(
@@ -113,11 +117,17 @@ class MusicNormal(commands.Cog, DataManager):
                 self.now[ctx.guild.id] = MusicPlayer(self, ctx.guild)
             else:
                 return await ctx.reply(
-                    {"ja": "先にボイスチャンネルに接続してください。",
-                     "en": "You must connect to voice channel."}
+                    content={
+                        "ja": "先にボイスチャンネルに接続してください。",
+                        "en": "You must connect to voice channel."
+                    }
                 )
 
+        # もしdatasを指定されないなら音楽を取得する。
+        # datasがしていされるというのはプレイリストから再生する際に呼ばれるから。
+        i = 0
         if datas is None:
+            # 入力中を表示する。
             if hasattr(ctx, "interaction"):
                 kwargs = {"content": self.NOW_LOADING}
                 if hasattr(ctx, "selected"):
@@ -132,28 +142,26 @@ class MusicNormal(commands.Cog, DataManager):
                 song, ctx.author, self.bot.loop, client=self.bot.session
             )
 
-        if isinstance(datas, list):
-            i = 0
-
-            if not song.startswith(("https://", "http://")):
-                # もし検索の場合はユーザーに何の曲を再生するか聞く。
-                view = componesy.View("SongSelect")
-                view.add_item(
-                    discord.ui.Select, self.search_result_select, placeholder="曲の選択",
-                    options=[
-                        discord.SelectOption(
-                            label=data.title, value=data.url, description=data.url
-                        )
-                        for data in datas
-                    ]
-                )
-                return await ctx.reply(
-                    content="以下の音楽が見つかりました。何を再生するか選んでください。",
-                    view=view()
-                )
-        else:
-            i = 1
-            datas = [datas]
+            if isinstance(datas, list):
+                if not song.startswith(("https://", "http://")):
+                    # もし検索の場合はユーザーに何の曲を再生するか聞く。
+                    view = componesy.View("SongSelect")
+                    view.add_item(
+                        discord.ui.Select, self.search_result_select, placeholder="曲の選択",
+                        options=[
+                            discord.SelectOption(
+                                label=data.title, value=data.url, description=data.url
+                            )
+                            for data in datas
+                        ]
+                    )
+                    return await ctx.reply(
+                        content="以下の音楽が見つかりました。何を再生するか選んでください。",
+                        view=view()
+                    )
+            else:
+                i = 1
+                datas = [datas]
 
         # キューに音楽を追加する。
         ext = ("", "")
@@ -171,8 +179,8 @@ class MusicNormal(commands.Cog, DataManager):
 
         if i > 1:
             added = (
-                "また再生リストにあった曲をキューに追加しました。",
-                "And I added musics to queue from playlist."
+                "またいくつかの曲をキューに追加しました。",
+                "And I added musics to queue."
             )
         else:
             added = ("", "")
@@ -188,11 +196,11 @@ class MusicNormal(commands.Cog, DataManager):
                 view=self.make_npview(datas[:1])
             )
         else:
-            length = f" Now:{i - 1}"
+            length = f" Now:{self.now[ctx.guild.id].length}"
             await ctx.reply(
                 content={
-                    "ja": "➕ キューに追加しました。" + length + ext[0],
-                    "en": "➕ Added to queues." + length + ext[1]
+                    "ja": "💽 キューに追加しました。" + length + ext[0],
+                    "en": "💽 Added to queues." + length + ext[1]
                 }
             )
 
@@ -219,7 +227,7 @@ class MusicNormal(commands.Cog, DataManager):
         if (embed := self.now[ctx.guild.id].embed()):
             await ctx.reply(
                 embed=embed, view=self.make_npview(
-                    self.now[ctx.guid.id].queues[:1]
+                    self.now[ctx.guild.id].queues[:1]
                 )
             )
         else:
@@ -254,7 +262,7 @@ class MusicNormal(commands.Cog, DataManager):
         if self.now[ctx.guild.id].length > 1:
             view = QueuesView(self.now[ctx.guild.id], ctx.author, "queues")
             await ctx.reply(
-                embed=view.make_embed(),
+                embed=view.make_embed(self.bot.colors["queue"]),
                 view=view
             )
         else:
@@ -281,12 +289,15 @@ class MusicNormal(commands.Cog, DataManager):
     @require_dj
     async def clear(self, ctx):
         self.now[ctx.guild.id].clear()
-        await ctx.reply("Ok!")
+        await ctx.reply(
+            {"ja": "🌀 キューを全て削除しました。",
+             "en": "🌀 Cleared!"}
+        )
 
     @commands.group(slash_command=True, description="プレイリスト")
     async def playlist(self, ctx):
         if not ctx.invoked_subcommand:
-            await ctx.reply("使用方法が違います。")
+            await self.show(ctx)
 
     @playlist.command(
         description="プレイリストにある曲を表示します。また削除、キューへの追加も可能です。"
@@ -330,42 +341,102 @@ class MusicNormal(commands.Cog, DataManager):
         else:
             await ctx.reply("Ok")
 
+    DONT_HAVE_PLAYLIST = {
+        "ja": "プレイリストがないので追加できません。",
+        "en": "You must have a playlist."
+    }
+
     @playlist.command(description="プレイリストに曲を追加します。")
     async def add(
-        self, ctx, name: Option(str, "name", "追加先のプレイリストの名前です。"), *,
-        url: Option(str, "url", "追加する曲のURLです。")
-    ):
-        if not url.startswith(("https://", "http://")):
-            return await ctx.reply(
-                {"ja": "URLである必要があります。",
-                 "en": "Is it url?"}
-            )
-
-        if hasattr(ctx, "interaction"):
-            await ctx.reply(self.NOW_LOADING)
-            ctx.reply = ctx.interaction.edit_original_message
-        else:
-            await ctx.trigger_typing()
-
-        datas = await get_music(
-            url, ctx.author, self.bot.loop, client=self.bot.session
+        self, ctx, *, url: Option(
+            str, "url", "追加する曲のURLです。"
         )
-        if not isinstance(datas, list):
-            datas = [datas]
-
-        for data in datas:
-            try:
-                await self.write_playlist(
-                    ctx.author.id, name, data.to_dict()
-                )
-            except ValueError:
+    ):
+        # プレイリストを取得する。
+        if (playlists := await self.get_playlists(ctx.author.id)):
+            # URLチェックをする。
+            if not url.startswith(("https://", "http://")):
                 return await ctx.reply(
-                    content={
-                        "ja": "そのプレイリストが見つかりませんでした。",
-                        "en": "The playlist is not found."
-                    }
+                    {"ja": "URLである必要があります。",
+                     "en": "Is it url?"}
                 )
-        await ctx.reply(content="Ok")
+
+            # 入力中または検索中を表示する。
+            if hasattr(ctx, "interaction"):
+                await ctx.reply(self.NOW_LOADING)
+                ctx.reply = ctx.interaction.edit_original_message
+            else:
+                await ctx.trigger_typing()
+
+            # 音楽を取得する。
+            datas = await get_music(
+                url, ctx.author, self.bot.loop, client=self.bot.session
+            )
+            if not isinstance(datas, list):
+                datas = [datas]
+
+            await ctx.reply(
+                content={
+                    "ja": "どのプレイリストに追加しますか？",
+                    "en": "To which playlist do you want to add?"
+                },
+                view=AddToPlaylist(self, datas, playlists)
+            )
+        else:
+            await ctx.reply(self.DONT_HAVE_PLAYLIST)
+
+    @playlist.command("play", description="プレイリストから音楽を再生します。")
+    @commands.cooldown(1, 15, commands.BucketType.user)
+    async def play_(self, ctx):
+        if (playlists := await self.get_playlists(ctx.author.id)):
+
+            async def play_from_list(select, interaction):
+                if interaction.user.id == ctx.author.id:
+                    await interaction.response.edit_message(
+                        content=self.NOW_LOADING, view=None
+                    )
+                    ctx.author = interaction.user
+                    ctx.interaction = interaction
+                    ctx.reply = interaction.edit_original_message
+                    await self.play(
+                        ctx, song="",
+                        datas=PlaylistSelect.make_music_data_from_playlist(
+                            (
+                                await self.read_playlists(
+                                    interaction.user.id, select.values[0]
+                                )
+                            )[select.values[0]], ctx.author
+                        )
+                    )
+                else:
+                    await interaction.response.send_message(
+                        content={
+                            "ja": "あなたはこのプレイリストの所有者ではありません。",
+                            "en": "You do not own this playlist."
+                        }
+                    )
+
+            view = easy.View("PlayMusicFromPlaylist")
+            view.add_item(
+                discord.ui.Select, play_from_list,
+                options=[
+                    discord.SelectOption(label=name, value=name)
+                    for name in playlists
+                ]
+            )
+            await ctx.reply(
+                {"ja": "プレイリストを選択してください。",
+                 "en": "Please select a playlist."},
+                view=view
+            )
+        else:
+            await ctx.reply(self.DONT_HAVE_PLAYLIST)
+
+    def cog_unload(self):
+        for guild_id in self.now:
+            self.now[guild_id].queues = self.now[guild_id].queues[:1]
+            self.now[guild_id].stop()
+            self.bot.loop.create_task(self.now[guild_id].vc.disconnect())
 
 
 def setup(bot):

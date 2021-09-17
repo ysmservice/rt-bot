@@ -168,7 +168,7 @@ class Log(commands.Cog):
         embed = discord.Embed(title="ユーザーのBAN解除", color=self.c)
         embed.add_field(name="BAN解除されたユーザー名", value=user)
         embed.add_field(name="BAN解除されたユーザーID", value=user.id)
-        embed.set_thumbnail(url=user.avatar.url)
+        embed.set_thumbnail(url=getattr(user.avatar, "url", ""))
         return embed
 
     @commands.Cog.listener()
