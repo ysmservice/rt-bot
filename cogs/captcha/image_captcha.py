@@ -2,7 +2,7 @@
 
 from jishaku.functools import executor_function
 from captcha.image import ImageCaptcha
-from typing import Type, Dict, Tuple
+from typing import Optional, Type, Dict, Tuple
 from aiofiles.os import remove
 from random import randint
 from os import listdir
@@ -17,9 +17,9 @@ class ImageCaptcha(ImageCaptcha):
     PASSWORD_LENGTH = 5
 
     def __init__(
-            self, captcha_cog,
-            font_path: str = "data/captcha/SourceHanSans-Normal.otf"
-            ):
+        self, captcha_cog,
+        font_path: str = "data/captcha/SourceHanSans-Normal.otf"
+    ):
         self.cog = captcha_cog
         super().__init__(fonts=[font_path])
         self.queue: Dict[str, Tuple[str, float]] = {}
@@ -28,11 +28,15 @@ class ImageCaptcha(ImageCaptcha):
 
     @executor_function
     def create_image(
-            self, path: str, characters: str = "".join(
+        self, path: str, characters: Optional[str] = None
+    ) -> str:
+        self.write(
+            "".join(
                 str(randint(0, 9))
-                for _ in range(PASSWORD_LENGTH))
-            ) -> str:
-        self.write(characters, path)
+                for _ in range(self.PASSWORD_LENGTH)
+            ) if characters is None else characters,
+            path
+        )
         return characters
 
     async def captcha(self, channel: discord.TextChannel,
