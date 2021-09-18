@@ -76,7 +76,10 @@ class MusicListView(discord.ui.View):
     ):
         if interaction.user.id == self.target.id:
             before = self.page
-            self.page = self.page + (1 if mode == "right" else -1)
+            if mode.endswith("skip"):
+                self.page = 0 if mode.startswith("left") else len(self.now_queues) - 1
+            else:
+                self.page = self.page + (1 if mode == "right" else -1)
             try:
                 if self.page == -1:
                     raise IndexError("範囲外")
@@ -99,6 +102,10 @@ class MusicListView(discord.ui.View):
                     embed=embed, view=self
                 )
 
+    @discord.ui.button(emoji="⏮️")
+    async def left(self, button, interaction):
+        await self.on_button("left_skip", button, interaction)
+
     @discord.ui.button(emoji="◀️")
     async def left(self, button, interaction):
         await self.on_button("left", button, interaction)
@@ -106,6 +113,10 @@ class MusicListView(discord.ui.View):
     @discord.ui.button(emoji="▶️")
     async def right(self, button,interaction):
         await self.on_button("right", button, interaction)
+
+    @discord.ui.button(emoji="⏭️")
+    async def right(self, button,interaction):
+        await self.on_button("right_skip", button, interaction)
 
     async def on_update(self):
         ...
@@ -139,7 +150,7 @@ class MusicSelect(discord.ui.Select):
 
         length = len(queues)
         kwargs["options"] = make_options(queues)
-        kwargs["max_values"] = max_ if length > max_ else length
+        kwargs["max_values"] = max_ if length >= max_ else length
 
         super().__init__(**kwargs)
 
@@ -156,8 +167,7 @@ class QueueSelectForDelete(MusicSelect):
                 content={
                     "ja": "キューを削除しました。",
                     "en": "Removed queue."
-                },
-                embed=None, view=None
+                }, embed=None, view=None
             )
         else:
             await interaction.respone.send_message(
@@ -177,8 +187,7 @@ class QueueSelectForAddToPlaylist(MusicSelect):
                 content={
                     "ja": "どのプレイリストに追加するか選択してください。",
                     "en": "Please select the playlist."
-                }, ephemeral=True,
-                view=AddToPlaylist(
+                }, ephemeral=True, view=AddToPlaylist(
                     self.cog, self.view.now_queues, playlists
                 )
             )
