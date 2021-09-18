@@ -95,16 +95,18 @@ class Help(commands.Cog):
                 int(interaction.message.content
                     .replace("<@", "").replace(">", "").replace("!", ""))
             )
-        elif interaction.message.reference.cached_message:
+        elif interaction.message.reference:
             user = interaction.message.reference.cached_message.author
         else:
-            return await interaction.response.send_message(
-                "メッセージが古すぎるため操作を行うことができませんでした。")
+            user = interaction.user
+
         if (select.values and select.values[0] != "None" and user
                 and user.id == interaction.user.id):
             # 選択されたものを引数としてdhelpのコマンドを実行する。
-            await self.dhelp(ctx, word=select.values[0],
-                             interaction=interaction)
+            await self.dhelp(
+                ctx, word=select.values[0],
+                interaction=interaction
+            )
 
     def get_view_args(self, lang, category):
         # 作るViewのデータを取得するための関数です。
@@ -185,7 +187,7 @@ class Help(commands.Cog):
                 title="Help - カテゴリー選択",
                 description=(
                     "カテゴリーを選択するとそのカテゴリーにあるコマンドが表示されます。\nまたこちらからも見れます："
-                    "http://0.0.0.0" if self.bot.test else "https://rt-bot.com/help.html"
+                    + ("http://0.0.0.0" if self.bot.test else "https://rt-bot.com/help.html")
                 ),
                 color=self.bot.colors["normal"]
             )
