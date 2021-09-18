@@ -77,7 +77,7 @@ class MusicListView(discord.ui.View):
         if interaction.user.id == self.target.id:
             before = self.page
             if mode.endswith("skip"):
-                self.page = 0 if mode.startswith("left") else len(self.now_queues) - 1
+                self.page = 0 if mode.startswith("left") else len(self.queues) - 1
             else:
                 self.page = self.page + (1 if mode == "right" else -1)
             try:
@@ -103,7 +103,7 @@ class MusicListView(discord.ui.View):
                 )
 
     @discord.ui.button(emoji="⏮️")
-    async def left(self, button, interaction):
+    async def left_skip(self, button, interaction):
         await self.on_button("left_skip", button, interaction)
 
     @discord.ui.button(emoji="◀️")
@@ -115,7 +115,7 @@ class MusicListView(discord.ui.View):
         await self.on_button("right", button, interaction)
 
     @discord.ui.button(emoji="⏭️")
-    async def right(self, button,interaction):
+    async def right_skip(self, button,interaction):
         await self.on_button("right_skip", button, interaction)
 
     async def on_update(self):
