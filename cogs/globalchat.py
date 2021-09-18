@@ -226,15 +226,18 @@ class GlobalChat(commands.Cog, DataManager):
         -------
         cong"""
         if await self.exists_globalchat(name):
-            rows = await self.load_globalchat_channels(name)
-            extras = rows[0][-1]
-            try:
-                await ctx.channel.edit(topic="RT-GlobalChat")
-            except discord.Forbidden:
-                await ctx.reply("権限がないのでチャンネルの編集に失敗しました。")
+            if ctx.channel.topic and "RT-GlobalChat" in ctx.channel.topic:
+                await ctx.reply("既に接続しています。")
             else:
-                await self.connect_globalchat(name, ctx.channel.id, extras)
-                await ctx.reply("Ok")
+                rows = await self.load_globalchat_channels(name)
+                extras = rows[0][-1]
+                try:
+                    await ctx.channel.edit(topic="RT-GlobalChat")
+                except discord.Forbidden:
+                    await ctx.reply("権限がないのでチャンネルの編集に失敗しました。")
+                else:
+                    await self.connect_globalchat(name, ctx.channel.id, extras)
+                    await ctx.reply("Ok")
         else:
             await ctx.reply(
                 {"ja": "そのグローバルチャットはありません。",
