@@ -66,7 +66,7 @@ class MusicListView(discord.ui.View):
             color=discord.Embed.Empty if color is None else color
         )
         embed.set_footer(
-            text=f"Pages {self.page}/{self.length} | {self.music_count} songs"
+            text=f"Pages {self.page + 1}/{self.length} | {self.music_count} songs"
         )
         return embed
 
