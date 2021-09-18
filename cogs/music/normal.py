@@ -856,16 +856,19 @@ class MusicNormal(commands.Cog, DataManager):
                     ctx.author = interaction.user
                     ctx.interaction = interaction
                     ctx.reply = interaction.edit_original_message
-                    await self.play(
-                        ctx, song="",
-                        datas=PlaylistSelect.make_music_data_from_playlist(
-                            (
-                                await self.read_playlists(
-                                    interaction.user.id, select.values[0]
-                                )
-                            )[select.values[0]], ctx.author
+                    try:
+                        await self.play(
+                            ctx, song="",
+                            datas=PlaylistSelect.make_music_data_from_playlist(
+                                (
+                                    await self.read_playlists(
+                                        interaction.user.id, select.values[0]
+                                    )
+                                )[select.values[0]], ctx.author
+                            )
                         )
-                    )
+                    except Exception as e:
+                        await ctx.reply(f"何かエラーが起きました。\n`{e}`")
                 else:
                     await interaction.response.send_message(
                         content={

@@ -42,7 +42,7 @@ class ChannelPluginGeneral(commands.Cog):
     async def on_command_added(self):
         for lang in HELPS:
             self.bot.cogs["DocHelp"].add_help(
-                "ChannelPlugin", "ChannelPlugin",
+                "ChannelPlugin", "ChannelPluginGeneral",
                 lang, HELPS[lang][0], HELPS[lang][1]
             )
 
