@@ -29,6 +29,7 @@ class MusicPlayer:
         self.length: int = 0
         self._loop: bool = False
         self.before: float = 0
+        self.first: bool = False
 
     def add_queue(self, music: MusicData) -> None:
         music._make_get_source = make_get_source
@@ -72,6 +73,7 @@ class MusicPlayer:
             queue = self.queues[0]
             queue.started()
             self.before = 0
+            self.first = False
             try:
                 self.voice_client.play(
                     await queue.get_source(),

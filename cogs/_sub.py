@@ -1,31 +1,57 @@
 # RT Chan - Info
 
-from discord import commands
+from discord.ext import commands
 import discord
 
 
+INVITE_URL = "https://discord.com/api/oauth2/authorize?client_id=888635684552863774&permissions=172339022401&scope=bot%20applications.commands"
+DESCRIPTION = f"""[Discordã®å¤šæ©Ÿèƒ½Botã§ã‚ã‚‹RT](https://rt-bot.com/)ã®éŸ³æ¥½å†ç”Ÿã¨èª­ã¿ä¸Šã’ã ã‘ä½¿ãˆã‚‹ã‚ˆã†ã«ã—ãŸã‚µãƒ–Botã®ã‚Šã¤ã ã‚ˆï¼
+å¤šæ©Ÿèƒ½Botã®RTã¯éŸ³æ¥½å†ç”Ÿã‚„èª­ã¿ä¸Šã’ã®ä»–ã«ã‚‚ã‚µãƒ¼ãƒãƒ¼ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ã‚„ã„ã¤ã‚‚ä¸‹ã«æ¥ã‚‹ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ãªã©æ§˜ã€…ãªæ©Ÿèƒ½ãŒã‚ã‚‹ã‚ˆï¼
+ã‚‚ã—èˆˆå‘³ãŒã‚ã‚‹ãªã‚‰[ã“ã“](https://rt-bot.com)ã«ãã¦æ‹›å¾…ã—ãŸã‚Šã‚µãƒãƒ¼ãƒˆã‚µãƒ¼ãƒãƒ¼ã«è¡Œã£ã¦ã¿ã‚ˆã†ï¼
+ç§ã¯ãã®RTã«ã‚ã‚‹éŸ³æ¥½å†ç”Ÿã¨èª­ã¿ä¸Šã’ã‚’åŒæ™‚ã«ä½¿ç”¨ã—ãŸã„ã¨ã„ã†äººã®ãŸã‚ã«ç”Ÿã¾ã‚ŒãŸã‚ˆã€‚
+ç§ã‚’ã‚µãƒ¼ãƒãƒ¼ã«æ‹›å¾…ã—ãŸã„äººã¯[ã“ã“]({INVITE_URL})ã‚’ã‚¯ãƒªãƒƒã‚¯ï¼"""
+
+
 class Info(commands.Cog):
-
-    INVITE_URL = "https://discord.com/api/oauth2/authorize?client_id=888635684552863774&permissions=172339022401&scope=bot%20applications.commands"
-
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(slash_command=True, aliases=["info", "about"])
+    @commands.command(
+        slash_command=True, aliases=["info", "about", "æ‹›å¾…"],
+        description="ã‚Šã¤ãŸã‚“ã®æ‹›å¾…ãƒªãƒ³ã‚¯/æƒ…å ±ã‚’è¡¨ç¤ºã—ã¾ã™ã€‚"
+    )
     async def invite(self, ctx):
         await ctx.reply(
             embed=discord.Embed(
-                title="‚è‚Â‚¿‚á‚ñ",
-                description="""[Discord‚Ì‘½‹@”\Bot‚Å‚ ‚éRT](https://rt-bot.com/)‚Ì‰¹ŠyÄ¶‚Æ“Ç‚İã‚°‚¾‚¯g‚¦‚é‚æ‚¤‚É‚µ‚½ƒTƒuBot‚Ì‚è‚Â‚¾‚æI
-‘½‹@”\Bot‚ÌRT‚Í‰¹ŠyÄ¶‚â“Ç‚İã‚°‚Ì‘¼‚É‚àƒT[ƒo[ƒXƒe[ƒ^ƒX‚â‚¢‚Â‚à‰º‚É—ˆ‚éƒƒbƒZ[ƒW‚È‚Ç—lX‚È‹@”\‚ª‚ ‚é‚æI
-‚à‚µ‹»–¡‚ª‚ ‚é‚È‚ç[‚±‚±](https://rt-bot.com)‚É‚«‚Äµ‘Ò‚µ‚½‚èƒTƒ|[ƒgƒT[ƒo[‚És‚Á‚Ä‚İ‚æ‚¤I
-„‚Í‚»‚ÌRT‚É‚ ‚é‰¹ŠyÄ¶‚Æ“Ç‚İã‚°‚ğ“¯‚Ég—p‚µ‚½‚¢‚Æ‚¢‚¤l‚Ì‚½‚ß‚É¶‚Ü‚ê‚½‚æB
-„‚ğƒT[ƒo[‚Éµ‘Ò‚µ‚½‚¢l‚Í[‚±‚±](self.INVITE_URL)‚ğƒNƒŠƒbƒNI"""
+                title="ã‚Šã¤ãŸã‚“",
+                description=DESCRIPTION,
+                color=self.bot.colors["normal"]
             )
         )
 
-    @commands.command(slash_command=True, aliases=["h"])
+    @commands.command(
+        slash_command=True, aliases=["h", "ã¸ã‚‹ã·", "ãƒ˜ãƒ«ãƒ—"],
+        description="ã‚Šã¤ãŸã‚“ã®æ“ä½œæ–¹æ³•ã‚’è¡¨ç¤ºã—ã¾ã™ã€‚"
+    )
     async def help(self, ctx):
         await ctx.reply(
-            "‰¹ŠyÄ¶‚Ìƒwƒ‹ƒvFhttps://rt-bot.com/help.html?g=music\n“Ç‚İã‚°‚Ìƒwƒ‹ƒvFhttps://rt-bot.com/help.html?g=entertainment&c=tts\n‚±‚ÌBot‚É‚Â‚¢‚Ä/µ‘ÒƒŠƒ“ƒNF`rt#info`"
+            ("éŸ³æ¥½å†ç”Ÿã®ãƒ˜ãƒ«ãƒ—ï¼šhttps://rt-bot.com/help.html?g=music\n"
+             "èª­ã¿ä¸Šã’ã®ãƒ˜ãƒ«ãƒ—ï¼šhttps://rt-bot.com/help.html?g=entertainment&c=tts\n"
+             "ã“ã®Botã«ã¤ã„ã¦/æ‹›å¾…ãƒªãƒ³ã‚¯ï¼š`rt#info` (åˆã‚ã¦ã®æ–¹ã¯èª­ã‚€ã®ã‚’æ¨å¥¨ã—ã¾ã™ã€‚)\n"
+             "ã“ã®Botã®ãƒ—ãƒªãƒ•ã‚£ãƒƒã‚¯ã‚¹ã¯`rt!`ã§ã¯ã‚ã‚Šã¾ã›ã‚“ï¼\nä¸Šã®ãƒ˜ãƒ«ãƒ—ã«ã¯`rt!`ã¨ã‚ã‚Šã¾ã™ãŒãã‚Œã¯é•ã†æ–¹ã§ã™ã€‚\n"
+             "ãªãŠ`ã‚Šã¤ã¡ã‚ƒã‚“ `ã‚„`ã‚Šã¤ãŸã‚“ `ã®ãƒ—ãƒªãƒ•ã‚£ãƒƒã‚¯ã‚¹ã§ã‚‚å‘¼ã¹ã¾ã™ã€‚\n"
+             "ãã—ã¦ã‚¹ãƒ©ãƒƒã‚·ãƒ¥ã‚³ãƒãƒ³ãƒ‰ã«å¯¾å¿œã—ã¦ã„ã¾ã™ã€‚")
         )
+
+    @commands.Cog.listener()
+    async def on_full_ready(self):
+        await self.bot.change_presence(
+            activity=discord.Activity(
+                name="rt#help | å°‘å¥³çµ¶è³›ç¨¼åƒä¸­ï¼",
+                type=discord.ActivityType.watching, state="ã‚Šã¤ãŸã‚“"
+            )
+        )
+
+
+def setup(bot):
+    bot.add_cog(Info(bot))

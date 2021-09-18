@@ -891,13 +891,15 @@ class MusicNormal(commands.Cog, DataManager):
             await ctx.reply(self.DONT_HAVE_PLAYLIST)
 
     def shutdown_player(self, guild_id: int, reason: str) -> None:
-        self.now[guild_id].queues = self.now[guild_id].queues[:1]
-        self.now[guild_id].vc.stop()
+        if self.now[guild_id].voice_client.is_playing():
+            self.now[guild_id].queues = self.now[guild_id].queues[:1]
+            self.now[guild_id].voice_client.stop()
         for coro in (
-            self.now[guild_id].vc.disconnect(),
+            self.now[guild_id].voice_client.disconnect(),
             self.now[guild_id].channel.send(reason)
         ):
             self.bot.loop.create_task(coro)
+        del self.now[guild_id]
 
     def cog_unload(self):
         self.check_timeout.cancel()
@@ -912,11 +914,11 @@ class MusicNormal(commands.Cog, DataManager):
                 voice_client.guild.id, "誰もいないので音楽再生を終了します。"
             )
 
-    @tasks.loop(seconds=5)
+    @tasks.loop(seconds=30)
     async def check_timeout(self):
         # 再生していないで放置されてる場合は抜ける。
         for guild_id in self.now:
-            if self.now[guild_id].check_timeout(5):
+            if not self.now[guild_id].first and self.now[guild_id].check_timeout():
                 self.shutdown_player(
                     guild_id, "何も再生してない状態で放置されたので音楽再生を終了します。"
                 )

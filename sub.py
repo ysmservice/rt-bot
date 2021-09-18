@@ -1,100 +1,88 @@
-"""RT Backend (C) 2020 RT-Team
+"""ã‚Šã¤ãŸã‚“ï¼ (C) 2020 RT-Team
 LICENSE : ./LICENSE
 README  : ./readme.md
 """
 
-desc = r"""
-‚è‚Â‚¿‚á‚ñ - (C) 2020 RT-Team
-­—‹N“®’†..."""
+desc = """ã‚Šã¤ãŸã‚“ - (C) 2020 RT-Team
+å°‘å¥³èµ·å‹•ä¸­..."""
 print(desc)
 
 from discord.ext import commands
 import discord
 
+from aiohttp import ClientSession
 from asyncio import sleep
 from os import listdir
-from sys import argv
 import ujson
 import rtlib
 
-from data import data, is_admin
+from data import data, is_admin, RTCHAN_COLORS
 
 
-# İ’èƒtƒ@ƒCƒ‹‚Ì“Ç‚İ‚İB
 with open("token.secret", "r", encoding="utf-8_sig") as f:
     secret = ujson.load(f)
-TOKEN = secret["token"][argv[1]]
+TOKEN = secret["token"]["sub"]
 
 
-# ‚»‚Ì‘¼İ’è‚ğ‚·‚éB
-prefixes = data["prefixes"][argv[1]]
+prefixes = data["prefixes"]["sub"]
 
 
-# Backend‚ÌƒZƒbƒgƒAƒbƒv‚ğ‚·‚éB
 def setup(bot):
     bot.admins = data["admins"]
 
-    bot.session = ClientSession(loop=bot.loop)
     @bot.listen()
     async def on_close(loop):
         await bot.session.close()
         del bot.mysql
 
+    bot.mysql = bot.data["mysql"] = rtlib.mysql.MySQLManager(
+        loop=bot.loop, user=secret["mysql"]["user"],
+        password=secret["mysql"]["password"], db="mysql",
+        pool = True, minsize=1, maxsize=30, autocommit=True)
 
-    # ƒGƒNƒXƒeƒ“ƒVƒ‡ƒ“‚ğ“Ç‚İ‚ŞB
     rtlib.setup(bot)
     bot.load_extension("jishaku")
-
-    async def setting_up():
-        await sleep(3)
-        await bot.change_presence(
-            activity=discord.Game(
-                name="­—‹N“®’†..."
-            ), status=discord.Status.dnd
-        )
 
     bot._loaded = False
 
     @bot.event
     async def on_ready():
-        # cogsƒtƒHƒ‹ƒ_‚É‚ ‚éƒGƒNƒXƒeƒ“ƒVƒ‡ƒ“‚ğ“Ç‚İ‚ŞB
         if not bot._loaded:
-            for name in ("cogs.tts", "cogs.music", "cogs._sub"):
+            bot.session = ClientSession(loop=bot.loop)
+            for name in ("cogs.tts", "cogs.music", "cogs._sub", "cogs.language"):
                 bot.load_extension(name)
             bot.dispatch("full_ready")
             bot._loaded = True
+            print("å°‘å¥³çµ¶è³›ç¨¼åƒä¸­ï¼")
 
-    bot.loop.create_task(setting_up())
 
-# ƒeƒXƒg‚Í•’Ê‚ÌBackend‚ğ–{”Ô‚ÍƒVƒƒ[ƒh”ÅBackend‚ğ’è‹`‚·‚éB
 intents = discord.Intents.default()
 intents.typing = False
 intents.guild_typing = False
 intents.dm_typing = False
-intents.members = True
 args = (prefixes,)
 kwargs = {
     "help_command": None,
-    "on_init_bot": on_init,
     "intents": intents
 }
-bot = commands.Bot(command_prefix=data[])
+bot = commands.Bot(
+    command_prefix=data["prefixes"]["sub"], **kwargs
+)
 bot.test = False
 
 
-server = (eval(argv[2]) if len(argv) > 2 else True)
-
-
 bot.data = data
-bot.colors = data["colors"]
+bot.colors = RTCHAN_COLORS
 bot.is_admin = is_admin
 
 
-# jishaku‚ÌŠÇ—Ò‚©‚Ç‚¤‚©Šm”F‚·‚é‚½‚ß‚ÌƒRƒ‹[ƒ`ƒ“ŠÖ”‚ğ—pˆÓ‚·‚éB
 async def _is_owner(user):
     return bot.is_admin(user.id)
 bot.is_owner = _is_owner
 del is_admin, _is_owner
+
+
+setup(bot)
 
 
 bot.run(TOKEN)
