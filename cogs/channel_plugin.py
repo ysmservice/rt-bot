@@ -50,7 +50,7 @@ class ChannelPluginGeneral(commands.Cog):
     async def on_message(self, message):
         if isinstance(message.channel, discord.Thread):
             return
-        if not message.guild or message.author.bot:
+        if not message.guild or message.author.discriminator == "0000":
             return
 
         if message.channel.topic:
@@ -69,6 +69,7 @@ class ChannelPluginGeneral(commands.Cog):
                     # もしスポイラーワードが設定されているならそれもスポイラーにする。
                     for word in cmd.split()[1:]:
                         content = content.replace(word, f"||{word}||")
+                    # 送信し直す。
                     if message.clean_content != content or message.attachments:
                         # 送信しなおす。
                         await message.channel.webhook_send(
