@@ -22,11 +22,13 @@ DOWNLOAD_OPTIONS = {
     "logtostderr": False,
     "cachedir": False,
     "ignoreerrors": True,
-    "source_address": "0.0.0.0"
+    "source_address": "0.0.0.0",
+    "cookiefile": "data/youtube-cookies.txt"
 }
 FLAT_OPTIONS = {
     "extract_flat": True,
-    "source_address": "0.0.0.0"
+    "source_address": "0.0.0.0",
+    "cookiefile": "data/youtube-cookies.txt"
 }
 
 

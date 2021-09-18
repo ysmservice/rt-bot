@@ -1,19 +1,20 @@
-# rtlibで必要なモジュール
+# rtlib
 sanic
 jinja2
 flask-misaka
 aiofiles
 ujson
-git+https://github.com/Pycord-Development/pycord
+git+https://github.com/Rapptz/discord.py
 aiomysql
-# rtutilで必要なモジュール
+# rtutil
 ## OAuth
 reprypt
-# RT本プログラムで必要なモジュール
+# RT main
 pillow
 jishaku
 emoji
 youtube_dl
+niconico_dl
 bs4
 git+https://github.com/cod-sushi/alkana.py
 pykakasi

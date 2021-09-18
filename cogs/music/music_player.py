@@ -6,6 +6,7 @@ from discord.ext import commands
 import discord
 
 from random import shuffle
+from time import time
 
 from .cogs.music import MusicData
 from .cogs import make_get_source
@@ -15,14 +16,19 @@ class MusicPlayer:
 
     MAX = 800
 
-    def __init__(self, cog: Type[commands.Cog], guild: discord.Guild):
+    def __init__(
+        self, cog: Type[commands.Cog], guild: discord.Guild,
+        channel: discord.TextChannel
+    ):
         self.cog: Type[commands.Cog] = cog
         self.guild: discord.Guild = guild
+        self.channel: discord.TextChannel = channel
         self.voice_client: discord.VoiceClient = guild.voice_client
 
         self.queues: List[MusicData] = []
         self.length: int = 0
         self._loop: bool = False
+        self.before: float = 0
 
     def add_queue(self, music: MusicData) -> None:
         music._make_get_source = make_get_source
@@ -49,33 +55,52 @@ class MusicPlayer:
             print("Error on Music:", e)
         if not self._loop:
             self.remove_queue(0)
-        await self.play()
+
+        try:
+            await self.play()
+        except Exception as e:
+            await self.channel.send(
+                "何らかのエラーにより`{self.queues[0].title}`が再生ができませんでした。".replace(
+                    "@", "＠"
+                )
+            )
+            self.cog.bot.loop.create_task(self._after(None))
 
     async def play(self) -> bool:
         # 音楽を再生する関数です。
         if self.queues and not self.voice_client.is_playing():
             queue = self.queues[0]
             queue.started()
-            self.voice_client.play(
-                await queue.get_source(),
-                after=lambda e: self.cog.bot.loop.create_task(
-                    self._after(e)
+            self.before = 0
+            try:
+                self.voice_client.play(
+                    await queue.get_source(),
+                    after=lambda e: self.cog.bot.loop.create_task(
+                        self._after(e)
+                    )
                 )
-            )
+            except discord.ClientException:
+                return False
             return True
         return False
 
+    def clear(self) -> None:
+        self.queues = self.queues[:1]
+
     def skip(self) -> None:
         self.voice_client.stop()
+        self.before = time()
 
     def pause(self) -> bool:
         if self.voice_client.is_paused():
             self.voice_client.resume()
             queue.started()
+            self.before = 0
             return True
         else:
             self.voice_client.pause()
             queue.stopped()
+            self.before = time
             return False
 
     def loop(self) -> bool:
@@ -87,6 +112,12 @@ class MusicPlayer:
             queues = self.queues[1:]
             shuffle(queues)
             self.queues = self.queues[:1] + queues
+
+    def check_timeout(self, t: int = 300) -> bool:
+        if self.before == 0:
+            return False
+        else:
+            return time() - self.before > t
 
     EMBED_TITLE = {
         "ja": "現在再生中の音楽",

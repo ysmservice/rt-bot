@@ -84,15 +84,16 @@ class MusicListView(discord.ui.View):
                     embed = self.make_embed(
                         self.player.cog.bot.colors["queue"]
                     )
-            except IndexError:
+            except IndexError as e:
                 self.page = before
             else:
-                await self.on_update()
-
                 # Viewに登録されているセレクトにある音楽を次のページのものに交換する。
                 for child in self.children:
-                    if hasattr(child, "values"):
+                    if hasattr(child, "options"):
                         child.options = make_options(self.now_queues)
+                        child.queues = self.now_queues
+
+                await self.on_update()
 
                 await interaction.response.edit_message(
                     embed=embed, view=self
@@ -110,12 +111,17 @@ class MusicListView(discord.ui.View):
         ...
 
 
+def parse_length(text: str, max_: int = 100) -> str:
+    return text[:99] if len(text) > max_ else text
+
+
 def make_options(queues: List[MusicData]) -> List[discord.SelectOption]:
     # 音楽データからdiscord.SelectOptionのリストを作ります。
     i = -1
     return [
         discord.SelectOption(
-            label=queue.title, value=str(i), description=queue.url
+            label=parse_length(queue.title), value=str(i),
+            description=parse_length(queue.url)
         )
         for queue in queues if (i := i + 1) or True
     ]
@@ -148,16 +154,16 @@ class QueueSelectForDelete(MusicSelect):
                 )
             await interaction.response.edit_message(                    
                 content={
-                    "ja": f"{interaction.user.mention}, キューを削除しました。",
-                    "en": f"{interaction.user.mention}, Removed queue."
+                    "ja": "キューを削除しました。",
+                    "en": "Removed queue."
                 },
                 embed=None, view=None
             )
         else:
             await interaction.respone.send_message(
                 content={
-                    "ja": f"{interaction.user.mention}, 他の人がいるのでこの操作をするには`DJ`役職が必要です。",
-                    "en": f"{interaction.user.mention}, The `DJ` role is required to perform this operation as others are present."
+                    "ja": "他の人がいるのでこの操作をするには`DJ`役職が必要です。",
+                    "en": "The `DJ` role is required to perform this operation as others are present."
                 }
             )
 
@@ -173,7 +179,7 @@ class QueueSelectForAddToPlaylist(MusicSelect):
                     "en": "Please select the playlist."
                 }, ephemeral=True,
                 view=AddToPlaylist(
-                    self.cog, self.now_queues, playlists
+                    self.cog, self.view.now_queues, playlists
                 )
             )
         else:

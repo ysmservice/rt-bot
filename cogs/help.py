@@ -22,7 +22,7 @@ class Help(commands.Cog):
         "entertainment": "Entertainment",
         "individual": "Individual",
         "chplugin": "ChannelPlugin",
-        "mybot": "MyBot",
+        "music": "Music",
         "other": "Other"
     }
     CATEGORY_JA = {
@@ -33,7 +33,7 @@ class Help(commands.Cog):
         "Entertainment": "娯楽",
         "Individual": "個人",
         "ChannelPlugin": "チャンネルプラグイン",
-        "MyBot": "MyBot",
+        "Music": "音楽",
         "Other": "その他"
     }
 
@@ -138,19 +138,22 @@ class Help(commands.Cog):
         return view
 
     @commands.command(
-        name="help",
-        aliases=["h", "Help_me,_ERINNNNNN!!", "たすけて！"],
+        name="help", aliases=["h", "Help_me,_ERINNNNNN!!", "たすけて！"],
         extras={
               "headding": {"ja": "Helpを表示します。",
                            "en": "Get help."},
               "parent": "RT"
-        }
+        }, slash_command=True, description="ヘルプを表示します。"
     )
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def dhelp(self, ctx, *, word: str = None, interaction=None):
+    async def dhelp(
+        self, ctx, *, word: slash.Option(
+            str, "word", "コマンド名または検索ワードです。", required=False
+        ) = None, interaction=None
+    ):
         """!lang ja
         --------
-        コマンドの使い方が載っているヘルプを表示します。
+        コマンドの使い方が載っているヘルプを表示します。  
 
         Parameters
         ----------
@@ -173,7 +176,7 @@ class Help(commands.Cog):
             If a word that is not a command name is specified, a search will be performed."""
         self.help = self.bot.cogs["DocHelp"].data
         lang = self.bot.cogs["Language"].get(ctx.author.id)
-        edit = ctx.message.author.id == self.bot.user.id
+        edit = ctx.author.id == self.bot.user.id
         reply = True
 
         if word is None:
