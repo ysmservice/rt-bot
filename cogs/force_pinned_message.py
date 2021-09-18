@@ -112,6 +112,12 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         フィールド内容
         ```
 
+        Warnings
+        --------
+        設定後はすぐに下にこないことがあります。  
+        しばらくしても下に来ない際はメッセージを送ってみてください。  
+        これはRTがメッセージを送りすぎてAPI制限になるということを防止するために発生するものでご了承ください。
+
         !lang en
         --------
         You can create a message that always comes at the bottom.  
@@ -138,23 +144,32 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         Name:
         Gender:
         Comment:
-        ```"""
-        await ctx.trigger_typing()
-        if content.startswith(">>"):
-            content = "<" + dumps(
-                self.bot.cogs["ServerTool"].easy_embed(
-                    content, ctx.author.color
-                ).to_dict()
-            ) + ">"
-        await self.setting(
-            ctx.guild.id, ctx.channel.id, 0,
-            ctx.author.id, onoff, content
-        )
-        if not onoff and ctx.channel.id in self.queue:
-            del self.queue[ctx.channel.id]
-            if ctx.channel.id not in self.remove_queue:
-                self.remove_queue.append(ctx.channel.id)
-        await ctx.reply("Ok")
+        ```
+
+        Warnings
+        --------
+        After setting it up, it may not come down immediately.  
+        If it doesn't come down after a while, please try sending a message.  
+        Please note that this is to prevent RTs from sending too many messages, which would limit the API."""
+        if hasattr(ctx.channel, "topic"):
+            await ctx.trigger_typing()
+            if content.startswith(">>"):
+                content = "<" + dumps(
+                    self.bot.cogs["ServerTool"].easy_embed(
+                        content, ctx.author.color
+                    ).to_dict()
+                ) + ">"
+            await self.setting(
+                ctx.guild.id, ctx.channel.id, 0,
+                ctx.author.id, onoff, content
+            )
+            if not onoff and ctx.channel.id in self.queue:
+                del self.queue[ctx.channel.id]
+                if ctx.channel.id not in self.remove_queue:
+                    self.remove_queue.append(ctx.channel.id)
+            await ctx.reply("Ok")
+        else:
+            await ctx.reply("スレッドに設定することはできません。")
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -206,12 +221,8 @@ class ForcePinnedMessage(commands.Cog, DataManager):
                     avatar_url=member.avatar.url, wait=True, replace_language=False,
                     **kwargs
                 )
-            except (
-                discord.NotFound, discord.Forbidden,
-                discord.HTTPException, discord.errors.InvalidArgument
-            ) as e:
-                if self.bot.test:
-                    print("Error on ForcePinnedMessage:", e)
+            except Exception as e:
+                print("(ignore) Error on ForcePinnedMessage:", e)
 
             await self.setting(
                 message.guild.id, message.channel.id,

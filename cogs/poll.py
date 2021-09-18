@@ -99,7 +99,7 @@ class Poll(commands.Cog):
         mes = await ctx.webhook_send(
             "".join(("RT投票パネル", " (一人一票)" if only_one else "", "\n📊 [...]")),
             wait=True, embed=embed, username=ctx.author.display_name,
-            avatar_url=ctx.author.avatar.url,
+            avatar_url=getattr(ctx.author.avatar, "url", ""),
         )
         for emoji in emojis:
             try:

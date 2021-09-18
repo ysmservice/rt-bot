@@ -100,6 +100,7 @@ class DocHelp(commands.Cog):
 
     @commands.Cog.listener()
     async def on_full_ready(self):
+        self.data, self.tree, self.categories = {}, {}, {}
         for command in self.bot.commands:
             self.bot.dispatch("command_add", command)
 
