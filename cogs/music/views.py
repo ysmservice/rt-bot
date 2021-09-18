@@ -77,7 +77,7 @@ class MusicListView(discord.ui.View):
         if interaction.user.id == self.target.id:
             before = self.page
             if mode.endswith("skip"):
-                self.page = 0 if mode.startswith("left") else self.length - 14
+                self.page = 0 if mode.startswith("left") else self.length - 1
             else:
                 self.page = self.page + (1 if mode == "right" else -1)
 
