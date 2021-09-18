@@ -78,7 +78,7 @@ class SlashCommand(commands.Cog):
                         return False
                 elif former[key] != latter.get(key, defaults.get(key, None)):
                     return False
-                elif key not in latter and key not in defaults:
+                elif key not in latter:
                     return False
         return True
 

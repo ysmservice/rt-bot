@@ -78,7 +78,7 @@ def on_init(bot):
         # cogsフォルダにあるエクステンションを読み込む。
         if not bot._loaded:
             for path in listdir("cogs"):
-                if path[0] in ("#", "."):
+                if path[0] in ("#", ".", "_"):
                     continue
                 try:
                     if path.endswith(".py"):
