@@ -30,13 +30,11 @@ class ImageCaptcha(ImageCaptcha):
     def create_image(
         self, path: str, characters: Optional[str] = None
     ) -> str:
-        self.write(
-            "".join(
-                str(randint(0, 9))
-                for _ in range(self.PASSWORD_LENGTH)
-            ) if characters is None else characters,
-            path
-        )
+        characters = "".join(
+            str(randint(0, 9))
+            for _ in range(self.PASSWORD_LENGTH)
+        ) if characters is None else characters
+        self.write(characters, path)
         return characters
 
     async def captcha(self, channel: discord.TextChannel,
