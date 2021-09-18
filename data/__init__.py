@@ -34,6 +34,13 @@ data = {
 }
 
 
+RTCHAN_COLORS = {
+    "normal": 0xa6a5c4,
+    "player": 0x84b9cb,
+    "queue": 0xeebbcb
+}
+
+
 HEADERS = {
     "Access-Control-Allow-Origin": "https://rt-bot.com",
     "Access-Control-Allow-Credentials": "true"
