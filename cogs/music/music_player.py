@@ -96,12 +96,12 @@ class MusicPlayer:
     def pause(self) -> bool:
         if self.voice_client.is_paused():
             self.voice_client.resume()
-            queue.started()
+            self.queues[0].started()
             self.before = 0
             return True
         else:
             self.voice_client.pause()
-            queue.stopped()
+            self.queues[0].stopped()
             self.before = time
             return False
 
