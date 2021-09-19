@@ -187,9 +187,12 @@ class OriginalMenuMessage(commands.Cog, DataManager):
                         interaction.message.embeds[0].color, data
                     )
                 )
+            try:
                 await interaction.response.defer()
-            else:
-                await interaction.response.defer()
+            except Exception as e:
+                self.ignored_error = e
+                if self.bot.test:
+                    print("Error on original menu message:", e)
 
     @commands.Cog.listener()
     async def on_interaction(self, interaction):
