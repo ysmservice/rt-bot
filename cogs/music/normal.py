@@ -313,8 +313,10 @@ class MusicNormal(commands.Cog, DataManager):
         Aliases
         -------
         dis, leave, bye"""
-        await ctx.guild.voice_client.disconnect()
-        del self.now[ctx.guild.id]
+        if ctx.guild.voice_client:
+            await ctx.guild.voice_client.disconnect()
+        if ctx.guild.id in self.now:
+            del self.now[ctx.guild.id]
         await ctx.reply(
             {"ja": "⏹ 切断しました。",
              "en": "⏹ Disconnected!"}
@@ -868,7 +870,7 @@ class MusicNormal(commands.Cog, DataManager):
                             )
                         )
                     except Exception as e:
-                        await ctx.reply(f"何かエラーが起きました。\n`{e}`")
+                        await ctx.reply(content=f"何かエラーが起きました。\n`{e}`")
                 else:
                     await interaction.response.send_message(
                         content={
@@ -893,16 +895,26 @@ class MusicNormal(commands.Cog, DataManager):
         else:
             await ctx.reply(self.DONT_HAVE_PLAYLIST)
 
-    def shutdown_player(self, guild_id: int, reason: str) -> None:
-        if self.now[guild_id].voice_client.is_playing():
-            self.now[guild_id].queues = self.now[guild_id].queues[:1]
-            self.now[guild_id].voice_client.stop()
-        for coro in (
-            self.now[guild_id].voice_client.disconnect(),
-            self.now[guild_id].channel.send(reason)
-        ):
-            self.bot.loop.create_task(coro)
-        del self.now[guild_id]
+    async def wrap_error(self, coro):
+        try:
+            return await coro
+        except Exception as e:
+            if self.bot.test:
+                print("Error on tts:", e)
+
+    def shutdown_player(self, guild_id: int, reason: str, disconnect: bool = True) -> None:
+        if guild_id in self.now and self.now[guild_id].voice_client.is_playing():
+            self.now[guild_id].force_end = True
+            self.now[guild_id].clear()
+            if disconnect:
+                self.now[guild_id].voice_client.cleanup()
+                for coro in list(map(self.wrap_error, (
+                        self.now[guild_id].voice_client.disconnect(force=True),
+                        self.now[guild_id].channel.send(reason)
+                    )
+                )):
+                    self.bot.loop.create_task(coro)
+            del self.now[guild_id]
 
     def cog_unload(self):
         self.check_timeout.cancel()
@@ -925,6 +937,11 @@ class MusicNormal(commands.Cog, DataManager):
                 self.shutdown_player(
                     guild_id, "何も再生してない状態で放置されたので音楽再生を終了します。"
                 )
+
+    @commands.Cog.listener()
+    async def on_voice_leave(self, member, _, __):
+        # もし切断されたらプレイヤーを終了させる。
+        self.shutdown_player(member.guild.id, "")
 
 
 def setup(bot):

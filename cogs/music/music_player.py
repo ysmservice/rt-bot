@@ -30,6 +30,7 @@ class MusicPlayer:
         self._loop: bool = False
         self.before: float = 0
         self.first: bool = False
+        self.force_end: bool = False
 
     def add_queue(self, music: MusicData) -> None:
         music._make_get_source = make_get_source
@@ -57,15 +58,16 @@ class MusicPlayer:
         if not self._loop:
             self.remove_queue(0)
 
-        try:
-            await self.play()
-        except Exception as e:
-            await self.channel.send(
-                "何らかのエラーにより`{self.queues[0].title}`が再生ができませんでした。".replace(
-                    "@", "＠"
+        if not self.force_end:
+            try:
+                await self.play()
+            except Exception as e:
+                await self.channel.send(
+                    "何らかのエラーにより`{self.queues[0].title}`が再生ができませんでした。".replace(
+                        "@", "＠"
+                    )
                 )
-            )
-            self.cog.bot.loop.create_task(self._after(None))
+                self.cog.bot.loop.create_task(self._after(None))
 
     async def play(self) -> bool:
         # 音楽を再生する関数です。
@@ -88,6 +90,7 @@ class MusicPlayer:
 
     def clear(self) -> None:
         self.queues = self.queues[:1]
+        self.length = 1
 
     def skip(self) -> None:
         self.voice_client.stop()
@@ -102,7 +105,7 @@ class MusicPlayer:
         else:
             self.voice_client.pause()
             self.queues[0].stopped()
-            self.before = time
+            self.before = time()
             return False
 
     def loop(self) -> bool:
