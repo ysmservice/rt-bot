@@ -1,5 +1,7 @@
 # RT - Server Tool
 
+from typing import Union
+
 from discord.ext import commands
 import discord
 
@@ -68,26 +70,29 @@ class ServerTool(commands.Cog):
             )
 
     @commands.command(
-        aliases=["perm"], extras={
+        aliases=["perm", "権限", "perms", "permissions", "けんげん"], extras={
             "headding": {
                 "ja": "指定したユーザーの権限を表示します。",
                 "en": "Displays the permissions of the specified user."
             }, "parent": "ServerTool"
         }
     )
-    async def permission(self, ctx, member: discord.Member = None):
+    async def permission(
+        self, ctx: commands.Context,
+        member: Union[discord.Member, discord.Role, str] = None
+    ):
         """!lang ja
         -------
         指定されたユーザーの持っている権限を表示します。
 
         Parameters
         ----------
-        member : メンバーのメンションか名前
-            対象のメンバーのメンションまたは名前です。
+        member : メンバーのメンションか名前または役職の名前またはメンション
+            対象のメンバーのメンションか名前または対象の役職の名前かメンションです。
 
         Aliases
         -------
-        perm, 権限, けんげん
+        perm, perms, 権限, けんげん
 
         !lang en
         --------
@@ -100,24 +105,33 @@ class ServerTool(commands.Cog):
 
         Aliases
         -------
-        perm"""
+        perm, perms"""
         if member is None:
             member = ctx.author
-
-        await ctx.reply(
-            embed=discord.Embed(
-                title={
-                    "ja": "権限一覧", "en": "Permissions"
-                },
-                description="`" + ("`, `".join(
-                    PERMISSION_TEXTS[name]
-                    for name in PERMISSION_TEXTS
-                    if getattr(
-                        member.guild_permissions, name, False
-                    )) + "`"
-                ), color=self.bot.colors["normal"]
+        if isinstance(member, str) and "everyone" in member:
+            member = ctx.guild.default_role
+        permissions = getattr(
+            member, "guild_permissions", getattr(
+                member, "permissions", None
             )
         )
+
+        if permissions is None:
+            await ctx.reply("見つかりませんでした。")
+        else:
+            await ctx.reply(
+                embed=discord.Embed(
+                    title={
+                        "ja": "権限一覧", "en": "Permissions"
+                    },
+                    description="\n".join(
+                        (f"<:check_mark:885714065106808864> {PERMISSION_TEXTS[name]}"
+                         if getattr(permissions, name, False)
+                         else f"<:error:878914351338246165> {PERMISSION_TEXTS[name]}")
+                        for name in PERMISSION_TEXTS
+                    ), color=self.bot.colors["normal"]
+                )
+            )
 
     @commands.command(
         aliases=["serverinfo", "si"], extras={
