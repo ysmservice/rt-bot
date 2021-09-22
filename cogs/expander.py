@@ -168,12 +168,17 @@ class Expander(commands.Cog, DataManager):
 
                 if embeds:
                     try:
-                        await message.channel.webhook_send(
-                            username=message.author.display_name,
-                            avatar_url=message.author.avatar.url,
-                            content=message.clean_content, embeds=embeds
-                        )
-                        await message.delete()
+                        if hasattr(message.channel, "topic"):
+                            await message.channel.webhook_send(
+                                username=message.author.display_name,
+                                avatar_url=message.author.avatar.url,
+                                content=message.clean_content, embeds=embeds
+                            )
+                            await message.delete()
+                        else:
+                            # スレッドの場合は普通に送信をする。
+                            for embed in embeds:
+                                await message.channel.send(embed=embed)
                     except (discord.HTTPException, discord.NotFound):
                         pass
 
