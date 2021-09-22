@@ -9,7 +9,7 @@ from time import time
 
 class Recruitment(commands.Cog):
 
-    EMOJI = "<:puls:756100425861693480>"
+    EMOJI = "<:puls:876338285528612895>"
 
     def __init__(self, bot):
         self.bot, self.queue = bot, {}
@@ -18,7 +18,7 @@ class Recruitment(commands.Cog):
     @commands.command(
         extras={
             "headding": {"ja": "募集パネル",
-                         "en": "..."},
+                         "en": "Recruitment Panel"},
             "parent": "ServerPanel"
         },
         aliases=["recruit", "rct"]
