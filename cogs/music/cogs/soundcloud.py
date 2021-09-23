@@ -12,6 +12,7 @@ from .youtube import (
 
 SC_OPTIONS = copy(FLAT_OPTIONS)
 SC_OPTIONS["noplaylist"] = True
+del SC_OPTIONS["cookiefile"]
 
 
 def _make_music_raw_data(
