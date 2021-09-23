@@ -50,24 +50,26 @@ class MusicPlayer:
     def read_queue(self, index: int) -> MusicData:
         return self.queues[index]
 
-    async def _after(self, e):
+    async def _after(self, e, error: bool = False, c: int = 0):
         # 再生終了後に呼び出される関数で後処理をする。
         self.queues[0].close()
         if e:
             print("Error on Music:", e)
-        if not self._loop:
+        if not self._loop or error:
             self.remove_queue(0)
+            if c == 4:
+                return self.remove_queue(0)
 
         if not self.force_end:
             try:
                 await self.play()
             except Exception as e:
                 await self.channel.send(
-                    "何らかのエラーにより`{self.queues[0].title}`が再生ができませんでした。".replace(
+                    f"何らかのエラーにより`{self.queues[0].title}`が再生ができませんでした。".replace(
                         "@", "＠"
                     )
                 )
-                self.cog.bot.loop.create_task(self._after(None))
+                self.cog.bot.loop.create_task(self._after(None, True, c + 1))
 
     async def play(self) -> bool:
         # 音楽を再生する関数です。
@@ -93,6 +95,8 @@ class MusicPlayer:
         self.length = 1
 
     def skip(self) -> None:
+        if self._loop:
+            self.remove_queue(0)
         self.voice_client.stop()
         self.before = time()
 
