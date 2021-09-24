@@ -17,10 +17,13 @@ class WebCaptcha:
         self.base_url = ("http://localhost:5500/"
                          if self.cog.bot.test
                          else "https://rt-bot.com/")
-        self.cog.bot.web.add_route(
-            self.endpoint, "/api/captcha/<userdata>",
-            methods=["GET", "POST"]
-        )
+        try:
+            self.cog.bot.web.add_route(
+                self.endpoint, "/api/captcha/<userdata>",
+                methods=["GET", "POST"]
+            )
+        except Exception as e:
+            print(e)
 
     def encrypt(self, data: dict) -> str:
         return reprypt.encrypt(
