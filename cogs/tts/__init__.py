@@ -225,7 +225,10 @@ class TTS(commands.Cog, VoiceManager, DataManager):
 
                 # 音声合成をする。
                 try:
-                    url = await self.synthe(voice, text, file_path) or file_path
+                    url = await self.synthe(
+                        voice, text, file_path,
+                        rtchan=self.bot.user.id == 888635684552863774
+                    ) or file_path
                 except Exception as e:
                     print("TTS Error: ", e)
                     await self.after_playing(guild, "None", None)
