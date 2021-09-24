@@ -55,7 +55,7 @@ class VoiceManager:
 
     async def synthe(self, voice: str, text: str, file_path: str,
                      dictionary: str = "cogs/tts/lib/OpenJTalk/dic",
-                     speed: float = 1.0) -> Optional[None]:
+                     speed: float = 1.0, rtchan: bool = False) -> Optional[None]:
         """音声合成をします。
 
         Parameters
@@ -97,7 +97,9 @@ class VoiceManager:
                 )
             elif data["mode"] == "OpenJTalk":
                 await openjtalk.synthe(
-                    data["path"], dictionary, file_path, text, speed=speed or 1.0
+                    data["path"], dictionary, file_path, text, speed=speed or 1.0,
+                    **({"open_jtalk": "/home/tasuren/opt/bin/open_jtalk"}
+                    if rtchan else {})
                 )
             elif data["mode"] == "VOICEROID":
                 return await voiceroid.get_url(
