@@ -349,12 +349,12 @@ class Bump(commands.Cog, DataManager):
             return
 
         desc = message.embeds[0].description
-        check = ((desc and any(
-                    word in message.embeds[0].description
-                    for word in data["description"]))
-                if data["mode"] == "bump"
-                else (message.embeds[0].fields
-                    and "をアップしたよ" in message.embeds[0].fields[0].name))
+        check = desc and any(
+            word in desc for word in data["description"]
+        ) if data["mode"] == "bump" else (
+            message.embeds[0].fields
+            and "をアップしたよ" in message.embeds[0].fields[0].name
+        )
 
         if check:
             row = await self.load(message.guild.id, data["mode"])
@@ -374,15 +374,16 @@ class Bump(commands.Cog, DataManager):
                         ]
                     )
                 except ValueError:
-                    return
-                count = await self.load_ranking(user_id, data["mode"])
-                await self.save_ranking(user_id, data["mode"], count + 1)
+                    if data["mode"] != "bump":
+                        return
+                else:
+                    count = await self.load_ranking(user_id, data["mode"])
+                    await self.save_ranking(user_id, data["mode"], count + 1)
 
                 # 通知の設定をしたとメッセージを送る。
                 await message.channel.send(
-                    {"ja": f"{data['mode']}通知の設定をしました。",
-                     "en": "I have set a notification schedule."},
-                    target=user_id
+                    f"{data['mode']}通知の設定をしました。\n" \
+                    "I have set a notification schedule."
                 )
 
 
