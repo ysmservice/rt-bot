@@ -3,14 +3,18 @@ LICENSE : ./LICENSE
 README  : ./readme.md
 """
 
-desc = """りつたん - (C) 2020 RT-Team
+desc = """りつたん - (C) 2021 RT-Team
 少女起動中..."""
 print(desc)
 
 from discord.ext import commands
 import discord
 
+# routeは無効にする。
+commands.Cog.route = lambda *args, **kwargs: lambda *args, **kwargs: (args, kwargs)
+
 from aiohttp import ClientSession
+from sys import argv
 import ujson
 import rtlib
 
@@ -34,7 +38,8 @@ def setup(bot):
         del bot.mysql
 
     bot.mysql = bot.data["mysql"] = rtlib.mysql.MySQLManager(
-        loop=bot.loop, user=secret["mysql"]["user"], host="146.59.153.178",
+        loop=bot.loop, user=secret["mysql"]["user"],
+        host="146.59.153.178" if argv[1] == "production" else "localhost",
         password=secret["mysql"]["password"], db="mysql",
         pool = True, minsize=1, maxsize=30, autocommit=True)
 
@@ -67,7 +72,7 @@ kwargs = {
 bot = commands.Bot(
     command_prefix=data["prefixes"]["sub"], **kwargs
 )
-bot.test = False
+bot.test = argv[1] != "production"
 
 
 bot.data = data

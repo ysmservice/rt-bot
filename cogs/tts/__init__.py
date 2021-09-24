@@ -3,9 +3,11 @@
 from discord.ext import commands, tasks
 import discord
 
-from typing import Optional, Type, Dict, List, Tuple
+from typing import Optional, Type, Dict, List
 from aiofiles.os import remove as async_remove
 from rtlib.ext import componesy, Embeds
+from sanic.response import file_stream
+from urllib.parse import unquote
 from os import listdir, remove
 from pydub import AudioSegment
 from functools import wraps
@@ -52,6 +54,14 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         self.now: Dict[int, dict] = {}
         super(commands.Cog, self).__init__(bot.session, VOICES)
         self.bot.loop.create_task(self.on_ready())
+
+        if self.bot.user.id != 888635684552863774:
+            try:
+                self.bot.web.add_route(
+                    self.routine_route, "/tts/routine/<file_name>"
+                )
+            except Exception as e:
+                print(e)
 
     async def on_ready(self):
         super(VoiceManager, self).__init__(
@@ -190,7 +200,11 @@ class TTS(commands.Cog, VoiceManager, DataManager):
             for path in self.cache[message.author.id]["routine"]:
                 for alias in self.cache[message.author.id]["routine"][path]["aliases"]:
                     if text == alias:
-                        url = path
+                        if self.bot.user.id == 888635684552863774:
+                            url = f"http{'://localhost' if self.bot.test else 's://rt-bot.com'}/" \
+                                f"tts/routine/{path[path.rfind('/') + 1:]}"
+                        else:
+                            url = path
                         break
                 else:
                     continue
@@ -502,7 +516,8 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         """!lang ja
         -------
         自分の好きなの音声を読み上げ時に使うようにできます。  
-        例：`そうだよ(便乗)`, `FOO↑気持ちぃ〜`, `いいゾ〜これ`, `ないです`
+        例：`そうだよ(便乗)`, `FOO↑気持ちぃ〜`, `いいゾ〜これ`, `ないです`  
+        **りつたんから登録することはできないのでRTから追加してください。**
 
         Aliases
         -------
@@ -571,7 +586,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         !lang en
         --------
         ..."""
-        if ctx.message.attachments:
+        if ctx.message.attachments and self.bot.user.id != 888635684552863774:
             data = await self.read_routine(ctx.author.id)
             if len(data) == 20:
                 await ctx.reply(
@@ -611,7 +626,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                 )
         else:
             await ctx.reply(
-                {"ja": "登録する音声を追加してください。",
+                {"ja": "登録する音声を追加してください。\nまたはりつたんに登録することはできません。",
                  "en": "..."}
             )
 
@@ -637,7 +652,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         -------
         rm, りむーぶ, del, delete"""
         data = await self.read_routine(ctx.author.id)
-        if data:
+        if data and self.bot.user.id != 888635684552863774:
             for key in list(data.keys()):
                 if alias in data[key]["aliases"]:
                     del data[key]
@@ -649,7 +664,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
             await ctx.reply("Ok")
         else:
             await ctx.reply(
-                {"ja": "まだRoutineは追加されていません。",
+                {"ja": "まだRoutineは追加されていません。\nまたはりつたんから削除することはできません。",
                  "en": "..."}
             )
 
@@ -765,6 +780,13 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         for voice_client in self.bot.voice_clients:
             if all(member.bot for member in voice_client.channel.members):
                 self.bot.dispatch("voice_abandoned", voice_client)
+
+    async def routine_route(self, request, file_name):
+        if "%" in file_name:
+            file_name = unquote(file_name)
+        return await file_stream(
+            f"cogs/tts/routine/{file_name}"
+        )
 
 
 def setup(bot):

@@ -62,7 +62,6 @@ class WebManager:
         self.events = {"on_route_add": [], "on_route_remove": []}
         self.bot.load_extension("rtlib.ext.on_cog_add")
         self.bot.add_listener(self._on_cog_add, "on_cog_add")
-        self.bot.add_listener(self._on_cog_remove, "on_cog_remove")
 
         # commands.Cog.routeを作る。
         commands.Cog.route = self._route
@@ -106,10 +105,11 @@ class WebManager:
                 # もしsanicにrouteをまだ登録していないなら登録をする。
                 # self._added_routesはcommands.Cog.routeが付いているrouteの関数を実行するrouteが、sanicにもう追加したかどうかを調べるためのもの。
 
-                async def main_route(*args, cog_name=name, coro_name=coro.__name__, **kwargs):
+                async def main_route(*args, cog_name=name, coro=coro, **kwargs):
+                    @wraps(coro)
                     async def main_route():
                         # 登録するrouteの関数(commands.Cog.routeが付いてるやつ)があれば実行する。
-                        route = self._routes[cog_name][coro_name]
+                        route = self._routes[cog_name][coro.__name__]
                         if route_full_name in self._added_routes:
                             return await route(cog, *args, **kwargs)
                         else:
@@ -120,27 +120,10 @@ class WebManager:
                 self._added_routes.append(route_full_name)
             del coro
 
-    async def _on_cog_remove(self, cog):
-        # コグが削除された際に呼ばれます。commands.Cog.routeのためのもの。
-        # routeの中で実行するrouteの関数(coommands.Cog.routeが付いてるやつ)を削除する。
-        routes = self._routes.get((name := cog.__class__.__name__), {})
-        delete = []
-        for key in routes:
-            for event in self.events["on_route_remove"]:
-                await self._wrap_error_Log(
-                    event(self._routes[name][key]),
-                    f"Exception on route '{name}.{key}':",
-                    self._routes[name][key]
-                )
-            delete.append(key)
-        for key in delete:
-            del self._routes[name][key]
-        del delete
-
     async def _on_response(self, request, res):
         # Sanicがレスポンスを返す時に呼ばれる関数です。
         # もしRouteが見つからなかったならファイルを返すことを試みる。
-        if ((b"Requested" in res.body or b"not found" in res.body)
+        if (res.body is not None and (b"Requested" in res.body or b"not found" in res.body)
                 and res.status == 404):
             path = request.path[1:]
             true_path = self.folder + "/" + path

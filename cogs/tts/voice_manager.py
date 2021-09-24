@@ -54,7 +54,7 @@ class VoiceManager:
             dic = loads(await f.read())
 
     async def synthe(self, voice: str, text: str, file_path: str,
-                     dictionary: str = "/var/lib/mecab/dic/open-jtalk/naist-jdic",
+                     dictionary: str = "cogs/tts/lib/OpenJTalk/dic",
                      speed: float = 1.0) -> Optional[None]:
         """音声合成をします。
 
@@ -66,7 +66,7 @@ class VoiceManager:
             読み上げる文字列です。
         file_path : str
             ファイルのパスです。
-        dictionary : str, default "/var/lib/mecab/dic/open-jtalk/naist-jdic"
+        dictionary : str, default "cogs/tts/lib/OpenJTalk/dic"
             OpenJTalkの辞書のパスです。
         speed : float, default 1.0
             読み上げスピードです。"""
