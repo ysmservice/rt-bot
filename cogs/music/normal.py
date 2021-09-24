@@ -940,8 +940,9 @@ class MusicNormal(commands.Cog, DataManager):
 
     @commands.Cog.listener()
     async def on_voice_leave(self, member, _, __):
-        # もし切断されたらプレイヤーを終了させる。
-        self.shutdown_player(member.guild.id, "")
+        # もしRTがけられたりした場合は終了する。
+        if member.id == self.bot.user.id:
+            self.shutdown_player(member.guild.id, "")
 
 
 def setup(bot):
