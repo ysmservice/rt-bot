@@ -178,7 +178,10 @@ class BotGeneral(commands.Cog):
         It inclued invite link."""
         if secret_arg is None:
             await ctx.reply(
-                embeds=Embeds("RtInfo", ctx.author, 180, self.info_embeds)
+                content=f"Servers:{len(self.bot.guilds)}, Users:{len(self.bot.users)}",
+                embeds=Embeds(
+                    "RtInfo", ctx.author, 180, self.info_embeds
+                )
             )
         else:
             await ctx.reply(f"{secret_arg}...、あなた何奴！？")
