@@ -20,3 +20,4 @@ git+https://github.com/cod-sushi/alkana.py
 pykakasi
 pydub
 psutil
+PyNacl
