@@ -10,9 +10,10 @@ from .youtube import (
 )
 
 
-SC_OPTIONS = copy(FLAT_OPTIONS)
+COPIED_FOPTIONS = copy(FLAT_OPTIONS)
+del COPIED_FOPTIONS["cookiefile"]
+SC_OPTIONS = copy(COPIED_FOPTIONS)
 SC_OPTIONS["noplaylist"] = True
-del SC_OPTIONS["cookiefile"]
 
 
 def _make_music_raw_data(
@@ -32,6 +33,6 @@ async def get_music(
 ) -> MusicData:
     return MusicData(
         _make_music_raw_data(
-            loop, await _get(loop, url, FLAT_OPTIONS), url
+            loop, await _get(loop, url, COPIED_FOPTIONS), url
         ), author
     )
