@@ -188,20 +188,24 @@ class Poll(commands.Cog):
             # もしカウントが変わっているならメッセージを編集する。
             embed.description = description
             wb = discord.utils.get(
-                await payload.message.channel.webhooks(), name="RT-Tool")
+                await payload.message.channel.webhooks(), name="RT-Tool"
+            )
             if wb:
-                await wb.edit_message(
-                    payload.message_id, embed=embed,
-                    content="".join(
-                        (payload.message.content[:payload.message.content.find("\n")],
-                         "\n📊 ", self.graph(emojis), ""))
-                )
+                try:
+                    await wb.edit_message(
+                        payload.message_id, embed=embed,
+                        content="".join(
+                            (payload.message.content[:payload.message.content.find("\n")],
+                            "\n📊 ", self.graph(emojis), ""))
+                    )
+                except discord.InvalidArgument:
+                    pass
         del description, emojis
 
     def cog_unload(self):
         self.panel_updater.cancel()
 
-    @tasks.loop(seconds=5)
+    @tasks.loop(seconds=4)
     async def panel_updater(self):
         # キューにあるpayloadからパネルを更新する。
         # 連打された際に連打全部に対応して編集するようなことが起きないように。
@@ -213,6 +217,7 @@ class Poll(commands.Cog):
     async def on_full_reaction_add(self, payload: discord.RawReactionActionEvent):
         if self.bot.is_ready():
             if self.check_panel(payload):
+                cmid = f"{payload.channel_id}.{payload.message_id}"
                 if payload.event_type == "REACTION_ADD":
                     # もし一人一票までなら投票できるかチェックをする。
                     if "一" in payload.message.content:
@@ -222,8 +227,11 @@ class Poll(commands.Cog):
                                     for user in await reaction.users().flatten())]
                         )
                         if users > 1:
+                            await payload.message.remove_reaction(
+                                payload.emoji, payload.member
+                            )
                             return
-                self.queue[f"{payload.channel_id}.{payload.message_id}"] = payload
+                self.queue[cmid] = payload
 
     @commands.Cog.listener()
     async def on_full_reaction_remove(self, payload: discord.RawReactionActionEvent):
