@@ -11,8 +11,6 @@ from discord.ext import commands
 import discord
 
 from aiohttp import ClientSession
-from asyncio import sleep
-from os import listdir
 import ujson
 import rtlib
 
@@ -57,6 +55,7 @@ def setup(bot):
 
 
 intents = discord.Intents.default()
+intents.members = True
 intents.typing = False
 intents.guild_typing = False
 intents.dm_typing = False
