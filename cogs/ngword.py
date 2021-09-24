@@ -67,13 +67,20 @@ class NgWord(commands.Cog, DataManager):
         }
     )
     async def ngword(self, ctx):
+        """!lang ja
+        --------
+        NGワード機能です。
+
+        !lang en
+        --------
+        NG Word feature."""
         if not ctx.invoked_subcommand:
             embed = discord.Embed(
                 title={"ja": "NGワードリスト", "en": "NG Words"},
                 description=", ".join(await self.get(ctx.guild.id)),
                 color=self.bot.colors["normal"]
             )
-            await ctx.reply(embed)
+            await ctx.reply(embed=embed)
 
     async def add_ngword(self, ctx, item):
         # NGワードを追加する。
@@ -100,6 +107,31 @@ class NgWord(commands.Cog, DataManager):
     )
     @commands.has_permissions(manage_messages=True)
     async def add_(self, ctx, *, words):
+        """!lang ja
+        --------
+        NGワードを追加します。
+
+        Parameters
+        ----------
+        words : NGワード(複数)
+            空白を使うことで複数一括で登録できます。
+
+        Examples
+        --------
+        `rt!ngword add あほー`
+
+        !lang en
+        --------
+        Add NG words.
+
+        Parameters
+        ----------
+        words : NG word(s)
+            You can add multiple words at once by using a blank space.
+
+        Examples
+        --------
+        `rt!ngword add Ahoy! Idiot`"""
         await self.add_ngword(
             Context("write", ctx.author),
             TextBox("item1", "", words)
@@ -132,6 +164,23 @@ class NgWord(commands.Cog, DataManager):
     )
     @commands.has_permissions(manage_messages=True)
     async def remove_(self, ctx, *, words):
+        """!lang ja
+        --------
+        NGワードを削除します。  
+        NGワードを追加する際に実行したコマンドの逆です。
+
+        Examples
+        --------
+        `rt!ngword remove みすった NGワード`
+
+        !lang en
+        --------
+        Remove the ng word(s).  
+        This is the reverse of the command you executed when registering NG words.
+
+        Examples
+        --------
+        `rt!ngword remove Badngword"""
         await self.remove_ngword(
             Context("write", ctx.author),
             TextBox("item1", "", words)
@@ -151,7 +200,7 @@ class NgWord(commands.Cog, DataManager):
                     await message.channel.send(
                         embed=discord.Embed(
                             title={"ja": "NGワードを削除しました。",
-                                   "en": "..."},
+                                   "en": "Removed the NG Word."},
                             description=(f"Author:{message.author.mention}\n"
                                          f"Content:||{message.content}||"),
                             color=self.bot.colors["unknown"]
