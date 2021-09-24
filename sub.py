@@ -34,7 +34,7 @@ def setup(bot):
         del bot.mysql
 
     bot.mysql = bot.data["mysql"] = rtlib.mysql.MySQLManager(
-        loop=bot.loop, user=secret["mysql"]["user"],
+        loop=bot.loop, user=secret["mysql"]["user"], host="146.59.153.178",
         password=secret["mysql"]["password"], db="mysql",
         pool = True, minsize=1, maxsize=30, autocommit=True)
 

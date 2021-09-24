@@ -6,9 +6,7 @@ import discord
 
 INVITE_URL = "https://discord.com/api/oauth2/authorize?client_id=888635684552863774&permissions=172339022401&scope=bot%20applications.commands"
 DESCRIPTION = f"""[Discordの多機能BotであるRT](https://rt-bot.com/)の音楽再生と読み上げだけ使えるようにしたサブBotのりつだよ！
-多機能BotのRTは音楽再生や読み上げの他にもサーバーステータスやいつも下に来るメッセージなど様々な機能があるよ！
-もし興味があるなら[ここ](https://rt-bot.com)にきて招待したりサポートサーバーに行ってみよう！
-私はそのRTにある音楽再生と読み上げを同時に使用したいという人のために生まれたよ。
+多機能BotのRTは音楽再生や読み上げの他にもサーバーステータスやいつも下に来るメッセージなど様々な機能があるよ！([詳細はここへ](https://rt-bot.com))
 私をサーバーに招待したい人は[ここ]({INVITE_URL})をクリック！"""
 
 
