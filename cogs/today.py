@@ -5,7 +5,7 @@ import discord
 
 from rtlib import DatabaseManager
 from bs4 import BeautifulSoup
-from datetime import time
+from datetime import datetime
 
 
 class DataManager(DatabaseManager):
@@ -128,19 +128,20 @@ class Today(commands.Cog, DataManager):
     def cog_unload(self):
         self.today_notification.cancel()
 
-    @tasks.loop(time=time(9, 0))
+    @tasks.loop(seconds=50)
     async def today_notification(self):
         # 今日はなんの日通知をする。
-        for row in await self.reads():
-            channel = self.bot.get_channel(row[1])
-            if channel:
-                try:
-                    await channel.send(embed=await self.get_today())
-                except (discord.HTTPException, discord.Forbidden):
-                    continue
-            else:
-                # もしチャンネルが見つからないなら設定を削除する。
-                await self.delete(row[0], row[1])
+        if datetime.now().strftime("%H:%M") == "09:00":
+            for row in await self.reads():
+                channel = self.bot.get_channel(row[1])
+                if channel:
+                    try:
+                        await channel.send(embed=await self.get_today())
+                    except (discord.HTTPException, discord.Forbidden):
+                        continue
+                else:
+                    # もしチャンネルが見つからないなら設定を削除する。
+                    await self.delete(row[0], row[1])
 
 
 def setup(bot):
