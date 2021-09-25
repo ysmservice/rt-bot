@@ -19,6 +19,9 @@ class DataManager(DatabaseManager):
         await cursor.create_table(
             "gban", {"UserID": "BIGINT", "Reason": "TEXT"}
         )
+        await cursor.create_table(
+            "gbanOff", {"GuildID": "BIGINT"}
+        )
 
     async def add_user(self, cursor, user_id: int, reason: str) -> None:
         await cursor.insert_data(
@@ -42,6 +45,16 @@ class DataManager(DatabaseManager):
         else:
             return ()
 
+    async def onoff_guild(self, cursor, guild_id: int, onoff: bool) -> None:
+        target = {"GuildID": guild_id}
+        if (exists := await cursor.exists("gbanOff", target)) and onoff:
+            await cursor.delete("gbanOff", target)
+        elif not exists and not onoff:
+            await cursor.insert_data("gbanOff", target)
+
+    async def get_onoff(self, cursor, guild_id: int) -> bool:
+        return not await cursor.exists("gbanOff", {"GuildID": guild_id})
+
 
 class GlobalBan(commands.Cog, DataManager):
     def __init__(self, bot):
@@ -62,7 +75,7 @@ class GlobalBan(commands.Cog, DataManager):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
-        if not self.bot.is_ready():
+        if not self.bot.is_ready() or await self.get_onoff(member.guild.id):
             return
         if (row := await self.get(member.id)):
             await member.ban(reason=row[1])
@@ -111,6 +124,19 @@ class GlobalBan(commands.Cog, DataManager):
                 view=view
             )
 
+    @gban.command()
+    async def onoff(self, ctx):
+        """!lang ja
+        --------
+        GBANのOnOffを切り替えます。
+
+        !lang en
+        --------
+        Gban Enable/Disable Switch Command."""
+        await ctx.trigger_typing()
+        await self.onoff_guild(ctx.guild.id, not await self.get_onoff(ctx.guild.id))
+        await ctx.reply("Ok")
+
     @gban.command("list")
     @commands.cooldown(1, 60, commands.BucketType.user)
     async def gban_list(self, ctx):
@@ -131,7 +157,7 @@ class GlobalBan(commands.Cog, DataManager):
                         discord.Embed(
                             title=f"{i} {user.name}",
                             description=f"ID:{user.id}\n{row[1]}",
-                            colors=self.bot.colors["normal"]
+                            color=self.bot.colors["normal"]
                         )
                     )
 
@@ -150,6 +176,9 @@ class GlobalBan(commands.Cog, DataManager):
         await self.add_user(user_id, reason)
 
         for guild in self.bot.guilds:
+            if not self.get_onoff(guild.id):
+                # オフに設定してるサーバーは無視する。
+                continue
             for member in guild.members:
                 if member.id == user_id:
                     try:
