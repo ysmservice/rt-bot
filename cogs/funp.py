@@ -144,11 +144,11 @@ class Funp(commands.Cog, DataManager):
         Sorry, English is Not supported yet."""
         if not ctx.invoked_subcommand:
             await self.show(
-                ctx, choice(
-                    self.MODES["nsfw"
-                        if getattr(ctx.channel, "nsfw", False)
-                        else "normal"]
-                )
+                ctx, self.MODES[
+                    "nsfw" if getattr(
+                        ctx.channel, "nsfw", False
+                    ) else "normal"
+                ][0]
             )
 
     def get_mode(self, mode: str) -> str:
@@ -181,21 +181,27 @@ class Funp(commands.Cog, DataManager):
                  "en": "You can see NSFW funp image in only NSFW Channel."}
             )
         elif any(mode in self.MODES[key] for key in self.MODES):
-            row = await self.read(mode)
+            try:
+                row = await self.read(mode)
+            except IndexError:
+                await ctx.reply(
+                    {"ja": "まだ登録されていません。",
+                     "en": "まだ登録されていません。"}
+                )
+            else:
+                embed = discord.Embed(
+                    title=f"Funp - {row[1]}",
+                    description=(
+                        f'投稿者：{getattr(self.bot.get_user(row[0]), "name", row[0])}'
+                        f" (`{row[0]}`)"
+                    ),
+                    color=self.bot.colors["normal"]
+                )
+                embed.set_image(url=row[2])
 
-            embed = discord.Embed(
-                title=f"Funp - {row[1]}",
-                description=(
-                    f'投稿者：{getattr(self.bot.get_user(row[0]), "name", row[0])}'
-                    f" (`{row[0]}`)"
-                ),
-                color=self.bot.colors["normal"]
-            )
-            embed.set_image(url=row[2])
-
-            await ctx.reply(
-                embed=embed, view=warn_view
-            )
+                await ctx.reply(
+                    embed=embed, view=warn_view
+                )
         else:
             await ctx.reply(
                 {"ja": "カテゴリーが存在しません。",
