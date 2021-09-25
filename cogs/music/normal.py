@@ -907,7 +907,6 @@ class MusicNormal(commands.Cog, DataManager):
             self.now[guild_id].force_end = True
             self.now[guild_id].clear()
             if disconnect:
-                self.now[guild_id].voice_client.cleanup()
                 for coro in list(map(self.wrap_error, (
                         self.now[guild_id].voice_client.disconnect(force=True),
                         self.now[guild_id].channel.send(reason)
@@ -929,7 +928,7 @@ class MusicNormal(commands.Cog, DataManager):
                 voice_client.guild.id, "誰もいないので音楽再生を終了します。"
             )
 
-    @tasks.loop(seconds=30)
+    @tasks.loop(minutes=5)
     async def check_timeout(self):
         # 再生していないで放置されてる場合は抜ける。
         for guild_id in self.now:

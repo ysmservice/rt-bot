@@ -315,11 +315,18 @@ class Bump(commands.Cog, DataManager):
                             )
                             if channel:
                                 role = channel.guild.get_role(row[-1].get("role", 0))
-                                mention = f"{role.mention}, " if role else ""
+                                kwargs = {}
+                                if role:
+                                    kwargs["content"] = role.mention
+                                kwargs["embed"] = discord.Embed(
+                                    title=f"Time to {mode}!",
+                                    description=f"{mode}の時間です。\n" \
+                                        + ("`!d bump`" if mode == "bump" else "`/dissoku up`") \
+                                        + "でこのサーバーの表示順位を上げよう！",
+                                    color=self.bot.colors["normal"]
+                                )
                                 try:
-                                    await channel.send(
-                                        f"{mention}{mode}の時間だよ！ / It's time to {mode}!"
-                                    )
+                                    await channel.send(**kwargs)
                                 except Exception as e:
                                     if self.bot.test:
                                         print("Error on bump2:", e)
@@ -382,8 +389,12 @@ class Bump(commands.Cog, DataManager):
 
                 # 通知の設定をしたとメッセージを送る。
                 await message.channel.send(
-                    f"{data['mode']}通知の設定をしました。\n" \
-                    "I have set a notification schedule."
+                    embed=discord.Embed(
+                        title="通知設定",
+                        description=f"{data['mode']}の通知を設定しました。\n" \
+                            + f"<t:{int(new['notification'])}:R>に通知します。",
+                        color=self.bot.colors["normal"]
+                    )
                 )
 
 
