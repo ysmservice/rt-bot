@@ -77,7 +77,13 @@ class ShortURL(commands.Cog, DataManager):
         super(commands.Cog, self).__init__(self.bot.mysql)
         await self.init_table()
 
-    @commands.group()
+    @commands.group(
+        extras={
+            "headding": {
+                "ja": "URL短縮", "en": "Shorten the url."
+            }, "parent": "Individual"
+        }
+    )
     async def url(self, ctx):
         """!lang ja
         --------
