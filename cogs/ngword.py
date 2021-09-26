@@ -94,16 +94,7 @@ class NgWord(commands.Cog, DataManager):
                     pass
 
     @ngword.command(
-        name="add", aliases=["あどど"], extras={
-            "setting": SettingData(
-                "guild", {"ja": "NGワードの登録ができます。改行で複数登録できます。", "en": "..."},
-                add_ngword,
-                TextBox("item1", {
-                        "ja": "NGワード登録ボックス", "en": "NGWords registration"
-                    }, "", True),
-                permissions=["manage_messages"]
-            )
-        }
+        name="add", aliases=["あどど"]
     )
     @commands.has_permissions(manage_messages=True)
     async def add_(self, ctx, *, words):
@@ -150,17 +141,7 @@ class NgWord(commands.Cog, DataManager):
                     SettingAPI.error(f"{word}が見つかりませんでした。 / Not found {word}.")
 
     @ngword.command(
-        name="remove", aliases=["りむーぶ", "rm", "delete", "del"],
-        extras={
-            "setting": SettingData(
-                "guild", {"ja": "NGワードの削除ができます。改行で複数登録できます。", "en": "..."},
-                remove_ngword,
-                TextBox("item1", {
-                        "ja": "NGワード削除ボックス", "en": "Remove ngwords"
-                    }, "", True),
-                permissions=["manage_messages"]
-            )
-        }
+        name="remove", aliases=["りむーぶ", "rm", "delete", "del"]
     )
     @commands.has_permissions(manage_messages=True)
     async def remove_(self, ctx, *, words):
