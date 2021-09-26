@@ -74,18 +74,7 @@ def get_extras(mode: str, callback) -> dict:
             "ja": f"{mode}の通知のON/OFFをします。",
             "en": f"Change {mode} notification on/off."
         },
-        "parent": "ServerTool",
-        "setting": SettingData(
-            "guild", {
-                "ja": f"{mode}の通知のON/OFFをします。",
-                "en": f"Change {mode} notification on/off"
-            }, callback,
-            ListBox(mode, {
-                "ja": f"{mode}通知をするかどうかです。役職名を選択すれば役職メンションをして通知をします。",
-                "en": "Whether to do notification or not. If you select role name, RT do mention when do notification."
-            }, 0, ["..."]),
-            permissions=["administrator"]
-        )
+        "parent": "ServerTool"
     }
 
 
@@ -214,7 +203,6 @@ class Bump(commands.Cog, DataManager):
         await ctx.reply("Ok", replace_language=True)
 
     @commands.command(extras=get_extras("up", callback))
-    @commands.has_permissions(administrator=True)
     @commands.has_permissions(administrator=True)
     async def up(self, ctx, onoff: bool, *, role: discord.Role = None):
         if role:
