@@ -16,7 +16,7 @@ if TYPING_CHECK:
 class Server:
     def __init__(
         self, cog: "Servers", guild: discord.Guild,
-        description: str, tags: List[str],
+        description: str, tags: List[str], invite: str,
         before_raise: int, extra: dict
     ):
         self.cog: "Servers" = cog
@@ -24,6 +24,7 @@ class Server:
         self.description: str = description
         self.tags: List[str] = tags
         self.before_raise: int = before_raise
+        self.invite: str = invite
         self.extra: dict = extra
 
     @staticmethod
@@ -53,7 +54,7 @@ class Server:
             await cursor.close()
 
     async def update_data(
-        self, *, description: str = None, tags: List[str] = None
+        self, *, description: str = None, tags: List[str] = None, invite: str = None
     ) -> None:
         # サーバーの情報を更新します。
         self.check_tags(tags=tags, description=description)
@@ -61,10 +62,11 @@ class Server:
         self.tags = tags or self.tags
         args = (
             description or self.description,
-            ",".join(self.tags),
+            ",".join(self.tags), invite or self.invite,
             self.guild.id
         )
         self.description = args[0]
+        self.invite = args[2]
 
         async with self.cog.pool.acquire() as conn:
             cursor = await conn.cursor()
@@ -73,7 +75,8 @@ class Server:
                 UPDATE {DB}
                 SET
                     Detail = %s,
-                    Tags = %s
+                    Tags = %s,
+                    Invite = %s
                 WHERE
                     GuildID = %s;""", args
             )
@@ -91,7 +94,8 @@ class Server:
                     Extra = %s
                 WHERE
                     GuildID = %s;""",
-                (dumps(self.extra, ensure_ascii=False), self.guild.id)
+                (dumps(self.extra, ensure_ascii=False),
+                 self.guild.id)
             )
             await cursor.close()
 
@@ -113,13 +117,14 @@ class Server:
 
         return cls(
             cog, guild, row[1], row[2].split(","),
-            row[3], loads(row[4])
+            row[3], row[4], loads(row[5])
         )
 
     @classmethod
     async def make_guild(
         cls, cog: "Servers", guild: discord.Guild,
-        description: str, tags: List[str], extra: dict
+        description: str, tags: List[str],
+        invite: str, extra: dict
     ) -> "Server":
         # サーバーを追加します。
         cls.check_tags(tags=tags, description=description)
@@ -141,15 +146,18 @@ class Server:
                     GuildID, Detail, Tags,
                     RaiseTime, Extra
                 )
-                VALUES (%s, %s, %s, %s, %s);""",
+                VALUES (%s, %s, %s, %s, %s, %s);""",
                 (
                     guild.id, description, ",".join(tags),
-                    now := time(), dumps(extra)
+                    invite, now := time(), dumps(extra)
                 )
             )
             await cursor.close()
 
-        return cls(cog, guild, description, tags, now, extra)
+        return cls(
+            cog, guild, description, tags,
+            invite, now, extra
+        )
 
     @staticmethod
     async def init_table(pool: "Pool") -> None:
@@ -161,8 +169,8 @@ class Server:
                 CREATE TABLE {DB}
                 (
                     GuildID BIGINT NOT NULL PRIMARY KEY,
-                    Detail TEXT, Tags TEXT,
-                    RaiseTime FLOAT, Extra JSON
+                    Detail TEXT, Tags TEXT, RaiseTime FLOAT,
+                    Invite TEXT, Extra JSON
                 );"""
             )
             await cursor.close()
