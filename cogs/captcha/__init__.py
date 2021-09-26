@@ -182,7 +182,7 @@ class Captcha(commands.Cog, DataManager):
         now = time()
         for captcha in list(self.captchas.values()):
             for key in list(captcha.queue.keys()):
-                if now - captcha.queue[key][1] > 1800:
+                if now - captcha.queue[key][1] > 3600:
                     del captcha.queue[key]
 
     @commands.Cog.route("/captcha")
