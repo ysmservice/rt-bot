@@ -1,6 +1,8 @@
 # RT.servers - Server Class
+# サーバーの情報をしまってraiseなどを簡単に行うためのクラスです。
+# セーブデータの操作もこのクラスで行います。
 
-from typing import TYPING_CHECK, List
+from typing import TYPING_CHECK, List, Union
 
 import discord
 
@@ -9,8 +11,8 @@ from time import time
 
 from .constants import DB, INTERVAL, MAX_DETAIL, MAX_TAGS, MAX_TAG
 if TYPING_CHECK:
+    from aiomysql import Pool, Cursor
     from .__init__ import Servers
-    from aiomysql import Pool
 
 
 class Server:
@@ -40,15 +42,14 @@ class Server:
         now = time()
         assert force or now - self.before_raise >= INTERVAL, "まだ高められません。"
         self.before_raise = now
+
         async with self.cog.pool.acquire() as conn:
             cursor = await conn.cursor()
             await cursor.execute(
                 f"""--sql
                 UPDATE {DB}
-                SET
-                    RaiseTime = %s
-                WHERE
-                    GuildID = %s;""",
+                SET RaiseTime = %s
+                WHERE GuildID = %s;""",
                 (now, self.guild.id)
             )
             await cursor.close()
@@ -99,19 +100,46 @@ class Server:
             )
             await cursor.close()
 
+    @staticmethod
+    async def exists(
+        cog: "Servers", guild_id: int, cursor: "Cursor",
+        error_message: str, not_: bool = True
+    ) -> None:
+        await cursor.execute(
+            f"""--sql
+            SELECT * FROM {DB}
+            WHERE GuildID = %s
+            LIMIT 1;""", (guild_id,)
+        )
+
+        b = bool(await cursor.fetchone())
+        if not_:
+            b = not b
+        assert b, error_message
+
     @classmethod
-    async def from_guild(cls, cog: "Servers", guild: discord.Guild) -> "Server":
+    async def from_guild(
+        cls, cog: "Servers", guild: discord.Guild,
+        cursor: "Cursor" = None
+    ) -> "Server":
         # GuildオブジェクトからServerクラスを取得します。
-        async with cog.pool.acquire() as conn:
+        close = True
+        if cursor is None:
+            conn = await cog.pool.acquire()
             cursor = await conn.cursor()
-            await cursor.execute(
-                f"""--sql
-                SELECT * FROM {DB}
-                WHERE GuildID = %s;""",
-                (guild.id,)
-            )
-            row = await cursor.fetchone()
+            close = False
+
+        await cursor.execute(
+            f"""--sql
+            SELECT * FROM {DB}
+            WHERE GuildID = %s;""",
+            (guild.id,)
+        )
+        row = await cursor.fetchone()
+
+        if close:
             await cursor.close()
+            await conn.close()
 
         assert row, "そのサーバーは登録されていません。"
 
@@ -131,14 +159,8 @@ class Server:
 
         async with cog.pool.acquire() as conn:
             cursor = await conn.cursor()
-            await cursor.execute(
-                f"""--sql
-                SELECT * FROM {DB}
-                WHERE GuildID = %s
-                LIMIT 1;""", (guild.id,)
-            )
 
-            assert not await cursor.fetchone(), "既に登録されています。"
+            await cog.exists(cog, guild.id, cursor, "既に登録されています。")
 
             await cursor.execute(
                 f"""--sql
@@ -174,3 +196,51 @@ class Server:
                 );"""
             )
             await cursor.close()
+
+    @staticmethod
+    async def delete_guild(cog: "Servers", guild_id: int) -> None:
+        # データベースからサーバーを登録解除します。
+        async with cog.pool.acquire() as conn:
+            cursor = await conn.cursor()
+
+            await cog.exists(cog, guild_id, cursor, "まだ登録されていません。", False)
+            await cursor.execute(
+                f"""--sql
+                DELETE FROM {DB}
+                WHERE GuildID = %s;""",
+                (guild_id,)
+            )
+
+            await cursor.close()
+
+    @staticmethod
+    async def getall(
+        cog: "Servers", command: str = f"SELECT GuildID FROM {DB};", args: Union[list, tuple] = ()
+    ) -> List["Server"]:
+        async with cog.pool.acquire() as conn:
+            cursor = await conn.cursor()
+
+            await cursor.execute(command, args)
+            servers = [
+                await cog.from_guild(cog, cog.bot.get_guild(guild_id), cursor)
+                for guild_id in map(lambda rows: rows[0], await cursor.fetchall())
+            ]
+
+            await cursor.close()
+
+        return servers
+
+    @staticmethod
+    async def getall_bytime(
+        cog: "Servers", before: float = 0, after: float = None, limit: int = 15
+    ) -> List["Server"]:
+        if after is None:
+            after = time()
+
+        return await cog.getall(
+            cog, f"""--sql
+            SELECT GuildID FROM {DB}
+            ORDER BY RaiseTime DESC
+            WHERE RaiseTime > %s AND RaiseTime <= %s
+            LIMIT %s;""", (before, after, limit)
+        )

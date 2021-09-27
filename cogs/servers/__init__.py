@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING
 from discord.ext import commands
 import discord
 
+from rtlib.ext import Embeds
+
 from .server import Server
 if TYPE_CHECKING:
     from aiomysql import Pool
@@ -46,6 +48,28 @@ class Servers(commands.Cog, Server):
         else:
             await ctx.reply("登録しました。")
 
+    @servers.command(aliases=["解除", "unreg"])
+    @commands.has_permissions(administrator=True)
+    async def unregister(self, ctx):
+        try:
+            await self.delete_guild(self, ctx.guild.id)
+        except AssertionError:
+            await ctx.reply(
+                {"ja": "このサーバーは登録されていません。",
+                 "en": "It has not registered yet."}
+            )
+        else:
+            await ctx.reply("登録解除しました。")
+
+    @servers.command("list")
+    async def list_(self, ctx):
+        servers = await self.getall(
+            self, """--sql
+            ORDER BY RaiseTime DESC
+            LIMIT 20
+            WHERE RaiseTime;"""
+        )
+
     @servers.group(aliases=["更新"])
     @commands.cooldown(10, 1, commands.BucketType.guild)
     async def update(self, ctx):
@@ -84,6 +108,10 @@ class Servers(commands.Cog, Server):
                 reason="サーバー掲示板で使う招待の更新のため。"
             )
         )
+
+    @update.command(aliases=["タグ"])
+    async def tags(self, ctx, *, tags):
+        await self._update(ctx, tags=tags.split(","))
 
 
 def setup(bot):
