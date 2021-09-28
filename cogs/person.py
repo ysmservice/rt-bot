@@ -8,6 +8,7 @@ from typing import Optional, Tuple, List
 from aiohttp import ClientSession
 from datetime import timedelta
 from bs4 import BeautifulSoup
+from random import randint
 import asyncio
 
 
@@ -352,6 +353,43 @@ class Person(commands.Cog):
         else:
             await ctx.reply({"ja": "見つかりませんでした。",
                              "en": "..."})
+
+    FORTUNES = {
+        "超吉": (100, 101),
+        "大大大吉": (98, 100),
+        "大大吉": (96, 98),
+        "大吉": (75, 96),
+        "中吉": (65, 75),
+        "小吉": (40, 65),
+        "吉": (20, 40),
+        "末吉": (10, 20),
+        "凶": (4, 10),
+        "大凶": (0, 4)
+    }
+
+    @commands.command(
+        aliases=["おみくじ", "fortune", "cookie", "luck", "oj"],
+        extra={
+            "headding": {"ja": "おみくじをします。"},
+            "parent": "Entertainment"
+        }
+    )
+    async def omikuji(self, ctx):
+        """!lang ja
+        --------
+        おみくじをします。"""
+        i = randint(0, 100)
+        for key, value in self.FORTUNES.items():
+            if value[0] <= i < value[1]:
+                return await ctx.reply(
+                    embed=discord.Embed(
+                        title="おみくじ",
+                        description=f"あなたの運勢は`{key}`です。",
+                        color=self.bot.colors["normal"]
+                    ).set_footer(
+                        text="何回でもできますが、もちろんわかってますよね？"
+                    )
+                )
 
     def cog_unload(self, loop=None):
         if loop is None:
