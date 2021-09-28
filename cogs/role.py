@@ -222,8 +222,9 @@ class RolePanel(commands.Cog):
                         await payload.member.send(
                             f"rt!role {payload.message.embeds[0].title}\n" + "\n".join(
                                 (e + " " + getattr(
-                                    payload.message.guild.get_role(int(m[3:-1])),
-                                    "name", "役職が見つかりませんでした。")
+                                    payload.message.guild.get_role(
+                                        int(m.split()[0][3:-1])
+                                    ), "name", "役職が見つかりませんでした。")
                                 ) for e, m in emojis.items()
                             )
                         )
