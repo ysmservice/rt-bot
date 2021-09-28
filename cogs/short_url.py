@@ -112,14 +112,14 @@ class ShortURL(commands.Cog, DataManager):
             対象のURLです。
         custom : str, optional
             短縮URLをカスタムする場合に使います。  
-            例えば`tasuren`にすれば`https://rtbo.tk/tasuren`のように短縮されます。  
+            例えば`tasuren`にすれば`http://rtbo.tk/tasuren`のように短縮されます。  
             これはひらがななどは使えないので英数字にしてください。  
             空白の場合はランダムな六文字の英文字となります。
 
         Examples
         --------
         `rt!url short http://tasuren.f5.si tasuren`  
-        tasurenのホームページを`https://rtbo.tk/tasuren`からアクセスできるようにする。
+        tasurenのホームページを`http://rtbo.tk/tasuren`からアクセスできるようにする。
 
         Aliases
         -------
@@ -147,7 +147,7 @@ class ShortURL(commands.Cog, DataManager):
         Examples
         --------
         `rt!url short http://tasuren.f5.si tasuren`  
-        Make the home page of tasuren accessible from `https://rtbo.tk/tasuren`."""
+        Make the home page of tasuren accessible from `http://rtbo.tk/tasuren`."""
         if len(await self.getall(ctx.author.id)) >= 15:
             await self.remove_last(ctx.author.id)
 
@@ -166,7 +166,7 @@ class ShortURL(commands.Cog, DataManager):
         except AssertionError:
             await ctx.reply("その短縮URLは既に存在するので作れません。")
         else:
-            await ctx.reply(f"短縮しました。>>>https://rtbo.tk/{custom}")
+            await ctx.reply(f"短縮しました。>>>http://rtbo.tk/{custom}")
 
     @url.command("list", aliases=["一覧"])
     async def list_(self, ctx):
@@ -187,7 +187,7 @@ class ShortURL(commands.Cog, DataManager):
                 embed=discord.Embed(
                     title="短縮URL一覧",
                     description="\n".join(
-                        f"* https://rtbo.tk/{row[2]}"
+                        f"* http://rtbo.tk/{row[2]}"
                         for row in rows if row
                     ), color=self.bot.colors["normal"]
                 )
@@ -205,7 +205,7 @@ class ShortURL(commands.Cog, DataManager):
         ----------
         custom : str
             短縮URLのアドレスです。  
-            `https://rtbo.tk/...`か`...`です。
+            `http://rtbo.tk/...`か`...`です。
 
         Aliases
         -------
@@ -219,12 +219,12 @@ class ShortURL(commands.Cog, DataManager):
         ----------
         custom : str
             The address of the shortened URL.  
-            `https://rtbo.tk/... ` or `.... `.
+            `http://rtbo.tk/... ` or `.... `.
 
         Aliases
         -------
         rm, delete, del"""
-        if "https://rtbo.tk/" in custom:
+        if "http://rtbo.tk/" in custom:
             custom = custom[16:]
         try:
             await self.remove(ctx.author.id, custom)
