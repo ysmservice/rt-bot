@@ -128,6 +128,8 @@ class RolePanel(commands.Cog):
         key = str(payload.emoji)
         if key not in emojis:
             key = "<a" + key[1:]
+        # 無駄な空白を消すためにsplitする。
+        emojis[key] = emojis[key].split()[0]
         role = payload.message.guild.get_role(
             int(emojis[key][3:-1])
         )
