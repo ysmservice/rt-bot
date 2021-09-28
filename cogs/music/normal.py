@@ -902,8 +902,13 @@ class MusicNormal(commands.Cog, DataManager):
             if self.bot.test:
                 print("Error on tts:", e)
 
-    def shutdown_player(self, guild_id: int, reason: str, disconnect: bool = True) -> None:
-        if guild_id in self.now and self.now[guild_id].voice_client.is_playing():
+    def shutdown_player(
+        self, guild_id: int, reason: str, disconnect: bool = True,
+        force: bool = False
+    ) -> None:
+        if guild_id in self.now and (
+            not self.now[guild_id].voice_client.is_playing() or force
+        ):
             self.now[guild_id].force_end = True
             self.now[guild_id].clear()
             if disconnect:
@@ -925,13 +930,14 @@ class MusicNormal(commands.Cog, DataManager):
         # もしメンバーがいないのに接続されているチャンネルがあるなら自動で抜け出す。
         if voice_client.guild.id in self.now:
             self.shutdown_player(
-                voice_client.guild.id, "誰もいないので音楽再生を終了します。"
+                voice_client.guild.id, "誰もいないので音楽再生を終了します。",
+                force=True
             )
 
-    @tasks.loop(minutes=5)
+    @tasks.loop(minutes=3)
     async def check_timeout(self):
         # 再生していないで放置されてる場合は抜ける。
-        for guild_id in self.now:
+        for guild_id in list(self.now.keys()):
             if not self.now[guild_id].first and self.now[guild_id].check_timeout():
                 self.shutdown_player(
                     guild_id, "何も再生してない状態で放置されたので音楽再生を終了します。"
@@ -941,7 +947,7 @@ class MusicNormal(commands.Cog, DataManager):
     async def on_voice_leave(self, member, _, __):
         # もしRTがけられたりした場合は終了する。
         if member.id == self.bot.user.id:
-            self.shutdown_player(member.guild.id, "")
+            self.shutdown_player(member.guild.id, "", force=True)
 
 
 def setup(bot):

@@ -3,7 +3,7 @@
 from discord.ext import commands
 import discord
 
-from typing import Optional, List, Tuple
+from typing import Optional, Tuple, List
 
 from aiohttp import ClientSession
 from datetime import timedelta
@@ -130,7 +130,7 @@ class Person(commands.Cog):
         },
         aliases=["ui", "search_user", "ゆーざーいんふぉ！", "<-これかわいい！"]
     )
-    @commands.cooldown(1, 5, commands.BucketType.user)
+    @commands.cooldown(1, 4, commands.BucketType.user)
     async def userinfo(self, ctx, *, user_name_id = None):
         """!lang ja
         --------
@@ -177,6 +177,11 @@ class Person(commands.Cog):
         # もしuser_name_idが指定されなかった場合は実行者のIDにする。
         if user_name_id is None:
             user_name_id = ctx.author.id
+        if "@" in user_name_id:
+            user_name_id = user_name_id \
+                .replace("<", "").replace(">", "") \
+                .replace("@", "").replace("!", "")
+
         # ユーザーオブジェクトを取得する。
         try:
             user_id = int(user_name_id)
@@ -208,12 +213,19 @@ class Person(commands.Cog):
             embed.add_field(
                 name={
                     "ja": "Discord登録日時",
-                    "en": "..."
+                    "en": "Discord registration date and time"
                 },
                 value=(user.created_at + timedelta(hours=9)
                 ).strftime('%Y-%m-%d %H:%M:%S')
             )
+            embed.add_field(
+                name="Avatar URL",
+                value=embed.thumbnail.url.replace("?size=1024", "") \
+                    if embed.thumbnail.url else "ありません。",
+                inline=False
+            )
             embeds.append(embed)
+
             # サーバーのユーザー情報のEmbedを作る。
             if member:
                 embed = discord.Embed(

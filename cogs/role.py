@@ -50,7 +50,8 @@ class RolePanel(commands.Cog):
 
         Notes
         -----
-        🛠の絵文字を押すことでテンプレートを取得することができます。
+        🛠の絵文字を押すことでテンプレートを取得することができます。  
+        もし上手くいかない際はこの[トラブルシューティング](https://rt-team.github.io/trouble/role)を見てみましょう。
 
         Raises
         ------
