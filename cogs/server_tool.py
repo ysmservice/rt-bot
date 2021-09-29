@@ -410,20 +410,22 @@ class ServerTool(commands.Cog):
             Also, if it's a channel mention or name, it's someone who can see that channel."""
         if target is None:
             target = ctx.guild.members
-            if isinstance(obj, discord.Role):
-                target = [
-                    member for member in target
-                    if member.get_role(obj.id)
-                ]
-            else:
-                target = obj.members
+            if obj:
+                if isinstance(obj, discord.Role):
+                    target = [
+                        member for member in target
+                        if member.get_role(obj.id)
+                    ]
+                else:
+                    target = obj.members
 
         embed = discord.Embed(
             title="抽選",
             description=", ".join(
                 member.mention
-                for member in sample(target, count)
-                if not member.bot
+                for member in sample(
+                    set(filter(lambda m: not m.bot, target)), count
+                )
             ), color=self.bot.colors["normal"]
         )
         await ctx.reply(embed=embed)
