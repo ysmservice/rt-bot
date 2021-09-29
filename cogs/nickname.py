@@ -24,7 +24,7 @@ class NicknamePanel(commands.Cog):
             i += 1
             if line and line != "\n":
                 if line[0] == "<" and all(char in line for char in (">", ":")):
-                    if not_mention or line.count(">") != 1:
+                    if line.count(">") != 1:
                         # もし外部絵文字なら。
                         emoji = line[:line.find(">") + 1]
                 elif line[0] in UNICODE_EMOJI_ENGLISH or line[0] in self.emojis:
@@ -70,7 +70,34 @@ class NicknamePanel(commands.Cog):
 
         Notes
         -----
-        リアクションをつけるとニックネームがかわりリアクションを外すと普通の名前になります。"""
+        リアクションをつけるとニックネームが変わりリアクションを外すと普通の名前になります。  
+        サーバーオーナーなどの権限を持っている人のニックネームをRTが変えることができません。
+
+        !lang en
+        --------
+        Create a nickname panel.
+
+        Parameters
+        ----------
+        title : str
+            The title of the nickname panel.
+        description : str
+            The nickname to put in the nickname panel.  
+            If you put `+` at the beginning of the nickname, it will be appended after the name.
+
+        Examples
+        --------
+        ```
+        rt!nickpanel Toggle in-call
+        +Calling
+        +listening-only call
+        Who am I?
+        ```
+
+        Notes
+        -----
+        If you add a reaction, your nickname will change, and if you remove the reaction, it will become your normal name.  
+        RT cannot change the nickname of the server owner or other authorized person."""
         title = description[:(index := description.find("\n"))]
         description = description[index:]
         emojis = self.parse_description(description)
