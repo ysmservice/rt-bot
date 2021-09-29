@@ -57,7 +57,7 @@ class NGNickName(commands.Cog):
                             break
 
     @commands.group(
-        aliases=["NGニックネーム", "nn"], extra={
+        aliases=["NGニックネーム", "nn"], extras={
             "headding": {
                 "ja": "NGニックネーム", "en": "NG Nickname"
             }, "parent": "ServerSafety"
