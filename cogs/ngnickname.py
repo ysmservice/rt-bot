@@ -130,6 +130,8 @@ class NGNickName(commands.Cog):
         --------
         `rt!ngnick add tasuren`.  
         This is banned because tasuren is the real owner of the server."""
+        await ctx.trigger_typing()
+
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cursor:
                 await cursor.execute(
@@ -137,6 +139,12 @@ class NGNickName(commands.Cog):
                         ON DUPLICATE KEY UPDATE Word = %s;""",
                     (ctx.guild.id, word, word)
                 )
+
+        # 既にニックネームにwordが入ってる人は訂正する。
+        for member in ctx.guild.members:
+            if member.nick and word in member.nick:
+                await member.edit(nick=member.name)
+
         await ctx.reply(
             {"ja": "追加しました。",
              "en": "Added."}
