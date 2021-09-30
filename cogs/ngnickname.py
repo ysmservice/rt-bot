@@ -20,7 +20,7 @@ class NGNickName(commands.Cog):
             async with conn.cursor() as cursor:
                 await cursor.execute(
                     f"""CREATE TABLE IF NOT EXISTS {self.DB}(
-                        GuildID BIGINT NOT NULL PRIMARY KEY, Word TEXT
+                        GuildID BIGINT, Word TEXT
                     );"""
                 )
 
@@ -135,9 +135,8 @@ class NGNickName(commands.Cog):
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cursor:
                 await cursor.execute(
-                    f"""INSERT INTO {self.DB} (GuildID, Word) VALUES (%s, %s)
-                        ON DUPLICATE KEY UPDATE Word = %s;""",
-                    (ctx.guild.id, word, word)
+                    f"""INSERT INTO {self.DB} (GuildID, Word) VALUES (%s, %s);""",
+                    (ctx.guild.id, word)
                 )
 
         # 既にニックネームにwordが入ってる人は訂正する。
