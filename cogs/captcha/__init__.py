@@ -37,7 +37,7 @@ class DataManager(DatabaseManager):
         if await cursor.exists("captcha", target):
             await cursor.update_data("captcha", change, target)
         else:
-            target.update()
+            target.update(change)
             await cursor.insert_data("captcha", target)
 
     async def delete(self, cursor, channel: discord.TextChannel) -> None:
@@ -174,7 +174,7 @@ class Captcha(commands.Cog, DataManager):
                 await captcha.captcha(channel, member)
 
     def cog_unload(self):
-        self.queue.killer.cancel()
+        self.queue_killer.cancel()
 
     @tasks.loop(minutes=5)
     async def queue_killer(self):
@@ -189,8 +189,9 @@ class Captcha(commands.Cog, DataManager):
     @OAuth.login_require()
     async def captcha_redirect(self, request):
         # ウェブ認証をする前に本人かどうかの確認をとるためにOAuth認証に通す。
-        for guild_id in list(self.captchas["web"].queue.keys()):
-            if self.captchas["web"].queue[guild_id][0] == request.ctx.user.id:
+        for key in list(self.captchas["web"].queue.keys()):
+            guild_id = key[:key.find("-")]
+            if self.captchas["web"].queue[key][0] == request.ctx.user.id:
                 guild = self.bot.get_guild(int(guild_id))
                 if guild and guild.get_member(request.ctx.user.id):
                     userdata = self.captchas["web"].encrypt(

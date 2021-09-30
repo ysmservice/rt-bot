@@ -13,17 +13,19 @@ class WebCaptcha:
     def __init__(self, captcha_cog, secret: str):
         self.cog = captcha_cog
         self.secret: str = secret
-        self.queue: Dict[int, Tuple[int, float]] = {}
-        self.base_url = ("http://localhost:5500/"
-                         if self.cog.bot.test
-                         else "https://rt-bot.com/")
+        self.queue: Dict[str, Tuple[int, float]] = {}
+        self.base_url = (
+            "http://localhost:5500/"
+            if self.cog.bot.test
+            else "https://rt-bot.com/"
+        )
         try:
             self.cog.bot.web.add_route(
                 self.endpoint, "/api/captcha/<userdata>",
                 methods=["GET", "POST"]
             )
         except Exception as e:
-            print(e)
+            print("Ignored error on WebCaptcha:", e)
 
     def encrypt(self, data: dict) -> str:
         return reprypt.encrypt(
@@ -41,10 +43,8 @@ class WebCaptcha:
         # hCaptchaの認証のエンドポイントです。
         # URLにあるユーザー特定用の暗号化されたユーザーデータを読み込む。
         userdata = self.decrypt(userdata)
-        if (userdata["guild_id"] in self.queue
-            and self.queue[userdata["guild_id"]
-                ][0] == userdata["user_id"]
-            ):
+        key = f"{userdata['guild_id']}-{userdata['user_id']}"
+        if key in self.queue:
             # hCaptchaの認証結果を取得する。
             data = {"secret": self.secret,
                     "response": request.form.get("h-captcha-response")}
@@ -71,7 +71,7 @@ class WebCaptcha:
                             result = ("認証に成功しました。"
                                       "役職が付与されました。\n"
                                       "Success!")
-                            del self.queue[guild.id]
+                            del self.queue[key]
                     else:
                         result = ("うぅ、、役職が見つからなかったから認証できなかったのです。"
                                   "すみません！！\n"
@@ -94,7 +94,7 @@ class WebCaptcha:
 
     async def captcha(self, channel: discord.TextChannel,
                       member: discord.Member) -> None:
-        self.queue[member.guild.id] = (member.id, time())
+        self.queue[f"{member.guild.id}-{member.id}"] = (member.id, time())
         embed = discord.Embed(
             title={
                 "ja": "ウェブ認証", "en": "Web Captcha"
