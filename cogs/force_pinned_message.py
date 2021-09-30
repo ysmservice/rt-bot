@@ -35,7 +35,7 @@ class DataManager(DatabaseManager):
             value.update(target)
             await cursor.insert_data(self.TABLE, value)
 
-    async def delete(sel, cursor, channel_id: int) -> None:
+    async def delete(self, cursor, channel_id: int) -> None:
         target = {"ChannelID": channel_id}
         if await cursor.exists(self.TABLE, target):
             await cursor.delete(self.TABLE, target)
