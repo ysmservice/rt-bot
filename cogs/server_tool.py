@@ -316,18 +316,21 @@ class ServerTool(commands.Cog):
             }, "parent": "ServerUseful"
         }
     )
-    async def embed(self, ctx, *, content):
+    async def embed(self, ctx, color: Union[discord.Color, str], *, content):
         """!lang ja
         -------
-        Embedを作成します。  
+        Embed(埋め込み)を作成します。  
         以下のようにします。
         ```
-        rt!embed タイトル
+        rt!embed カラーコード タイトル
         説明
         ```
-        そしてフィールドで分けたい場合は`<`または`<!`でできます。  
+        カラーコードは埋め込みにつける色です。　　
+        カラーコードの指定方法は[ここ](https://rt-team.github.io/notes/color)を確認してみましょう。  
+        ※`null`にすると自分の名前の色になります。基本はこうすれば良いです。  
+        そしてフィールドで分けたい場合は`<`または`<!`でできます。
         ```
-        rt!embed タイトル
+        rt!embed カラーコード タイトル
         説明
         <フィールド名
         フィールド説明
@@ -339,6 +342,21 @@ class ServerTool(commands.Cog):
         横に並ばないフィールド名
         ```
 
+        Notes
+        -----
+        デフォルトでは作られる埋め込みの投稿者は実行者の名前そしてアイコンになります。  
+        もしRTの名前でアイコンで埋め込みを投稿して欲しい場合は`--rticon`をタイトルの前に入れてください。
+
+        Examples
+        --------
+        ```
+        rt!embed null ルール
+        <!ルール一
+        仲良く
+        <!ルール二
+        NSFWなものはNG
+        ```
+
         !lang en
         --------
         Make embed message.
@@ -346,25 +364,41 @@ class ServerTool(commands.Cog):
         Examples
         --------
         ```
-        rt!embed title
+        rt!embed red title
         description
         ```
 
         ```
-        rt!embed Rule
+        rt!embed null Rule
         This is the rule.
         <!No1
         Do not talking.
         <!No2
         This is the false rule.
         ```"""
-        await ctx.channel.webhook_send(
-            username=ctx.author.display_name,
-            avatar_url=ctx.author.avatar.url,
-            embed=self.easy_embed(
-                ">>" + content, ctx.author.color
+        rt = False
+        if "--rticon" in content:
+            content = content.replace(
+                " --rticon ", ""
+            ).replace(
+                " --rticon", ""
+            ).replace("--rticon", "")
+            rt = True
+
+        kwargs = {
+            "username": ctx.author.display_name,
+            "avatar_url": getattr(ctx.author.avatar, "url", ""),
+            "embed": self.easy_embed(
+                ">>" + content,
+                ctx.author.color if color == "null" else color
             )
-        )
+        }
+        send = ctx.channel.webhook_send
+        if rt:
+            kwargs = {"embed": kwargs["embed"]}
+            send = ctx.send
+
+        await send(**kwargs)
 
     @commands.command(
         aliases=["抽選", "choice", "lot"], extras={
