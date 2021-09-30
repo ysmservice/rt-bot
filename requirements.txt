@@ -21,3 +21,5 @@ pykakasi
 pydub
 psutil
 PyNacl
+captcha
+google_translate_py
