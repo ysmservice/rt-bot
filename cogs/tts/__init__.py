@@ -548,6 +548,20 @@ class TTS(commands.Cog, VoiceManager, DataManager):
     async def show_routine(self, ctx):
         await self.routine(ctx)
 
+    @routine.command()
+    async def reload(self, ctx):
+        """!lang ja
+        --------
+        ネタボイス(routine)の再読み込みをします。  
+        このコマンドはRTのサブであるりつたんを使っている場合のみ使うコマンドです。  
+        普通のRTでの実行は意味がありません。  
+        このコマンドは実行者のRoutineの登録リストを再読み込みするコマンドです。  
+        もしRTにネタボイスを追加した際にりつたんを使用していた場合は、このコマンドを実行しないとりつたんでネタボイスを使用できません。"""
+        data = await self.read_routine(ctx.author.id)
+        if ctx.author.id in self.cache:
+            self.cache[ctx.author.id]["routine"] = data
+        await ctx.reply("Ok")
+
     @routine.command(
         name="add", aliases=["あどど"],
         description="ネタ音声を追加します。 / Add rutine voice."
@@ -570,6 +584,13 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         添付できる音声は3MBまでで7秒以内の必要があります。  
         そして登録できるネタボイスは20個までです。  
         対応しているフォーマットは`wav`と`ogg`です。
+
+        Warnings
+        --------
+        RTのサブであるりつたんの場合はこのコマンドは実行できません。  
+        RTからこのコマンドを実行してください。  
+        もしりつたんの読み上げを使用中にRTからこのコマンドでネタボイスを追加した際は、りつたんの方で`rt#tts routine reload`を実行してください。  
+        なお現在スラッシュコマンドによるネタボイスの追加はできないのですみませんが`rt!tts routine add`のようにして実行してください。
 
         Parameters
         ----------
@@ -678,7 +699,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
             if event_type == "join":
                 self.cache[member.id] = {
                     "voice": await self.read_voice(member.id),
-                  "routine": await self.read_routine(member.id)
+                    "routine": await self.read_routine(member.id)
                 }
             elif member.id in self.voices:
                 del self.cache[member.id]
@@ -707,7 +728,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
             await self.write_voice(interaction.user.id, select.values[0])
             await interaction.message.channel.send(
                 {"ja": f"{interaction.user.mention}, 設定しました。",
-                 "en": f"{interaction.user.mention}, ..."},
+                 "en": f"{interaction.user.mention}, Ok"},
                 target=interaction.user.id
             )
             await interaction.message.delete()

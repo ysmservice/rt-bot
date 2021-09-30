@@ -58,11 +58,7 @@ class NgWord(commands.Cog, DataManager):
 
     @commands.group(
         aliases=["えぬじーわーど", "ng"], extras={
-            "setting": SettingData(
-                "guild", {"ja": "NGワードのリストです。", "en": "NG word list."}, show_ngwords,
-                TextBox("item1", {"ja": "NGワードリスト", "en": "NGWords"}, "", True),
-                permissions=[]
-            ), "headding": {"ja": "NGワード", "en": "NG Word"},
+            "headding": {"ja": "NGワード", "en": "NG Word"},
             "parent": "ServerSafety"
         }
     )

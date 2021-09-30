@@ -35,6 +35,11 @@ class DataManager(DatabaseManager):
             value.update(target)
             await cursor.insert_data(self.TABLE, value)
 
+    async def delete(sel, cursor, channel_id: int) -> None:
+        target = {"ChannelID": channel_id}
+        if await cursor.exists(self.TABLE, target):
+            await cursor.delete(self.TABLE, target)
+
     async def get(self, cursor, guild_id: int, channel_id: int) -> Tuple[int, int, bool, str]:
         target = dict(GuildID=guild_id, ChannelID=channel_id)
         if await cursor.exists(self.TABLE, target):
@@ -224,11 +229,14 @@ class ForcePinnedMessage(commands.Cog, DataManager):
             except Exception as e:
                 print("(ignore) Error on ForcePinnedMessage:", e)
 
-            await self.setting(
-                message.guild.id, message.channel.id,
-                getattr(new_message, "id", 0),
-                member.id, True, fpm[3]
-            )
+            if message.guild and message.channel and member:
+                await self.setting(
+                    message.guild.id, message.channel.id,
+                    getattr(new_message, "id", 0),
+                    member.id, True, fpm[3]
+                )
+            else:
+                await self.delete(channel_id)
 
 
 def setup(bot):

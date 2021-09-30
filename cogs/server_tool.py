@@ -5,6 +5,8 @@ from typing import Union
 from discord.ext import commands
 import discord
 
+from rtlib.ext import Embeds
+
 from datetime import datetime, timedelta
 from asyncio import TimeoutError, sleep
 from random import sample
@@ -314,18 +316,21 @@ class ServerTool(commands.Cog):
             }, "parent": "ServerUseful"
         }
     )
-    async def embed(self, ctx, *, content):
+    async def embed(self, ctx, color: Union[discord.Color, str], *, content):
         """!lang ja
         -------
-        Embedを作成します。  
+        Embed(埋め込み)を作成します。  
         以下のようにします。
         ```
-        rt!embed タイトル
+        rt!embed カラーコード タイトル
         説明
         ```
-        そしてフィールドで分けたい場合は`<`または`<!`でできます。  
+        カラーコードは埋め込みにつける色です。　　
+        カラーコードの指定方法は[ここ](https://rt-team.github.io/notes/color)を確認してみましょう。  
+        ※`null`にすると自分の名前の色になります。基本はこうすれば良いです。  
+        そしてフィールドで分けたい場合は`<`または`<!`でできます。
         ```
-        rt!embed タイトル
+        rt!embed カラーコード タイトル
         説明
         <フィールド名
         フィールド説明
@@ -337,6 +342,21 @@ class ServerTool(commands.Cog):
         横に並ばないフィールド名
         ```
 
+        Notes
+        -----
+        デフォルトでは作られる埋め込みの投稿者は実行者の名前そしてアイコンになります。  
+        もしRTの名前でアイコンで埋め込みを投稿して欲しい場合は`--rticon`をタイトルの前に入れてください。
+
+        Examples
+        --------
+        ```
+        rt!embed null ルール
+        <!ルール一
+        仲良く
+        <!ルール二
+        NSFWなものはNG
+        ```
+
         !lang en
         --------
         Make embed message.
@@ -344,25 +364,41 @@ class ServerTool(commands.Cog):
         Examples
         --------
         ```
-        rt!embed title
+        rt!embed red title
         description
         ```
 
         ```
-        rt!embed Rule
+        rt!embed null Rule
         This is the rule.
         <!No1
         Do not talking.
         <!No2
         This is the false rule.
         ```"""
-        await ctx.channel.webhook_send(
-            username=ctx.author.display_name,
-            avatar_url=ctx.author.avatar.url,
-            embed=self.easy_embed(
-                ">>" + content, ctx.author.color
+        rt = False
+        if "--rticon" in content:
+            content = content.replace(
+                " --rticon ", ""
+            ).replace(
+                " --rticon", ""
+            ).replace("--rticon", "")
+            rt = True
+
+        kwargs = {
+            "username": ctx.author.display_name,
+            "avatar_url": getattr(ctx.author.avatar, "url", ""),
+            "embed": self.easy_embed(
+                ">>" + content,
+                ctx.author.color if color == "null" else color
             )
-        )
+        }
+        send = ctx.channel.webhook_send
+        if rt:
+            kwargs = {"embed": kwargs["embed"]}
+            send = ctx.send
+
+        await send(**kwargs)
 
     @commands.command(
         aliases=["抽選", "choice", "lot"], extras={
@@ -371,7 +407,11 @@ class ServerTool(commands.Cog):
             }, "parent": "ServerTool"
         }
     )
-    async def lottery(self, ctx, count: int, role: discord.Role = None, target=None):
+    async def lottery(
+        self, ctx, count: int, *,
+        obj: Union[discord.Role, discord.TextChannel] = None,
+        target=None
+    ):
         """!lang ja
         --------
         指定された人数抽選をします。
@@ -380,9 +420,15 @@ class ServerTool(commands.Cog):
         ----------
         count : int
             当たり数です。
-        role : 役職のメンションか役職, optional
+        role : 役職かチャンネルのメンションか名前, optional
             抽選で選ばれる人で持っている必要のある役職です。  
-            選択しなくても大丈夫です。
+            選択しなくても大丈夫です。  
+            またチャンネルのメンションか名前の場合はそのチャンネルを見れる人となります。
+
+        Examples
+        --------
+        `rt!lottery 3 メンバー`
+        メンバーの中から三人抽選します。
 
         !lang en
         --------
@@ -394,19 +440,27 @@ class ServerTool(commands.Cog):
             The number of hits.
         role : mention or position of the position, optional
             This is the role that must be held by the person who will be selected by lottery.  
-            You don't need to select it."""
+            You don't need to select it.  
+            Also, if it's a channel mention or name, it's someone who can see that channel."""
         if target is None:
             target = ctx.guild.members
-            if role:
-                target = [member for member in target
-                          if member.get_role(role.id)]
+            if obj:
+                if isinstance(obj, discord.Role):
+                    target = [
+                        member for member in target
+                        if member.get_role(obj.id)
+                    ]
+                else:
+                    target = obj.members
+
         embed = discord.Embed(
             title="抽選",
             description=", ".join(
                 member.mention
-                for member in sample(target, count)
-            ),
-            color=self.bot.colors["normal"]
+                for member in sample(
+                    set(filter(lambda m: not m.bot, target)), count
+                )
+            ), color=self.bot.colors["normal"]
         )
         await ctx.reply(embed=embed)
 
@@ -680,6 +734,94 @@ class ServerTool(commands.Cog):
                 await new_payload.message.delete()
             finally:
                 self.trash_queue.remove(payload.channel_id)
+
+    @commands.command(
+        aliases=["メンバー一覧", "メンバー", "mems"], extras={
+            "headding": {
+                "ja": "ｻｰﾊﾞｰ、ﾁｬﾝﾈﾙ閲覧可能、ﾛｰﾙ所持のﾒﾝﾊﾞｰの一覧を表示します。",
+                "en": "Displays a list of members who are on the server, can view channels, and have roles."
+            }, "parent": "ServerTool"
+        }
+    )
+    @commands.cooldown(1, 7, commands.BucketType.user)
+    async def members(
+        self, ctx, *, channel: Union[
+            discord.Role, discord.TextChannel,
+            discord.VoiceChannel, discord.Thread
+        ] = None
+    ):
+        """!lang ja
+        --------
+        サーバーにいる人、チャンネルを見れる人または特定の役職を持っている人のメンションと名前とIDを列挙します。
+
+        Parameters
+        ----------
+        channel : 役職かチャンネルのメンションかIDまたは名前, optinal
+            メンバー一覧を見たい対象の役職またはチャンネルです。  
+            選択しなかった場合はサーバー全体が対象となります。
+
+        Examples
+        --------
+        `rt!members 雑談`
+        雑談というロールを持っている人またはチャンネルを見れる人の名前を列挙します。
+
+        Aliases
+        -------
+        mems, メンバー, メンバー一覧
+
+        !lang en
+        --------
+        Lists mentions, names, and IDs of people who are on the server, have access to the channel, or have a specific role.
+
+        Parameters
+        ----------
+        channel : Mention, ID or name of the role or channel, optinal
+            The role or channel for which you want to see the member list.  
+            If not selected, the entire server will be included.
+
+        Examples
+        --------
+        `rt!members chit chat`
+        List the names of people who have the role "chat" or who can see the channel."""
+        members = channel.members if channel else ctx.guild.members
+        if members:
+            # メンバーが多すぎる場合は表示しきれないのでそれぞれ2000文字以下のメンション文字列の二次元配列にする。
+            new, i = [], 0
+            for member in members:
+                for _ in range(2):
+                    try:
+                        new[i]
+                    except IndexError:
+                        new.append([])
+                    finally:
+                        new[i].append(
+                            f"{member.mention} {'<:bot:876337342116429844>' if member.bot else ''}\n　{member.name} ({member.id})"
+                        )
+                        if sum(map(len, new[i])) <= 2000:
+                            break
+                        else:
+                            i += 1
+
+            kwargs = dict(
+                embeds=Embeds(
+                    "Members", ctx.author.id, embeds=[
+                        discord.Embed(
+                            title="メンバー一覧",
+                            description="・" + "\n・".join(members),
+                            color=self.bot.colors["normal"]
+                        ) for members in new
+                    ]
+                )
+            )
+            if i == 0:
+                kwargs["embed"] = kwargs["embeds"].embeds[0]
+                del kwargs["embeds"]
+
+            await ctx.reply(**kwargs)
+        else:
+            await ctx.reply(
+                "そのチャンネルでは誰もしゃべれません。"
+            )
 
 
 def setup(bot):
