@@ -174,7 +174,7 @@ class Captcha(commands.Cog, DataManager):
                 await captcha.captcha(channel, member)
 
     def cog_unload(self):
-        self.queue.killer.cancel()
+        self.queue_killer.cancel()
 
     @tasks.loop(minutes=5)
     async def queue_killer(self):
