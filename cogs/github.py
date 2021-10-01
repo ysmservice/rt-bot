@@ -1,5 +1,4 @@
 from discord.ext import commands
-import aiohttp
 
 class Github(commands.Cog):
     def __init__(self, bot):
@@ -21,7 +20,7 @@ class Github(commands.Cog):
         headers = {
             "Authorization": "Bearer {}".format(self.github_token)
         }
-        async with self.bot.session.post("https://api.github.com/repos/RT-Team/rt-backend/issues",data=data, headers=headers) as r:
+        async with self.bot.session.post("https://api.github.com/repos/RT-Team/rt-backend/issues",data = data, headers = headers) as r:
             await ctx.send("issueを登録しました")
                 
 def setup(bot):
