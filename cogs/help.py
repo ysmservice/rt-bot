@@ -156,6 +156,7 @@ class Help(commands.Cog):
         """!lang ja
         --------
         コマンドの使い方が載っているヘルプを表示します。  
+        またコマンドの見方は[ここ](https://rt-team.github.io/notes/help)を見るとよくわかるかもしれません。
 
         Parameters
         ----------
@@ -188,6 +189,7 @@ class Help(commands.Cog):
                 description=(
                     "カテゴリーを選択するとそのカテゴリーにあるコマンドが表示されます。\nまたこちらからも見れます："
                     + ("http://0.0.0.0" if self.bot.test else "https://rt-bot.com/help.html")
+                    + "\nヘルプの見方は[ここ](https://rt-team.github.io/notes/help)を見るとヘルプをよく理解できるようになれるかもしれません。"
                 ),
                 color=self.bot.colors["normal"]
             )
