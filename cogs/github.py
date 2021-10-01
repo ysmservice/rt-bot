@@ -13,6 +13,7 @@ class Github(commands.Cog):
 
     @Github.command(name="issue")
     async def issue(self, ctx, title, *, description):
+        title = title + f"{ctx.author.name} ({ctx.author.id})"
         data = {
             "title": title,
             "body": description,
