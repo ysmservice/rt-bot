@@ -4,10 +4,17 @@ from typing import TypedDict, Tuple, Dict, List
 
 
 class Data(TypedDict, total=False):
-    warn: Dict[int, int]
+    # AutoModのデータの辞書の型のクラスです。
+    warn: Dict[int, float]
     emoji: int
     invite_filter: bool
     invites: List[int]
     level: int
     mute: Tuple[int, int]
     ban: int
+
+
+class CacheData(TypedDict):
+    before: str
+    time: float
+    count: int
