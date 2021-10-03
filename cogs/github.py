@@ -3,14 +3,14 @@ from discord.ext import commands
 class Github(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.github_token = ""
+        self.github_token = bot.secret.get("github", "")
         
     @commands.group(name="github")
     async def github(self, ctx):
         if ctx.invoked_subcommand:
             return await ctx.send("使い方が間違っています")
 
-    @Github.command(name="issue")
+    @github.command(name="issue")
     async def issue(self, ctx, title, *, description):
         title = title + f"{ctx.author.name} ({ctx.author.id})"
         data = {
