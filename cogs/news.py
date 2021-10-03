@@ -132,8 +132,7 @@ class News(commands.Cog, DataManager):
                 await ctx.reply(content="**最新のRTニュース**", embeds=embeds)
 
     @news.command()
-    @is_admin()
-    async def add(self, ctx, image, *, content):
+    async def add(self, ctx, *, content):
         """!lang ja
         --------
         ニュースに新しくなにかを追加します。  
@@ -145,8 +144,13 @@ class News(commands.Cog, DataManager):
             写真がないのなら`None`を入れてください。
         content : str
             ニュースに追加する文字列です。"""
-        now = await self.add_news(content, image)
-        await ctx.reply(f"Ok number:{now}")
+        if ctx.author.id in (
+            634763612535390209, 667319675176091659,
+            693025129806037003, 739702692393517076,
+            510590521811402752
+        ):
+            now = await self.add_news(content, "None")
+            await ctx.reply(f"Ok number:{now}")
 
     @news.command()
     @is_admin()
