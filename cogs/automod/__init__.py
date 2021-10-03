@@ -51,43 +51,37 @@ class AutoMod(commands.Cog, DataManager):
 
     @automod.command("setup", aliases=["設定"])
     @check
+    @assertion_error_handler(
+        {"ja": "既に設定されています。",
+         "en": "It has already set."}
+    )
     async def setup_(self, ctx):
-        try:
-            await self.setup(ctx.gulid.id)
-        except AssertionError:
-            await ctx.reply(
-                {"ja": "既に設定されています。",
-                 "en": "It has already set."}
+        await self.setup(ctx.gulid.id)
+        if ctx.guild.id not in self.guild_cache:
+            self.guild_cache.append(ctx.guild.id)
+        await ctx.reply(
+            embed=self.make_embed(
+                {"ja": "AutoModを有効にしました。\n",
+                    "en": "I enabled AutoMod."}
             )
-        else:
-            if ctx.guild.id not in self.guild_cache:
-                self.guild_cache.append(ctx.guild.id)
-            await ctx.reply(
-                embed=self.make_embed(
-                    {"ja": "AutoModを有効にしました。\n",
-                     "en": "I enabled AutoMod."}
-                )
-            )
+        )
 
     @automod.command("setdown", aliases=["終了"])
     @check
+    @assertion_error_handler(
+        {"ja": "設定が見つかりませんでした。",
+         "en": "Could not find the setting."}
+    )
     async def setdown_(self, ctx):
-        try:
-            await self.setdown(ctx.guld.id)
-        except AssertionError:
-            await ctx.reply(
-                {"ja": "設定が見つかりませんでした。",
-                 "en": "Could not find the setting."}
+        await self.setdown(ctx.guld.id)
+        if ctx.guild.id in self.guild_cache:
+            self.guild_cache.remove(ctx.guild.id)
+        await ctx.reply(
+            embed=self.make_embed(
+                {"ja": "AutoModを無効にしました。",
+                 "en": "I disabled AutoMod."}
             )
-        else:
-            if ctx.guild.id in self.guild_cache:
-                self.guild_cache.remove(ctx.guild.id)
-            await ctx.reply(
-                embed=self.make_embed(
-                    {"ja": "AutoModを無効にしました。",
-                     "en": "I disabled AutoMod."}
-                )
-            )
+        )
 
     @automod.group(aliases=["w", "警告"])
     async def warn(self, ctx):
@@ -176,56 +170,104 @@ class AutoMod(commands.Cog, DataManager):
             }, "emoji", count
         )
 
+    @automod.group(aliases=["例外", "無視", "igs"])
+    async def ignore(self, ctx):
+        await self.ignores_list(ctx)
+
+    @ignore.command("add", aliases=["追加"])
+    @check
+    @assertion_error_handler(
+        {"ja": "その例外は既に追加されています。",
+         "en": "The exception is already added."}
+    )
+    async def add_ignore(self, ctx, *, obj: Union[discord.TextChannel, discord.Role]):
+        await self.update_setting(
+            ctx, {
+                "ja": f"例外リストに`{obj.name}`を追加しました。",
+                "en": f"I added `{obj.name}` to ignore list."
+            }, "add_ignore", obj.id
+        )
+
+    @ignore.command("remove", aliases=["削除", "rm", "del", "delete"])
+    @check
+    @assertion_error_handler(
+        {"ja": "その例外が見つかりませんでした。",
+         "en": "The exception is not found."}
+    )
+    async def remove_ignore(self, ctx, *, obj: Union[discord.TextChannel, discord.Role]):
+        await self.update_setting(
+            ctx, {
+                "ja": f"例外リストから`{obj.name}`を削除しました。",
+                "en": f"I removed `{obj.name}` from exception list."
+            }, "remove_ignore", obj.id
+        )
+
+    @ignore.command("list", aliases=["一覧", "l"])
+    async def ignore_list(self, ctx):
+        data = (await self.get_guild(ctx.guild.id)).data
+        if "ignores" in data:
+            await ctx.reply(
+                embed=self.make_embed(
+                    ", ".join(
+                        getattr(
+                            ctx.guild.get_channel(sid) or ctx.guild.get_role(sid),
+                            "mention", "*見つかりませんでした。*"
+                        ) for sid in data["ignores"]
+                    )
+                )
+            )
+        else:
+            await ctx.reply(
+                {"ja": "例外リストは空です。",
+                 "en": "Exception list is nothing."}
+            )
+
     @automod.group()
     async def invites(self, ctx):
-        await self.list_(ctx)
+        await self.invites_list(ctx)
 
     @invites.command()
     @check
+    @assertion_error_handler(PLZ)
     async def onoff(self, ctx):
-        try:
-            guild = await self.get_guild(ctx.guild.id)
-        except AssertionError:
-            await ctx.reply(self.PLZ)
-        else:
-            onoff = "ON" if await guild.trigger_invite() else "OFF"
-            await ctx.reply(
-                embed=self.make_embed(
-                    {
-                        "ja": f"招待リンク規制を{onoff}にしました。",
-                        "en": f"I set Invitation link restriction {onoff}."
-                    }
-                )
+        onoff = "ON" if await (
+            await self.get_guild(ctx.guild.id)
+        ).trigger_invite() else "OFF"
+        await ctx.reply(
+            embed=self.make_embed(
+                {
+                    "ja": f"招待リンク規制を{onoff}にしました。",
+                    "en": f"I set Invitation link restriction {onoff}."
+                }
             )
+        )
 
     @invites.command("list", aliases=["一覧", "l"])
-    async def list_(self, ctx):
-        try:
-            guild = await self.get_guild(ctx.guild.id)
-        except AssertionError:
-            await ctx.reply(self.PLZ)
-        else:
-            await ctx.reply(
-                "**招待リンク規制例外チャンネル一覧**\n" \
-                ", ".join(f"<#{cid}>" for cid in guild.invites)
+    @assertion_error_handler(PLZ)
+    async def invites_list(self, ctx):
+        await ctx.reply(
+            "**招待リンク規制例外チャンネル一覧**\n" \
+            ", ".join(
+                f"<#{cid}>" for cid in (
+                    await self.get_guild(ctx.guild.id)
+                ).invites
             )
+        )
 
     @invites.command(aliases=["追加", "a"])
     @check
+    @assertion_error_handler(
+        {"ja": "これ以上追加できません。",
+         "en": "No more can be added."}
+    )
     async def add(self, ctx):
-        try:
-            await self.update_setting(
-                ctx, {
-                    "ja": "このチャンネルを招待有効チャンネルとして設定しました。\n" \
-                        "注意：`rt!automod invites onoff`で招待リンク規制を有効にしていない場合何も起きません。",
-                    "en": "I set here as everyone can make invite."
-                }, "add_invite_channel", ctx.channel.id
-            )
-        except AssertionError:
-            await ctx.reply(
-                {"ja": "これ以上追加できません。",
-                 "en": "No more can be added."}
-            )
+        await self.update_setting(
+            ctx, {
+                "ja": "このチャンネルを招待有効チャンネルとして設定しました。\n" \
+                    "注意：`rt!automod invites onoff`で招待リンク規制を有効にしていない場合何も起きません。",
+                "en": "I set here as everyone can make invite."
+            }, "add_invite_channel", ctx.channel.id
+        )
 
     @invites.command(aliases=["削除", "rm", "del", "delete"])
     @check

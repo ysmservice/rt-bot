@@ -129,6 +129,22 @@ class Guild:
         self.data["warn"][user_id] = warn
 
     @commit
+    async def add_ignore(self, sid: int) -> None:
+        """チャンネルIDまたは役職IDを例外リストに入れます。"""
+        if "ignores" not in self.data:
+            self.data["ignores"] = []
+        assert sid not in self.data["ignores"], "それは例外リスト既に追加されています。"
+        self.data["ignores"].append(sid)
+
+    @commit
+    async def remove_ignore(self, sid: int) -> None:
+        """チャンネルIDまたは役職IDを例外リストから削除します。"""
+        if "ignores" not in self.data:
+            self.data["ignores"] = []
+        assert sid in self.data["ignores"], "それは例外リストに追加されていません。"
+        self.data["ignores"].remove(sid)
+
+    @commit
     async def mute(self, warn: float, role_id: int) -> None:
         """ミュートをする警告数を設定します。
         warnが3以上100以下ではない場合は`AssertionError`が発生します。"""
@@ -253,7 +269,10 @@ class Guild:
         send: Optional[discord.TextChannel.send] = None
     ):
         """ユーザーのwarnチェックをし必要なら処罰をします。"""
-        if member.id in self.data.get("warn", {}):
+        if member.id in self.data.get("warn", {}) and (
+            not member.guild_permissions.administrator
+            or self.cog.bot.test
+        ):
             mute = self.data.get("mute", DefaultWarn.MUTE)
             ban = self.data.get("ban", DefaultWarn.BAN)
 

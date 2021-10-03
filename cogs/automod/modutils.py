@@ -11,6 +11,10 @@ from re import findall
 
 def similer(before: str, after: str, check_characters: Optional[int] = None) -> bool:
     # 渡されたbeforeとafterが似てるかチェックします。
+    if sum(map(after.count, ("@", "<", ">"))) // 3 > 2:
+        # 二個メンションがあれば問答無用でTrueを返す。
+        return True
+
     after_length = len(after)
     if check_characters is None:
         check_characters = after_length // 4

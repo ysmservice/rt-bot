@@ -9,6 +9,7 @@ class Data(TypedDict, total=False):
     emoji: int
     invite_filter: bool
     invites: List[int]
+    ignores: List[int]
     level: int
     mute: Tuple[int, int]
     ban: int
