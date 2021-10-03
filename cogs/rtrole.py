@@ -30,19 +30,19 @@ class RTRole(commands.Cog):
             @bot.check
             async def has_role(ctx):
                 if ctx.guild:
-                    if (role := discord.utils.find(
-                        lambda r: (
-                            "RT-" in r.name or (
-                                str(ctx.guild.id) in self.data
-                                and str(r.id) in self.data[str(ctx.guild.id)]
-                                and ctx.command.qualified_name in \
-                                    self.data[str(ctx.guild.id)][str(r.id)].get(
-                                        "commands", ""
-                                    )
+                    if (roles := [
+                        r for r in ctx.guild.roles
+                        if "RT-" in r.name or (
+                            str(ctx.guild.id) in self.data
+                            and str(r.id) in self.data[str(ctx.guild.id)]
+                            and ctx.command.qualified_name in \
+                                self.data[str(ctx.guild.id)][str(r.id)].get(
+                                    "commands", ""
+                                )
                             )
-                        ), ctx.guild.roles
-                    )):
-                        return bool(ctx.author.get_role(role.id))
+                        ]
+                    ):
+                        return any(bool(ctx.author.get_role(role.id)) for role in roles)
                 return True
             self.did = True
 
