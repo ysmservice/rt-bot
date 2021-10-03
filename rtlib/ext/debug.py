@@ -79,6 +79,13 @@ class Debug(commands.Cog):
         await ctx.reply(file=discord.File(self.OUTPUT_PATH))
         await os.remove(self.OUTPUT_PATH)
 
+    @debug.command(aliases=["su"])
+    @require_admin
+    async def insted(self, ctx, member: discord.Member, *, command):
+        ctx.message.author = member
+        ctx.message.content = f"{ctx.prefix}{command}"
+        await self.bot.process_commands(ctx.message)
+
     @executor_function
     def make_monitor_embed(self):
         embed = discord.Embed(
