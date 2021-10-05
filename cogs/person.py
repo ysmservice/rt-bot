@@ -178,7 +178,7 @@ class Person(commands.Cog):
         # もしuser_name_idが指定されなかった場合は実行者のIDにする。
         if user_name_id is None:
             user_name_id = ctx.author.id
-        if isisntance(user_name_id, str):
+        if isinstance(user_name_id, str):
             if "@" in user_name_id:
                 user_name_id = user_name_id \
                     .replace("<", "").replace(">", "") \
