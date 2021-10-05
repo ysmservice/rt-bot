@@ -3,8 +3,8 @@
 from discord.ext import commands
 import discord
 
-from jishaku.functools import executor_function
 from google_translate_py import AsyncTranslator
+from asyncio import sleep
 from typing import List
 
 
@@ -32,10 +32,11 @@ class Translator(commands.Cog, AsyncTranslator):
     def __init__(self, bot):
         self.bot = bot
         super(commands.Cog, self).__init__()
+        self.bot.loop.create_task(self.on_command_added())
 
-    @commands.Cog.listener()
     async def on_command_added(self):
         # ヘルプにチャンネルプラグイン版翻訳を追加するだけ。
+        await sleep(1.5)
         for lang in CHP_HELP:
             self.bot.cogs["DocHelp"].add_help(
                 "ChannelPlugin", "TranslateChannel",

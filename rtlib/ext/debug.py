@@ -86,6 +86,16 @@ class Debug(commands.Cog):
         ctx.message.content = f"{ctx.prefix}{command}"
         await self.bot.process_commands(ctx.message)
 
+    @debug.command(aliases=["rh"])
+    @require_admin
+    async def reload_help(self, ctx):
+        async with ctx.typing():
+            await self.bot.cogs["DocHelp"].on_full_ready()
+            await self.bot.cogs["Translator"].on_command_added()
+            await self.bot.cogs["ChannelPluginGeneral"].on_command_added()
+            self.bot.reload_extension("cogs.server_tool")
+        await ctx.reply("Ok")
+
     @executor_function
     def make_monitor_embed(self):
         embed = discord.Embed(

@@ -3,6 +3,7 @@
 from discord.ext import commands
 import discord
 
+from asyncio import sleep
 from re import findall
 
 
@@ -37,9 +38,10 @@ class ChannelPluginGeneral(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        self.bot.loop.create_task(self.on_command_added())
 
-    @commands.Cog.listener()
     async def on_command_added(self):
+        await sleep(1.5)
         for lang in HELPS:
             self.bot.cogs["DocHelp"].add_help(
                 "ChannelPlugin", "ChannelPluginGeneral",
