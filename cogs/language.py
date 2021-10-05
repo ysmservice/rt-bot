@@ -98,15 +98,8 @@ class Language(commands.Cog):
         if text:
             if isinstance(text, str) and text[0] != "{":
                 # 指定された文字を指定された言語で交換します。
-                # $で囲まれている部分を取得しておく。
-                results, text = self._extract_question(text)
-
                 # 言語データから文字列を取得する。
                 result = self.replies.get(text, {}).get(lang, text)
-
-                # 上で$で囲まれた部分を取得したのでその囲まれた部分を交換する。
-                for word in results:
-                    result = result.replace("$$", word, 1)
             else:
                 if isinstance(text, str) and text[0] == "{" and text[-1] == "}":
                     try:

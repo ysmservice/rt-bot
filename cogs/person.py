@@ -178,10 +178,11 @@ class Person(commands.Cog):
         # もしuser_name_idが指定されなかった場合は実行者のIDにする。
         if user_name_id is None:
             user_name_id = ctx.author.id
-        if "@" in user_name_id:
-            user_name_id = user_name_id \
-                .replace("<", "").replace(">", "") \
-                .replace("@", "").replace("!", "")
+        if isisntance(user_name_id, str):
+            if "@" in user_name_id:
+                user_name_id = user_name_id \
+                    .replace("<", "").replace(">", "") \
+                    .replace("@", "").replace("!", "")
 
         # ユーザーオブジェクトを取得する。
         try:
