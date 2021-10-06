@@ -42,10 +42,16 @@ class RTRole(commands.Cog):
                             )
                         ]
                     ):
+                        channels = {
+                            role.id: [
+                                ch.id for ch in ctx.guild.text_channels
+                                if any(r.id == role.id for r in ch.changed_roles)
+                            ] for role in roles
+                        }
                         return any(
-                            bool(ctx.author.get_role(role.id))
-                            or any(
-                                r.id == role.id for r in ctx.channel.changed_roles
+                            bool(ctx.author.get_role(role.id)) and (
+                                not channels or not channels[role.id] or \
+                                    ctx.channel.id in channels[role.id]
                             ) for role in roles
                         )
                 return True
@@ -76,7 +82,7 @@ class RTRole(commands.Cog):
         -----
         もし全てのコマンドを特定の役職を持っている人しか実行できないようにしたい場合は、`RT-`が名前の最初にある役職を作れば良いです。  
         例：`RT-操作権限`  
-        またこの機能で設定した役職をチャンネルの権限リストに追加するとチャンネル毎に設定することができます。
+        またこれで設定した役職をチャンネルに設定するとそのチャンネル内でその役職を持っていないとコマンドが使えないようにできます。
 
         !lang en
         --------
@@ -156,7 +162,7 @@ class RTRole(commands.Cog):
                 except KeyError:
                     pass
                 else:
-                    remoevd = True
+                    removed = True
 
             if removed:
                 await self.save()
