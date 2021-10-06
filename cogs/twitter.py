@@ -53,7 +53,7 @@ class DataManager(DatabaseManager):
             """SELECT * FROM {}
                 WHERE ChannelID = %s
                 ORDER BY RegTime ASC
-                LIMIT 6""".format(self.LOG_DB),
+                LIMIT 6;""".format(self.LOG_DB),
             (channel_id,)
         )
         return await cursor.cursor.fetchall()
@@ -146,7 +146,7 @@ class Twitter(commands.Cog, DataManager):
             name="TwitterNotificationLoop"
         )
 
-    HEADERS = {
+    TWITTERID_HEADERS = {
         "authority": "tweeterid.com",
         "sec-ch-ua": "^\\^Microsoft",
         "accept": "*/*",
@@ -172,7 +172,7 @@ class Twitter(commands.Cog, DataManager):
             try:
                 async with self.bot.session.post(
                     "https://tweeterid.com/ajax.php",
-                    headers=self.HEADERS, data={"input": username}
+                    headers=self.TWITTERID_HEADERS, data={"input": username}
                 ) as r:
                     if (user_id := await r.text()) == "error":
                         return ""
@@ -243,8 +243,10 @@ class Twitter(commands.Cog, DataManager):
                                 )
                                 await self.sended(channel.id, data["id"])
                                 self.queue[channel.id]["length"] += 1
+                    else:
+                        print("Error on Twitter:", data)
 
-                    await asyncio.sleep(10)
+                    await asyncio.sleep(30)
             await asyncio.sleep(1)
 
     def cog_unload(self):
@@ -295,13 +297,15 @@ class Twitter(commands.Cog, DataManager):
 
         Notes
         -----        
-        設定したユーザーのツイートじゃないツイートが通知されることがありますが、それは設定したユーザーによるリツイートですので心配する必要はないです。
+        設定したユーザーのツイートじゃないツイートが通知されることがありますが、それは設定したユーザーによるリツイートですので心配する必要はないです。  
+        設定後の最初は既にツイートしたものが何件か送信されることがありますが気にしないでください。
 
         Warnings
         --------
         デフォルトでは一つのサーバーにつき三つまで設定が可能です。  
         もし要望があればプレミアム機能を作りプレミアムに加入している人のみ十設定可能にします。  
-        そしてこの機能はまだベータ版ですので不具合がある可能性があります。
+        そしてこの機能はまだベータ版ですので不具合がある可能性があります。  
+        **そしてこの機能はベータです。しっかり動作しない可能性があります。**
 
         !lang en
         --------
