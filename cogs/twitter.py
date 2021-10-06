@@ -111,6 +111,7 @@ class Twitter(commands.Cog, DataManager):
         self.bot = bot
         self.queue = {}
         self.cache = {}
+        self.removed = []
         self.do_notification = True
         self.bot.loop.create_task(self.init_database())
         self.HEADERS = {
@@ -202,6 +203,9 @@ class Twitter(commands.Cog, DataManager):
                         # もしチャンネルがみつからないならその設定を削除する。
                         # またはユーザーが見つからない場合でも削除する。
                         await self.delete_data(row)
+                        continue
+                    if channel.id in self.removed:
+                        self.removed.remove(channel.id)
                         continue
 
                     # ユーザーのツイートを取得する。
@@ -337,6 +341,8 @@ class Twitter(commands.Cog, DataManager):
                      "en": "Twitter has not set yet."}
                 )
             else:
+                if ctx.channel.id not in self.removed:
+                    self.removed.append(ctx.channel.id)
                 await self.delete_sended(ctx.channel.id)
                 await ctx.reply("Ok")
         else:
@@ -346,6 +352,8 @@ class Twitter(commands.Cog, DataManager):
                      "en": "You can set up to three Twitter notifications per server."}
                 )
             elif await self.get_user_id(word):
+                if ctx.channel.id in self.removed:
+                    self.removed.remove(ctx.channel.id)
                 await self.write(ctx.guild.id, ctx.channel.id, word)
                 await ctx.reply("Ok")
             else:
