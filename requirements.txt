@@ -22,4 +22,4 @@ pydub
 psutil
 PyNacl
 captcha
-google_translate_py
+async_google_trans_new

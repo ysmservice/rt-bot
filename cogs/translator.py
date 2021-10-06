@@ -3,7 +3,7 @@
 from discord.ext import commands
 import discord
 
-from google_translate_py import AsyncTranslator
+from async_google_trans_new import AsyncTranslator
 from asyncio import sleep
 from typing import List
 
@@ -107,7 +107,7 @@ class Translator(commands.Cog, AsyncTranslator):
             embed=discord.Embed(
                 title={"ja": "翻訳結果",
                        "en": "translate result"},
-                description=await self.translate(content, "", lang),
+                description=await self.translate(content, lang),
                 color=self.bot.colors["normal"]
             ).set_footer(
                 text="Powered by Google Translate",
