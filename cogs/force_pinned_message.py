@@ -172,6 +172,8 @@ class ForcePinnedMessage(commands.Cog, DataManager):
                 del self.queue[ctx.channel.id]
                 if ctx.channel.id not in self.remove_queue:
                     self.remove_queue.append(ctx.channel.id)
+            if onoff and ctx.channel.id in self.remove_queue:
+                self.remove_queue.remove(ctx.channel.id)
             await ctx.reply("Ok")
         else:
             await ctx.reply("スレッドに設定することはできません。")
