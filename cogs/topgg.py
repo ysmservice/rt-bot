@@ -7,6 +7,6 @@ from topgg import DBLClient
 def setup(bot):
     if not hasattr(bot, "topgg") and not bot.test:
         bot.topgg = DBLClient(
-            self.bot, bot.secret["topgg"],
+            bot, bot.secret["topgg"],
             autopost=True, post_shard_count=True
         )
