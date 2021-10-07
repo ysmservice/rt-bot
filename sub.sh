@@ -1,1 +1,1 @@
-python3.9 sub.py
+python3.9 sub.py production
