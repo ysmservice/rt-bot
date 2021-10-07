@@ -1,7 +1,7 @@
 # RT - TopGG
 
 from discord.ext import commands, tasks
-from topggpy import DBLClient
+from topgg import DBLClient
 
 
 def setup(bot):
