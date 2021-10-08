@@ -62,6 +62,7 @@ class Log(commands.Cog):
         self.bot, self.data = bot, bot.data
         self.team_id = self.data["admins"]
         self.c = self.bot.colors["normal"]
+        self.bot.loop.create_task(self.on_command_added())
 
     async def on_command_added(self):
         await sleep(1.5)
