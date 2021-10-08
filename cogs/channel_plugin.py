@@ -52,10 +52,7 @@ class ChannelPluginGeneral(commands.Cog):
     async def on_message(self, message: discord.Message):
         if isinstance(message.channel, discord.Thread):
             return
-        if not message.guild or (
-            message.author.discriminator == "0000"
-            and "RT" in message.author.name
-        ):
+        if not message.guild or "RT's Auto Spoiler" in message.author.name:
             return
 
         if message.channel.topic:
@@ -92,7 +89,7 @@ class ChannelPluginGeneral(commands.Cog):
                             content = f"返信先：{message.reference.jump_url}\n{content}"
                         await message.channel.webhook_send(
                             content, files=new, embeds=message.embeds,
-                            username=message.author.display_name,
+                            username=message.author.display_name + " RT's Auto Spoiler",
                             avatar_url=message.author.avatar.url,
                         )
                         await message.delete()
