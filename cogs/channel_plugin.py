@@ -89,7 +89,7 @@ class ChannelPluginGeneral(commands.Cog):
                             or message.attachments or message.embeds):
                         # 送信しなおす。
                         if message.reference:
-                            content = f"返信先：{message.reference.jump_url}\n"
+                            content = f"返信先：{message.reference.jump_url}\n{content}"
                         await message.channel.webhook_send(
                             content, files=new, embeds=message.embeds,
                             username=message.author.display_name,
