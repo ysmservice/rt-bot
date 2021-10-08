@@ -15,7 +15,7 @@ class Ticket(commands.Cog):
         extras={
             "headding": {
                 "ja": "チケットチャンネル作成用のパネルを作成します。",
-                "en": "..."
+                "en": "Ticket panel"
             },
             "parent": "ServerPanel"
         }
@@ -86,7 +86,7 @@ class Ticket(commands.Cog):
         else:
             await ctx.reply(
                 {"ja": "このコマンドはカテゴリーにあるテキストチャンネルのみ動作します。",
-                 "en": "..."}
+                 "en": "This command can run on only text channel."}
             )
 
     def make_channel_name(self, name: str) -> str:
@@ -113,47 +113,49 @@ class Ticket(commands.Cog):
                 await payload.message.channel.send(
                     {"ja": f"{payload.member.mention}, クールダウンが必要なため{error}秒待ってください。",
                      "en": f"{payload.member.mention}, It want cooldown, please wait for {error} seconds."},
-                     delete_after=5, target=payload.member.id
+                    delete_after=5, target=payload.member.id
                 )
-                return
             else:
                 self.cooldown[payload.member.id] = now
 
-            if channel:
-                # もし既にチケットチャンネルが作られているならreturnする。
-                await payload.message.send(
-                    {"ja": (f"{payload.member.mention}, "
-                            + "あなたは既にチケットチャンネルを作成しています。"),
-                     "en": (f"{payload.member.mention}, "
-                            + "You have already created a ticket channel.")},
-                    delete_after=5, target=payload.member.id
+                if channel:
+                    # もし既にチケットチャンネルが作られているならreturnする。
+                    await payload.message.send(
+                        {"ja": f"{payload.member.mention}, " \
+                            "あなたは既にチケットチャンネルを作成しています。",
+                         "en": f"{payload.member.mention}, " \
+                            "You have already created a ticket channel."},
+                        delete_after=5, target=payload.member.id
+                    )
+                    return
+                # チケットチャンネルの作成に必要な情報を集める。
+                role = (
+                    payload.message.guild.get_role(
+                        int(payload.message.content[11:])
+                    ) if len(payload.message.content) > 15 else None
                 )
-                return
-            # チケットチャンネルの作成に必要な情報を集める。
-            role = (payload.message.guild.get_role(int(payload.message.content[11:]))
-                    if len(payload.message.content) > 15
-                    else None)
-            # overwritesを作る。
-            perms = {
-                payload.message.guild.default_role: discord.PermissionOverwrite(read_messages=False)
-            }
-            if role:
-                # もしroleが指定されているならroleもoverwritesに追加する。
-                perms[role] = discord.PermissionOverwrite(read_messages=True)
-            # チケットチャンネルを作成する。
-            channel = await payload.message.channel.category.create_text_channel(
-                channel_name, overwrites=perms
-            )
-            await channel.send(
-                {"ja": f"{payload.member.mention}, ここがあなたのチャンネルです。",
-                 "en": f"{payload.member.mention}, Here!"},
-                target=payload.member.id
-            )
-        else:
-            # もしリアクションが削除されたなら。
-            if channel:
-                # 既ににリアクションチャンネルを作っている人ならチャンネルを削除する。
-                await channel.delete()
+                # overwritesを作る。
+                perms = {
+                    payload.message.guild.default_role: \
+                        discord.PermissionOverwrite(read_messages=False),
+                    payload.member: \
+                        discord.PermissionOverwrite(read_messages=True)
+                }
+                if role:
+                    # もしroleが指定されているならroleもoverwritesに追加する。
+                    perms[role] = discord.PermissionOverwrite(read_messages=True)
+                # チケットチャンネルを作成する。
+                channel = await payload.message.channel.category.create_text_channel(
+                    channel_name, overwrites=perms
+                )
+                await channel.send(
+                    {"ja": f"{payload.member.mention}, ここがあなたのチャンネルです。",
+                     "en": f"{payload.member.mention}, Here is your channel!"},
+                    target=payload.member.id
+                )
+        elif channel:
+            # もしリアクションが削除されたならチャンネルを削除する。
+            await channel.delete()
 
     @commands.Cog.listener()
     async def on_full_reaction_add(self, payload):
