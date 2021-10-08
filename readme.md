@@ -1,4 +1,4 @@
-[![Discord Bots](https://top.gg/api/widget/status/716496407212589087.svg)](https://top.gg/bot/716496407212589087) [![Discord Bots](https://top.gg/api/widget/servers/716496407212589087.svg)](https://top.gg/bot/716496407212589087) ![Discord](https://img.shields.io/discord/718641964672876614?label=Support&logo=discord) ![GitHub issues](https://img.shields.io/github/issues/RT-Team/rt-backend) `(C) 2020 RT Team`
+[![Discord Bots](https://top.gg/api/widget/status/716496407212589087.svg)](https://top.gg/bot/716496407212589087) [![Discord Bots](https://top.gg/api/widget/servers/716496407212589087.svg)](https://top.gg/bot/716496407212589087) ![Discord](https://img.shields.io/discord/718641964672876614?label=support&logo=discord) ![GitHub issues](https://img.shields.io/github/issues/RT-Team/rt-backend) `(C) 2020 RT Team`
 # RT Backend
 DiscordのBotのRTのバックエンドです。  
 RTについて知らない人は[ここ](https://rt-bot.com)を見てみましょう。
@@ -25,11 +25,14 @@ MySQL   `mysql`というデータベースを使用します。
 	    "production": "本番用BotToken",
 	    "sub": "..."
     },
+    "topgg": "TopGG token (optional)",
     "mysql": {
         "user": "root",
     	"password": "mysqlのパスワード"
     },
-    "twitter": "...",
+    "twitter": {
+        "token": "Twitter Access Token (optional)"
+    },
     "oauth": {
         "test": {
             "client_id": "test用BotのOAuthクライアントID",
