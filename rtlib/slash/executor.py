@@ -40,13 +40,13 @@ async def executor(
             state = bot._connection
 
             for parameter, option in zip(
-                        list(
-                            signature(
-                                command.callback
-                            ).parameters.values()
-                        )[len(args):],
-                        options
-                    ):
+                list(
+                    signature(
+                        command.callback
+                    ).parameters.values()
+                )[len(args):],
+                options
+            ):
                 # 型変換を行う。
                 if parameter.annotation == discord.User:
                     option.value = discord.User(
@@ -55,6 +55,10 @@ async def executor(
                 elif parameter.annotation == discord.Member:
                     option.value = discord.Member(
                         data=option.value, guild=ctx.guild, state=state
+                    )
+                elif parameter.annotation == discord.Member:
+                    option.value = discord.Role(
+                        guild=ctx.guild, state=state, data=option.value
                     )
                 elif parameter.annotation in (
                         discord.TextChannel, discord.VoiceChannel,
