@@ -68,7 +68,7 @@ class Log(commands.Cog):
         await sleep(1.5)
         for lang in CHP_HELP:
             self.bot.cogs["DocHelp"].add_help(
-                "ChannelPlugin", "Discord log",
+                "ChannelPlugin", "Discord-log",
                 lang, *CHP_HELP[lang]
             )
 
