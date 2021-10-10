@@ -88,6 +88,7 @@ class Translator(commands.Cog, AsyncTranslator):
             If you want use japanese you do `ja` and If you want to use English you do `en`.
         content : str
             Translate content
+
         Examples
         --------
         `rt!translate ja I wanna be the guy!`
