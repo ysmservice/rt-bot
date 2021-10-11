@@ -3,7 +3,8 @@
 from discord.ext import commands
 import discord
 
-from google_translate_py import AsyncTranslator
+from jishaku.functools import executor_function
+from deep_translator import GoogleTranslator
 from asyncio import sleep
 from typing import List
 
@@ -24,15 +25,33 @@ trans, ほんやく, 翻訳
 
 ### これもあるよ
 翻訳コマンドである`translate`で個人カテゴリーにあります。"""),
-    "en": ("...", """...""")
+    "en": ("Dedicated translation channel function", """# translation channel plugin - translate
+This is a feature that allows you to make a channel dedicated to translation by putting `rt>translate <language code to translate to>` in the channel topic.  
+Example: `rt>translate ja` (all messages sent to a channel with this in the topic will be translated into Japanese).  
+
+### Language code example
+```
+Japanese `ja`  
+English  `en`
+```
+Other codes can be found by looking up `<language name> code` or something like that.
+
+### Alias
+trans
+
+### Also see
+It's in the personal category with the `translate` command.""")
 }
 
 
-class Translator(commands.Cog, AsyncTranslator):
+class Translator(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        super(commands.Cog, self).__init__()
         self.bot.loop.create_task(self.on_command_added())
+
+    @executor_function
+    def translate(self, text: str, target: str) -> str:
+        return GoogleTranslator(target=target).translate(text)
 
     async def on_command_added(self):
         # ヘルプにチャンネルプラグイン版翻訳を追加するだけ。
@@ -96,19 +115,17 @@ class Translator(commands.Cog, AsyncTranslator):
 
         Aliases
         -------
-        trans, ほんやく, ほんやく
+        trans
 
         See Also
         --------
-        translate(チャンネルプラグイン) : 翻訳専用チャンネル機能。
-        translate(channel plugin):Only for translate channel.
-        ..."""
+        translate(channel plugin) : Only for translate channel."""
         await ctx.trigger_typing()
         await ctx.reply(
             embed=discord.Embed(
                 title={"ja": "翻訳結果",
                        "en": "translate result"},
-                description=await self.translate(content, "", lang),
+                description=await self.translate(content, lang),
                 color=self.bot.colors["normal"]
             ).set_footer(
                 text="Powered by Google Translate",
