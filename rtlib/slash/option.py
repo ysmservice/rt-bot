@@ -20,9 +20,10 @@ class CanNotUseChoice(Exception):
 
 class Option(commands.Converter):
     def __init__(
-            self, type_: object, name: str, description: str,
-            required: bool = True, choices: Optional[Choices] = None,
-            value: Any = None):
+        self, type_: object, name: str, description: str,
+        required: bool = True, choices: Optional[Choices] = None,
+        value: Any = None
+    ):
         self.annotation = type_
         self.type: int = get_option_type(type_)
         self.name: str = name

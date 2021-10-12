@@ -47,27 +47,33 @@ async def executor(
                 )[len(args):],
                 options
             ):
+                annotation = parameter.annotation
+                if isinstance(annotation, Option):
+                    annotation = annotation.annotation
                 # 型変換を行う。
-                if parameter.annotation == discord.User:
+                if annotation == discord.User:
                     option.value = discord.User(
                         state=state, data=option.value
                     )
-                elif parameter.annotation == discord.Member:
+                elif annotation == discord.Member:
                     option.value = discord.Member(
                         data=option.value, guild=ctx.guild, state=state
                     )
-                elif parameter.annotation == discord.Member:
+                elif annotation == discord.Member:
                     option.value = discord.Role(
                         guild=ctx.guild, state=state, data=option.value
                     )
-                elif parameter.annotation in (
-                        discord.TextChannel, discord.VoiceChannel,
-                        discord.Thread, discord.StageChannel,
-                        discord.CategoryChannel):
-                    option.value = option.value
-                elif isfunction(parameter.annotation):
-                    coro = parameter.annotation(option.value)
-                    if iscoroutinefunction(parameter.annotation):
+                elif annotation in (
+                    discord.TextChannel, discord.VoiceChannel,
+                    discord.Thread, discord.StageChannel,
+                    discord.CategoryChannel
+                ):
+                    option.value = ctx.guild.get_channel_or_thread(
+                        int(option.value)
+                    )
+                elif isfunction(annotation):
+                    coro = annotation(option.value)
+                    if iscoroutinefunction(annotation):
                         option.value = await coro
                     else:
                         option.value = coro

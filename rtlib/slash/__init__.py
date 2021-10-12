@@ -34,21 +34,26 @@ class SlashCommand(commands.Cog):
             self, former: dict, latter: dict,
             ignore: List[str], defaults: dict) -> bool:
         # 渡された二つのリストが同じかどうかを調べます。
+        if len(former) < len(latter):
+            # もしもしformerの方が数が少ないなら入れ替える。
+            cache = former
+            former = latter
+            latter = cache
+            del cache
         for data in former:
             dictionary = isinstance(data, dict)
             is_list = isinstance(data, list)
             for latter_data in latter:
-                if dictionary and isinstance(latter_data, dict):
-                    if self.check_dictionary_same(
-                            data, latter_data, ignore, defaults):
-                        break
-                elif is_list and isinstance(latter_dat, dict):
-                    if self.check_list_same(
-                            data, latter_data, ignore, defaults):
-                        break
-                else:
-                    if data == latter_data:
-                        break
+                if dictionary and isinstance(latter_data, dict) and self.check_dictionary_same(
+                    data, latter_data, ignore, defaults
+                ):
+                    break
+                elif is_list and isinstance(latter_dat, dict) and self.check_list_same(
+                    data, latter_data, ignore, defaults
+                ):
+                    break
+                elif data == latter_data:
+                    break
             else:
                 return False
         return True
@@ -72,7 +77,7 @@ class SlashCommand(commands.Cog):
                     if isinstance((latter_cache := latter.get(key)), list):
                         if not self.check_list_same(
                             former[key], latter_cache, ignore, defaults
-                            ):
+                        ):
                             return False
                     else:
                         return False
@@ -83,8 +88,9 @@ class SlashCommand(commands.Cog):
         return True
 
     def _get_data_from_command(
-            self, command: Type[commands.Command], id_: int = None,
-            option_mode: bool = False) -> dict:
+        self, command: Type[commands.Command], id_: int = None,
+        option_mode: bool = False
+    ) -> dict:
         # コマンドのデータを作成します。
         data = {
             "name": command.name,
