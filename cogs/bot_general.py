@@ -7,6 +7,8 @@ from traceback import TracebackException
 from rtlib.ext import Embeds, componesy
 from time import time
 
+from .server_tool import PERMISSION_TEXTS
+
 
 ERROR_CHANNEL = 842744343911596062
 
@@ -234,8 +236,15 @@ class BotGeneral(commands.Cog):
                                   + "Valid boolean value:`on/off`, `true/false`, `True/False`")}
         elif isinstance(error, commands.errors.MissingPermissions):
             title = "403 Forbidden"
-            description = {"ja": "あなたの権限ではこのコマンドを実行することができません。",
-                           "en": "You can't do this command. Because you need permission"}
+            description = {
+                "ja": "あなたの権限ではこのコマンドを実行することができません。\n実行には以下の権限が必要です。：\n" \
+                    + ", ".join(
+                        getattr(PERMISSION_TEXTS.get(name, name))
+                        for name in error.missing_permissions
+                    ),
+                "en": "You can't do this command.\nBecause you need permission:\n" \
+                    + ", ".join(error.missing_permissions)
+            }
         elif isinstance(error, commands.errors.MissingRole):
             title = "403 Forbidden"
             description = {"ja": "あなたはこのコマンドの実行に必要な役職を持っていないため、このコマンドを実行できません。",
