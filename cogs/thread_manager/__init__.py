@@ -130,7 +130,7 @@ class ThreadManager(commands.Cog, DataManager):
         -------
         mon, it, inspect, watch"""
         if isinstance(channel, discord.TextChannel):
-            await self.get_data(ctx.guild.id).add_channel(ctx.channel.id)
+            await self.get_data(ctx.guild.id).add_channel(channel.id)
             await ctx.reply("Ok")
         else:
             await ctx.reply(self.NOT_CHANNEL)
@@ -170,7 +170,7 @@ class ThreadManager(commands.Cog, DataManager):
         -------
         unwatch, uninspect, unit"""
         if isinstance(channel, discord.TextChannel):
-            await self.get_data(ctx.gulid.id).remove_channel(ctx.channel.id)
+            await self.get_data(ctx.guild.id).remove_channel(channel.id)
             await ctx.reply("Ok")
         else:
             await ctx.reply(self.NOT_CHANNEL)
