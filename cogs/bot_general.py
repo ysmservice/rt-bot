@@ -237,13 +237,13 @@ class BotGeneral(commands.Cog):
         elif isinstance(error, commands.errors.MissingPermissions):
             title = "403 Forbidden"
             description = {
-                "ja": "あなたの権限ではこのコマンドを実行することができません。\n実行には以下の権限が必要です。：\n" \
+                "ja": "あなたの権限ではこのコマンドを実行することができません。\n**実行に必要な権限**\n" \
                     + ", ".join(
-                        PERMISSION_TEXTS.get(name, name)
+                        f"`{PERMISSION_TEXTS.get(name, name)}`"
                         for name in error.missing_permissions
                     ),
-                "en": "You can't do this command.\nBecause you need permission:\n" \
-                    + ", ".join(error.missing_permissions)
+                "en": "You can't do this command.\n**You need these permissions**\n`" \
+                    + "`, `".join(error.missing_permissions) + "`"
             }
         elif isinstance(error, commands.errors.MissingRole):
             title = "403 Forbidden"
