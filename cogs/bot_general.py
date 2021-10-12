@@ -239,7 +239,7 @@ class BotGeneral(commands.Cog):
             description = {
                 "ja": "あなたの権限ではこのコマンドを実行することができません。\n実行には以下の権限が必要です。：\n" \
                     + ", ".join(
-                        getattr(PERMISSION_TEXTS.get(name, name))
+                        PERMISSION_TEXTS.get(name, name)
                         for name in error.missing_permissions
                     ),
                 "en": "You can't do this command.\nBecause you need permission:\n" \
