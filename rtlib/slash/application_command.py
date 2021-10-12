@@ -4,7 +4,8 @@ from discord.ext import commands
 import discord
 
 from .types import (
-    ApplicationCommand as ApplicationCommandType, OptionType)
+    ApplicationCommand as ApplicationCommandType, OptionType
+)
 from typing import Type, Optional, List
 from .option import Option
 
@@ -14,7 +15,8 @@ class ApplicationCommand:
             self, bot: Type[commands.Bot],
             command: Type[commands.Command],
             data: ApplicationCommandType,
-            interaction: discord.Interaction = None):
+            interaction: discord.Interaction = None
+        ):
         self.bot: Type[commands.Bot] = bot
         self.interaction: interaction = interaction
         self.command: Type[commands.Command] = command
