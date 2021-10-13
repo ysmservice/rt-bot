@@ -102,7 +102,7 @@ class ThreadManager(commands.Cog, DataManager):
 
         Notes
         -----
-        自動アーカイブされる時間の前後十五秒以内にアーカイブされたらアーカイブ解除されます。
+        自動アーカイブされる時間の前後8分以内にアーカイブされたらアーカイブ解除されます。
 
         Parameters
         ----------
