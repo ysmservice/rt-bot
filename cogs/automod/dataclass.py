@@ -298,25 +298,27 @@ class Guild:
             ban = self.data.get("ban", DefaultWarn.BAN)
 
             try:
-                if self.data["warn"][member.id] >= mute:
-                    # もしミュートするほど警告数が溜まったらミュートする。
-                    if "mute" in self.data and role_id:
-                        assert (role := member.guild.get_role(role_id)), \
-                            "0付与するロールが見つからないため"
-                        await member.add_roles(role, reason=f"{AM}スパムのため。")
-                        assert False, f"1{member.mention}をスパムのためミュートにしました。"
-
-                elif self.data["warn"][member.id] >= ban:
+                if self.data["warn"][member.id] >= ban:
                     # もしBANするほど警告数が溜まったらBANする。
                     await member.ban(reason=f"{AM}スパムのため。")
                     assert False, f"1{member.mention}をスパムのためBANしました。"
 
-                elif send and self.data["warn"][member.id] >= mute // 2:
-                    # もしあと半分でミュートになるのなら警告をしておく。
-                    await send(f"{member.mention}, これ以上スパムメッセージを送信するとミュートになります。")
+                elif self.data["warn"][member.id] >= mute:
+                    # もしミュートするほど警告数が溜まったらミュートする。
+                    if "mute" in self.data and role_id:
+                        assert (role := member.guild.get_role(role_id)), \
+                            "0付与するロールが見つからないため"
+                        if not member.get_role(role.id):
+                            await member.add_roles(role, reason=f"{AM}スパムのため。")
+                            assert False, f"1{member.mention}をスパムのためミュートにしました。"
+
                 elif send and self.data["warn"][member.id] >= ban - 2:
                     # もしあと警告二回を食らったらBANになるなら警告をしておく。
                     await send(f"{member.mention}, これ以上スパムメッセージを送信するとBANされます。")
+
+                elif send and self.data["warn"][member.id] >= mute // 2:
+                    # もしあと半分でミュートになるのなら警告をしておく。
+                    await send(f"{member.mention}, これ以上スパムメッセージを送信するとミュートになります。")
 
             except (AssertionError, discord.Forbidden) as e:
                 e = "0権限がないため" if isinstance(e, discord.Forbidden) else str(e)
