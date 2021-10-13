@@ -100,10 +100,6 @@ class ThreadManager(commands.Cog, DataManager):
         --------
         指定されたチャンネルのスレッドが勝手に閉じられないように設定します。
 
-        Notes
-        -----
-        自動アーカイブされる時間の前後8分以内にアーカイブされたらアーカイブ解除されます。
-
         Parameters
         ----------
         channel : テキストチャンネルの名前またはメンション
@@ -116,10 +112,6 @@ class ThreadManager(commands.Cog, DataManager):
         !lang en
         --------
         Prevents the thread of the specified channel from being closed by itself.
-
-        Notes
-        -----
-        If a thread is archived within 15 seconds before or after the auto-archive time, it will be unarchived.
 
         Parameters
         ----------
