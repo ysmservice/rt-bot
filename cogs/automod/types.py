@@ -13,9 +13,15 @@ class Data(TypedDict, total=False):
     level: int
     mute: Tuple[int, int]
     ban: int
+    withdrawal: int
 
 
-class CacheData(TypedDict):
+class SpamCacheData(TypedDict, total=False):
+    # スパムを検知するためにメッセージ送信毎に保存するキャッシュの辞書の型のクラスです。
     before: str
     time: float
     count: int
+
+
+class Caches(TypedDict):
+    withdrawal: List[Tuple[int, int]]

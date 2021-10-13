@@ -22,7 +22,7 @@ def similer(before: str, after: str, check_characters: Optional[int] = None) -> 
         check_characters = after_length
     return any(
         after[i:i + check_characters] in before
-        for i in range(after_length - check_characters)
+        for i in range(check_characters)
     )
 
 

@@ -11,9 +11,9 @@ from time import time
 from .modutils import check, assertion_error_handler
 from .constants import CACHE_TIMEOUT
 from .dataclass import DataManager
-from .types import CacheData
 
 if TYPE_CHECKING:
+    from .types import SpamCacheData as CacheData
     from .dataclass import Guild
     from rtlib import Backend
 
@@ -28,8 +28,10 @@ class AutoMod(commands.Cog, DataManager):
 
     def __init__(self, bot):
         self.bot: "Backend" = bot
-        self.cache: Dict[int, Dict[int, CacheData]] = defaultdict(dict)
+        self.cache: Dict[int, Dict[int, "CacheData"]] = defaultdict(
+            lambda : defaultdict(dict))
         self.guild_cache: List[int] = []
+        self.withdrawal_cache: Dict[int, int] = {}
 
         self.remove_cache.start()
         self.reset_warn.start()
@@ -37,13 +39,13 @@ class AutoMod(commands.Cog, DataManager):
         for name in ("message", "invite_create"):
             self.bot.add_listener(self.trial, f"on_{name}")
 
-        super(commands.Cog, self).__init__(self.cog)
+        super(commands.Cog, self).__init__(self)
 
-    @commands.gruop(aliases=["安全", "も出レーション", "am"])
+    @commands.group(aliases=["安全", "も出レーション", "am"])
     @commands.cooldown(1, 3, commands.BucketType.guild)
-    @commands.dm_only
+    @commands.guild_only()
     async def automod(self, ctx):
-        if not ctx.subcommand_invoked:
+        if not ctx.invoked_subcommand:
             await ctx.reply(
                 {"ja": "使用方法が違います。",
                  "en": "The usage is different."}
@@ -56,13 +58,13 @@ class AutoMod(commands.Cog, DataManager):
          "en": "It has already set."}
     )
     async def setup_(self, ctx):
-        await self.setup(ctx.gulid.id)
+        await self.setup(ctx.guild.id)
         if ctx.guild.id not in self.guild_cache:
             self.guild_cache.append(ctx.guild.id)
         await ctx.reply(
             embed=self.make_embed(
                 {"ja": "AutoModを有効にしました。\n",
-                    "en": "I enabled AutoMod."}
+                 "en": "I enabled AutoMod."}
             )
         )
 
@@ -106,7 +108,7 @@ class AutoMod(commands.Cog, DataManager):
     async def update_setting(self, ctx, description, attr, *args, **kwargs):
         # 設定コマンド用の関数です。
         try:
-            guild = await self.get_guild(ctx.gulid.id)
+            guild = await self._get_guild(ctx.guild.id)
         except AssertionError:
             await ctx.reply(self.PLZ)
         else:
@@ -115,8 +117,8 @@ class AutoMod(commands.Cog, DataManager):
             return guild
 
     WARN_ERROR = {
-        "ja": "警告数は3以上100以下である必要があります。",
-        "en": "The number of warnings to ban must be between 3 and 100."
+        "ja": "警告数は0以上100以下である必要があります。",
+        "en": "The number of warnings to ban must be between 0 and 100."
     }
 
     @warn.command("set", aliases=["設定", "s"])
@@ -279,6 +281,20 @@ class AutoMod(commands.Cog, DataManager):
             }, "remove_invite_channel", ctx.channel.id
         )
 
+    @automod.command()
+    @check
+    @assertion_error_handler(
+        {"ja": "秒数は10以上300以下である必要があります。",
+         "en": "Seconds must be 10 to 300 inclusive."}
+    )
+    async def withdrawal(self, ctx, seconds: int):
+        await self.update_setting(
+            ctx, {
+                "ja": f"即抜けBANを`{seconds}`秒で設定しました。",
+                "en": f"We set it to BAN when a member joins the server and leaves within `{seconds}` seconds."
+            }, "set_withdrawal", seconds
+        )
+
     def cog_unload(self):
         self.remove_cache.cancel()
         self.reset_warn.cancel()
@@ -294,11 +310,16 @@ class AutoMod(commands.Cog, DataManager):
                     removed.append(cid)
             if not self.cache[cid]:
                 del self.cache[cid]
+        # 即抜けBANのキャッシュを削除する。
+        for mid, next_ in list(self.withdrawal_cache.items()):
+            if now >= next_:
+                del self.withdrawal_cache[mid]
 
-    async def get_guild(
+    async def _get_guild(
         self, guild_id: int, if_not_exists_remove: bool = True
     ) -> Optional["Guild"]:
         # Gulid(automod.)クラスのインスタンスを取得する関数です。
+        # もしguild_cacheにあるのに見つからなかったら、guild_cacheからそのサーバーを除去します。
         try:
             guild = await self.get_guild(guild_id)
         except AssertionError:
@@ -311,13 +332,17 @@ class AutoMod(commands.Cog, DataManager):
     async def reset_warn(self):
         # 警告数をリセットするループです。
         for guild_id in self.guild_cache:
-            if (guild := await self.get_guild(guild_id)):
+            if (guild := await self._get_guild(guild_id)):
                 for user_id in list(guild.data.get("warn", {}).keys()):
                     if guild.data["warn"][user_id]:
                         await guild.set_warn(user_id, 0.0)
 
-    async def trial(self, obj: Union[discord.Message, discord.Invite]):
-        # メッセージか招待リンクが作られた際に呼ばれる関数でモデレーションを行います。
+    async def trial(self, obj: Union[discord.Message, discord.Invite, discord.Member]):
+        # 罰するかしないかをチェックするべきイベントで呼ばれる関数でモデレーションを実行します。
         if obj.guild and obj.guild.id in self.guild_cache:
-            if (guild := await self.get_guild(obj.guild.id)):
+            if (guild := await self._get_guild(obj.guild.id)):
                 await getattr(guild, f"trial_{obj.__class__.__name__.lower()}")(obj)
+
+
+def setup(bot):
+    bot.add_cog(AutoMod(bot))

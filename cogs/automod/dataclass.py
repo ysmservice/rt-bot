@@ -1,19 +1,21 @@
 # RT.AutoMod - Guild
 
-from typing import TYPE_CHECKING, Optional, List
+from typing import TYPE_CHECKING, Optional, List, Dict
+
+import discord
 
 from ujson import loads, dumps
 from functools import wraps
 from time import time
-import discord
+from copy import copy
 
 from .constants import DB, AM, MAX_INVITES, DEFAULT_LEVEL, DefaultWarn
 from .modutils import similer, emoji_count
-from .types import Data
 
 if TYPE_CHECKING:
     from aiomysql import Pool, Cursor
     from .__init__ import AutoMod
+    from .types import Data
 
 
 class DataManager:
@@ -83,20 +85,37 @@ class DataManager:
                 )
 
 
+def commit(func):
+    # このデコレータをつけた関数は実行後にデータを更新します。
+    @wraps(func)
+    async def new(self: "Guild", *args, **kwargs):
+        data = await func(self, *args, **kwargs)
+        await self._commit()
+        return data
+    return new
+
+
 class Guild:
     """サーバーのAutoModの設定の管理やモデレーションを行うクラスです。"""
 
     def __init__(
-        self, cog: "AutoMod", guild: discord.Guild, data: Data
+        self, cog: "AutoMod", guild: discord.Guild, data: "Data"
     ):
         self.pool: "Pool" = cog.bot.mysql.pool
         self.guild = guild
         self.cog = cog
-        self.data: Data = data
+        self.data: "Data" = data
 
         for key in ("warn",):
             if key not in self.data:
                 self.data[key] = {}
+
+        for base in ("warn",):
+            before = copy(self.data[base])
+            for key in before:
+                del self.data[base][key]
+                self.data[base][int(key)] = before[key]
+        del before
 
     async def _commit(self) -> None:
         # 設定を更新する関数です。
@@ -107,24 +126,14 @@ class Guild:
                     (dumps(self.data), self.guild.id)
                 )
 
-    @staticmethod
-    def commit(func):
-        """このデコレータをつけた関数は実行後にデータを更新します。"""
-        @wraps(func)
-        async def new(self, *args, **kwargs):
-            data = await func(self, *args, **kwargs)
-            await self._commit()
-            return data
-        return new
-
     def _check_warn(self, warn: float):
         # 警告数が適切が確かめます。
-        assert 3 <= warn <= 100, "warnは3以上100以下である必要があります。"
+        assert 0 <= warn <= 100, "warnは3以上100以下である必要があります。"
 
     @commit
     async def set_warn(self, user_id: int, warn: float) -> None:
         """ユーザーに警告を設定します。
-        warnが3以上100以下ではない場合は`AssertionError`が発生します。"""
+        warnが0以上100以下ではない場合は`AssertionError`が発生します。"""
         self._check_warn(warn)
         self.data["warn"][user_id] = warn
 
@@ -147,14 +156,14 @@ class Guild:
     @commit
     async def mute(self, warn: float, role_id: int) -> None:
         """ミュートをする警告数を設定します。
-        warnが3以上100以下ではない場合は`AssertionError`が発生します。"""
+        warnが0以上100以下ではない場合は`AssertionError`が発生します。"""
         self._check_warn(warn)
         self.data["mute"] = (warn, role_id)
 
     @commit
     async def ban(self, warn: float) -> None:
         """BANをする警告数を設定します。
-        warnが3以上100以下ではない場合は`AssertionError`が発生します。"""
+        warnが0以上100以下ではない場合は`AssertionError`が発生します。"""
         self._check_warn(warn)
         self.data["ban"] = warn
 
@@ -179,6 +188,13 @@ class Guild:
         if "invites" not in self.data:
             self.data["invites"] = []
         self.data["invites"].remove(channel_id)
+
+    @commit
+    async def set_withdrawal(self, seconds: int) -> None:
+        """即抜けを検知する範囲を設定します。
+        5以上300以下でないとAssertionErrorが発生します。"""
+        assert 5 <= assertion <= 300, "5以上300以下でないといけません。"
+        self.data["withdrawal"] = seconds
 
     async def trial_invite(self, invite: discord.Invite) -> None:
         """招待が有効か確かめます。"""
@@ -218,7 +234,10 @@ class Guild:
     async def trial_message(self, message: discord.Message) -> None:
         """メッセージをスパムチェックします。"""
 
-        if message.author.guild_permissions.administrator and not self.cog.bot.test:
+        if all(
+            getattr(message.author.guild_permissions, name)
+            for name in ("manage_roles", "ban_members")
+        ):
             # 管理者ならチェックをしない。
             return
 
@@ -256,7 +275,9 @@ class Guild:
                 )
                 warn += 0.5
 
-        if warn:
+        if 0 < warn <= 100:
+            print("set_warn", warn)
+            print(self.data["warn"])
             await self.set_warn(
                 message.author.id, self.data.get("warn", {}).get(
                     message.author.id, 0
@@ -267,20 +288,20 @@ class Guild:
     async def trial_user(
         self, member: discord.Member,
         send: Optional[discord.TextChannel.send] = None
-    ):
+    ) -> None:
         """ユーザーのwarnチェックをし必要なら処罰をします。"""
         if member.id in self.data.get("warn", {}) and (
             not member.guild_permissions.administrator
             or self.cog.bot.test
         ):
-            mute = self.data.get("mute", DefaultWarn.MUTE)
+            mute, role_id = self.data.get("mute", (DefaultWarn.MUTE, 0))
             ban = self.data.get("ban", DefaultWarn.BAN)
 
             try:
                 if self.data["warn"][member.id] >= mute:
                     # もしミュートするほど警告数が溜まったらミュートする。
-                    if "mute" in self.data:
-                        assert (role := member.guild.get_role(self.data["mute"])), \
+                    if "mute" in self.data and role_id:
+                        assert (role := member.guild.get_role(role_id)), \
                             "0付与するロールが見つからないため"
                         await member.add_roles(role, reason=f"{AM}スパムのため。")
                         assert False, f"1{member.mention}をスパムのためミュートにしました。"
@@ -293,7 +314,7 @@ class Guild:
                 elif send and self.data["warn"][member.id] >= mute // 2:
                     # もしあと半分でミュートになるのなら警告をしておく。
                     await send(f"{member.mention}, これ以上スパムメッセージを送信するとミュートになります。")
-                elif send and self.data["warn"] >= ban - 2:
+                elif send and self.data["warn"][member.id] >= ban - 2:
                     # もしあと警告二回を食らったらBANになるなら警告をしておく。
                     await send(f"{member.mention}, これ以上スパムメッセージを送信するとBANされます。")
 
@@ -307,6 +328,15 @@ class Guild:
                 )
                 if send and e[0] == "1":
                     await send(e[1:])
+
+    async def trial_member(self, member: discord.Member) -> None:
+        """渡されたメンバーが即抜けを繰り返しているかどうかをチェックします。
+        もし繰り返しているのなら設定されているBANをする。"""
+        if member.id in self.cog.withdrawal_cache:
+            if time() >= self.cog.withdrawal_cache[member.id]:
+                # 処罰を執行する。
+                return await member.ban(reason=f"{AM}即抜けしたため。")
+        self.cog.withdrawal_cache[member.id] = time() + self.data.get("withdrawal", 30)
 
     async def log(self, description: str, **kwargs) -> None:
         """ログを流します。"""
