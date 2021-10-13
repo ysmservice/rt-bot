@@ -279,16 +279,11 @@ class ThreadManager(commands.Cog, DataManager):
 
     @commands.Cog.listener()
     async def on_thread_update(self, before: discord.Thread, after: discord.Thread):
-        if (
-            after.archived and abs(
-                (
-                    after.archive_timestamp -
-                    after.get_partial_message(after.last_message_id).created_at
-                    + timedelta(minutes=after.auto_archive_duration)
-                ).seconds
-            ) < ERROR_RANGE
+        if (after.archived and not after.locked
+            and after.parent.id in await (
+                self.get_data(after.guild.id)
+            ).get_channels()
         ):
-            if after.parent.id in await self.get_data(after.guild.id).get_channels():
                 # 自動ロックされたならロックを解除する。
                 await after.edit(archived=False)
 
