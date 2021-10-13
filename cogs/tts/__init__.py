@@ -115,6 +115,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         !lang en
         --------
         ..."""
+        reply = ctx.reply
         if ctx.guild.voice_client:
             data = {
                 "ja": "既に別のチャンネルに接続しています。",
@@ -126,6 +127,9 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                 "en": "..."
             }
         else:
+            if hasattr(ctx, "interaction"):
+                reply = ctx.interaction.edit_original_message
+                await ctx.reply("Now loading...")
             data = {
                 "ja": "接続しました。",
                 "en": "..."
@@ -142,7 +146,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
             for member in ctx.author.voice.channel.members:
                 await self.on_member("join", member)
 
-        await ctx.reply(data)
+        await reply(content=data)
 
     @tts.command(
         aliases=["disconnect", "dis", "切断", "せつだん"],

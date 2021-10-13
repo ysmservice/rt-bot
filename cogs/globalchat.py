@@ -3,7 +3,7 @@
 from discord.ext import commands
 import discord
 
-from rtlib import mysql, DatabaseManager
+from rtlib import DatabaseManager
 from functools import wraps
 from time import time
 
@@ -96,7 +96,7 @@ def require_globalchat(coro):
     async def new_coro(self, ctx, *args, **kwargs):
         if (row := await self.load_globalchat_name(ctx.channel.id)):
             ctx.row = row
-            return await coro(self, cursor, ctx, *args, **kwargs)
+            return await coro(self, ctx, *args, **kwargs)
         else:
             return await ctx.reply(
                 {"ja": "このチャンネルはグローバルチャットではありません。",

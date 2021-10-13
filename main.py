@@ -104,7 +104,10 @@ args = (prefixes,)
 kwargs = {
     "help_command": None,
     "on_init_bot": on_init,
-    "intents": intents
+    "intents": intents,
+    "allowed_mentions": discord.AllowedMentions(
+        everyone=False, users=False
+    )
 }
 if argv[1] in ("test", "alpha"):
     bot = rtlib.Backend(*args, **kwargs)

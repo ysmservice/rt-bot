@@ -3,6 +3,7 @@
 from discord.ext import commands
 import discord
 
+from asyncio import sleep
 from re import findall
 
 
@@ -37,9 +38,10 @@ class ChannelPluginGeneral(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        self.bot.loop.create_task(self.on_command_added())
 
-    @commands.Cog.listener()
     async def on_command_added(self):
+        await sleep(1.5)
         for lang in HELPS:
             self.bot.cogs["DocHelp"].add_help(
                 "ChannelPlugin", "ChannelPluginGeneral",
@@ -47,10 +49,10 @@ class ChannelPluginGeneral(commands.Cog):
             )
 
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
         if isinstance(message.channel, discord.Thread):
             return
-        if not message.guild or message.author.discriminator == "0000":
+        if not message.guild or "RT's Auto Spoiler" in message.author.name:
             return
 
         if message.channel.topic:
@@ -58,6 +60,7 @@ class ChannelPluginGeneral(commands.Cog):
                 if cmd.startswith("rt>asp"):
                     # Auto Spoiler
                     content = message.clean_content
+
                     # 添付ファイルをスポイラーにする。
                     new = []
                     for attachment in message.attachments:
@@ -69,13 +72,25 @@ class ChannelPluginGeneral(commands.Cog):
                     # もしスポイラーワードが設定されているならそれもスポイラーにする。
                     for word in cmd.split()[1:]:
                         content = content.replace(word, f"||{word}||")
+                    # Embedに画像が設定されているなら外してスポイラーを付けた画像URLをフィールドに入れて追加する。
+                    for index in range(len(message.embeds)):
+                        if message.embeds[index].image is not message.embeds[index].Empty:
+                            message.embeds[index].add_field(
+                                name="この埋め込みに設定されている画像",
+                                value=f"||{message.embeds[index].image.url}||"
+                            )
+                            message.embeds[index].set_image(url=message.embeds[index].Empty)
+
                     # 送信し直す。
-                    if message.clean_content != content or message.attachments:
+                    if ((message.content and message.clean_content != content)
+                            or message.attachments or message.embeds):
                         # 送信しなおす。
+                        if message.reference:
+                            content = f"返信先：{message.reference.jump_url}\n{content}"
                         await message.channel.webhook_send(
-                            content, files=new,
-                            username=message.author.display_name,
-                            avatar_url=message.author.avatar.url
+                            content, files=new, embeds=message.embeds,
+                            username=message.author.display_name + " RT's Auto Spoiler",
+                            avatar_url=message.author.avatar.url,
                         )
                         await message.delete()
                 elif cmd.startswith("rt>ce"):

@@ -53,6 +53,7 @@ class Today(commands.Cog, DataManager):
 
     def __init__(self, bot):
         self.bot = bot
+        self.yet = True
         self.bot.loop.create_task(self.init_database())
 
     async def init_database(self):
@@ -128,10 +129,12 @@ class Today(commands.Cog, DataManager):
     def cog_unload(self):
         self.today_notification.cancel()
 
-    @tasks.loop(seconds=50)
+    @tasks.loop(seconds=30)
     async def today_notification(self):
         # 今日はなんの日通知をする。
-        if (datetime.now() + timedelta(hours=9)).strftime("%H:%M") == "09:00":
+        if self.yet and (
+            datetime.now() + timedelta(hours=9)
+        ).strftime("%H:%M") == "09:00":
             for row in await self.reads():
                 channel = self.bot.get_channel(row[1])
                 if channel:
@@ -142,6 +145,9 @@ class Today(commands.Cog, DataManager):
                 else:
                     # もしチャンネルが見つからないなら設定を削除する。
                     await self.delete(row[0], row[1])
+            self.yet = False
+        else:
+            self.yet = True
 
 
 def setup(bot):

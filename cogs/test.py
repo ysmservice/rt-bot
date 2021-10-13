@@ -10,7 +10,7 @@ class SlashTest(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(slash_command=True)
+    @commands.command(slash_command=True, description="スラッシュテスト用コマンド")
     async def test(
             self, ctx,
             arg1: Option(str, "arg1", "test_arg1"),

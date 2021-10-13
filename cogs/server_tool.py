@@ -25,6 +25,9 @@ PERMISSION_TEXTS = {
     "manage_nicknames": "ニックネームの管理",
     "manage_emojis": "絵文字の管理",
     "manage_webhooks": "ウェブフックの管理",
+    "manage_events": "イベントの管理",
+    "manage_threads": "スレッドの管理",
+    "use_slash_commands": "スラッシュコマンドの使用",
     "view_guild_insights": "テキストチャンネルの閲覧＆ボイスチャンネルの表示",
     "send_messages": "メッセージを送信",
     "send_tts_messages": "TTSメッセージを送信",
@@ -63,7 +66,6 @@ class ServerTool(commands.Cog):
         self.bot.loop.create_task(self.on_ready())
 
     async def on_ready(self):
-        await self.bot.wait_until_ready()
         await sleep(1.3)
         for lang in STAR_HELP:
             self.bot.cogs["DocHelp"].add_help(
@@ -677,7 +679,9 @@ class ServerTool(commands.Cog):
 
     @commands.Cog.listener()
     async def on_full_reaction_add(self, payload):
-        if not payload.guild_id or not payload.member or payload.member.bot:
+        if (not payload.guild_id or not payload.member or payload.member.bot
+                or (getattr(payload.message.channel, "topic", "")
+                and "rt>star" in payload.message.channel.topic)):
             return
 
         if (emoji := str(payload.emoji)) in self.EMOJIS["star"]:
@@ -689,24 +693,29 @@ class ServerTool(commands.Cog):
                         if user.id == self.bot.user.id:
                             return
             else:
-                channel = discord.utils.find(
+                if (channel := discord.utils.find(
                     lambda ch: ch.topic and "rt>star" in ch.topic,
                     payload.message.guild.text_channels
-                )
-                if channel:
-                    await channel.send(
-                        embed=discord.Embed(
+                )):
+                    if payload.message.content or payload.message.attachments:
+                        embed = discord.Embed(
                             title="スターがついたメッセージ",
-                            description=(
-                                f"{payload.message.content}\n[メッセージに行く]"
-                                f"({payload.message.jump_url})"
-                            ),
+                            description=payload.message.content,
                             color=0xf2f2b0
                         ).set_author(
                             name=payload.message.author.display_name,
                             icon_url=payload.message.author.avatar.url
                         )
-                    )
+                        if payload.message.attachments:
+                            embed.set_image(
+                                url=payload.message.attachments[0].url
+                            )
+                    elif payload.message.embeds:
+                        embed = payload.message.embeds[0]
+                    else:
+                        return
+
+                    await channel.send(content=payload.message.jump_url, embed=embed)
                     # スターボードにすでにあることを次スターがついた際にわかるようにスターを付けておく。
                     await payload.message.add_reaction(self.EMOJIS["star"][0])
 

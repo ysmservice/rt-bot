@@ -22,4 +22,5 @@ pydub
 psutil
 PyNacl
 captcha
-google_translate_py
+deep-translator
+topggpy

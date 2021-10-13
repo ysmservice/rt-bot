@@ -1,7 +1,6 @@
 # RT - Rt Role
 
 from typing import Union
-from discord.embeds import E
 
 from discord.ext import commands
 import discord
@@ -27,6 +26,7 @@ class RTRole(commands.Cog):
                 f.write(r"{}")
 
         if not getattr(self, "did", False):
+            self.events = []
             @bot.check
             async def has_role(ctx):
                 if ctx.guild:
@@ -42,9 +42,21 @@ class RTRole(commands.Cog):
                             )
                         ]
                     ):
-                        return any(bool(ctx.author.get_role(role.id)) for role in roles)
+                        channels = {
+                            role.id: [
+                                ch.id for ch in ctx.guild.text_channels
+                                if any(r.id == role.id for r in ch.changed_roles)
+                            ] for role in roles
+                        }
+                        return any(
+                            bool(ctx.author.get_role(role.id)) and (
+                                not channels or not channels[role.id] or \
+                                    ctx.channel.id in channels[role.id]
+                            ) for role in roles
+                        )
                 return True
             self.did = True
+            self.bot.dispatch("load_rtrole")
 
     async def save(self):
         async with async_open("data/rtrole.json", "w") as f:
@@ -69,7 +81,8 @@ class RTRole(commands.Cog):
         Notes
         -----
         もし全てのコマンドを特定の役職を持っている人しか実行できないようにしたい場合は、`RT-`が名前の最初にある役職を作れば良いです。  
-        例：`RT-操作権限`
+        例：`RT-操作権限`  
+        またこれで設定した役職をチャンネルに設定するとそのチャンネル内でその役職を持っていないとコマンドが使えないようにできます。
 
         !lang en
         --------
@@ -79,7 +92,7 @@ class RTRole(commands.Cog):
                 embed=discord.Embed(
                     title="RT Role List",
                     description="\n".join(
-                        f"{data['role_name']}：{data['commands']}`"
+                        f"{data['role_name']}：{data['commands']}"
                         for data in self.data[str(ctx.guild.id)].values()
                         if data
                     ), color=self.bot.colors["normal"]
@@ -149,7 +162,7 @@ class RTRole(commands.Cog):
                 except KeyError:
                     pass
                 else:
-                    remoevd = True
+                    removed = True
 
             if removed:
                 await self.save()
