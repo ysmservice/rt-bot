@@ -74,7 +74,7 @@ class ChannelPluginGeneral(commands.Cog):
                         content = content.replace(word, f"||{word}||")
                     # Embedに画像が設定されているなら外してスポイラーを付けた画像URLをフィールドに入れて追加する。
                     for index in range(len(message.embeds)):
-                        if message.embeds[index].image is not message.embeds[index].Empty:
+                        if message.embeds[index].image.url is not message.embeds[index].Empty:
                             message.embeds[index].add_field(
                                 name="この埋め込みに設定されている画像",
                                 value=f"||{message.embeds[index].image.url}||"
