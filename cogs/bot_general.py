@@ -5,6 +5,7 @@ import discord
 
 from traceback import TracebackException
 from rtlib.ext import Embeds, componesy
+from itertools import chain
 from time import time
 
 from .server_tool import PERMISSION_TEXTS
@@ -191,18 +192,36 @@ class BotGeneral(commands.Cog):
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
         # エラー時のメッセージ。翻訳はdescriptionのみ。
-        kwargs, color, content = {}, self.bot.colors["error"], "エラー"
+        kwargs, color = {}, self.bot.colors["error"]
         if isinstance(error, commands.errors.CommandNotFound):
+            # 実行しようとしたコマンドを考える。
+            suggestion = f"`{suggestion}`" if (
+                suggestion := "`, `".join(
+                    command.name for command in self.bot.commands
+                    if any(
+                        any(
+                            len(cmd_name[i:i + 3]) > 2
+                            and cmd_name[i:i + 3] in ctx.message.content
+                            for i in range(3)
+                        ) for cmd_name in chain(
+                            (command.name,), command.aliases
+                        )
+                    )
+                )
+            ) else "?"
             title = "404 Not Found"
-            description = {"ja": ("そのコマンドが見つかりませんでした。\n"
-                                  + "`rt!help <word>`で検索が可能です。"),
-                           "en": "It can't found that command.\n`rt!help <word>`This can search command"}
+            description = {
+                "ja": "そのコマンドが見つかりませんでした。\n" \
+                    f"`rt!help <word>`で検索が可能です。\nもしかして：{suggestion}",
+                "en": f"It can't found that command.\n`rt!help <word>`This can search command.\nSuggetion:{suggestion}"}
             color = self.bot.colors["unknown"]
-        elif isinstance(error, (commands.errors.BadArgument,
-                        commands.errors.MissingRequiredArgument,
-                        commands.errors.ArgumentParsingError,
-                        commands.errors.TooManyArguments,
-                        commands.BadUnionArgument)):
+        elif isinstance(
+            error, (commands.errors.BadArgument,
+                commands.errors.MissingRequiredArgument,
+                commands.errors.ArgumentParsingError,
+                commands.errors.TooManyArguments,
+                commands.BadUnionArgument)
+        ):
             title = "400 Bad Request"
             description = {"ja": "コマンドの引数が適切ではありません。\nまたは必要な引数が足りません。",
                            "en": "It's command's function is bad."}
@@ -284,9 +303,9 @@ class BotGeneral(commands.Cog):
             description = description[4096 - length + 1:]
 
         kwargs["embed"] = discord.Embed(
-            title=title, description=description,
-            color=color)
-        await ctx.send(f"{ctx.author.mention} " + content, **kwargs)
+            title=title, description=description, color=color
+        )
+        await ctx.send(**kwargs)
 
 
 def setup(bot):
