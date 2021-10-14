@@ -4,8 +4,8 @@ from typing import Optional, Union, Dict
 
 from discord.ext import commands
 
-from emoji import UNICODE_EMOJI
 from functools import wraps
+from emoji import emoji_lis
 from re import findall
 
 
@@ -36,7 +36,7 @@ def check(func):
 def emoji_count(text: str) -> int:
     # 渡された文字列にある絵文字の数を数えます。
     return len(findall("<a?:.+:\d+>", text)) \
-        + len([char for char in text if char in UNICODE_EMOJI])
+        + len([char for char in text if emoji_lis(char)])
 
 
 def assertion_error_handler(description: Union[str, Dict[str, str]]):

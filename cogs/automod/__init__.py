@@ -41,10 +41,13 @@ class AutoMod(commands.Cog, DataManager):
 
         super(commands.Cog, self).__init__(self)
 
-    @commands.group(aliases=["安全", "も出レーション", "am"])
+    @commands.group(aliases=["安全", "モデレーション", "am"])
     @commands.cooldown(1, 3, commands.BucketType.guild)
     @commands.guild_only()
     async def automod(self, ctx):
+        """!lang ja
+        --------
+        スパム対策機能や"""
         if not ctx.invoked_subcommand:
             await ctx.reply(
                 {"ja": "使用方法が違います。",
@@ -87,7 +90,9 @@ class AutoMod(commands.Cog, DataManager):
 
     @automod.group(aliases=["w", "警告"])
     async def warn(self, ctx):
-        await self.automod(ctx)
+        """"""
+        if not ctx.invoked_subcommand:
+            await self.automod(ctx)
 
     def make_embed(self, description: Union[str, Dict[str, str]], **kwargs) -> discord.Embed:
         # AutoModの返信用の埋め込みを作る関数です。
@@ -108,7 +113,7 @@ class AutoMod(commands.Cog, DataManager):
     async def update_setting(self, ctx, description, attr, *args, **kwargs):
         # 設定コマンド用の関数です。
         try:
-            guild = await self._get_guild(ctx.guild.id)
+            guild = await self.get_guild(ctx.guild.id)
         except AssertionError:
             await ctx.reply(self.PLZ)
         else:
@@ -325,7 +330,7 @@ class AutoMod(commands.Cog, DataManager):
         try:
             guild = await self.get_guild(guild_id)
         except AssertionError:
-            if if_not_exists_remove:
+            if if_not_exists_remove and guild_id in self.guild_cache:
                 self.guild_cache.remove(guild_id)
         else:
             return guild

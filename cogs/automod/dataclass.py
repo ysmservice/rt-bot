@@ -256,7 +256,7 @@ class Guild:
 
         if any(
             message.author.get_role(id_) or message.channel.id == id_
-            for id_ in self.data.get("ignores")
+            for id_ in self.data.get("ignores", ())
         ):
             # 例外設定に引っ掛かったら無視する。
             return
@@ -287,13 +287,13 @@ class Guild:
                 # もしスパム検知レベルに達したのなら警告を一つ上げる。
                 warn += 1
 
-            if emoji_count(message.content) > self.data.get("emoji", 4000):
-                # もし絵文字数制限にひっかかったのなら警告を一つ上げる。
-                await message.channel.send(
-                    f"{message.author.mention}, このサーバーは絵文字数は`{self.data['emoji']}`が最大です。\n" \
-                    "絵文字の入れすぎに注意してください。"
-                )
-                warn += 0.5
+        if (e := emoji_count(message.content)) > self.data.get("emoji", 4000):
+            # もし絵文字数制限にひっかかったのなら警告を一つ上げる。
+            await message.channel.send(
+                f"{message.author.mention}, このサーバーは絵文字数は`{self.data['emoji']}`が最大です。\n" \
+                "絵文字の入れすぎに注意してください。"
+            )
+            warn += 0.5
 
         if 0 < warn <= 100:
             await self.set_warn(
@@ -323,7 +323,7 @@ class Guild:
 
                 elif self.data["warn"][member.id] >= mute:
                     # もしミュートするほど警告数が溜まったらミュートする。
-                    if "mute" in self.data and role_id:
+                    if "mute" in self.data:
                         assert (role := member.guild.get_role(role_id)), \
                             "0付与するロールが見つからないため"
                         if not member.get_role(role.id):
