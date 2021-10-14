@@ -90,10 +90,14 @@ class Debug(commands.Cog):
     @require_admin
     async def reload_help(self, ctx):
         async with ctx.typing():
-            await self.bot.cogs["DocHelp"].on_full_ready()
-            await self.bot.cogs["Translator"].on_command_added()
-            await self.bot.cogs["ChannelPluginGeneral"].on_command_added()
+            for coro in (
+                self.bot.cogs["DocHelp"].on_full_ready(),
+                self.bot.cogs["Translator"].on_command_added(),
+                self.bot.cogs["ChannelPluginGeneral"].on_command_added()
+            ):
+                self.bot.loop.create_task(coro)
             self.bot.reload_extension("cogs.server_tool")
+            self.bot.dispatch("help_reload")
         await ctx.reply("Ok")
 
     @executor_function

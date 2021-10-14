@@ -5,6 +5,7 @@ import discord
 
 from rtlib import DatabaseManager
 from functools import wraps
+from io import BytesIO
 from time import time
 
 
@@ -286,7 +287,8 @@ class GlobalChat(commands.Cog, DataManager):
         # グローバルチャットにメッセージを送る。
         rows = await self.load_globalchat_channels(row[0])
 
-        # もし返信しているメッセージなら返信先のEmbedを作っておく。
+        # もし返信先があるメッセージなら返信先のEmbedを作っておく。
+        embeds = []
         if message.reference:
             if message.reference.cached_message:
                 original = message.reference.cached_message
@@ -297,14 +299,23 @@ class GlobalChat(commands.Cog, DataManager):
                     if ch else None
                 )
 
-            embed = discord.Embed(
-                description=original.clean_content
-            ).set_author(
-                name=original.author,
-                icon_url=original.author.avatar.url
+            embeds.append(
+                discord.Embed(
+                    description=original.clean_content
+                ).set_author(
+                    name=original.author,
+                    icon_url=original.author.avatar.url
+                )
             )
-        else:
-            embed = None
+
+        # スタンプがついているのなら添付ファイルにそのスタンプの画像を添付する。
+        if message.stickers:
+            for sticker in message.stickers:
+                embeds.append(
+                    discord.Embed(color=message.author.color)
+                        .set_image(url=sticker.url)
+                        .set_footer(text="添付されたスタンプ")
+                )
 
         # 送る。
         for _, channel_id, _ in rows:
@@ -317,9 +328,10 @@ class GlobalChat(commands.Cog, DataManager):
                         await channel.webhook_send(
                             username=f"{message.author.name} {message.author.id}",
                             avatar_url=message.author.avatar.url,
-                            content=message.clean_content, embed=embed,
-                            files=[await attachment.to_file()
-                                   for attachment in message.attachments]
+                            content=message.clean_content, embeds=embeds, files=[
+                                await attachment.to_file()
+                                for attachment in message.attachments
+                            ]
                         )
                     except Exception as e:
                         print("Error on global chat :", e)
