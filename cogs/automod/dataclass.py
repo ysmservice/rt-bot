@@ -9,7 +9,7 @@ from functools import wraps
 from time import time
 from copy import copy
 
-from .constants import DB, AM, MAX_INVITES, DEFAULT_LEVEL, DefaultWarn
+from .constants import DB, AM, MAX_INVITES, DEFAULT_LEVEL, DEFAULT_WR, DefaultWarn
 from .modutils import similer, emoji_count
 
 if TYPE_CHECKING:
@@ -179,7 +179,7 @@ class Guild:
         """招待リンク規制での招待リンク作成可能チャンネルを追加します。"""
         if "invites" not in self.data:
             self.data["invites"] = []
-        assert len(self.data["invites"]) + 1 == MAX_INVITES, "追加しすぎです。"
+        assert len(self.data["invites"]) < MAX_INVITES, "追加しすぎです。"
         self.data["invites"].append(channel_id)
 
     @commit
@@ -193,19 +193,32 @@ class Guild:
     async def set_withdrawal(self, seconds: int) -> None:
         """即抜けを検知する範囲を設定します。
         5以上300以下でないとAssertionErrorが発生します。"""
-        assert 5 <= assertion <= 300, "5以上300以下でないといけません。"
+        assert 5 <= seconds <= 300, "5以上300以下でないといけません。"
         self.data["withdrawal"] = seconds
 
     async def trial_invite(self, invite: discord.Invite) -> None:
         """招待が有効か確かめます。"""
-        if (self.data.get("invite_filter", False)
+        admin = False
+        # invite.inviterはMemberオブジェクトではないので取得し直す。
+        if (guild := self.cog.bot.get_guild(invite.guild.id)):
+            if (member := guild.get_member(invite.inviter.id)):
+                # サーバーの管理者かどうかをチェックする。
+                admin = member.guild_permissions.administrator
+
+        if (self.data.get("invite_filter", False) and not admin
             and invite.channel.id not in self.data.get("invites", ())):
             await invite.delete(
                 reason=f"{AM}招待作成不可なチャンネルなため。"
             )
             try:
                 await invite.inviter.send(
-                    f"{AM}{invite.guild.name}の{invite.channel.name}では招待を作成することができません。"
+                    embed=discord.Embed(
+                        title=DB,
+                        description={
+                            "ja": f"{invite.guild.name}の{invite.channel.name}では招待を作成することができません。",
+                            "en": f"It is not possible to create an invitation link in the {invite.channel.name} of the {invite.guild.name}."
+                        }, color=self.cog.COLORS["warn"]
+                    )
                 )
             except Exception as e:
                 if self.cog.bot.test:
@@ -234,11 +247,18 @@ class Guild:
     async def trial_message(self, message: discord.Message) -> None:
         """メッセージをスパムチェックします。"""
 
-        if all(
+        if not hasattr(message.author, "guild_permissions") or all(
             getattr(message.author.guild_permissions, name)
             for name in ("manage_roles", "ban_members")
         ):
             # 管理者ならチェックをしない。
+            return
+
+        if any(
+            message.author.get_role(id_) or message.channel.id == id_
+            for id_ in self.data.get("ignores")
+        ):
+            # 例外設定に引っ掛かったら無視する。
             return
 
         warn = 0
@@ -276,8 +296,6 @@ class Guild:
                 warn += 0.5
 
         if 0 < warn <= 100:
-            print("set_warn", warn)
-            print(self.data["warn"])
             await self.set_warn(
                 message.author.id, self.data.get("warn", {}).get(
                     message.author.id, 0
@@ -330,15 +348,19 @@ class Guild:
                 )
                 if send and e[0] == "1":
                     await send(e[1:])
+                    await self.set_warn(member.id, 0)
 
     async def trial_member(self, member: discord.Member) -> None:
         """渡されたメンバーが即抜けを繰り返しているかどうかをチェックします。
         もし繰り返しているのなら設定されているBANをする。"""
         if member.id in self.cog.withdrawal_cache:
-            if time() >= self.cog.withdrawal_cache[member.id]:
+            if time() <= self.cog.withdrawal_cache[member.id]:
                 # 処罰を執行する。
+                del self.cog.withdrawal_cache[member.id]
+                await self.log(f"{member.name}を即抜け後にすぐまた参加したためBANしました。")
                 return await member.ban(reason=f"{AM}即抜けしたため。")
-        self.cog.withdrawal_cache[member.id] = time() + self.data.get("withdrawal", 30)
+        self.cog.withdrawal_cache[member.id] = \
+            time() + self.data.get("withdrawal", DEFAULT_WR)
 
     async def log(self, description: str, **kwargs) -> None:
         """ログを流します。"""
@@ -346,6 +368,7 @@ class Guild:
         for channel in self.guild.text_channels:
             if getattr(channel, "topic", "") and "rt>modlog" in channel.topic:
                 await channel.send(
+                    content=f"<t:{int(time())}>",
                     embed=discord.Embed(
                         title=self.cog.__cog_name__,
                         description=description, **kwargs

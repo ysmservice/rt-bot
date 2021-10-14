@@ -36,7 +36,7 @@ class AutoMod(commands.Cog, DataManager):
         self.remove_cache.start()
         self.reset_warn.start()
 
-        for name in ("message", "invite_create"):
+        for name in ("message", "invite_create", "member_join"):
             self.bot.add_listener(self.trial, f"on_{name}")
 
         super(commands.Cog, self).__init__(self)
@@ -75,7 +75,7 @@ class AutoMod(commands.Cog, DataManager):
          "en": "Could not find the setting."}
     )
     async def setdown_(self, ctx):
-        await self.setdown(ctx.guld.id)
+        await self.setdown(ctx.guild.id)
         if ctx.guild.id in self.guild_cache:
             self.guild_cache.remove(ctx.guild.id)
         await ctx.reply(
@@ -129,7 +129,7 @@ class AutoMod(commands.Cog, DataManager):
             guild = await self.update_setting(
                 ctx, {
                     "ja": f"{target.mention}の警告を`{warn}`に設定しました。",
-                    "en": f"Set the warning for {target.attention} to `{warn}`."
+                    "en": f"Set the warning for {target.mention} to `{warn}`."
                 }, "set_warn", target.id, warn
             )
             await guild.trial_user(target)
@@ -174,7 +174,8 @@ class AutoMod(commands.Cog, DataManager):
 
     @automod.group(aliases=["例外", "無視", "igs"])
     async def ignore(self, ctx):
-        await self.ignores_list(ctx)
+        if not ctx.invoked_subcommand:
+            await self.ignore_list(ctx)
 
     @ignore.command("add", aliases=["追加"])
     @check
@@ -199,8 +200,8 @@ class AutoMod(commands.Cog, DataManager):
     async def remove_ignore(self, ctx, *, obj: Union[discord.TextChannel, discord.Role]):
         await self.update_setting(
             ctx, {
-                "ja": f"例外リストから`{obj.name}`を削除しました。",
-                "en": f"I removed `{obj.name}` from exception list."
+                "ja": f"例外リストから{obj.mention}を削除しました。",
+                "en": f"I removed {obj.mention} from exception list."
             }, "remove_ignore", obj.id
         )
 
@@ -224,9 +225,10 @@ class AutoMod(commands.Cog, DataManager):
                  "en": "Exception list is nothing."}
             )
 
-    @automod.group()
+    @automod.group(aliases=["ie", "招待"])
     async def invites(self, ctx):
-        await self.invites_list(ctx)
+        if not ctx.invoked_subcommand:
+            await self.invites_list(ctx)
 
     @invites.command()
     @check
@@ -281,7 +283,7 @@ class AutoMod(commands.Cog, DataManager):
             }, "remove_invite_channel", ctx.channel.id
         )
 
-    @automod.command()
+    @automod.command(aliases=["即抜けBAN", "wd"])
     @check
     @assertion_error_handler(
         {"ja": "秒数は10以上300以下である必要があります。",
