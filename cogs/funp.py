@@ -322,7 +322,7 @@ class Funp(commands.Cog, DataManager):
             async with self.bot.session.get(
                 f"https://nekobot.xyz/api/image?type={type_}"
             ) as r:
-                data = await r.json(content_type='text/html')
+                data = await r.json()
                 if data["success"]:
                     embed = discord.Embed(
                         title="NekoBot - " + type_,
