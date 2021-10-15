@@ -180,7 +180,11 @@ class MusicNormal(commands.Cog, DataManager):
         if ctx.guild.id not in self.now:
             # もし接続していないなら接続をする。
             if ctx.author.voice:
-                await ctx.author.voice.channel.connect()
+                try:
+                    await ctx.author.voice.channel.connect()
+                except discord.ClientException:
+                    await ctx.guild.voice_client.disconnect(force=True)
+                    await ctx.author.voice.channel.connect()
                 self.now[ctx.guild.id] = MusicPlayer(self, ctx.guild, ctx.channel)
             else:
                 return await ctx.reply(

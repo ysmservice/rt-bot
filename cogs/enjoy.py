@@ -112,13 +112,14 @@ class Enjoy(commands.Cog):
                 url=f'{self.NHK_BASE_URL}{item["link"]}',
                 color=0x0076d1
             )
-            embed.add_field(
-                name="関連リンク",
-                value="\n".join(
-                    f"・[{link['title']}](https:{link['link']})"
-                    for link in item["relationLink"]
+            if item["relationLink"]:
+                embed.add_field(
+                    name="関連リンク",
+                    value="\n".join(
+                        f"・[{link['title']}](https:{link['link']})"
+                        for link in item["relationLink"]
+                    )
                 )
-            )
             embed.set_thumbnail(
                 url=f'{self.NHK_BASE_URL}{item["imgPath"]}'
             )
