@@ -129,9 +129,14 @@ class Stamp(commands.Cog, DataManager):
                             color=self.bot.colors["normal"]
                         )
                     )
-    
-            kwargs = {"embeds": embeds, "embed": embeds.embeds[0]}
-            del kwargs["embeds" if p == 1 else "embed"]
+
+            if embeds.embeds:
+                kwargs = {"embeds": embeds, "embed": embeds.embeds[0]}
+                del kwargs["embeds" if p == 1 else "embed"]
+            else:
+                kwargs = {"content": {
+                    "ja": "スタンプはまだ登録されていません。", 
+                    "en": "Stamp is not added yet."}}
             await ctx.reply(**kwargs)
 
     @stamp.command("set", aliases=["せっと"])
