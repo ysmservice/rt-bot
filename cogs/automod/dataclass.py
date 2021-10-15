@@ -242,6 +242,7 @@ class Guild:
     async def level(self, level: int = DEFAULT_LEVEL) -> None:
         """サーバーのスパム検知レベルを設定します。
         設定されない場合は定数の`constants.DEFAULT_LEVEL`が使用されます。"""
+        assert 1 <= level <= 100, "一以上百以下である必要があります。"
         self.data["level"] = level
 
     async def trial_message(self, message: discord.Message) -> None:

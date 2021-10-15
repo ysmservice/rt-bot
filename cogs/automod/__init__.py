@@ -386,6 +386,61 @@ class AutoMod(commands.Cog, DataManager):
             }, "ban", warn
         )
 
+    @automod.command(aliases=["l", "レベル"])
+    @check
+    @assertion_error_handler(
+        {"ja": "レベルは1以上100以下である必要があります。",
+         "en": "The level must be between 1 and 100, inclusive."}
+    )
+    async def level(self, ctx, level: int):
+        """!lang ja
+        --------
+        スパム検知レベルを設定するコマンドです。  
+        設定したレベルの数だけスパムとして認識したら警告数を一つ上げます。  
+        デフォルトは2で二回スパムとして認識されたら警告数を一つあげるということになります。
+
+        Parameters
+        ----------
+        level : int
+            設定するスパム検知レベルです。
+
+        Notes
+        -----
+        1以上100以下である必要があります。
+
+        Warnings
+        --------
+        1などの低い数にすると大変なことになります。  
+        そしてレベルを100などの高い数にするとスパムが検知されても処罰がされるまでとっても時間がかかります。  
+        なので普通は変えるとしても2~6までのどこかにするのを推奨します。
+
+        !lang en
+        --------
+        This command sets the spam detection level.
+        Raise the number of warnings by one if the number of levels you set is recognized as spam.
+        The default is 2, which means that if it is seen twice as spam, it will raise one warning.
+
+        Parameters
+        ----------
+        level: int
+            The spam detection level to set.
+
+        Notes
+        -----
+        Must be between 1 and 100, inclusive.
+
+        Warnings
+        --------
+        A low number such as 1 will be a big problem.
+        And if you set the level to a high number such as 100, it will take a very long time for spam to be detected and punished.
+        So I usually recommend to change it to somewhere up to 2 ~ 6."""
+        await self.update_setting(
+            ctx, {
+                "ja": f"スパム検知レベルを`{level}`に設定しました。",
+                "en": f"Spam detection level set to `{level}`."
+            }, "level", level
+        )
+
     @automod.command(aliases=["e", "絵文字"])
     @check
     @assertion_error_handler(
