@@ -250,8 +250,8 @@ class Guild:
         if not hasattr(message.author, "guild_permissions") or all(
             getattr(message.author.guild_permissions, name)
             for name in ("manage_roles", "ban_members")
-        ):
-            # 管理者ならチェックをしない。
+        ) or (message.author.bot and message.author.public_flags.verified_bot):
+            # 管理者または認証済みのBotならチェックをしない。
             return
 
         if any(
