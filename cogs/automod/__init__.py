@@ -57,7 +57,9 @@ class AutoMod(commands.Cog, DataManager):
         スパム対策機能や絵文字制限そして招待可能チャンネル規制などの機能がある自動モデレーション機能です。  
         これから警告数というワードがでますがこれは誰かがスパムをした際などに加算される警告の数です。  
         この数がいくつになったらBANやミュートをするといった動作を作ることができます。  
-        この機能は`rt!automod setup`を実行すれば使えるようになります。
+        この機能は`rt!automod setup`を実行すれば使えるようになります。  
+        この機能で実行した処罰のログは`rt>modlog`がチャンネルトピックにあるチャンネルに送信されます。  
+        このログチャンネルは作っておくことを推奨します。
 
         Notes
         -----
@@ -65,13 +67,15 @@ class AutoMod(commands.Cog, DataManager):
         そしてスパム検知レベルはデフォルトでは2で二回スパムしたと検知されると警告数が一つ上がります。  
         これらは設定で変更が可能です。  
         なお警告数はしばらくしたら30分以内にリセットされます。  
-        それと管理者は処罰されません。
+        それと管理者は処罰されません。  
+        ミュートはデフォルトではオフですので設定をしましょう。
 
         Warnings
         --------
         NekoBotなどの画像を表示するだけのような娯楽コマンドを何回か送信して、スパムとして検知されるということが起きかねません。  
         そのためそのようなBotがある場合はそれらのようなBotのためのチャンネルを作り例外設定にそのチャンネルを追加しましょう。  
-        これのやり方の詳細についてはこれからででてくる`rt!automod ignore`コマンドのヘルプを見てください。
+        これのやり方の詳細についてはこれからででてくる`rt!automod ignore`コマンドのヘルプを見てください。  
+        **説明をしっかり読まないと痛いめ見ます。**
 
         Aliases
         -------
@@ -89,6 +93,13 @@ class AutoMod(commands.Cog, DataManager):
         By default, the anti-spam function mutes the user when the number of warnings reaches 4, and bans the user when the number reaches 7.  
         The spam detection level is 2 by default, and if you are detected as spamming twice, the warning number goes up by one.  
         These can be changed in the settings.
+
+        Warnings
+        --------
+        You can send a couple of entertainment commands, such as a NekoBot, that just display images, and get spammed.
+        So if you have such Bots, create channels for them and add them to the exception list.
+        More details on how to do this will come later in `rt! automod ignore` command.
+        **If you don't read the explanation carefully, it will hurt.**
 
         Aliases
         -------
