@@ -32,12 +32,45 @@ class Person(commands.Cog):
         self.session = ClientSession()
 
     async def search_message(
-        self, channel: discord.TextChannel, original: discord.Message,
+        self, channel: discord.TextChannel,
+        original: discord.Message,
         content: str, **kwargs
     ) -> Optional[discord.Message]:
         async for message in channel.history(**kwargs):
             if message.id != original.id and content in message.clean_content:
                 return message
+
+    @commands.command(
+        extras={
+            "headding": {
+                "ja": "実行したチャンネルにあるメッセージの数を5000件まで数えます。",
+                "en": "Counts up to 5000 messages in the executed channel."
+            }, "parent": "Individual"
+        }, aliases=["メッセージ数"]
+    )
+    @commands.cooldown(1, 300, commands.BucketType.channel)
+    async def msgc(self, ctx: commands.Context):
+        """!lang ja
+        --------
+        実行したチャンネルにあるメッセージの数を数えます。  
+        もし1000件以上ある場合は`5000件以上`と表示されます。
+
+        Aliases
+        -------
+        メッセージ数
+
+        !lang en
+        --------
+        Counts the number of messages in the executed channel.
+        If there are more than 5000, `more than 5000` is displayed."""
+        message = await ctx.reply(
+            f"{self.bot.cogs['MusicNormal'].EMOJIS['loading']} Counting..."
+        )
+        count = len(await ctx.channel.history(limit=5000).flatten())
+        await message.edit(
+            f"このチャンネルのメッセージ数：{'5000件以上' if count == 5000 else f'{count}件'}"
+        )
+            
 
     @commands.command(
         extras={
