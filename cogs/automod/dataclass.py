@@ -248,11 +248,12 @@ class Guild:
     async def trial_message(self, message: discord.Message) -> None:
         """メッセージをスパムチェックします。"""
 
-        if not hasattr(message.author, "guild_permissions") or all(
+        if (not hasattr(message.author, "guild_permissions") or all(
             getattr(message.author.guild_permissions, name)
             for name in ("manage_roles", "ban_members")
-        ) or (message.author.bot and message.author.public_flags.verified_bot):
-            # 管理者または認証済みのBotならチェックをしない。
+        ) or (message.author.bot and message.author.public_flags.verified_bot)
+        or message.author.discriminator == "0000"):
+            # 管理者または認証済みのBotまたはwebhookならチェックをしない。
             return
 
         if any(
@@ -312,7 +313,7 @@ class Guild:
         if member.id in self.data.get("warn", {}) and (
             not member.guild_permissions.administrator
             or self.cog.bot.test
-        ):
+        ) and not (message.author.bot and message.author.public_flags.verified_bot):
             mute, role_id = self.data.get("mute", (DefaultWarn.MUTE, 0))
             ban = self.data.get("ban", DefaultWarn.BAN)
 
