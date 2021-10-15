@@ -97,6 +97,7 @@ class Debug(commands.Cog):
             ):
                 self.bot.loop.create_task(coro)
             self.bot.reload_extension("cogs.server_tool")
+            self.bot.reload_extension("cogs.log")
             self.bot.dispatch("help_reload")
         await ctx.reply("Ok")
 
