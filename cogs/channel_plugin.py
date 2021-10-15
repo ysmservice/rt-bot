@@ -52,7 +52,7 @@ class ChannelPluginGeneral(commands.Cog):
     async def on_message(self, message: discord.Message):
         if isinstance(message.channel, discord.Thread):
             return
-        if not message.guild or "RT's Auto Spoiler" in message.author.name:
+        if not message.guild or message.author.discriminator == "0000":
             return
 
         if message.channel.topic:
