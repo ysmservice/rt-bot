@@ -72,7 +72,7 @@ class Person(commands.Cog):
             f"{self.bot.cogs['MusicNormal'].EMOJIS['loading']} Counting..."
         )
         count = len(
-            [mes for mes in ctx.channel.history(limit=5000)
+            [mes async for mes in ctx.channel.history(limit=5000)
              if content is None or content in mes.content]
         )
         await message.edit(
