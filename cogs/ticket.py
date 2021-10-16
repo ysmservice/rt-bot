@@ -147,6 +147,7 @@ class Ticket(commands.Cog, DataManager):
         ```
         rt!tfm メッセージ内容 (もしオフにしたい場合は`off`)
         ```
+        ※一つのサーバーにつき一つまで設定が可能です。
 
         Examples
         --------
