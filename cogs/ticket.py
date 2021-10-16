@@ -281,11 +281,10 @@ class Ticket(commands.Cog, DataManager):
                 await channel.send(
                     {"ja": f"{payload.member.mention}, ここがあなたのチャンネルです。",
                      "en": f"{payload.member.mention}, Here is your channel!"},
-                    target=payload.member.id, embed=discord.Embed(
-                        title="管理者からのメッセージ", description=first,
-                        color=self.bot.colors["normal"]
-                    ) if (first := await self.read(payload.guild_id)) else None
+                    target=payload.member.id
                 )
+                if (first := await self.read(payload.guild_id)):
+                    await channel.send(first)
 
     @commands.Cog.listener()
     async def on_full_reaction_add(self, payload):
