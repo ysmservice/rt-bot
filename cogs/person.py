@@ -76,7 +76,7 @@ class Person(commands.Cog):
              if content is None or content in mes.content]
         )
         await message.edit(
-            f"このチャンネルのメッセージ数：{'5000件以上' if count == 5000 else f'{count}件'}"
+            f"メッセージ数：{'5000件以上' if count == 5000 else f'{count}件'}"
         )
 
 
