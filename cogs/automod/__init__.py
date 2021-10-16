@@ -8,8 +8,8 @@ import discord
 from collections import defaultdict
 from time import time
 
+from .constants import CACHE_TIMEOUT, DEFAULT_LEVEL, DefaultWarn
 from .modutils import check, assertion_error_handler
-from .constants import CACHE_TIMEOUT
 from .dataclass import DataManager
 
 if TYPE_CHECKING:
@@ -52,7 +52,7 @@ class AutoMod(commands.Cog, DataManager):
     @commands.cooldown(1, 3, commands.BucketType.guild)
     @commands.guild_only()
     async def automod(self, ctx):
-        """!lang ja
+        f"""!lang ja
         --------
         スパム対策機能や絵文字制限そして招待可能チャンネル規制などの機能がある自動モデレーション機能です。  
         これから警告数というワードがでますがこれは誰かがスパムをした際などに加算される警告の数です。  
@@ -63,8 +63,8 @@ class AutoMod(commands.Cog, DataManager):
 
         Notes
         -----
-        スパム対策機能はデフォルトでは警告数が4になったらミュートで7でBANとなります。  
-        そしてスパム検知レベルはデフォルトでは2で二回スパムしたと検知されると警告数が一つ上がります。  
+        スパム対策機能はデフォルトでは警告数が{DefaultWarn.MUTE}になったらミュートで{DefaultWarn.BAN}でBANとなります。  
+        そしてスパム検知レベルはデフォルトでは{DEFAULT_LEVEL}で二回スパムしたと検知されると警告数が一つ上がります。  
         これらは設定で変更が可能です。  
         なお警告数はしばらくしたら30分以内にリセットされます。  
         それと管理者は処罰されません。  
@@ -92,8 +92,8 @@ class AutoMod(commands.Cog, DataManager):
 
         Notes
         -----
-        By default, the anti-spam function mutes the user when the number of warnings reaches 4, and bans the user when the number reaches 7.  
-        The spam detection level is 2 by default, and if you are detected as spamming twice, the warning number goes up by one.  
+        By default, the anti-spam function mutes the user when the number of warnings reaches {DefaultWarn.MUTE}, and bans the user when the number reaches {DefaultWarn.BAN}.  
+        The spam detection level is {DEFAULT_LEVEL} by default, and if you are detected as spamming twice, the warning number goes up by one.  
         These can be changed in the settings.
 
         Warnings
@@ -278,7 +278,7 @@ class AutoMod(commands.Cog, DataManager):
     @check
     @assertion_error_handler(WARN_ERROR)
     async def mute(self, ctx, warn: float, *, role: discord.Role):
-        """!lang ja
+        f"""!lang ja
         --------
         いくつの警告数になったら何のロールを付与してミュートにするかを設定します。
 
@@ -300,7 +300,7 @@ class AutoMod(commands.Cog, DataManager):
 
         Notes
         -----
-        デフォルトでは4となっています。  
+        デフォルトでは{DefaultWarn.MUTE}となっています。  
         また、ロールを付与ではなく剥奪もしたいという場合は`linker`という機能を使ってみましょう。  
         `rt!help linker`からヘルプを表示できます。
 
@@ -330,7 +330,7 @@ class AutoMod(commands.Cog, DataManager):
 
         Notes
         -----
-        The default is 4.
+        The default is {DefaultWarn.MUTE}.
         If you also want to revoke a role rather than grant it, you can use `linker`.
         `rt!help linker`."""
         await self.update_setting(
@@ -344,7 +344,7 @@ class AutoMod(commands.Cog, DataManager):
     @check
     @assertion_error_handler(WARN_ERROR)
     async def ban(self, ctx, warn: float):
-        """!lang ja
+        f"""!lang ja
         --------
         いくつの警告数になったらBANをするかを設定します。
 
@@ -355,7 +355,7 @@ class AutoMod(commands.Cog, DataManager):
 
         Notes
         -----
-        デフォルトは7です。
+        デフォルトは{DefaultWarn.BAN}です。
 
         Warnings
         --------
@@ -376,7 +376,7 @@ class AutoMod(commands.Cog, DataManager):
 
         Notes
         -----
-        The default is 7.
+        The default is {DefaultWarn.BAN}.
 
         Warnings
         --------
@@ -395,11 +395,11 @@ class AutoMod(commands.Cog, DataManager):
          "en": "The level must be between 1 and 100, inclusive."}
     )
     async def level(self, ctx, level: int):
-        """!lang ja
+        f"""!lang ja
         --------
         スパム検知レベルを設定するコマンドです。  
         設定したレベルの数だけスパムとして認識したら警告数を一つ上げます。  
-        デフォルトは2で二回スパムとして認識されたら警告数を一つあげるということになります。
+        デフォルトは{DEFAULT_LEVEL}で二回スパムとして認識されたら警告数を一つあげるということになります。
 
         Parameters
         ----------
@@ -412,15 +412,14 @@ class AutoMod(commands.Cog, DataManager):
 
         Warnings
         --------
-        1などの低い数にすると大変なことになります。  
-        そしてレベルを100などの高い数にするとスパムが検知されても処罰がされるまでとっても時間がかかります。  
-        なので普通は変えるとしても2~6までのどこかにするのを推奨します。
+        そレベルを100などの高い数にするとスパムが検知されても処罰がされるまでとっても時間がかかります。  
+        なので普通は変えるとしても1~4までのどこかにするのを推奨します。
 
         !lang en
         --------
         This command sets the spam detection level.
         Raise the number of warnings by one if the number of levels you set is recognized as spam.
-        The default is 2, which means that if it is seen twice as spam, it will raise one warning.
+        The default is {DEFAULT_LEVEL}, which means that if it is seen twice as spam, it will raise one warning.
 
         Parameters
         ----------
