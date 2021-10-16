@@ -49,11 +49,16 @@ class Person(commands.Cog):
         }, aliases=["メッセージ数"]
     )
     @commands.cooldown(1, 300, commands.BucketType.channel)
-    async def msgc(self, ctx: commands.Context):
+    async def msgc(self, ctx: commands.Context, *, content=None):
         """!lang ja
         --------
         実行したチャンネルにあるメッセージの数を数えます。  
         もし5000件以上ある場合は`5000件以上`と表示されます。
+
+        Parameters
+        ----------
+        content : str, optional
+            この文字を含んでいるメッセージを数えるようにします。
 
         Aliases
         -------
@@ -66,11 +71,14 @@ class Person(commands.Cog):
         message = await ctx.reply(
             f"{self.bot.cogs['MusicNormal'].EMOJIS['loading']} Counting..."
         )
-        count = len(await ctx.channel.history(limit=5000).flatten())
+        count = len(
+            [mes for mes in ctx.channel.history(limit=5000)
+             if content is None or content in mes.content]
+        )
         await message.edit(
             f"このチャンネルのメッセージ数：{'5000件以上' if count == 5000 else f'{count}件'}"
         )
-            
+
 
     @commands.command(
         extras={
