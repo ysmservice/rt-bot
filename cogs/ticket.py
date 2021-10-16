@@ -245,8 +245,8 @@ class Ticket(commands.Cog, DataManager):
             # もしリアクションが押されたなら。
             # クールダウンが必要ならチャンネルを作成しない。
             if (error := (now := time()) - self.cooldown.get(payload.member.id, 0.0)) < COOLDOWN:
-                await payload.message.channel.send(
-                    {"ja": f"{payload.member.mention}, クールダウンが必要なため{error}秒待ってください。",
+                await payload.member.send(
+                    {"ja": f"{payload.member.mention}, チケットチャンネルの作成にクールダウンが必要なため{error}秒待ってください。",
                      "en": f"{payload.member.mention}, It want cooldown, please wait for {error} seconds."},
                     delete_after=5, target=payload.member.id
                 )
@@ -284,11 +284,11 @@ class Ticket(commands.Cog, DataManager):
 
     @commands.Cog.listener()
     async def on_full_reaction_add(self, payload):
-        await self.on_full_reaction(payload)
+        await self.on_ticket(payload)
 
     @commands.Cog.listener()
     async def on_full_reaction_remove(self, payload):
-        await self.on_full_reaction(payload)
+        await self.on_ticket(payload)
 
 
 def setup(bot):
