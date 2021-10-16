@@ -221,7 +221,6 @@ class Ticket(commands.Cog, DataManager):
     async def on_interaction(self, interaction: discord.Interaction):
         if interaction.data.get("custom_id", "") == CUSTOM_ID:
             # ボタンによるチケットチャンネル作成もする。
-            await interaction.response.defer()
             await self.on_ticket(RealNewInteraction(interaction))
 
     async def on_ticket(self, payload: Union["NewInteraction", discord.RawReactionActionEvent]):
