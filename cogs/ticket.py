@@ -221,7 +221,12 @@ class Ticket(commands.Cog, DataManager):
     async def on_interaction(self, interaction: discord.Interaction):
         if interaction.data.get("custom_id", "") == CUSTOM_ID:
             # ボタンによるチケットチャンネル作成もする。
-            await self.on_ticket(RealNewInteraction(interaction))
+            try:
+                await interaction.response.defer()
+            except:
+                pass
+            finally:
+                await self.on_ticket(RealNewInteraction(interaction))
 
     async def on_ticket(self, payload: Union["NewInteraction", discord.RawReactionActionEvent]):
         if ((hasattr(payload, "emoji") and str(payload.emoji) != "🎫") or payload.member.bot
