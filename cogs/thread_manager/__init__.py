@@ -6,9 +6,9 @@ from discord.ext import commands
 import discord
 
 from rtlib.slash import Option
-from datetime import timedelta
+from asyncio import sleep
 
-from .constants import MAX_CHANNELS, ERROR_RANGE
+from .constants import MAX_CHANNELS, HELP
 from .dataclass import DataManager
 
 if TYPE_CHECKING:
@@ -20,6 +20,7 @@ class ThreadManager(commands.Cog, DataManager):
     def __init__(self, bot: "Backend"):
         self.bot = bot
         self.pool: "Pool" = self.bot.mysql.pool
+        self.bot.loop.create_task(self.on_help_reload())
         super(commands.Cog, self).__init__(self)
 
     @commands.group(
@@ -35,7 +36,9 @@ class ThreadManager(commands.Cog, DataManager):
         """!lang ja
         --------
         スレッドマネージャーです。  
-        なおスラッシュコマンドに対応しています。
+        なおスラッシュコマンドに対応しています。  
+        似た機能でスレッド作成専用チャンネルというものがあります。  
+        ヘルプのチャンネルプラグインカテゴリーにあります。
 
         !lang en
         --------
@@ -270,7 +273,7 @@ class ThreadManager(commands.Cog, DataManager):
                 )
 
     @commands.Cog.listener()
-    async def on_thread_update(self, before: discord.Thread, after: discord.Thread):
+    async def on_thread_update(self, _, after: discord.Thread):
         if (after.archived and not after.locked
             and after.parent.id in await (
                 self.get_data(after.guild.id)
@@ -278,6 +281,29 @@ class ThreadManager(commands.Cog, DataManager):
         ):
                 # 自動ロックされたならロックを解除する。
                 await after.edit(archived=False)
+
+    @commands.Cog.listener()
+    async def on_help_reload(self):
+        await sleep(1.5)
+        for lang in HELP:
+            self.bot.cogs["DocHelp"].add_help(
+                "ChannelPlugin", "ThreadCreationChannel",
+                lang, *HELP[lang]
+            )
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if (hasattr(message.channel, "topic") and message.channel.topic
+                and "rt>thread" in message.channel.topic and not message.author.bot):
+            # スレッド作成専用チャンネルにメッセージが送信されたならスレッドを作る。
+            if message.channel.slowmode_delay < 10:
+                # もしスローモードが設定されていないなら十秒にする。
+                await message.channel.edit(slowmode_delay=10)
+
+            await message.channel.create_thread(
+                name=message.content[:message.content.find("\n")],
+                message=message
+            )
 
 
 def setup(bot):
