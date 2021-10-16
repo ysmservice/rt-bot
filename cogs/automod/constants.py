@@ -10,5 +10,5 @@ DEFAULT_WR = 10     # デフォルトの即抜けBANの秒数範囲です。
 
 
 class DefaultWarn:
-    BAN = 7
-    MUTE = 4
+    BAN = 4
+    MUTE = 2
