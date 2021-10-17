@@ -215,16 +215,6 @@ class BotGeneral(commands.Cog):
                     f"`rt!help <word>`で検索が可能です。\nもしかして：{suggestion}",
                 "en": f"It can't found that command.\n`rt!help <word>`This can search command.\nSuggetion:{suggestion}"}
             color = self.bot.colors["unknown"]
-        elif isinstance(
-            error, (commands.errors.BadArgument,
-                commands.errors.MissingRequiredArgument,
-                commands.errors.ArgumentParsingError,
-                commands.errors.TooManyArguments,
-                commands.BadUnionArgument)
-        ):
-            title = "400 Bad Request"
-            description = {"ja": "コマンドの引数が適切ではありません。\nまたは必要な引数が足りません。",
-                           "en": "It's command's function is bad."}
         elif isinstance(error, commands.errors.CommandOnCooldown):
             title = "429 Too Many Requests"
             description = {"ja": ("現在このコマンドはクールダウンとなっています。\n"
@@ -253,6 +243,16 @@ class BotGeneral(commands.Cog):
                                   + "有効な真偽値：`on/off`, `true/false`, `True/False`"),
                            "en": ("The specified boolean value is invalid\n"
                                   + "Valid boolean value:`on/off`, `true/false`, `True/False`")}
+        elif isinstance(
+            error, (commands.errors.BadArgument,
+                commands.errors.MissingRequiredArgument,
+                commands.errors.ArgumentParsingError,
+                commands.errors.TooManyArguments,
+                commands.BadUnionArgument)
+        ):
+            title = "400 Bad Request"
+            description = {"ja": "コマンドの引数が適切ではありません。\nまたは必要な引数が足りません。",
+                           "en": "It's command's function is bad."}
         elif isinstance(error, commands.errors.MissingPermissions):
             title = "403 Forbidden"
             description = {
@@ -280,7 +280,8 @@ class BotGeneral(commands.Cog):
                            "en": "You can't do this command."}
         else:
             error_message = "".join(
-                TracebackException.from_exception(error).format())
+                TracebackException.from_exception(error).format()
+            )
 
             print(error_message)
 
@@ -301,6 +302,16 @@ class BotGeneral(commands.Cog):
 
         if (length := len(description)) > 4096:
             description = description[4096 - length + 1:]
+        if "400" in title:
+            # 引数がおかしい場合はヘルプボタンを表示する。
+            for name in self.bot.cogs["Help"].CATEGORIES:
+                if self.bot.cogs["Help"].CATEGORIES[name] == ctx.command.extras.get("parent", ""):
+                    break
+            kwargs["view"] = componesy.View("BAView")
+            kwargs["view"].add_item(
+                "link_button", label="ヘルプを見る", emoji="❔",
+                url=f"https://rt-bot.com/help.html?g={name}&c={ctx.command.name}"
+            )
 
         kwargs["embed"] = discord.Embed(
             title=title, description=description, color=color
