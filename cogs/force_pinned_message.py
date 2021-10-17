@@ -229,7 +229,7 @@ class ForcePinnedMessage(commands.Cog, DataManager):
 
             try:
                 new_message = await message.channel.webhook_send(
-                    username=f"{getattr(member, "display_name", member.name)} RT-ForcePinnedMessage",
+                    username=f"{getattr(member, 'display_name', member.name)} RT-ForcePinnedMessage",
                     avatar_url=member.avatar.url, wait=True, **kwargs
                 )
             except Exception as e:
