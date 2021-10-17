@@ -96,18 +96,22 @@ class RolePanel(commands.Cog):
         if emojis:
             embed = discord.Embed(
                 title=title,
-                description="\n".join(f"{emoji} {emojis[emoji]}"
-                                      for emoji in emojis),
-                color=ctx.author.color
+                description="\n".join(
+                    f"{emoji} {emojis[emoji]}"
+                    for emoji in emojis
+                ), color=ctx.author.color
             )
             embed.set_footer(
-                text={"ja": "※連打防止のため役職の付与は数秒遅れます。",
-                      "en": "※There will be a delay of a few seconds in granting the position to prevent consecutive hits."}
+                text={
+                    "ja": "※連打防止のため役職の付与は数秒遅れます。",
+                    "en": "※There will be a delay of a few seconds in granting the position to prevent consecutive hits."
+                }
             )
 
             message = await ctx.webhook_send(
                 "RT役職パネル", embed=embed, username=ctx.author.display_name,
-                avatar_url=ctx.author.avatar.url, wait=True)
+                avatar_url=getattr(ctx.author.avatar, "url", ""), wait=True
+            )
             await message.add_reaction("🛠")
             for emoji in emojis:
                 await message.add_reaction(emoji)
