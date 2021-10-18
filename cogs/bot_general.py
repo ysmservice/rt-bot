@@ -15,13 +15,15 @@ ERROR_CHANNEL = 842744343911596062
 
 INFO_DESC = {
     "ja": """どうもRTという新時代Botです。
-このBotは既にある色々な機能や今までにない機能を取り入れた多機能型Botです。
-チャンネルステータスやウェルカムメッセージももちろん、変更可能このの読み上げや常に一番下にくるメッセージなど色々あります。これ翻訳できず
-ほとんどこのBotで済むようなBotを目指してる。""",
-    "en": """Hi I am RTBOT. This is for new year.
-    This bot is many function and never before function in this Bot.
-    Of course channelstatus, welcome message
-    I am aiming for a bot that can almost be done with this bot"""
+このBotは役職,投票,募集,チケットパネルやチャンネルステータスなどの定番機能はもちろん、声の変えれる読み上げやプレイリストのある音楽プレイヤーなどもある多機能Botです。
+そして荒らし対策として使える画像,ウェブ,合言葉認証やスパム対策機能まであります。
+またその他にもスレッド自動アーカイブ対策,自己紹介テンプレートに使える常に下にくるメッセージ,NSFW誤爆対策に使える自動画像スポイラーそしてボイスチャンネルロールなどあったら便利な機能もたくさんあります。
+さあ是非このBotを入れて他のBotを蹴り飛ばしましょう！""",
+    "en": """It's a new era Bot called RT.
+This Bot is a multifunctional Bot with standard functions such as job title, voting, recruitment, ticket panel and channel status, as well as a music player with voice changing reading and playlists.
+And there are images, web, password authentication and spam prevention functions that can be used as a troll countermeasure.
+Other useful features include automatic thread archiving, always-on messages for self-introduction templates, an automatic image spoiler for NSFW detonation, and voice channel rolls.
+Come on, let's put this Bot in and kick the other Bots."""
 }
 INFO_ITEMS = (("INVITE", {"ja": "招待リンク", "en": "invite link"}),
               ("SS", {"ja": "サポートサーバー", "en": "support server"}),
@@ -33,8 +35,8 @@ INFO_GITHUB = """* [RT-Team](https://github.com/RT-Team)
 * [RT-Backend](https://github.com/RT-Team/rt-backend)
 * [RT-Frontend](https://github.com/RT-Team/rt-frontend)"""
 
-CREDIT_ITEMS = (("DEV", {"ja": "主な開発者", "en": "main developer"}),
-                ("DESIGN", {"ja": "絵文字デザイン", "en": "emoji designer"}),
+CREDIT_ITEMS = (("DEV", {"ja": "開発者", "en": "main developer"}),
+                ("DESIGN", {"ja": "デザイン", "en": "designer"}),
                 ("ICON", {"ja": "RTのアイコン", "en": "RT's icon"}),
                 ("LANGUAGE", {"ja": "プログラミング言語", "en": "programing language"}),
                 ("SERVER", {"ja": "サーバーについて", "en": "about server"}),
@@ -54,8 +56,8 @@ CREDIT_SERVER = {
     "en": "server os:Arch Linux\nSnavy is lend server to me. Thank you to Snavy "
 }
 CREDIT_ETC = {
-    "ja": "* Githubのコントリビューター達。\n* 主な翻訳協力者であるDMSくん。\nありがとうございます。",
-    "en": "*Github's sontributors. \n* This bot is translate by DMS. \n Thank you"
+    "ja": "* Githubのコントリビューター達\n* 翻訳協力者\nありがとうございます。",
+    "en": "* Github's sontributors\n* translators \nThank you."
 }
 
 
@@ -166,7 +168,8 @@ class BotGeneral(commands.Cog):
             "ja": "RTの招待リンクを含めた情報を表示します。",
             "en": "Show you RT's invite link."
         }, "parent": "RT"},
-        aliases=["credit", "invite", "about", "情報", "じょうほう"])
+        aliases=["credit", "invite", "about", "情報", "じょうほう"]
+    )
     @commands.cooldown(1, 180, commands.BucketType.user)
     async def info(self, ctx, secret_arg = None):
         """!lang ja
