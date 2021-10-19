@@ -1,12 +1,13 @@
 # RT - Level
 
-from discord.ext import commands
+from typing import Tuple
+
+from discord.ext import commands, tasks
 import discord
 
-from rtlib import mysql, DatabaseManager
-from rtlib.ext import Embeds
+from collections import defaultdict
+from rtlib import DatabaseManager
 from asyncio import sleep
-from typing import Tuple
 
 
 class DataManager(DatabaseManager):
@@ -50,9 +51,9 @@ class DataManager(DatabaseManager):
         return False
 
     async def set_level(
-            self, cursor, guild_id: int, user_id: int,
-            exp: int, level: int
-        ) -> None:
+        self, cursor, guild_id: int, user_id: int,
+        exp: int, level: int
+    ) -> None:
         target = {"GuildID": guild_id, "UserID": user_id}
         change = {"Exp": exp, "Level": level}
         if await cursor.exists("level", target):
@@ -60,6 +61,19 @@ class DataManager(DatabaseManager):
         else:
             target.update(change)
             await cursor.insert_data("level", target)
+
+    async def set_levels(
+        self, cursor, guild_id: int, rows: tuple
+    ) -> None:
+        target = {"GuildID": guild_id}
+        for user_id, row in rows:
+            target["UserID"] = user_id
+            change = {"Exp": row[2], "Level": row[3]}
+            if await cursor.exists("level", target):
+                await cursor.update_data("level", change, target)
+            else:
+                target.update(change)
+                await cursor.insert_data("level", target)
 
     async def get_level(self, cursor, guild_id: int, user_id: int) -> tuple:
         target = {"GuildID": guild_id, "UserID": user_id}
@@ -70,10 +84,10 @@ class DataManager(DatabaseManager):
 
     async def get_levels(self, cursor, guild_id: int, limit: int = 10) -> tuple:
         await cursor.cursor.execute(
-            """SELECT * FROM level
+            f"""SELECT * FROM level
                 WHERE GuildID = %s
                 ORDER BY Level DESC
-                LIMIT """ + str(limit),
+                LIMIT {limit};""",
             (guild_id,)
         )
         return await cursor.cursor.fetchall()
@@ -109,6 +123,7 @@ class DataManager(DatabaseManager):
 class Level(commands.Cog, DataManager):
     def __init__(self, bot):
         self.bot = bot
+        self.queue = defaultdict(dict)
         self.bot.loop.create_task(self.on_ready())
 
     async def on_ready(self):
@@ -117,6 +132,15 @@ class Level(commands.Cog, DataManager):
             self.bot.mysql
         )
         await self.init_table()
+        self.save_loop.start()
+
+    @tasks.loop(seconds=10)
+    async def save_loop(self):
+        for guild_id, queues in list(self.queue.items()):
+            await self.set_levels(guild_id, queues.items())
+
+    def cog_unload(self):
+        self.save_loop.cancel()
 
     @commands.group(
         extras={
@@ -321,7 +345,7 @@ class Level(commands.Cog, DataManager):
     async def role_error_wrap(self, coro) -> str:
         try:
             await coro
-        except:
+        except Exception as e:
             return (
                 "役職の位置がRTより下にあるか確認してください。"
                 f"\nエラーコード：`{str(e)}`"
@@ -393,16 +417,18 @@ class Level(commands.Cog, DataManager):
             return
 
         for guild_id in (message.guild.id, 0):
-            if (row := await self.get_level(guild_id, message.author.id)):
+            if message.author.id in self.queue[guild_id]:
+                row = self.queue[guild_id][message.author.id]
+            else:
+                row = await self.get_level(guild_id, message.author.id)
+            if row:
                 level = row[3]
                 exp, levelup = self.level_calculation(row[2], level)
                 if levelup:
                     level += 1
                     await self.on_levelup(level, guild_id, message)
 
-                await self.set_level(
-                    guild_id, message.author.id, exp, level
-                )
+                self.queue[guild_id][message.author.id] = (0, 0, exp, level)
 
 
 def setup(bot):
