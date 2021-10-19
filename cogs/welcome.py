@@ -168,7 +168,7 @@ class Welcome(commands.Cog, DataManager):
                     .replace("$count$", str(len(member.guild.members))))
                 channel = member.guild.get_channel(row[1])
                 if channel:
-                    await sleep(1.5)
+                    await sleep(3)
                     await channel.send(row[2])
 
     @commands.Cog.listener()
