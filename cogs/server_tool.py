@@ -387,20 +387,27 @@ class ServerTool(commands.Cog):
             ).replace("--rticon", "")
             rt = True
 
-        kwargs = {
-            "username": ctx.author.display_name,
-            "avatar_url": getattr(ctx.author.avatar, "url", ""),
-            "embed": self.easy_embed(
-                ">>" + content,
-                ctx.author.color if color == "null" else color
+        try:
+            kwargs = {
+                "username": ctx.author.display_name,
+                "avatar_url": getattr(ctx.author.avatar, "url", ""),
+                "embed": self.easy_embed(
+                    ">>" + content,
+                    ctx.author.color if color == "null" else color
+                )
+            }
+        except TypeError:
+            await ctx.reply(
+                {"ja": "色の指定がおかしいです。",
+                 "en": "Bad color argument."}
             )
-        }
-        send = ctx.channel.webhook_send
-        if rt:
-            kwargs = {"embed": kwargs["embed"]}
-            send = ctx.send
+        else:
+            send = ctx.channel.webhook_send
+            if rt:
+                kwargs = {"embed": kwargs["embed"]}
+                send = ctx.send
 
-        await send(**kwargs)
+            await send(**kwargs)
 
     @commands.command(
         aliases=["抽選", "choice", "lot"], extras={
