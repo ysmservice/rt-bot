@@ -78,6 +78,16 @@ class Log(commands.Cog):
 
     @commands.Cog.listener()
     @log()
+    async def on_message(self, message):
+        if message.content and ("@everyone" in message.content or "@here" in message.content):
+            return discord.Embed(
+                title="全員メンション",
+                description=f"{message.author} ({message.author.id})が全員あてメンションをしました。",
+                color=self.c
+            )
+
+    @commands.Cog.listener()
+    @log()
     async def on_member_join(self, member):
         embed = discord.Embed(
             title="メンバーの参加",
