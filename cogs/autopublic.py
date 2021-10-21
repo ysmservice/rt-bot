@@ -14,9 +14,10 @@ class Autopublic(commands.Cog):
         for line in message.channel.topic.splitlines():
             if line.startswith("rt>autopublic"):
                 await message.publish()
-                option = line.split()[1]
-                if option == "check":
-                    await message.add_reaction("✅")
+                if len(line.split()) >= 1:
+                    option = line.split()[0]
+                    if option == "check":
+                        await message.add_reaction("✅")
                 
 def setup(bot):
     bot.add_cog(Autopublic(bot))
