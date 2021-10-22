@@ -1,6 +1,6 @@
 # RT - Role Keeper
 
-from typing import TYPE_CHECKING, Optinal, List
+from typing import TYPE_CHECKING, Optional, List
 
 from discord.ext import commands, tasks
 import discord
@@ -20,8 +20,8 @@ DEFAULT_GHOST_TIME = 7884000
 
 class DataManager:
     def __init__(self, cog: "RoleKeeper"):
-        self.cog = self.cog
-        self.pool: "Pool" = self.cog.mysql.pool
+        self.cog = cog
+        self.pool: "Pool" = self.cog.bot.mysql.pool
         self.cog.bot.loop.create_task(self._prepare_table())
 
     async def _prepare_table(self) -> None:
@@ -30,6 +30,9 @@ class DataManager:
             async with conn.cursor() as cursor:
                 await cursor.execute(
                     f"CREATE TABLE IF NOT EXISTS {TABLES[0]} VALUES (GuildID BIGINT);"
+                )
+                await cursor.execute(
+                    f"""CREATE TABLE IF NOT EXISTS {TABLES[1]} VALUES (GuildID BIGINT, UserID BIGINT, Roles TEXT, UpdateTime FLOAT);"""
                 )
 
     async def toggle(self, guild_id: int) -> bool:
@@ -139,7 +142,7 @@ class RoleKeeper(commands.Cog, DataManager):
             await ctx.trigger_typing()
             onoff = await self.toggle(ctx.guild.id)
             await ctx.reply(
-                {"ja": f"ロールキーパーを{'ON' if onoff else 'OFF'}にしました。にしました。"
+                {"ja": f"ロールキーパーを{'ON' if onoff else 'OFF'}にしました。にしました。",
                  "en": f"RoleKeeper is {'en' if onoff else 'dis'}abled."}
             )
 
