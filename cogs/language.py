@@ -38,6 +38,9 @@ class Language(commands.Cog):
         self.bot.cogs["OnSend"].add_event(self._new_send, "on_webhook_message_edit")
         self.bot.cogs["OnSend"].add_event(self._new_send, "on_edit")
 
+        self.pool = self.bot.mysql.pool
+        self.bot.loop.create_task(self.on_ready())
+
         with open("data/replies.json") as f:
             self.replies = loads(f.read())
 
@@ -179,9 +182,7 @@ class Language(commands.Cog):
             if row:
                 self.cache[row[0]] = row[1]
 
-    @commands.Cog.listener()
     async def on_ready(self):
-        self.pool = await self.bot.mysql.pool
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cursor:
                 await cursor.execute(
