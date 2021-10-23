@@ -16,7 +16,7 @@ class DataManager:
 
     def __init__(self, cog: "VCChannel"):
         self.cog = cog
-        self.pool: "Pool" = self.cog.mysql.pool
+        self.pool: "Pool" = self.cog.bot.mysql.pool
         self.cog.bot.loop.create_task(self.init_table())
 
     async def init_table(self) -> None:
@@ -140,4 +140,5 @@ class VCChannel(commands.Cog, DataManager):
 
 
 def setup(bot):
+    return
     bot.add_cog(VCChannel(bot))
