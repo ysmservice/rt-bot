@@ -29,13 +29,14 @@ class DataManager:
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cursor:
                 await cursor.execute(
-                    f"CREATE TABLE IF NOT EXISTS {TABLES[0]} VALUES (GuildID BIGINT);"
+                    f"CREATE TABLE IF NOT EXISTS {TABLES[0]} (GuildID BIGINT);"
                 )
                 await cursor.execute(
-                    f"""CREATE TABLE IF NOT EXISTS {TABLES[1]} VALUES (
+                    f"""CREATE TABLE IF NOT EXISTS {TABLES[1]} (
                         GuildID BIGINT, UserID BIGINT, Roles TEXT, UpdateTime FLOAT
                     );"""
                 )
+        self.delete_ghost.start()
 
     async def toggle(self, guild_id: int) -> bool:
         """ロールキーパーを有効または無効にします。"""
@@ -65,7 +66,7 @@ class DataManager:
                 else:
                     # 設定を追加する。
                     await cursor.execute(
-                        f"INSERT INTO {TABLES[0]} (%s);",
+                        f"INSERT INTO {TABLES[0]} VALUES (%s);",
                         (guild_id)
                     )
                     return True
@@ -98,7 +99,7 @@ class DataManager:
                     )
                 else:
                     await cursor.execute(
-                        f"INSERT INTO {TABLES[1]} (%s, %s, %s, %s);",
+                        f"INSERT INTO {TABLES[1]} VALUES (%s, %s, %s, %s);",
                         (guild_id, user_id, roles, time())
                     )
 
@@ -124,7 +125,7 @@ class DataManager:
                 await cursor.execute(f"SELECT * FROM {TABLES[1]};")
 
                 for row in await cursor.fetchall():
-                    if now - row[2] > DEFAULT_GHOST_TIME:
+                    if now - row[3] > DEFAULT_GHOST_TIME:
                         # もしDEFAULT_GHOST_TIME秒放置されているロールデータがあるなら削除する。
                         await cursor.execute(
                             f"DELETE FROM {TABLES[1]} WHERE GuildID = %s AND UserID = %s;",
@@ -135,26 +136,57 @@ class DataManager:
 class RoleKeeper(commands.Cog, DataManager):
     def __init__(self, bot: "Backend"):
         self.bot = bot
-        self.delete_ghost.start()
         super(commands.Cog, self).__init__(self)
 
     @commands.group(aliases=["rk", "ロールキーパー"])
     async def rolekeeper(self, ctx: commands.Context):
+        """!lang ja
+        --------
+        ロールキーパーです。  
+        一度退出してもまたサーバーに参加した際に前に退出した時付与されていたロールが付与されます。  
+        なのでサーバーから退出してもまた次参加した際に前までついていたロールがキープされます。  
+        このコマンドを実行することでONとOFFを切り替えることができます。
+
+        Notes
+        -----
+        最大三ヶ月までロール情報を保持します。
+
+        Aliases
+        -------
+        rk, ロールキーパー
+
+        !lang en
+        --------
+        This is a role keeper.  
+        If you leave the server once, when you join the server again, you will be given the role you were given when you left before.  
+        So even if you leave the server, the next time you join, you will keep the role you had before.  
+        You can turn it on and off by executing this command.
+
+        Notes
+        -----
+        It retains role information for up to three months.
+
+        Aliases
+        -------
+        rk"""
         if not ctx.invoked_subcommand:
             await ctx.trigger_typing()
             onoff = await self.toggle(ctx.guild.id)
             await ctx.reply(
-                {"ja": f"ロールキーパーを{'ON' if onoff else 'OFF'}にしました。にしました。",
+                {"ja": f"ロールキーパーを{'ON' if onoff else 'OFF'}にしました。",
                  "en": f"RoleKeeper is {'en' if onoff else 'dis'}abled."}
             )
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         # メンバーが参加した際にもしロールデータがあるならそのロールを付与しておく。
-        if (roles := await self.read_roledata(member.guild.id, member.id)):
-            for role in roles:
-                if (role := member.guild.get_role(role.id)):
-                    await member.add_roles(role)
+        try:
+            for role in await self.read_roledata(member.guild.id, member.id):
+                if (role := member.guild.get_role(role)):
+                    if role.name != "@everyone":
+                        await member.add_roles(role)
+        except AssertionError:
+            pass
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
