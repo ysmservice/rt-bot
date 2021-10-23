@@ -141,10 +141,16 @@ class RolePanel(commands.Cog):
 
         if role:
             # 役職が存在するならリアクションの付与と剥奪をする。
-            if payload.event_type == "REACTION_ADD":
-                await payload.member.add_roles(role)
-            elif payload.event_type == "REACTION_REMOVE":
-                await payload.member.remove_roles(role)
+            try:
+                if payload.event_type == "REACTION_ADD":
+                    await payload.member.add_roles(role)
+                elif payload.event_type == "REACTION_REMOVE":
+                    await payload.member.remove_roles(role)
+            except discord.Forbidden:
+                await payload.member.send(
+                    "役職の付与に失敗しました。\nサーバー管理者に以下のサイトを見るように伝えてください。\n" \
+                    "https://rt-team.github.io/trouble/role"
+                )
 
             del role
         else:
