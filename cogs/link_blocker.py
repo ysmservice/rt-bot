@@ -27,6 +27,9 @@ class DataManager:
                         GuildID BIGINT
                     );"""
                 )
+                await cursor.execute(
+                    f"CREATE TABLE IF NOT EXISTS {self.TABLES[1]} (ChannelID BIGINT);"
+                )
                 self.cog.guilds = await self.reads(cursor)
                 self.cog.ignores = await self.read_ignores(cursor)
 
