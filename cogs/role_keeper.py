@@ -32,7 +32,9 @@ class DataManager:
                     f"CREATE TABLE IF NOT EXISTS {TABLES[0]} VALUES (GuildID BIGINT);"
                 )
                 await cursor.execute(
-                    f"""CREATE TABLE IF NOT EXISTS {TABLES[1]} VALUES (GuildID BIGINT, UserID BIGINT, Roles TEXT, UpdateTime FLOAT);"""
+                    f"""CREATE TABLE IF NOT EXISTS {TABLES[1]} VALUES (
+                        GuildID BIGINT, UserID BIGINT, Roles TEXT, UpdateTime FLOAT
+                    );"""
                 )
 
     async def toggle(self, guild_id: int) -> bool:
