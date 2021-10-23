@@ -138,7 +138,13 @@ class RoleKeeper(commands.Cog, DataManager):
         self.bot = bot
         super(commands.Cog, self).__init__(self)
 
-    @commands.group(aliases=["rk", "ロールキーパー"])
+    @commands.group(
+        aliases=["rk", "ロールキーパー"], extras={
+            "headding": {
+                "ja": "ロールキーパー", "en": "Role Keeper"
+            }, "parent": "ServerTool"
+        }
+    )
     async def rolekeeper(self, ctx: commands.Context):
         """!lang ja
         --------
