@@ -145,6 +145,7 @@ class RoleKeeper(commands.Cog, DataManager):
             }, "parent": "ServerTool"
         }
     )
+    @commands.has_permissions(manage_roles=True)
     async def rolekeeper(self, ctx: commands.Context):
         """!lang ja
         --------
