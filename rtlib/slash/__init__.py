@@ -188,7 +188,7 @@ class SlashCommand(commands.Cog):
                 update = True
 
             # 更新フラグが立っているならスラッシュコマンドを登録する。
-            if update:
+            if update and False:
                 print(data)
                 already_command: ApplicationCommandType = await self.request(
                     Route("POST", f"/applications/{self.bot.user.id}/commands"),
