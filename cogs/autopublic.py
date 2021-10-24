@@ -8,7 +8,14 @@ CHP_HELP = {
 これは`rt>autopublic <optionでcheck>`をニュースチャンネルのトピックに入れることで自動的にメッセージを公開してくれる機能です。  
 例：`rt>autopublic` (これをトピックに入れたチャンネルに送信したメッセージは全てメッセージを公開してくれます)
 例: `rt>autopublic ckeck` (これをトピックに入れたチャンネルに送信したメッセージは全てメッセージを公開してくれますが、公開するとメッセージにチェックが入ります)
+"""),
+    "en": ("message auto public.",
+"""# # Message autopublishing plugin - autopublic
+This is a feature that allows you to automatically publish messages by putting `rt>autopublic <check with option>` in the topic of a news channel.  
+Example: `rt>autopublic` (any message sent to a channel with this in the topic will make the message public)
+Example: `rt>autopublic ckeck` (any message sent to a channel with this in the topic will make the message public, but the message will be checked when it is made public)
 """)
+}
 
 class Autopublic(commands.Cog):
     def __init__(self, bot):
