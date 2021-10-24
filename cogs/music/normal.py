@@ -246,7 +246,6 @@ class MusicNormal(commands.Cog, DataManager):
                         view=view()
                     )
             else:
-                i = 1
                 datas = [datas]
 
         # キューに音楽を追加する。
