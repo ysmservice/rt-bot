@@ -20,10 +20,9 @@ Example: `rt>autopublic ckeck` (any message sent to a channel with this in the t
 class Autopublic(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        bot.loop.create_task(self.on_command_added())
-        
-    async def on_command_added(self):
-        await sleep(1.5)
+
+    @commands.Cog.listener()
+    async def on_help_reload(self):
         for lang in CHP_HELP:
             self.bot.cogs["DocHelp"].add_help(
                 "ChannelPlugin", "AutoPublic",
