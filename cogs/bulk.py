@@ -3,8 +3,6 @@
 from discord.ext import commands
 import discord
 
-from typing import Tuple, List
-
 
 class GuildRole(commands.Converter):
     async def convert(self, ctx, arg):
