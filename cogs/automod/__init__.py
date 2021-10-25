@@ -816,6 +816,62 @@ class AutoMod(commands.Cog, DataManager):
             }, "set_withdrawal", seconds
         )
 
+    @automod.group(aliases=["ir", "招待リンク削除"])
+    @check
+    async def inviteremover(self, ctx):
+        """!lang ja
+        --------
+        招待リンクが送信された際にそのメッセージを消すようにします。  
+        このコマンドを実行することで有効/無効を切り替えることができます。
+
+        Aliases
+        -------
+        ir, 招待リンク削除
+
+        !lang en
+        --------
+        Make that message disappear when the invitation link is sent.  
+        You can enable/disable it by executing this command.
+
+        Aliases
+        -------
+        ir"""
+        await self.update_setting(
+            ctx, "Ok", "invite_remover_toggle"
+        )
+
+    @inviteremover.command()
+    async def add(self, ctx, channel: Optional[discord.TextChannel]):
+        """!lang ja
+        --------
+        実行したチャンネルを招待リンク削除の例外として設定します。
+
+        !lang en
+        --------
+        Set the executed channel as an exception to delete the invitation link."""
+        channel = channel or ctx.channel
+        await self.update_setting(
+            ctx, "Ok", "add_invite_remover_ignore", channel.id
+        )
+
+    @inviteremover.command()
+    @assertion_error_handler(
+        {"ja": "そのチャンネルは登録されていません。",
+         "en": "The channel is not registered."}
+    )
+    async def remove(self, ctx, channel: Optional[Union[discord.TextChannel, discord.Object]]):
+        """!lang ja
+        --------
+        実行したチャンネルの招待リンク削除設定の例外を削除します。
+
+        !lang en
+        --------
+        Removes exceptions to the delete invitation link setting for the executed channel."""
+        channel = channel or ctx.channel
+        await self.update_setting(
+            ctx, "Ok", "remove_invite_remover_ignore", channel.id
+        )
+
     def cog_unload(self):
         self.remove_cache.cancel()
         self.reset_warn.cancel()

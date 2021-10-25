@@ -14,6 +14,8 @@ class Data(TypedDict, total=False):
     mute: Tuple[int, int]
     ban: int
     withdrawal: int
+    invite_remover: bool
+    ignore_invite_remover: List[int]
 
 
 class SpamCacheData(TypedDict, total=False):

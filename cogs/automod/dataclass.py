@@ -175,6 +175,24 @@ class Guild:
         self.data["emoji"] = max_
 
     @commit
+    async def invite_remover_toggle(self) -> None:
+        "招待リンクの削除を行う機能の有効/無効"
+        self.data["invite_remover"] = not self.data.get("invite_remover", False)
+
+    @commit
+    async def add_invite_remover_ignore(self, channel_id: int) -> None:
+        "招待リンク削除をしない例外チャンネルの追加"
+        if "ignore_invite_remover" not in self.data:
+            self.data["ignore_invite_remover"] = []
+        self.data["ignore_invite_remover"].append(channel_id)
+
+    @commit
+    async def remove_invite_remover_ignore(self, channel_id: int) -> None:
+        "招待リンク削除をしない例外チャンネルの削除"
+        assert channel_id in self.data.get("ignore_invite_remover", []), "設定が見つかりませんでした。"
+        self.data["ignore_invite_remover"].remove(channel_id)
+
+    @commit
     async def add_invite_channel(self, channel_id: int) -> None:
         """招待リンク規制での招待リンク作成可能チャンネルを追加します。"""
         if "invites" not in self.data:
@@ -297,6 +315,11 @@ class Guild:
             )
             warn += 0.5
 
+        if ("//discord.gg/" in message.content and "http" in message.content
+                and message.channel.id not in self.data.get("ignore_invite_remover", [])):
+            await message.delete()
+            await message.author.send("招待リンクを貼ることはしてはいけません。")
+
         if 0 < warn <= 100:
             await self.set_warn(
                 message.author.id, self.data.get("warn", {}).get(
@@ -313,7 +336,7 @@ class Guild:
         if member.id in self.data.get("warn", {}) and (
             not member.guild_permissions.administrator
             or self.cog.bot.test
-        ) and not (message.author.bot and message.author.public_flags.verified_bot):
+        ) and not (member.bot and member.public_flags.verified_bot):
             mute, role_id = self.data.get("mute", (DefaultWarn.MUTE, 0))
             ban = self.data.get("ban", DefaultWarn.BAN)
 
