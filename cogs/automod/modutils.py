@@ -15,6 +15,18 @@ def similer(before: str, after: str, check_characters: Optional[int] = None) -> 
         # 二個メンションがあれば問答無用でTrueを返す。
         return True
 
+    # 最後にある「...」は無効にする。
+    tmp = after
+    if "...\n" in after:
+        after = after.replace("...\n", "")
+    elif "。。。\n" in after:
+        after = after.replace("。。。\n", "")
+    elif after.endswith("..."):
+        after = after[:-3]
+    # もし「...」だけでスパムしているのなら元に戻す。
+    if not after:
+        after = tmp
+
     after_length = len(after)
     if check_characters is None:
         check_characters = after_length // 4
