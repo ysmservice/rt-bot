@@ -251,7 +251,8 @@ class BotGeneral(commands.Cog):
                 commands.errors.MissingRequiredArgument,
                 commands.errors.ArgumentParsingError,
                 commands.errors.TooManyArguments,
-                commands.BadUnionArgument)
+                commands.BadUnionArgument,
+                commands.BadLiteralArgument)
         ):
             title = "400 Bad Request"
             description = {"ja": "コマンドの引数が適切ではありません。\nまたは必要な引数が足りません。",

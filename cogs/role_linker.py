@@ -239,10 +239,12 @@ class RoleLinker(commands.Cog, DataManager):
             for role in before.roles:
                 if not after.get_role(role.id):
                     # もしロールが削除されたなら。
+                    self.bot.dispatch("role_remove", role, after)
                     await self.role_update("remove", role, after)
             for role in after.roles:
                 if not before.get_role(role.id):
                     # もしロールが追加されたなら。
+                    self.bot.dispatch("role_add", role, after)
                     await self.role_update("add", role, after)
 
 
