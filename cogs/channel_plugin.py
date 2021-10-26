@@ -105,6 +105,13 @@ class ChannelPluginGeneral(commands.Cog):
                         avatar_url=message.author.avatar.url
                     )
                     await message.delete()
+                elif cmd.startswith("rt>embed"):
+                    # Auto Embed
+                    await self.bot.cogs["ServerTool"].embed(
+                        await self.bot.get_context(message), "null",
+                        content=message.content
+                    )
+                    await message.delete()
 
 
 def setup(bot):
