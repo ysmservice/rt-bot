@@ -137,7 +137,7 @@ class Level(commands.Cog, DataManager):
     @tasks.loop(seconds=10)
     async def save_loop(self):
         for guild_id, queues in list(self.queue.items()):
-            await self.set_levels(guild_id, queues.items())
+            await self.set_levels(guild_id, list(queues.items()))
 
     def cog_unload(self):
         self.save_loop.cancel()
