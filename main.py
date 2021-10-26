@@ -136,5 +136,5 @@ del is_admin, _is_owner
 
 bot.run(
     TOKEN, host="0.0.0.0" if server else "127.0.0.1",
-    port=80 if server else 5500, workers=3
+    port=80 if server else 5500
 )
