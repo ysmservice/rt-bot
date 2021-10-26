@@ -25,7 +25,7 @@ class DataManager:
             async with conn.cursor() as cursor:
                 await cursor.execute(
                     f"""CREATE TABLE IF NOT EXISTS {self.TABLE} (
-                        GuildID BIGINT, RoleID BIGINT PRIMARY KEY NOT NULL,
+                        GuildID BIGINT, RoleID BIGINT,
                         ChannelID BIGINT, Mode TEXT, Content TEXT
                     );"""
                 )
@@ -38,11 +38,21 @@ class DataManager:
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cursor:
                 await cursor.execute(
-                    f"""INSERT INTO {self.TABLE} VALUES (%s, %s, %s, %s, %s)
-                        ON DUPLICATE KEY UPDATE ChannelID = %s, Content = %s;""",
-                    (guild_id, role_id, channel_id, mode,
-                     content, channel_id, content)
+                    f"""SELECT * FROM {self.TABLE}
+                        WHERE GuildID = %s AND RoleID = %s AND Mode = %s;""",
+                    (guild_id, role_id, mode)
                 )
+                if await cursor.fetchone():
+                    await cursor.execute(
+                        f"""UPDATE {self.TABLE} SET ChannelID = %s, content = %s
+                            WHERE GuildID = %s AND RoleID = %s AND Mode = %s;""",
+                        (channel_id, content, guild_id, role_id, mode)
+                    )
+                else:
+                    await cursor.execute(
+                        f"INSERT INTO {self.TABLE} VALUES (%s, %s, %s, %s, %s);",
+                        (guild_id, role_id, channel_id, mode, content)
+                    )
 
     async def reads(self, guild_id: int) -> List[Tuple[int, int, str]]:
         "データを全て読み込みます。"

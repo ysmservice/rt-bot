@@ -29,9 +29,7 @@ def similer(before: str, after: str, check_characters: Optional[int] = None) -> 
 
     after_length = len(after)
     if check_characters is None:
-        check_characters = after_length // 4
-    if after_length < check_characters or check_characters < 5:
-        check_characters = after_length
+        check_characters = after_length if after_length < 5 else 5
     return any(
         after[i:i + check_characters] in before
         for i in range(check_characters)
