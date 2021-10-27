@@ -108,7 +108,9 @@ class DataManager:
         )
         return await getattr(cursor, f"fetch{mode}")()
 
-    async def add_ignore(self, guild_id: int, role_id: int, ignore_role_id: int) -> None:
+    async def add_ignore(
+        self, guild_id: int, role_id: int, ignore_role_id: int
+    ) -> None:
         "例外ロールを追加します。"
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cursor:
