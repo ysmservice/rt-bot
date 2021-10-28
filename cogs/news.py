@@ -153,7 +153,6 @@ class News(commands.Cog, DataManager):
             await ctx.reply(f"Ok number:{now}")
 
     @news.command()
-    @is_admin()
     async def remove(self, ctx, id_: int):
         """!lang ja
         --------
@@ -163,8 +162,13 @@ class News(commands.Cog, DataManager):
         ----------
         id : int
             削除するニュースのidです。"""
-        await self.remove_news(id_)
-        await ctx.reply("Ok")
+        if ctx.author.id in (
+            634763612535390209, 667319675176091659,
+            693025129806037003, 739702692393517076,
+            510590521811402752
+        ):
+            await self.remove_news(id_)
+            await ctx.reply("Ok")
 
 
 def setup(bot):
