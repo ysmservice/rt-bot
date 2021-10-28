@@ -1,12 +1,12 @@
 # RTLib - (C) 2021 RT-Team
 # Author : tasuren
 
-from discord.ext import commands
+from discord.ext import commands, tasks
 import discord
 
+from pymysql.err import OperationalError
 from typing import Union, Tuple, List
 from functools import wraps
-from copy import copy
 import asyncio
 
 from .web_manager import WebManager
@@ -154,3 +154,10 @@ class DatabaseManager:
                 await self._close(conn, cursor)
                 return data
         return new_coro
+
+
+default = tasks.Loop.__init__
+def _init(self, *args, **kwargs):
+    default(self, *args, **kwargs)
+    self.add_exception_type(OperationalError)
+tasks.Loop.__init__ = _init
