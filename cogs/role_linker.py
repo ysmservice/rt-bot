@@ -113,7 +113,7 @@ class RoleLinker(commands.Cog, DataManager):
         """!lang ja
         --------
         役職リンクを設定します。  
-        10個まで登録可能です。
+        15個まで登録可能です。
 
         Parameters
         ----------
@@ -159,7 +159,7 @@ class RoleLinker(commands.Cog, DataManager):
         -----
         If reverse is on, you cannot set the target role to a role that is already registered with the role linker.  
         The reason is that if you don't do this, you can create loops and interfere with RT. Thank you for your understanding."""
-        if len(await self.get_all(ctx.guild.id)) == 10:
+        if len(await self.get_all(ctx.guild.id)) == 15:
             await ctx.reply(
                 {"ja": "これ以上リンクすることはできません。",
                  "en": "No more links can be made."}
