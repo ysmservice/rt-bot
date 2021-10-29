@@ -137,7 +137,9 @@ class Translator(commands.Cog):
     async def on_message(self, message: discord.Message):
         if isinstance(message.channel, discord.Thread):
             return
-        if not message.guild or message.author.bot or not message.channel.topic:
+        if ((message.author.bot and not (
+                message.author.discriminator == "0000" and " #" in message.author.name
+            )) or not message.guild or not message.channel.topic):
             return
 
         for line in message.channel.topic.splitlines():
