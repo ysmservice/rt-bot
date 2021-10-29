@@ -228,7 +228,7 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
 
     @commands.group(
         aliases=["ツイッター", "tw"], extras={
-            "headding": {"ja": "Twitter通知", "Twitter Notification"},
+            "headding": {"ja": "Twitter通知", "en": "Twitter Notification"},
             "parent": "ServerUseful"
         }
     )
