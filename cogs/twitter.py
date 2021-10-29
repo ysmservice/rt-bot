@@ -6,8 +6,13 @@ from discord.ext import commands
 import discord
 
 from tweepy.asynchronous import AsyncStream
-from aiohttp import client_exceptions
-from asyncio import sleep, Event
+from tweepy import API, OAuthHandler
+from tweepy.errors import NotFound
+from tweepy.models import Status
+
+from jishaku.functools import executor_function
+from asyncio import Event
+from re import sub
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
@@ -108,64 +113,98 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
     def __init__(self, bot: "Backend"):
         self.bot = bot
         self.users: Dict[str, int] = {}
-        self.ready: Event = Event()
+        self.ready = Event()
+
+        oauth = OAuthHandler(
+            self.bot.secret["twitter"]["consumer_key"],
+            self.bot.secret["twitter"]["consumer_secret"]
+        )
+        oauth.set_access_token(
+            self.bot.secret["twitter"]["access_token"],
+            self.bot.secret["twitter"]["access_token_secret"]
+        )
+        self.api = API(oauth)
+
         super(commands.Cog, self).__init__(self.bot.loop, self.bot.mysql.pool)
         super(DataManager, self).__init__(**self.bot.secret["twitter"])
+
         self.connected = False
         self.cache: Dict[str, str] = {}
         self.bot.loop.create_task(self.start_stream())
 
     def filter(self, *args, **kwargs):
+        # connectedを使えるようにするためにオーバーライドした関数です。
         self.connected = True
         super().filter(*args, **kwargs)
 
     def disconnect(self, *args, **kwargs):
+        # connectedを使えるようにするためにオーバーライドした関数です。
         self.connected = False
         super().disconnect(*args, **kwargs)
 
-    async def get_user_id(self, username: str, retry: bool = False) -> str:
-        "指定されたユーザーのIDを取得する。"
-        print(1, username)
-        if username in self.cache:
-            return self.cache[username]
-        else:
-            try:
-                async with self.bot.session.post(
-                    "https://tweeterid.com/ajax.php",
-                    headers=self.TWITTERID_HEADERS, data={"input": username}
-                ) as r:
-                    if (user_id := await r.text()) == "error":
-                        return ""
-                    else:
-                        self.cache[username] = user_id
-                        print(2, user_id)
-                        return user_id
-            except client_exceptions.ClientOSError as e:
-                if retry:
-                    raise e
-                else:
-                    await sleep(1)
-                    return await self.get_user_id(username, True)
+    def get_url(self, status: Status) -> str:
+        "渡されたStatusからツイートのURLを取得します。"
+        return self.BASE_URL.format(
+            status.user.screen_name, status.id_str
+        )
 
     async def on_status(self, status: "Status"):
         # ツイートを取得した際に呼ばれる関数です。
-        print(status)
         if status.user.screen_name in self.users:
-            print(self.users[status.user.screen_name])
-            channel = self.bot.get_channel(self.users[status.user.screen_name])
-            if channel:
-                try:
-                    await channel.send(
-                        f'{"🔁 Rewteeted" if status.retweeted else ""}\n' \
-                        + self.BASE_URL.format(status.user.screen_name, status.id_str)
-                    )
-                except Exception as e:
-                    print("Error on TwitterAsyncStream:", e)
-            else:
+            # 通知対象のユーザーのツイートなら通知を行います。
+
+            if not (channel := self.bot.get_channel(
+                self.users[status.user.screen_name]
+            )):
                 # もし通知するチャンネルが見当たらない場合はその設定を削除する。
-                await self.delete(
+                return await self.delete(
                     self.users[status.user.screen_name], status.user.screen_name
                 )
+
+            # Tweetに飛ぶリンクボタンを追加しておく。
+            view = discord.ui.View(timeout=1)
+            view.add_item(discord.ui.Button(
+                label="Tweetを見る", url=self.get_url(status)
+            ))
+
+            try:
+                await channel.webhook_send(
+                    content=sub(
+                        "https://t.co/(.+)", "",
+                        status.text.replace(
+                            "RT @", "🔁 Retweeted @", 1
+                        ) if (
+                            hasattr(status, "retweeted_status")
+                            and status.retweeted_status
+                        ) else status.text
+                    ).replace("@", "＠") + "\n" + (
+                        ("\n**Medias**\n" + "\n".join(
+                            media["media_url_https"]
+                            for media in status.entities["media"]
+                        )) if status.entities.get("media", None) else ""
+                    ),
+                    username=status.user.screen_name + \
+                        ("✅" if status.user.verified else ""),
+                    avatar_url=(
+                        "" if status.user.default_profile_image
+                        else status.user.profile_image_url_https
+                    ), view=view
+                )
+            except discord.Forbidden:
+                await channel.send(
+                    "Twitter通知をしようとしましたが権限がないため通知に失敗しました。\n" \
+                    "チャンネルのWebhookを管理できるように権限を付与してください。\n" \
+                    "またRTにはたくさんの機能があり全てを動かすのなら管理者権限を付与する方が手っ取り早いです。"
+                )
+            except Exception as e:
+                await channel.send(
+                    f"Twitter通知をしようとしましたが失敗しました。\nエラーコード：`{e}`"
+                )
+
+    @executor_function
+    def get_user_id(self, username: str) -> str:
+        "ユーザー名からユーザーのIDを取得します。※これは子ルーチン関数です。"
+        return self.api.get_user(screen_name=username).id_str
 
     async def start_stream(self, disconnect: bool = False) -> None:
         "Twitterのストリームを開始します。"
@@ -175,11 +214,19 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
             await self.ready.wait()
             del self.ready
         if self.users:
-            self.filter(
-                follow=[
-                    await self.get_user_id(username) for username in self.users
-                ]
-            )
+            follow = []
+            for username in self.users:
+                try:
+                    follow.append(await self.get_user_id(username))
+                except NotFound:
+                    channel = self.bot.get_channel(self.users[username])
+                    await self.delete(channel, username)
+                    del self.users[username]
+                    await channel.send(
+                        "Twitter通知をしようとしましたがエラーが発生しました。\n" \
+                        + f"{username.replace('@', '＠')}のユーザーが見つかりませんでした。"
+                    )
+            self.filter(follow=follow)
 
     def cog_unload(self):
         if self.connected:
@@ -197,17 +244,23 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
         await ctx.trigger_typing()
         try:
             if onoff:
+                await self.get_user_id(username)
                 await self.write(ctx.channel, username)
             else:
                 await self.delete(ctx.channel, username)
         except AssertionError:
             await ctx.reply(
                 {"ja": "既に設定されています。\nまたは設定しすぎです。",
-                "en": "The username is already set.\nOr it is set too high."} \
+                 "en": "The username is already set.\nOr it is set too high."} \
                 if onoff else {
                     "ja": "設定されていません。",
                     "en": "The username is not set yet."
                 }
+            )
+        except NotFound:
+            await ctx.reply(
+                {"ja": "そのユーザーが見つかりませんでした。",
+                 "en": "The user is not found."}
             )
         else:
             await self.update_users()
