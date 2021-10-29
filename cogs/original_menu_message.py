@@ -28,7 +28,7 @@ class DataManager(DatabaseManager):
         await cursor.cursor.execute(
             """SELECT * FROM originalMenu
                 WHERE GuildID = %s
-                ORDER BY RegTime DESC""",
+                ORDER BY RegTime DESC;""",
             (guild_id,)
         )
         if len(rows := await cursor.cursor.fetchall()) == self.maxsize:
@@ -100,17 +100,17 @@ class OriginalMenuMessage(commands.Cog, DataManager):
         ----------
         content : str
             メニュー入れる文字列です。  
-            `>タイトル`のようにメニューのページのタイトルを設定して、その次の行にそのページの説明を書きます。  
+            `$タイトル`のようにメニューのページのタイトルを設定して、その次の行にそのページの説明を書きます。  
             よくわからない場合は下の例を見ましょう。
 
         Examples
         --------
         ```
-        rt!menu >質問をする前に 1ページ目
+        rt!menu $質問をする前に 1ページ目
         自分でGoogleなどである程度調べてわからない債に質問してください。
-        >質問をする前に 2ページ目
+        $質問をする前に 2ページ目
         敬語を使って質問しましょう。
-        >質問をする前に 3ページ目
+        $質問をする前に 3ページ目
         質問をしないように自分でできるようにしましょう。
         ```
 
@@ -124,21 +124,21 @@ class OriginalMenuMessage(commands.Cog, DataManager):
         ----------
         content: str
             The string to menu.  
-            Set the title of the page in the menu, as in `> Title`, followed by a description of the page.  
+            Set the title of the page in the menu, as in `$ Title`, followed by a description of the page.  
             If you're not sure, look at the example below.
 
         Examples
         --------
         ```
-        rt! menu >Before asking questions, page one.
+        rt!menu $Before asking questions, page one.
         Ask yourself questions about bonds that you don't know by doing some research on Google.
-        >Before I ask you a question, page two.
+        $Before I ask you a question, page two.
         Let's ask questions using honorific expressions.
-        >Before I ask you a question, page three.
+        $Before I ask you a question, page three.
         Try not to ask questions and do it yourself.
         ```"""
         page, data = 0, {}
-        for content in content.split(">"):
+        for content in content.split("$"):
             if content:
                 page += 1
                 data[str(page)] = [
