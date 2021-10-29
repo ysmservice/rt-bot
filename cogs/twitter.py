@@ -226,15 +226,78 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
         if self.connected:
             self.disconnect()
 
-    @commands.group(aliases=["ツイッター", "tw"])
+    @commands.group(
+        aliases=["ツイッター", "tw"], extras={
+            "headding": {"ja": "Twitter通知", "Twitter Notification"},
+            "parent": "ServerUseful"
+        }
+    )
     async def twitter(self, ctx):
+        """!lang ja
+        --------
+        Twitterの指定したユーザーのツイートを指定したチャンネルに通知させます。
+
+        Aliases
+        -------
+        tw, ツイッター
+
+        !lang en
+        --------
+        Notify the specified channel of tweets from the specified user on Twitter.
+
+        Aliases
+        -------
+        tw"""
         if not ctx.invoked_subcommand:
             await ctx.reply("使用方法が違います。 / It is used in different ways.")
 
     @twitter.command("set", aliases=["s", "設定"])
     @commands.has_permissions(manage_channels=True, manage_webhooks=True)
-    @commands.cooldown(1, 120, commands.BucketType.channel)
+    @commands.cooldown(1, 60, commands.BucketType.channel)
     async def set_(self, ctx, onoff: bool, *, username):
+        """!lang ja
+        --------
+        Twitterの通知を設定します。  
+        このコマンドを実行したチャンネルに指定したユーザーのツイートの通知が来るようになります。
+
+        Parameters
+        ----------
+        onoff : bool
+            onまたはoffで通知を有効にするか無効にするかです。
+        username : str
+            通知する対象のユーザーの名前です。  
+            `@`から始まるものです。
+
+        Examples
+        --------
+        `rt!twitter set on tasuren1`
+        RTの開発者のtasurenのTwitterの通知を有効にします。
+
+        Aliases
+        -------
+        s, 設定
+
+        !lang en
+        --------
+        Sets up Twitter notifications.  
+        The channel where this command is executed will receive notifications of tweets from the specified user.
+
+        Parameters
+        ----------
+        onoff : bool
+            Enables or disables notifications with on or off.
+        username : str
+            The name of the user to be notified.  
+            It must start with `@`.
+
+        Examples
+        --------
+        `rt!twitter set on tasuren1`
+        Enables Twitter notifications for the RT developer tasuren.
+
+        Aliases
+        -------
+        s"""
         await ctx.trigger_typing()
         try:
             if onoff:
@@ -263,6 +326,21 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
 
     @twitter.command("list", aliases=["l", "一覧"])
     async def list_(self, ctx):
+        """!lang ja
+        --------
+        設定しているTwitter通知のリストを表示します。
+
+        Aliases
+        -------
+        l, 一覧
+
+        !lang en
+        --------
+        Displays twitter notification settings
+
+        Aliases
+        -------
+        l"""
         await ctx.reply(
             embed=discord.Embed(
                 title="Twitter",
