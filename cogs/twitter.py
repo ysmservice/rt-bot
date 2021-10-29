@@ -12,7 +12,6 @@ from tweepy.models import Status
 
 from jishaku.functools import executor_function
 from asyncio import Event
-from re import sub
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
@@ -58,7 +57,7 @@ class DataManager:
                     f"SELECT * FROM {self.TABLE} WHERE GuildID = %s;",
                     (channel.guild.id,)
                 )
-                assert len(await cursor.fetchall()) <= self.DEFAULT_MAX, "追加しすぎです。"
+                assert len((rows := await cursor.fetchall())) <= self.DEFAULT_MAX, "追加しすぎです。"
                 await cursor.execute(
                     f"INSERT INTO {self.TABLE} VALUES (%s, %s, %s);",
                     (channel.guild.id, channel.id, username)
@@ -169,22 +168,17 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
 
             try:
                 await channel.webhook_send(
-                    content=sub(
-                        "https://t.co/(.+)", "",
+                    content=(
                         status.text.replace(
                             "RT @", "🔁 Retweeted @", 1
                         ) if (
                             hasattr(status, "retweeted_status")
                             and status.retweeted_status
                         ) else status.text
-                    ).replace("@", "＠") + "\n" + (
-                        ("\n**Medias**\n" + "\n".join(
-                            media["media_url_https"]
-                            for media in status.entities["media"]
-                        )) if status.entities.get("media", None) else ""
-                    ),
+                    ).replace("@", "＠"),
                     username=status.user.screen_name + \
-                        ("✅" if status.user.verified else ""),
+                        ("✅" if status.user.verified else "") \
+                        + " - RT Twitter Notification",
                     avatar_url=(
                         "" if status.user.default_profile_image
                         else status.user.profile_image_url_https
@@ -239,7 +233,7 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
 
     @twitter.command("set", aliases=["s", "設定"])
     @commands.has_permissions(manage_channels=True, manage_webhooks=True)
-    @commands.cooldown(1, 60, commands.BucketType.channel)
+    @commands.cooldown(1, 120, commands.BucketType.channel)
     async def set_(self, ctx, onoff: bool, *, username):
         await ctx.trigger_typing()
         try:
