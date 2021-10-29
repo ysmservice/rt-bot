@@ -258,7 +258,7 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
             )
         else:
             await self.update_users()
-            self.start_stream(True)
+            await self.start_stream(True)
             await ctx.reply("Ok")
 
     @twitter.command("list", aliases=["l", "一覧"])
