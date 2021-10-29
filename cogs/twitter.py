@@ -169,16 +169,19 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
             try:
                 await channel.webhook_send(
                     content=(
-                        (
-                            status.text.replace(
-                                "RT @", "🔁 Retweeted @", 1
-                            ) if status.text.startswith("RT @")
-                            else f"🔁 Retweeted {self.get_url(status.retweeted_status)}\n" \
-                            + status.text
+                        status.text.replace(
+                            "RT @", "🔁 Retweeted @", 1
                         ) if (
                             hasattr(status, "retweeted_status")
                             and status.retweeted_status
-                        ) else status.text
+                        ) else (
+                            ("🔁 Retweeted [Original]("
+                             + self.get_url(status.quoted_status) + ")\n"
+                             + status.text) if (
+                                hasattr(status, "quoted_status")
+                                and status.quoted_status
+                            ) else status.text
+                        )
                     ).replace("@", "＠"),
                     username=status.user.screen_name + \
                         ("✅" if status.user.verified else "") \
