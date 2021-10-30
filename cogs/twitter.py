@@ -1,6 +1,6 @@
 # RT - Twitter
 
-from typing import TYPE_CHECKING, Dict, Tuple, List
+from typing import TYPE_CHECKING, Union, Dict, Tuple, List
 
 from discord.ext import commands
 import discord
@@ -57,7 +57,7 @@ class DataManager:
                     f"SELECT * FROM {self.TABLE} WHERE GuildID = %s;",
                     (channel.guild.id,)
                 )
-                assert len((rows := await cursor.fetchall())) <= self.DEFAULT_MAX, "追加しすぎです。"
+                assert len(await cursor.fetchall()) <= self.DEFAULT_MAX, "追加しすぎです。"
                 await cursor.execute(
                     f"INSERT INTO {self.TABLE} VALUES (%s, %s, %s);",
                     (channel.guild.id, channel.id, username)
@@ -141,10 +141,11 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
         self.connected = False
         super().disconnect(*args, **kwargs)
 
-    def get_url(self, status: Status) -> str:
+    def get_url(self, status: Union[Status, Tuple[str, int]]) -> str:
         "渡されたStatusからツイートのURLを取得します。"
         return self.BASE_URL.format(
-            status.user.screen_name, status.id_str
+            *(status.user.screen_name, status.id_str)
+            if isinstance(status, Status) else (*status)
         )
 
     async def on_status(self, status: "Status"):
@@ -165,24 +166,33 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
             view.add_item(discord.ui.Button(
                 label="Tweetを見る", url=self.get_url(status)
             ))
+            # メッセージを調整する。
+            if hasattr(status, "retweeted_status") and status.retweeted_status:
+                # リツイート
+                status.text = status.text.replace(
+                    "RT @", "🔁 Retweeted @", 1
+                )
+            elif hasattr(status, "quoted_status") and status.quoted_status:
+                # 引用リツイート
+                status.text = "🔁 Retweeted [Original]({})\n{}".format(
+                    self.get_url(status.quoted_status), status.text
+                )
+            elif (hasattr(status, "in_reply_to_status_id")
+                    and status.in_reply_to_status_id):
+                # 返信
+                status.text = "⤴ Replied [Original]({})\n{}".format(
+                    self.get_url((
+                        status.in_reply_to_screen_name,
+                        status.in_reply_to_status_id
+                    )), status.text
+                )
+            # メンションが飛ばないように@は全角に置き換えておく。
+            status.text = status.text.replace("@", "＠")
 
             try:
+                # 通知の送信を行う。
                 await channel.webhook_send(
-                    content=(
-                        status.text.replace(
-                            "RT @", "🔁 Retweeted @", 1
-                        ) if (
-                            hasattr(status, "retweeted_status")
-                            and status.retweeted_status
-                        ) else (
-                            ("🔁 Retweeted [Original]("
-                             + self.get_url(status.quoted_status) + ")\n"
-                             + status.text) if (
-                                hasattr(status, "quoted_status")
-                                and status.quoted_status
-                            ) else status.text
-                        )
-                    ).replace("@", "＠"),
+                    content=status.text,
                     username=status.user.screen_name + \
                         ("✅" if status.user.verified else "") \
                         + " - RT Twitter Notification",
