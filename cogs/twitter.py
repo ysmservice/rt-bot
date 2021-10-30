@@ -144,9 +144,8 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
     def get_url(self, status: Union[Status, Tuple[str, int]]) -> str:
         "渡されたStatusからツイートのURLを取得します。"
         return self.BASE_URL.format(
-            *(status.user.screen_name, status.id_str)
-            if isinstance(status, Status) else (*status)
-        )
+            status.user.screen_name, status.id_str
+        ) if isinstance(status, Status) else self.BASE_URL.format(*status)
 
     async def on_status(self, status: "Status"):
         # ツイートを取得した際に呼ばれる関数です。
