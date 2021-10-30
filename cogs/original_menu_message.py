@@ -9,7 +9,7 @@ from time import time
 
 
 class DataManager(DatabaseManager):
-    def __init__(self, db, maxsize: int = 10):
+    def __init__(self, db, maxsize: int = 30):
         self.db = db
         self.maxsize = maxsize
 
@@ -89,19 +89,20 @@ class OriginalMenuMessage(commands.Cog, DataManager):
         }
     )
     @commands.has_permissions(manage_messages=True)
-    async def menu(self, ctx, *, content):
+    async def menu(self, ctx: commands.Context, *, content):
         """!lang ja
         --------
         矢印ボタンで操作可能なメニューメッセージを作ります。  
         一つのサーバーにつき十個まで作成可能です。  
-        もし十一個目を作った場合は一個目が無効になります。
+        **もし三十一個目を作った場合は一個目が無効になります。**
 
         Parameters
         ----------
         content : str
             メニュー入れる文字列です。  
             `$タイトル`のようにメニューのページのタイトルを設定して、その次の行にそのページの説明を書きます。  
-            よくわからない場合は下の例を見ましょう。
+            よくわからない場合は下の例を見ましょう。  
+            もしメッセージに入れきれないほど書く場合はテキストファイルに書き込み、この引数を`file`としてそのテキストファイルを添付してコマンドを実行してください。
 
         Examples
         --------
@@ -118,7 +119,7 @@ class OriginalMenuMessage(commands.Cog, DataManager):
         --------
         Creates a menu message that can be operated by arrow buttons.  
         Up to ten can be created per server.  
-        If you make 11, the first one will be invalid.
+        **If you make 31, the first one will be invalid.**
 
         Parameters
         ----------
@@ -137,6 +138,21 @@ class OriginalMenuMessage(commands.Cog, DataManager):
         $Before I ask you a question, page three.
         Try not to ask questions and do it yourself.
         ```"""
+        if content == "file":
+            if ctx.message.attachments:
+                at = ctx.message.attachments[0]
+                if at.filename.endswith(".txt") and at.size <= 12000:
+                    content = (await at.read()).decode()
+                else:
+                    return await ctx.reply(
+                        {"ja": "ファイル形式は`txt`にしてください。",
+                         "en": "The file type must be `txt`."}
+                    )
+            else:
+                return await ctx.reply(
+                    {"ja": "ファイルがアップロードされていません。",
+                     "en": "The file has not been uploaded."}
+                )
         page, data = 0, {}
         for content in content.split("$"):
             if content:
