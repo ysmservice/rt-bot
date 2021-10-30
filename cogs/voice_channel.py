@@ -280,7 +280,11 @@ class VCChannel(commands.Cog, DataManager):
                         role: (perm := discord.PermissionOverwrite(
                             view_channel=True
                         )), member.guild.me: perm
-                    } if (role := member.guild.get_role(row[1])) else None
+                    } if (role := member.guild.get_role(row[1])) else {
+                        member.guild.default_role: discord.PermissionOverwrite(
+                            view_channel=True
+                        )
+                    }
                 )
                 await self.add_created(channel.id, row[0], member.id)
 
