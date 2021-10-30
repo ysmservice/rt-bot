@@ -286,7 +286,8 @@ class RequireSend(commands.Cog, DataManager):
         ----------
         timeout : float
             何分以内に入力しなければならないかです。  
-            サーバーに参加した人がこれに設定した分指定したチャンネルに何も送信しなかったらキックされます。
+            サーバーに参加した人がこれに設定した分指定したチャンネルに何も送信しなかったらキックされます。  
+            60分すなわち一時間以上に設定することはできません。
         channel : テキストチャンネルの名前かメンションまたはID, optinoal
             対象の入力必須とするチャンネルです。  
             もしこの引数を入力しなかった場合はコマンドを実行したチャンネルが代わりに設定されます。
@@ -312,15 +313,21 @@ class RequireSend(commands.Cog, DataManager):
         -------
         a"""
         await ctx.trigger_typing()
-        try:
-            await self.write(ctx.guild.id, (channel or ctx.channel).id, 60 * timeout)
-        except AssertionError:
-            await ctx.reply(
-                {"ja": "これ以上追加できません。",
-                 "en": "No more can be added."}
-            )
+        if timeout <= MAX_TIMEOUT:
+            try:
+                await self.write(ctx.guild.id, (channel or ctx.channel).id, 60 * timeout)
+            except AssertionError:
+                await ctx.reply(
+                    {"ja": "これ以上追加できません。",
+                    "en": "No more can be added."}
+                )
+            else:
+                await ctx.reply("Ok")
         else:
-            await ctx.reply("Ok")
+            await ctx.repy(
+                {"ja": "一時間以上に設定することはできません。",
+                 "en": "It cannot be set to more than one hour."}
+            )
 
     @requiresend.command(aliases=["rm", "削除"])
     async def remove(
