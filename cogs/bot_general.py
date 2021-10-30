@@ -5,7 +5,9 @@ import discord
 
 from traceback import TracebackException
 from rtlib.ext import Embeds, componesy
+from inspect import cleandoc
 from itertools import chain
+from random import choice
 from time import time
 
 from .server_tool import PERMISSION_TEXTS
@@ -59,6 +61,13 @@ CREDIT_ETC = {
     "ja": "* Githubのコントリビューター達\n* 翻訳協力者\nありがとうございます。",
     "en": "* Github's sontributors\n* translators \nThank you."
 }
+THANKYOU_TEMPLATE = cleandoc(
+    """RTの導入ありがとうございます。
+    よろしくお願いします。
+    もし何かバグや要望があればウェブサイトから公式サポートサーバーにてお伝えください。
+    公式ウェブサイト：https://rt-bot.com
+    チュートリアル　：https://rt-team.github.io/notes/tutorial"""
+)
 
 
 class BotGeneral(commands.Cog):
@@ -321,6 +330,23 @@ class BotGeneral(commands.Cog):
             title=title, description=description, color=color
         )
         await ctx.send(**kwargs)
+
+    @commands.Cog.listener()
+    async def on_guild_join(self, guild: discord.Guild):
+        try:
+            await guild.owner.send(THANKYOU_TEMPLATE)
+        except:
+            tentative = None
+            for channel in guild.text_channels:
+                if "bot" in channel.name:
+                    tentative = channel
+                    break
+                elif any(word in channel.name for word in ("雑談", "general")):
+                    tentative = channel
+            else:
+                if tentative is None:
+                    tentative = choice(guild.text_channels)
+            await tentative.send(THANKYOU_TEMPLATE)
 
 
 def setup(bot):
