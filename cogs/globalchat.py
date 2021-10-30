@@ -1,12 +1,16 @@
 # RT - Global Chat
 
+from typing import TYPE_CHECKING
+
 from discord.ext import commands
 import discord
 
 from rtlib import DatabaseManager
 from functools import wraps
-from io import BytesIO
 from time import time
+
+if TYPE_CHECKING:
+    from rtlib import Backend
 
 
 class DataManager(DatabaseManager):
@@ -107,7 +111,7 @@ def require_globalchat(coro):
 
 
 class GlobalChat(commands.Cog, DataManager):
-    def __init__(self, bot):
+    def __init__(self, bot: "Backend"):
         self.bot = bot
         self.blocking = {}
         self.bot.loop.create_task(self.on_ready())
@@ -324,17 +328,21 @@ class GlobalChat(commands.Cog, DataManager):
             else:
                 channel = self.bot.get_channel(channel_id)
                 if channel:
-                    try:
-                        await channel.webhook_send(
-                            username=f"{message.author.name} {message.author.id}",
-                            avatar_url=message.author.avatar.url,
-                            content=message.clean_content, embeds=embeds, files=[
-                                await attachment.to_file()
-                                for attachment in message.attachments
-                            ]
-                        )
-                    except Exception as e:
-                        print("Error on global chat :", e)
+                    if all(
+                        entry.user.id != message.author.id
+                        for entry in await channel.guild.bans()
+                    ):
+                        try:
+                            await channel.webhook_send(
+                                username=f"{message.author.name} {message.author.id}",
+                                avatar_url=message.author.avatar.url,
+                                content=message.clean_content, embeds=embeds, files=[
+                                    await attachment.to_file()
+                                    for attachment in message.attachments
+                                ]
+                            )
+                        except Exception as e:
+                            print("Error on global chat :", e)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
