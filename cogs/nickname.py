@@ -123,7 +123,8 @@ class NicknamePanel(commands.Cog):
     async def on_full_reaction_add_remove(
         self, payload: discord.RawReactionActionEvent,
     ):
-        if (not payload.message.guild or not payload.message.author.bot
+        if (not hasattr(payload, "message") or not payload.message.guild
+                or not payload.message.author.bot
                 or "RT Nickname Panel" != payload.message.content
                 or not payload.message.embeds or payload.member.bot
                 or not payload.message.embeds[0].description):
