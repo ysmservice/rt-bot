@@ -151,27 +151,33 @@ class Expander(commands.Cog, DataManager):
                         channel = get_channel(int(data[1]))
 
                     if channel:
-                        fetched_message = await channel.fetch_message(int(data[2]))
-                        embed = discord.Embed(
-                            description=fetched_message.content,
-                            color=fetched_message.author.color
-                        ).set_author(
-                            name=fetched_message.author.display_name,
-                            icon_url=fetched_message.author.avatar.url
-                        ).set_footer(
-                            text=fetched_message.guild.name,
-                            icon_url=fetched_message.guild.icon.url
-                        )
-                        if fetched_message.attachments:
-                            embed.set_image(url=fetched_message.attachments[0].url)
-                        embeds.append(embed)
+                        try:
+                            fetched_message = await channel.fetch_message(int(data[2]))
+                        except discord.Forbidden:
+                            await message.add_reaction(
+                                self.bot.cogs["TTS"].EMOJIS["error"]
+                            )
+                        else:
+                            embed = discord.Embed(
+                                description=fetched_message.content,
+                                color=fetched_message.author.color
+                            ).set_author(
+                                name=fetched_message.author.display_name,
+                                icon_url=getattr(fetched_message.author.avatar, "url", "")
+                            ).set_footer(
+                                text=fetched_message.guild.name,
+                                icon_url=getattr(fetched_message.guild.icon, "url", "")
+                            )
+                            if fetched_message.attachments:
+                                embed.set_image(url=fetched_message.attachments[0].url)
+                            embeds.append(embed)
 
                 if embeds:
                     try:
                         if hasattr(message.channel, "topic"):
                             await message.channel.webhook_send(
                                 username=message.author.display_name,
-                                avatar_url=message.author.avatar.url,
+                                avatar_url=getattr(message.author.avatar, "url", ""),
                                 content=message.clean_content, embeds=embeds
                             )
                             await message.delete()

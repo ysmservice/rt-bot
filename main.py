@@ -47,7 +47,9 @@ def on_init(bot):
     bot.mysql = bot.data["mysql"] = rtlib.mysql.MySQLManager(
         loop=bot.loop, user=secret["mysql"]["user"],
         password=secret["mysql"]["password"], db="mysql",
-        pool = True, minsize=1, maxsize=30, autocommit=True)
+        pool = True, minsize=1, maxsize=50 if bot.test else 1000,
+      autocommit=True
+    )
     oauth_secret = secret["oauth"][argv[1]]
     bot.oauth = bot.data["oauth"] = rtlib.OAuth(
         bot, oauth_secret["client_id"], oauth_secret["client_secret"],
@@ -104,7 +106,10 @@ args = (prefixes,)
 kwargs = {
     "help_command": None,
     "on_init_bot": on_init,
-    "intents": intents
+    "intents": intents,
+    "allowed_mentions": discord.AllowedMentions(
+        everyone=False, users=False
+    )
 }
 if argv[1] in ("test", "alpha"):
     bot = rtlib.Backend(*args, **kwargs)

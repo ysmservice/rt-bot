@@ -24,8 +24,10 @@ class DataManager(DatabaseManager):
         )
 
     async def setting(
-            self, cursor, guild_id: int, channel_id: int, message_id: int,
-            author_id: int, onoff: bool, text: str) -> None:
+        self, cursor, guild_id: int, channel_id: int,
+        message_id: int, author_id: int,
+        onoff: bool, text: str
+    ) -> None:
         value = dict(Bool=int(onoff), Text=text,
                      AuthorID=author_id, MessageID=message_id)
         target = dict(GuildID=guild_id, ChannelID=channel_id)
@@ -35,12 +37,14 @@ class DataManager(DatabaseManager):
             value.update(target)
             await cursor.insert_data(self.TABLE, value)
 
-    async def delete(sel, cursor, channel_id: int) -> None:
+    async def delete(self, cursor, channel_id: int) -> None:
         target = {"ChannelID": channel_id}
         if await cursor.exists(self.TABLE, target):
             await cursor.delete(self.TABLE, target)
 
-    async def get(self, cursor, guild_id: int, channel_id: int) -> Tuple[int, int, bool, str]:
+    async def get(
+        self, cursor, guild_id: int, channel_id: int
+    ) -> Tuple[int, int, bool, str]:
         target = dict(GuildID=guild_id, ChannelID=channel_id)
         if await cursor.exists(self.TABLE, target):
             if (row := await cursor.get_data(self.TABLE, target)):
@@ -54,7 +58,7 @@ class DataManager(DatabaseManager):
 class ForcePinnedMessage(commands.Cog, DataManager):
     def __init__(self, bot):
         self.bot = bot
-        self.queue: Dict[int, discord.Message] = {}
+        self.queue: Dict[int, Tuple[discord.Message, tuple]] = {}
         self.remove_queue: List[int] = []
         self.bot.loop.create_task(self.on_ready())
 
@@ -73,8 +77,7 @@ class ForcePinnedMessage(commands.Cog, DataManager):
                 "en": "Messages that always come to the bottom. Force pinned message function."
             },
             "parent": "ServerTool"
-        },
-        aliases=["ピン留め", "ぴんどめ", "fpm", "forcepinmessage"]
+        }, aliases=["ピン留め", "ぴんどめ", "fpm", "forcepinmessage"]
     )
     @commands.has_permissions(manage_messages=True)
     async def pin(self, ctx, onoff: bool, *, content=""):
@@ -172,6 +175,8 @@ class ForcePinnedMessage(commands.Cog, DataManager):
                 del self.queue[ctx.channel.id]
                 if ctx.channel.id not in self.remove_queue:
                     self.remove_queue.append(ctx.channel.id)
+            if onoff and ctx.channel.id in self.remove_queue:
+                self.remove_queue.remove(ctx.channel.id)
             await ctx.reply("Ok")
         else:
             await ctx.reply("スレッドに設定することはできません。")
@@ -211,6 +216,8 @@ class ForcePinnedMessage(commands.Cog, DataManager):
                 pass
 
             member = message.guild.get_member(fpm[0])
+            if member is None:
+                member = self.bot.get_user(fpm[0])
             content = fpm[3]
             if content.startswith("<") and content.endswith(">"):
                 try:
@@ -222,9 +229,8 @@ class ForcePinnedMessage(commands.Cog, DataManager):
 
             try:
                 new_message = await message.channel.webhook_send(
-                    username=f"{member.display_name} RT-ForcePinnedMessage",
-                    avatar_url=member.avatar.url, wait=True,
-                    **kwargs
+                    username=f"{getattr(member, 'display_name', member.name)} RT-ForcePinnedMessage",
+                    avatar_url=member.avatar.url, wait=True, **kwargs
                 )
             except Exception as e:
                 print("(ignore) Error on ForcePinnedMessage:", e)

@@ -38,6 +38,9 @@ class Language(commands.Cog):
         self.bot.cogs["OnSend"].add_event(self._new_send, "on_webhook_message_edit")
         self.bot.cogs["OnSend"].add_event(self._new_send, "on_edit")
 
+        self.pool = self.bot.mysql.pool
+        self.bot.loop.create_task(self.on_ready())
+
         with open("data/replies.json") as f:
             self.replies = loads(f.read())
 
@@ -98,15 +101,8 @@ class Language(commands.Cog):
         if text:
             if isinstance(text, str) and text[0] != "{":
                 # 指定された文字を指定された言語で交換します。
-                # $で囲まれている部分を取得しておく。
-                results, text = self._extract_question(text)
-
                 # 言語データから文字列を取得する。
                 result = self.replies.get(text, {}).get(lang, text)
-
-                # 上で$で囲まれた部分を取得したのでその囲まれた部分を交換する。
-                for word in results:
-                    result = result.replace("$$", word, 1)
             else:
                 if isinstance(text, str) and text[0] == "{" and text[-1] == "}":
                     try:
@@ -181,23 +177,19 @@ class Language(commands.Cog):
 
     async def update_cache(self, cursor):
         # キャッシュを更新します。
-        # キャッシュがあるのはコマンドなど実行時に毎回データベースから読み込むのはあまりよくないから。
-        async for row in cursor.get_datas("language", {}):
+        await cursor.execute("SELECT * FROM language;")
+        for row in await cursor.fetchall():
             if row:
                 self.cache[row[0]] = row[1]
 
-    @commands.Cog.listener()
     async def on_ready(self):
-        self.db = await self.bot.data["mysql"].get_database()
-        # テーブルがなければ作っておく。
-        columns = {
-            "id": "BIGINT",
-            "language": "TEXT"
-        }
-        async with self.db.get_cursor() as cursor:
-            await cursor.create_table("language", columns)
-            # キャッシュを更新しておく。
-            await self.update_cache(cursor)
+        async with self.pool.acquire() as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute(
+                    "CREATE TABLE IF NOT EXISTS language (id BIGINT, language TEXT);"
+                )
+                # キャッシュを更新しておく。
+                await self.update_cache(cursor)
 
     def get(self, ugid: int) -> Literal["ja", "en"]:
         """渡されたIDになんの言語が設定されているか取得できます。  
@@ -271,17 +263,28 @@ class Language(commands.Cog):
 
         # データベースに変更内容を書き込む。
         targets = {"id": ctx.author.id}
-        async with self.db.get_cursor() as cursor:
-            if await cursor.exists("language", targets):
-                await cursor.update_data("language", {"language": language}, targets)
-            else:
-                targets["language"] = language
-                await cursor.insert_data("language", targets)
-            await self.update_cache(cursor)
+        async with self.pool.acquire() as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute(
+                    "SELECT id FROM language WHERE id = %s;",
+                    (ctx.author.id,)
+                )
+                if await cursor.fetchone():
+                    await cursor.execute(
+                        "UPDATE language SET language = %s WHERE id = %s;",
+                        (language, ctx.author.id)
+                    )
+                else:
+                    await cursor.execute(
+                        "INSERT INTO language VALUES (%s, %s);",
+                        (ctx.author.id, language)
+                    )
+                await self.update_cache(cursor)
 
         # 返信をする。
         embed = discord.Embed(
-            title=title, description=description, color=color)
+            title=title, description=description, color=color
+        )
         await ctx.reply(embed=embed)
 
 

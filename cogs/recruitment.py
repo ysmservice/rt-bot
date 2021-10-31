@@ -96,16 +96,18 @@ class Recruitment(commands.Cog):
             name={"ja": "最大募集人数", "en": "Max. number of people raised"},
             value=str(max_)
         )
+        if deadline:
+            deadline = time() + 86400 * deadline
         embed.add_field(
             name={"ja": "締め切り", "en": "Deadline"},
-            value=f"{deadline}日後" if deadline else "なし / None"
+            value=f"<t:{int(deadline)}:R>" if deadline else "なし / None"
         )
         embed.set_footer(
             text={"ja": "※連打防止のため結果の反映には数秒かかります。",
                   "en": "※It will take a few seconds for the results to be reflected to prevent repeated hits."}
         )
         message = await ctx.webhook_send(
-            content="RT募集パネル, ID:" + str(time() + 86400 * deadline),
+            content="RT募集パネル, ID:" + str(deadline),
             username=ctx.author.display_name, avatar_url=ctx.author.avatar.url,
             embed=embed, wait=True
         )
@@ -125,7 +127,7 @@ class Recruitment(commands.Cog):
                 break
 
         now = time()
-        deadline = (now + 10 if payload.embed.fields[2] == "なし / None"
+        deadline = (now + 10 if payload.embed.fields[2].value == "なし / None"
                     else float(payload.message.content[12:]))
         if int(payload.embed.fields[1].value) >= i and now < deadline:
             embed = payload.embed
@@ -136,8 +138,8 @@ class Recruitment(commands.Cog):
             if members != embed.fields[0].value:
                 # Embedを変える必要があるならEmbedを更新する。
                 embed.set_field_at(
-                    0, name={"ja": "参加者", "en": "..."},
-                    value=members
+                    0, name={"ja": "参加者", "en": "Participant"},
+                    value=members, inline=False
                 )
 
                 webhook = discord.utils.get(

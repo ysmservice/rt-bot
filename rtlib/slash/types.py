@@ -58,7 +58,7 @@ class Context:
         self.author = self.interaction.user
         self.channel = self.interaction.channel
         self.cog = application.command.cog
-        self.fcommand = application.command
+        self.command = application.command
         self.guild = self.interaction.guild
         self.message = None
         self.prefix = "/"

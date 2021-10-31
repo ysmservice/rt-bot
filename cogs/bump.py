@@ -236,7 +236,7 @@ class Bump(commands.Cog, DataManager):
         embed.add_field(
             name="‌\n",
             value="\n".join((
-                f"{self.EMOJIS.get(str_i := str(i := i + 1), str_i)} "
+                f"{self.EMOJIS.get(str_i := str(i := i + 1), str_i)} " # noqa
                 f"{(name := getattr(self.bot.get_user(row[0]), 'name', 'ユーザー不明'))}"
                 f"：{row[-1]}") for row in rows
             )
@@ -281,7 +281,7 @@ class Bump(commands.Cog, DataManager):
             (mode,)
         )
 
-    @tasks.loop(seconds=30)
+    @tasks.loop(seconds=10)
     async def notification(self):
         now = time()
         for key in self.IDS:

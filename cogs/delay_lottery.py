@@ -201,7 +201,8 @@ class DelayLottery(commands.Cog, DataManager):
 
     @commands.Cog.listener()
     async def on_full_reaction_add(self, payload):
-        if not payload.message.guild or not payload.message.author.bot:
+        if (not hasattr(payload, "message") and not payload.message.guild
+                or not payload.message.author.bot):
             return
 
         if str(payload.emoji) == self.EMOJIS["error"]:

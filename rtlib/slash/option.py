@@ -20,9 +20,10 @@ class CanNotUseChoice(Exception):
 
 class Option(commands.Converter):
     def __init__(
-            self, type_: object, name: str, description: str,
-            required: bool = True, choices: Optional[Choices] = None,
-            value: Any = None):
+        self, type_: object, name: str, description: str,
+        required: bool = True, choices: Optional[Choices] = None,
+        value: Any = None
+    ):
         self.annotation = type_
         self.type: int = get_option_type(type_)
         self.name: str = name
@@ -58,9 +59,9 @@ class Option(commands.Converter):
             return self.annotation(*args, **kwargs)
         else:
             try:
-                return await getattr(
+                func = getattr(
                     commands.converter, f"{self.annotation.__name__}Converter"
-                )(ctx, *args, **kwargs)
+                )
             except AttributeError:
                 if hasattr(self.annotation, "convert"):
                     await self.annotation.convert(
@@ -72,3 +73,5 @@ class Option(commands.Converter):
                         return await coro
                     else:
                         return coro
+            else:
+                return await func().convert(ctx, *args, **kwargs)

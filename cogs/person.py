@@ -32,12 +32,53 @@ class Person(commands.Cog):
         self.session = ClientSession()
 
     async def search_message(
-        self, channel: discord.TextChannel, original: discord.Message,
+        self, channel: discord.TextChannel,
+        original: discord.Message,
         content: str, **kwargs
     ) -> Optional[discord.Message]:
         async for message in channel.history(**kwargs):
             if message.id != original.id and content in message.clean_content:
                 return message
+
+    @commands.command(
+        extras={
+            "headding": {
+                "ja": "実行したチャンネルにあるメッセージの数を5000件まで数えます。",
+                "en": "Counts up to 5000 messages in the executed channel."
+            }, "parent": "Individual"
+        }, aliases=["メッセージ数"]
+    )
+    @commands.cooldown(1, 300, commands.BucketType.channel)
+    async def msgc(self, ctx: commands.Context, *, content=None):
+        """!lang ja
+        --------
+        実行したチャンネルにあるメッセージの数を数えます。  
+        もし5000件以上ある場合は`5000件以上`と表示されます。
+
+        Parameters
+        ----------
+        content : str, optional
+            この文字を含んでいるメッセージを数えるようにします。
+
+        Aliases
+        -------
+        メッセージ数
+
+        !lang en
+        --------
+        Counts the number of messages in the executed channel.
+        If there are more than 5000, `more than 5000` is displayed."""
+        message = await ctx.reply(
+            f"{self.bot.cogs['MusicNormal'].EMOJIS['loading']} Counting..."
+        )
+        count = len(
+            [mes async for mes in ctx.channel.history(limit=5000)
+             if content is None or content in mes.content]
+        )
+        await message.edit(
+            f"メッセージ数：{'5000件以上' if count == 5000 else f'{count}件'}"
+        )
+
 
     @commands.command(
         extras={
@@ -178,10 +219,11 @@ class Person(commands.Cog):
         # もしuser_name_idが指定されなかった場合は実行者のIDにする。
         if user_name_id is None:
             user_name_id = ctx.author.id
-        if "@" in user_name_id:
-            user_name_id = user_name_id \
-                .replace("<", "").replace(">", "") \
-                .replace("@", "").replace("!", "")
+        if isinstance(user_name_id, str):
+            if "@" in user_name_id:
+                user_name_id = user_name_id \
+                    .replace("<", "").replace(">", "") \
+                    .replace("@", "").replace("!", "")
 
         # ユーザーオブジェクトを取得する。
         try:

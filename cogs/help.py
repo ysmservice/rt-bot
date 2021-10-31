@@ -80,8 +80,9 @@ class Help(commands.Cog):
                 for cmd in self.help[category_name]:
                     if word in cmd:
                         on_name.append((category_name, cmd))
-                    if word in self.help[category_name][cmd][lang][1]:
-                        on_doc.append((category_name, cmd))
+                    if len(self.help[category_name][cmd][lang]) >= 2:
+                        if word in self.help[category_name][cmd][lang][1]:
+                            on_doc.append((category_name, cmd))
             else:
                 c = category_name
                 break
@@ -103,6 +104,8 @@ class Help(commands.Cog):
         if (select.values and select.values[0] != "None" and user
                 and user.id == interaction.user.id):
             # 選択されたものを引数としてdhelpのコマンドを実行する。
+            ctx.author = user
+            ctx.rt = 1
             await self.dhelp(
                 ctx, word=select.values[0],
                 interaction=interaction
@@ -114,18 +117,25 @@ class Help(commands.Cog):
             options = [discord.SelectOption(label="...", value="None")]
             placeholder = "..."
         else:
-            options = [discord.SelectOption(
-                           label=cmd, value=cmd,
-                           description=self.help[category][cmd][lang][0]
-                       ) for cmd in self.help[category]]
-            placeholder = "コマンド選択"
+            options = [
+                discord.SelectOption(
+                    label=cmd, value=cmd,
+                    description=self.help[category][cmd][lang][0]
+                ) for cmd in self.help[category]
+                if len(self.help[category][cmd][lang]) >= 2
+            ]
+            placeholder = "コマンド選択" if lang == "ja" else "Command"
         return [
             ("Select", self.on_select, {
-                "options": [discord.SelectOption(
-                               label=self.CATEGORY_JA.get(category, category),
-                               value=category
-                           ) for category in self.help],
-                "placeholder": "カテゴリー選択"
+                "options": [
+                    discord.SelectOption(
+                        label=(
+                            self.CATEGORY_JA.get(category, category)
+                            if lang == "ja" else category
+                        ), value=category
+                    ) for category in self.help
+                ],
+                "placeholder": "カテゴリー選択" if lang == "ja" else "Category"
             }),
             ("Select", self.on_select, {
                 "options": options, "placeholder": placeholder
@@ -156,6 +166,7 @@ class Help(commands.Cog):
         """!lang ja
         --------
         コマンドの使い方が載っているヘルプを表示します。  
+        またコマンドの見方は[ここ](https://rt-team.github.io/notes/help)を見るとよくわかるかもしれません。
 
         Parameters
         ----------
@@ -178,18 +189,19 @@ class Help(commands.Cog):
             If a word that is not a command name is specified, a search will be performed."""
         self.help = self.bot.cogs["DocHelp"].data
         lang = self.bot.cogs["Language"].get(ctx.author.id)
-        edit = ctx.author.id == self.bot.user.id
+        edit = hasattr(ctx, "rt")
         reply = True
 
         if word is None:
             # もしカテゴリー一覧を表示すればいいだけなら。
+            url = "http://0.0.0.0" if self.bot.test else "https://rt-bot.com/help.html"
             embed = discord.Embed(
                 title="Help - カテゴリー選択",
-                description=(
-                    "カテゴリーを選択するとそのカテゴリーにあるコマンドが表示されます。\nまたこちらからも見れます："
-                    + ("http://0.0.0.0" if self.bot.test else "https://rt-bot.com/help.html")
-                ),
-                color=self.bot.colors["normal"]
+                description={
+                    "ja": f"カテゴリーを選択するとそのカテゴリーにあるコマンドが表示されます。\nまたこちらからも見れます：{url}" \
+                        "\nヘルプの見方は[ここ](https://rt-team.github.io/notes/help)を見るとヘルプをよく理解できるようになれるかもしれません。",
+                    "en": f"Selecting a category will show you the commands in that category. \nYou can also see them here: {url}"
+                }, color=self.bot.colors["normal"]
             )
             view = self.make_view(
                 getattr(interaction, "user", None) or ctx.author, lang
@@ -203,6 +215,7 @@ class Help(commands.Cog):
                 description = "\n".join(
                     f"`{cmd}` {self.help[category][cmd][lang][0]}"
                     for cmd in self.help[category]
+                    if len(self.help[category][cmd][lang]) >= 2
                 )
                 embed = discord.Embed(
                     title=f"Help - {word}",

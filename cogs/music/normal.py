@@ -36,7 +36,7 @@ def require_dj(coro):
     # 他の人がいる場合DJ役職が必要なコマンドに付けるデコレータです。
     @wraps(coro)
     async def new_coro(self, ctx, *args, **kwargs):
-        if check_dj(ctx.author):
+        if await check_dj(self, ctx):
             return await coro(self, ctx, *args, **kwargs)
         else:
             return await ctx.reply(
@@ -180,7 +180,11 @@ class MusicNormal(commands.Cog, DataManager):
         if ctx.guild.id not in self.now:
             # もし接続していないなら接続をする。
             if ctx.author.voice:
-                await ctx.author.voice.channel.connect()
+                try:
+                    await ctx.author.voice.channel.connect()
+                except discord.ClientException:
+                    await ctx.guild.voice_client.disconnect(force=True)
+                    await ctx.author.voice.channel.connect()
                 self.now[ctx.guild.id] = MusicPlayer(self, ctx.guild, ctx.channel)
             else:
                 return await ctx.reply(
@@ -242,7 +246,6 @@ class MusicNormal(commands.Cog, DataManager):
                         view=view()
                     )
             else:
-                i = 1
                 datas = [datas]
 
         # キューに音楽を追加する。
@@ -278,7 +281,7 @@ class MusicNormal(commands.Cog, DataManager):
                 view=self.make_npview(datas[:1])
             )
         else:
-            length = f" Now:{self.now[ctx.guild.id].length}"
+            length = f" Now:{self.now[ctx.guild.id].length - 1}"
             await ctx.reply(
                 content={
                     "ja": "💽 キューに追加しました。" + length + ext[0],
@@ -455,7 +458,7 @@ class MusicNormal(commands.Cog, DataManager):
 
     @commands.command(
         slash_command=True, description="現在キューに登録されている曲のリストを表示します。",
-        aliases=["q", "キュー", "きゅー", "再生予定"], extras={
+        aliases=["q", "キュー", "きゅー", "再生予定", "que"], extras={
             "headding": {
                 "ja": "キューにある曲を表示します。",
                 "en": "Displays a list of songs currently queued."
@@ -476,7 +479,7 @@ class MusicNormal(commands.Cog, DataManager):
 
         Aliases
         -------
-        q, キュー, きゅー, 再生予定
+        que, q, キュー, きゅー, 再生予定
 
         !lang en
         --------
@@ -490,7 +493,7 @@ class MusicNormal(commands.Cog, DataManager):
 
         Aliases
         -------
-        q"""
+        que, q"""
         if self.now[ctx.guild.id].length > 1:
             view = QueuesView(self.now[ctx.guild.id], ctx.author, "queues")
             await ctx.reply(
@@ -894,6 +897,105 @@ class MusicNormal(commands.Cog, DataManager):
             )
         else:
             await ctx.reply(self.DONT_HAVE_PLAYLIST)
+
+    @commands.group(
+        slash_command=True, description="DJロール設定用コマンド", extras={
+            "headding": {
+                "ja": "DJロールを設定します。", "en": "Set DJ role."
+            }, "parent": "Music"
+        }
+    )
+    @commands.has_permissions(administrator=True)
+    @commands.cooldown(1, 10, commands.BucketType.guild)
+    async def dj(self, ctx):
+        """!lang ja
+        --------
+        DJロール設定コマンドです。
+
+        Notes
+        -----
+        デフォルトでは`DJ`という名前の役職がDJロールとなっています。  
+        DJロールを持っている人は他に音楽を聴いている人がいても問答無用に曲の停止やスキップができるようになります。  
+        また管理者またはユーザーをミュートにする権限を持っている人の場合はDJロールを持っている状態と等しいです。
+
+        !lang en
+        --------
+        DJ role setting command.
+
+        Notes
+        -----
+        The default DJ role is a position named `DJ`.  
+        If you have the DJ role, you will be able to stop or skip songs without question, even if there are other people listening to the music.  
+        If you are an administrator or have the ability to mute a user, you have the DJ role."""
+        if not ctx.invoked_subcommand:
+            await ctx.reply("使用方法が違います。")
+
+    @dj.command("set", description="DJロールを設定します。")
+    async def set_dj(
+        self, ctx, *, role: Option(
+            discord.Role, "role", "DJロールとして設定する役職です。"
+        )
+    ):
+        """!lang ja
+        --------
+        DJロールを設定します。
+
+        Parameters
+        ----------
+        role : 役職の名前またはメンション
+            DJロールとして設定するロールです。
+
+        Examples
+        --------
+        `rt!dj set 歌手`
+
+        !lang en
+        --------
+        Sets the DJ role.
+
+        Parameters
+        ----------
+        role : Name or Mention of the role
+            The role to be set as the DJ role.
+
+        Examples
+        --------
+        `rt!dj set singer`"""
+        await self.write_dj(ctx.guild.id, role.id)
+        await ctx.reply("Ok")
+
+    @dj.command("delete", description="DJロールを設定解除します。")
+    async def delete_dj(
+        self, ctx, *, role: Option(
+            discord.Role, "role", "DJロールとして設定されている設定解除する役職です。"
+        )
+    ):
+        """!lang ja
+        --------
+        DJロールの設定解除を行います。
+
+        Parameters
+        ----------
+        role : 役職の名前またはメンション
+            DJロールとして設定した設定解除したい役職です。
+
+        !lang en
+        --------
+        Unsets the DJ role.
+
+        Parameters
+        ----------
+        role : name or Mention of the role
+            The role to be unset as the DJ role."""
+        try:
+            await self.remove_dj(ctx.guild.id, role.id)
+        except AssertionError:
+            await ctx.reply(
+                {"ja": "そのロールはDJロールとして設定されていません。",
+                 "en": "That role is not set for DJ role."}
+            )
+        else:
+            await ctx.reply("Ok")
 
     async def wrap_error(self, coro):
         try:

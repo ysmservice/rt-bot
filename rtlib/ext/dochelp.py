@@ -69,10 +69,10 @@ from discord.ext import commands
 import discord
 
 from aiofiles import open as async_open
-from copy import copy, deepcopy
 from ujson import loads, dumps
 from typing import Dict, List
 from inspect import ismethod
+from copy import copy
 
 from .util import DocParser
 
@@ -92,17 +92,22 @@ class DocHelp(commands.Cog):
         self.indent = 4
         self._prefix = None
 
-    @commands.Cog.listener("on_command_add")
     async def on_command_add_kari(self, command):
         if hasattr(command, "commands"):
-            for cmd in command.commands:
+            for cmd in sorted(
+                command.commands, key=lambda c: len(c.qualified_name)
+            ):
+                await self.on_command_add(cmd)
+                await self.on_command_add_kari(cmd)
                 self.bot.dispatch("command_add", cmd)
 
     @commands.Cog.listener()
     async def on_full_ready(self):
         self.data, self.tree, self.categories = {}, {}, {}
         for command in self.bot.commands:
+            await self.on_command_add(command)
             self.bot.dispatch("command_add", command)
+            await self.on_command_add_kari(command)
 
     def convert_embed(self, command_name: str, doc: str, **kwargs) -> List[discord.Embed]:
         """渡されたコマンド名とヘルプ(マークダウン)をEmbedにします。
@@ -165,7 +170,6 @@ class DocHelp(commands.Cog):
                 self._prefix = self._prefix[0]
         return self._prefix
 
-    @commands.Cog.listener()
     async def on_command_add(self, command, after: bool = False):
         if command.callback.__doc__:
             if command.extras and not after:

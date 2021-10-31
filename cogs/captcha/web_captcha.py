@@ -1,6 +1,5 @@
 # RT - Captcha Web Manager
 
-from discord.ext import commands
 import discord
 
 from typing import Dict, Tuple
@@ -96,19 +95,19 @@ class WebCaptcha:
                       member: discord.Member) -> None:
         self.queue[f"{member.guild.id}-{member.id}"] = (member.id, time())
         embed = discord.Embed(
-            title={
-                "ja": "ウェブ認証", "en": "Web Captcha"
-            },
+            title={"ja": "ウェブ認証", "en": "Web Captcha"},
             description={
                 "ja": ("喋るには認証をしなければいけません。"
                     "\n認証を開始するには以下にアクセスしてください。\n"
-                    f"Captcha URL : {self.base_url}captcha"),
+                    f"Captcha URL : {self.base_url}captcha"
+                    "\n※一時間放置されると無効になるので一時間放置した場合はサーバーに参加し直してください。"),
                 "en": ("You must do authentication to speak."
-                    "\nPlease access to that url to do authentication.n"
-                    f"Captcha URL : {self.base_url}captcha")
-            },
-            color=self.cog.bot.colors["normal"]
-        ).set_footer(
+                    "\nPlease access to that url to do authentication."
+                    f"Captcha URL : {self.base_url}captcha"
+                    "\n* If you leave it for an hour, it will become invalid, so if you leave it for an hour, please rejoin the server.")
+            }, color=self.cog.bot.colors["normal"]
+        )
+        embed.set_footer(
             text="Powered by hCaptcha"
         )
         await channel.send(

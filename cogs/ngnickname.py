@@ -158,7 +158,8 @@ class NGNickName(commands.Cog):
         Parameters
         ----------
         word : str
-            削除するNGニックネームです。
+            削除するNGニックネームです。  
+            改行することで複数を一括で削除できます。
 
         Aliases
         -------
@@ -171,17 +172,29 @@ class NGNickName(commands.Cog):
         Parameters
         ----------
         word : str
-            Target NG Nickname."""
+            Target NG Nickname.  
+            You can delete multiple items at once by starting a new line."""
+        failed = []
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cursor:
-                await cursor.execute(
-                    f"""DELETE FROM {self.DB}
-                    WHERE GuildID = %s;""",
-                    (ctx.guild.id,)
-                )
+                for word in word.splitlines():
+                    await cursor.execute(
+                        f"SELECT * FROM {self.DB} WHERE GuildID = %s AND Word = %s;",
+                        (ctx.guild.id, word)
+                    )
+                    if await cursor.fetchone():
+                        await cursor.execute(
+                            f"DELETE FROM {self.DB} WHERE GuildID = %s AND Word = %s;",
+                            (ctx.guild.id, word)
+                        )
+                    else:
+                        failed.append(word)
+        b = ', '.join(failed)
         await ctx.reply(
-            {"ja": "削除しました。",
-             "en": "Removed."}
+            {"ja": "削除しました。" \
+                + (f"ですが{b}は見つかりませんでした。" if failed else ""),
+             "en": "Removed." \
+                + (f"But {b} are/is not found." if failed else "")}
         )
 
 

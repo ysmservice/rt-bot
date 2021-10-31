@@ -11,6 +11,7 @@ from ujson import dumps
 class DataManager(DatabaseManager):
 
     DB = "Music"
+    DJDB = "MusicDJ"
 
     def __init__(self, db, max_music: int = 800, max_playlist: int = 10):
         self.db = db
@@ -29,6 +30,11 @@ class DataManager(DatabaseManager):
             self.DB, {
                 "UserID": "BIGINT", "Name": "TEXT",
                 "Data": "TEXT"
+            }
+        )
+        await cursor.create_table(
+            self.DJDB, {
+                "GuildID": "BIGINT PRIMARY KEY NOT NULL", "RoleID": "BIGINT"
             }
         )
 
@@ -106,3 +112,29 @@ class DataManager(DatabaseManager):
                     data[row[1]] = []
                 data[row[1]].append(row[2])
         return data
+
+    async def write_dj(
+        self, cursor, guild_id: int, role_id: int
+    ):
+        await cursor.cursor.execute(
+            f"""INSERT INTO {self.DJDB} (GuildID, RoleID)
+            VALUES (%s, %s)
+            ON DUPLICATE KEY UPDATE
+                RoleID = %s;""",
+            (guild_id, role_id, role_id)
+        )
+
+    async def remove_dj(
+        self, cursor, guild_id: int, role_id: int
+    ):
+        target = {"GuildID": guild_id, "RoleID": role_id}
+        assert await cursor.exists(self.DJDB, target), "見つかりませんでした。"
+        await cursor.delete(self.DJDB, target)
+
+    async def read_dj(
+        self, cursor, guild_id: int
+    ):
+        target = {"GuildID": guild_id}
+        assert await cursor.exists(self.DJDB, target), "見つかりませんでした。"
+        assert (row := await cursor.get_data(self.DJDB, target)), "見つかりませんでした。"
+        return row[1]

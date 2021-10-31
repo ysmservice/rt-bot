@@ -96,18 +96,22 @@ class RolePanel(commands.Cog):
         if emojis:
             embed = discord.Embed(
                 title=title,
-                description="\n".join(f"{emoji} {emojis[emoji]}"
-                                      for emoji in emojis),
-                color=ctx.author.color
+                description="\n".join(
+                    f"{emoji} {emojis[emoji]}"
+                    for emoji in emojis
+                ), color=ctx.author.color
             )
             embed.set_footer(
-                text={"ja": "※連打防止のため役職の付与は数秒遅れます。",
-                      "en": "※There will be a delay of a few seconds in granting the position to prevent consecutive hits."}
+                text={
+                    "ja": "※連打防止のため役職の付与は数秒遅れます。",
+                    "en": "※There will be a delay of a few seconds in granting the position to prevent consecutive hits."
+                }
             )
 
             message = await ctx.webhook_send(
                 "RT役職パネル", embed=embed, username=ctx.author.display_name,
-                avatar_url=ctx.author.avatar.url, wait=True)
+                avatar_url=getattr(ctx.author.avatar, "url", ""), wait=True
+            )
             await message.add_reaction("🛠")
             for emoji in emojis:
                 await message.add_reaction(emoji)
@@ -137,10 +141,16 @@ class RolePanel(commands.Cog):
 
         if role:
             # 役職が存在するならリアクションの付与と剥奪をする。
-            if payload.event_type == "REACTION_ADD":
-                await payload.member.add_roles(role)
-            elif payload.event_type == "REACTION_REMOVE":
-                await payload.member.remove_roles(role)
+            try:
+                if payload.event_type == "REACTION_ADD":
+                    await payload.member.add_roles(role)
+                elif payload.event_type == "REACTION_REMOVE":
+                    await payload.member.remove_roles(role)
+            except discord.Forbidden:
+                await payload.member.send(
+                    "役職の付与に失敗しました。\nサーバー管理者に以下のサイトを見るように伝えてください。\n" \
+                    "https://rt-team.github.io/trouble/role"
+                )
 
             del role
         else:
@@ -210,7 +220,7 @@ class RolePanel(commands.Cog):
 
     @commands.Cog.listener()
     async def on_full_reaction_add(self, payload: discord.RawReactionActionEvent):
-        if self.bot.is_ready():
+        if self.bot.is_ready() and hasattr(payload, "message"):
             if self.check(payload) and not payload.member.bot:
                 emoji = str(payload.emoji)
                 # もしテンプレートの取得ならテンプレートを返す。

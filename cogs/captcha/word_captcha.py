@@ -16,8 +16,10 @@ class WordCaptcha(commands.Cog):
     async def captcha(self, channel: discord.TextChannel,
                       member: discord.Member) -> None:
         await channel.send(
-            {"ja": f"{member.mention}, 合言葉を入力してください。",
-             "en": f"{member.mention}, Please type password."},
+            {"ja": f"{member.mention}, 合言葉を入力してください。" \
+                "\n一時間放置されると無効になるので一時間放置した場合はサーバーに参加し直してください。",
+             "en": f"{member.mention}, Please type password." \
+                "\nIf you leave it for an hour, it will become invalid, so if you leave it for an hour, please rejoin the server."},
             target=member.id
         )
         row = await self.cog.load(channel.guild.id)

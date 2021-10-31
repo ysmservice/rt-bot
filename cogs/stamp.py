@@ -3,7 +3,8 @@
 from discord.ext import commands
 import discord
 
-from rtlib import mysql, DatabaseManager
+from rtlib import DatabaseManager
+from rtlib.ext import Embeds
 from typing import Optional
 
 
@@ -31,7 +32,7 @@ class DataManager(DatabaseManager):
             await cursor.insert_data(self.DB, target)
 
     async def delete(self, cursor, guild_id: int, name: str) -> None:
-        target = {"GuildID": "BIGINT", "Name": name}
+        target = {"GuildID": guild_id, "Name": name}
         if await cursor.exists(self.DB, target):
             await cursor.delete(self.DB, target)
         else:
@@ -66,10 +67,10 @@ class Stamp(commands.Cog, DataManager):
 
     async def update_cache(self, guild_id: Optional[int] = None) -> None:
         for row in (
-                await self.read(guild_id)
-                if guild_id
-                else await self.reads()
-            ):
+            await self.read(guild_id)
+            if guild_id
+            else await self.reads()
+        ):
             if row:
                 if row[0] not in self.cache:
                     self.cache[row[0]] = {}
@@ -101,16 +102,42 @@ class Stamp(commands.Cog, DataManager):
         -------
         sp"""
         if not ctx.invoked_subcommand:
-            await ctx.reply(
-                embed=discord.Embed(
-                    title="Stamp List",
-                    description=", ".join(
-                        f"[{key}]({self.cache[ctx.guild.id][key]})"
-                        for key in self.cache.get(ctx.guild.id, {})
-                    ),
-                    color=self.bot.colors["normal"]
-                )
-            )
+            embeds = Embeds("StampList")
+
+            p, i, description = 0, 0, ""
+            for char in ", ".join(
+                f"[{key}]({self.cache[ctx.guild.id][key]})"
+                for key in self.cache.get(ctx.guild.id, {})
+            ):
+                description += char
+                i += 1
+                if i == 2000:
+                    embeds.add_embed(
+                        discord.Embed(
+                            title=f"Stamp List {(p := p + 1)}",
+                            description=description,
+                            color=self.bot.colors["normal"]
+                        )
+                    )
+                    i, description = 0, ""
+            else:
+                if description:
+                    embeds.add_embed(
+                        discord.Embed(
+                            title=f"Stamp List {(p := p + 1)}",
+                            description=description,
+                            color=self.bot.colors["normal"]
+                        )
+                    )
+
+            if embeds.embeds:
+                kwargs = {"embeds": embeds, "embed": embeds.embeds[0]}
+                del kwargs["embeds" if p == 1 else "embed"]
+            else:
+                kwargs = {"content": {
+                    "ja": "スタンプはまだ登録されていません。", 
+                    "en": "Stamp is not added yet."}}
+            await ctx.reply(**kwargs)
 
     @stamp.command("set", aliases=["せっと"])
     async def set_stamp(self, ctx, *, name):

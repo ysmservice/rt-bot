@@ -99,7 +99,7 @@ class RoleLinker(commands.Cog, DataManager):
                         "en": "Role link list"
                     },
                     description="\n".join(
-                        f"<@&{row[1]}>：<@&{row[2]}>"
+                        f"<@&{row[1]}>：<@&{row[2]}>\n　リバース：{'on' if row[3] else 'off'}"
                         for row in await self.get_all(
                             ctx.guild.id
                         )
@@ -113,7 +113,7 @@ class RoleLinker(commands.Cog, DataManager):
         """!lang ja
         --------
         役職リンクを設定します。  
-        10個まで登録可能です。
+        15個まで登録可能です。
 
         Parameters
         ----------
@@ -159,7 +159,7 @@ class RoleLinker(commands.Cog, DataManager):
         -----
         If reverse is on, you cannot set the target role to a role that is already registered with the role linker.  
         The reason is that if you don't do this, you can create loops and interfere with RT. Thank you for your understanding."""
-        if len(await self.get_all(ctx.guild.id)) == 10:
+        if len(await self.get_all(ctx.guild.id)) == 15:
             await ctx.reply(
                 {"ja": "これ以上リンクすることはできません。",
                  "en": "No more links can be made."}
@@ -212,6 +212,7 @@ class RoleLinker(commands.Cog, DataManager):
         self, mode: str, role: discord.Role,
         member: discord.Member
     ) -> None:
+        # ロールの置き換えをする。
         row = await self.read(
             member.guild.id, role.id
         )
@@ -239,10 +240,12 @@ class RoleLinker(commands.Cog, DataManager):
             for role in before.roles:
                 if not after.get_role(role.id):
                     # もしロールが削除されたなら。
+                    self.bot.dispatch("role_remove", role, after)
                     await self.role_update("remove", role, after)
             for role in after.roles:
                 if not before.get_role(role.id):
                     # もしロールが追加されたなら。
+                    self.bot.dispatch("role_add", role, after)
                     await self.role_update("add", role, after)
 
 

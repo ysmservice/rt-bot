@@ -5,20 +5,27 @@ import discord
 
 from traceback import TracebackException
 from rtlib.ext import Embeds, componesy
+from inspect import cleandoc
+from itertools import chain
+from random import choice
 from time import time
+
+from .server_tool import PERMISSION_TEXTS
 
 
 ERROR_CHANNEL = 842744343911596062
 
 INFO_DESC = {
     "ja": """どうもRTという新時代Botです。
-このBotは既にある色々な機能や今までにない機能を取り入れた多機能型Botです。
-チャンネルステータスやウェルカムメッセージももちろん、変更可能このの読み上げや常に一番下にくるメッセージなど色々あります。これ翻訳できず
-ほとんどこのBotで済むようなBotを目指してる。""",
-    "en": """Hi I am RTBOT. This is for new year.
-    This bot is many function and never before function in this Bot.
-    Of course channelstatus, welcome message
-    I am aiming for a bot that can almost be done with this bot"""
+このBotは役職,投票,募集,チケットパネルやチャンネルステータスなどの定番機能はもちろん、声の変えれる読み上げやプレイリストのある音楽プレイヤーなどもある多機能Botです。
+そして荒らし対策として使える画像,ウェブ,合言葉認証やスパム対策機能まであります。
+またその他にもスレッド自動アーカイブ対策,自己紹介テンプレートに使える常に下にくるメッセージ,NSFW誤爆対策に使える自動画像スポイラーそしてボイスチャンネルロールなどあったら便利な機能もたくさんあります。
+さあ是非このBotを入れて他のBotを蹴り飛ばしましょう！""",
+    "en": """It's a new era Bot called RT.
+This Bot is a multifunctional Bot with standard functions such as job title, voting, recruitment, ticket panel and channel status, as well as a music player with voice changing reading and playlists.
+And there are images, web, password authentication and spam prevention functions that can be used as a troll countermeasure.
+Other useful features include automatic thread archiving, always-on messages for self-introduction templates, an automatic image spoiler for NSFW detonation, and voice channel rolls.
+Come on, let's put this Bot in and kick the other Bots."""
 }
 INFO_ITEMS = (("INVITE", {"ja": "招待リンク", "en": "invite link"}),
               ("SS", {"ja": "サポートサーバー", "en": "support server"}),
@@ -30,8 +37,8 @@ INFO_GITHUB = """* [RT-Team](https://github.com/RT-Team)
 * [RT-Backend](https://github.com/RT-Team/rt-backend)
 * [RT-Frontend](https://github.com/RT-Team/rt-frontend)"""
 
-CREDIT_ITEMS = (("DEV", {"ja": "主な開発者", "en": "main developer"}),
-                ("DESIGN", {"ja": "絵文字デザイン", "en": "emoji designer"}),
+CREDIT_ITEMS = (("DEV", {"ja": "開発者", "en": "main developer"}),
+                ("DESIGN", {"ja": "デザイン", "en": "designer"}),
                 ("ICON", {"ja": "RTのアイコン", "en": "RT's icon"}),
                 ("LANGUAGE", {"ja": "プログラミング言語", "en": "programing language"}),
                 ("SERVER", {"ja": "サーバーについて", "en": "about server"}),
@@ -51,9 +58,16 @@ CREDIT_SERVER = {
     "en": "server os:Arch Linux\nSnavy is lend server to me. Thank you to Snavy "
 }
 CREDIT_ETC = {
-    "ja": "* Githubのコントリビューター達。\n* 主な翻訳協力者であるDMSくん。\nありがとうございます。",
-    "en": "*Github's sontributors. \n* This bot is translate by DMS. \n Thank you"
+    "ja": "* Githubのコントリビューター達\n* 翻訳協力者\nありがとうございます。",
+    "en": "* Github's sontributors\n* translators \nThank you."
 }
+THANKYOU_TEMPLATE = cleandoc(
+    """RTの導入ありがとうございます。
+    よろしくお願いします。
+    もし何かバグや要望があればウェブサイトから公式サポートサーバーにてお伝えください。
+    公式ウェブサイト：https://rt-bot.com
+    チュートリアル　：https://rt-team.github.io/notes/tutorial"""
+)
 
 
 class BotGeneral(commands.Cog):
@@ -163,7 +177,8 @@ class BotGeneral(commands.Cog):
             "ja": "RTの招待リンクを含めた情報を表示します。",
             "en": "Show you RT's invite link."
         }, "parent": "RT"},
-        aliases=["credit", "invite", "about", "情報", "じょうほう"])
+        aliases=["credit", "invite", "about", "情報", "じょうほう"]
+    )
     @commands.cooldown(1, 180, commands.BucketType.user)
     async def info(self, ctx, secret_arg = None):
         """!lang ja
@@ -189,21 +204,29 @@ class BotGeneral(commands.Cog):
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
         # エラー時のメッセージ。翻訳はdescriptionのみ。
-        kwargs, color, content = {}, self.bot.colors["error"], "エラー"
+        kwargs, color = {}, self.bot.colors["error"]
         if isinstance(error, commands.errors.CommandNotFound):
+            # 実行しようとしたコマンドを考える。
+            suggestion = f"`{suggestion}`" if (
+                suggestion := "`, `".join(
+                    command.name for command in self.bot.commands
+                    if any(
+                        any(
+                            len(cmd_name[i:i + 3]) > 2
+                            and cmd_name[i:i + 3] in ctx.message.content
+                            for i in range(3)
+                        ) for cmd_name in chain(
+                            (command.name,), command.aliases
+                        )
+                    )
+                )
+            ) else "?"
             title = "404 Not Found"
-            description = {"ja": ("そのコマンドが見つかりませんでした。\n"
-                                  + "`rt!help <word>`で検索が可能です。"),
-                           "en": "It can't found that command.\n`rt!help <word>`This can search command"}
+            description = {
+                "ja": "そのコマンドが見つかりませんでした。\n" \
+                    f"`rt!help <word>`で検索が可能です。\nもしかして：{suggestion}",
+                "en": f"It can't found that command.\n`rt!help <word>`This can search command.\nSuggetion:{suggestion}"}
             color = self.bot.colors["unknown"]
-        elif isinstance(error, (commands.errors.BadArgument,
-                        commands.errors.MissingRequiredArgument,
-                        commands.errors.ArgumentParsingError,
-                        commands.errors.TooManyArguments,
-                        commands.BadUnionArgument)):
-            title = "400 Bad Request"
-            description = {"ja": "コマンドの引数が適切ではありません。\nまたは必要な引数が足りません。",
-                           "en": "It's command's function is bad."}
         elif isinstance(error, commands.errors.CommandOnCooldown):
             title = "429 Too Many Requests"
             description = {"ja": ("現在このコマンドはクールダウンとなっています。\n"
@@ -232,10 +255,28 @@ class BotGeneral(commands.Cog):
                                   + "有効な真偽値：`on/off`, `true/false`, `True/False`"),
                            "en": ("The specified boolean value is invalid\n"
                                   + "Valid boolean value:`on/off`, `true/false`, `True/False`")}
+        elif isinstance(
+            error, (commands.errors.BadArgument,
+                commands.errors.MissingRequiredArgument,
+                commands.errors.ArgumentParsingError,
+                commands.errors.TooManyArguments,
+                commands.BadUnionArgument,
+                commands.BadLiteralArgument)
+        ):
+            title = "400 Bad Request"
+            description = {"ja": "コマンドの引数が適切ではありません。\nまたは必要な引数が足りません。",
+                           "en": "It's command's function is bad."}
         elif isinstance(error, commands.errors.MissingPermissions):
             title = "403 Forbidden"
-            description = {"ja": "あなたの権限ではこのコマンドを実行することができません。",
-                           "en": "You can't do this command. Because you need permission"}
+            description = {
+                "ja": "あなたの権限ではこのコマンドを実行することができません。\n**実行に必要な権限**\n" \
+                    + ", ".join(
+                        f"`{PERMISSION_TEXTS.get(name, name)}`"
+                        for name in error.missing_permissions
+                    ),
+                "en": "You can't do this command.\n**You need these permissions**\n`" \
+                    + "`, `".join(error.missing_permissions) + "`"
+            }
         elif isinstance(error, commands.errors.MissingRole):
             title = "403 Forbidden"
             description = {"ja": "あなたはこのコマンドの実行に必要な役職を持っていないため、このコマンドを実行できません。",
@@ -252,7 +293,8 @@ class BotGeneral(commands.Cog):
                            "en": "You can't do this command."}
         else:
             error_message = "".join(
-                TracebackException.from_exception(error).format())
+                TracebackException.from_exception(error).format()
+            )
 
             print(error_message)
 
@@ -273,11 +315,38 @@ class BotGeneral(commands.Cog):
 
         if (length := len(description)) > 4096:
             description = description[4096 - length + 1:]
+        if "400" in title:
+            # 引数がおかしい場合はヘルプボタンを表示する。
+            for name in self.bot.cogs["Help"].CATEGORIES:
+                if self.bot.cogs["Help"].CATEGORIES[name] == ctx.command.extras.get("parent", ""):
+                    break
+            kwargs["view"] = componesy.View("BAView")
+            kwargs["view"].add_item(
+                "link_button", label="ヘルプを見る", emoji="❔",
+                url=f"https://rt-bot.com/help.html?g={name}&c={ctx.command.name}"
+            )
 
         kwargs["embed"] = discord.Embed(
-            title=title, description=description,
-            color=color)
-        await ctx.send(f"{ctx.author.mention} " + content, **kwargs)
+            title=title, description=description, color=color
+        )
+        await ctx.send(**kwargs)
+
+    @commands.Cog.listener()
+    async def on_guild_join(self, guild: discord.Guild):
+        try:
+            await guild.owner.send(THANKYOU_TEMPLATE)
+        except:
+            tentative = None
+            for channel in guild.text_channels:
+                if "bot" in channel.name:
+                    tentative = channel
+                    break
+                elif any(word in channel.name for word in ("雑談", "general")):
+                    tentative = channel
+            else:
+                if tentative is None:
+                    tentative = choice(guild.text_channels)
+            await tentative.send(THANKYOU_TEMPLATE)
 
 
 def setup(bot):

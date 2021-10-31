@@ -79,6 +79,28 @@ class Debug(commands.Cog):
         await ctx.reply(file=discord.File(self.OUTPUT_PATH))
         await os.remove(self.OUTPUT_PATH)
 
+    @debug.command(aliases=["su"])
+    @require_admin
+    async def insted(self, ctx, member: discord.Member, *, command):
+        ctx.message.author = member
+        ctx.message.content = f"{ctx.prefix}{command}"
+        await self.bot.process_commands(ctx.message)
+
+    @debug.command(aliases=["rh"])
+    @require_admin
+    async def reload_help(self, ctx):
+        async with ctx.typing():
+            for coro in (
+                self.bot.cogs["DocHelp"].on_full_ready(),
+                self.bot.cogs["Translator"].on_command_added(),
+                self.bot.cogs["ChannelPluginGeneral"].on_command_added()
+            ):
+                self.bot.loop.create_task(coro)
+            self.bot.reload_extension("cogs.server_tool")
+            self.bot.reload_extension("cogs.log")
+            self.bot.dispatch("help_reload")
+        await ctx.reply("Ok")
+
     @executor_function
     def make_monitor_embed(self):
         embed = discord.Embed(

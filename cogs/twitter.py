@@ -1,152 +1,97 @@
 # RT - Twitter
 
-from discord.ext import commands, tasks
+from typing import TYPE_CHECKING, Union, Dict, Tuple, List
 
-from aiohttp import client_exceptions
-from rtlib import DatabaseManager
-from bs4 import BeautifulSoup
-from urllib import parse
-from ujson import loads
-from time import time
-import asyncio
+from discord.ext import commands
+import discord
+
+from tweepy.asynchronous import AsyncStream
+from tweepy import API, OAuthHandler
+from tweepy.errors import NotFound
+from tweepy.models import Status
+
+from jishaku.functools import executor_function
+from asyncio import Event
+
+if TYPE_CHECKING:
+    from asyncio import AbstractEventLoop
+    from tweepy.models import Status
+    from aiomysql import Pool
+    from rtlib import Backend
 
 
-class DataManager(DatabaseManager):
+class DataManager:
 
-    DB = "Twitter"
-    LOG_DB = "TwitterSended"
+    TABLE = "TwitterNotification"
+    DEFAULT_MAX = 5
 
-    def __init__(self, db):
-        self.db = db
+    def __init__(self, loop: "AbstractEventLoop", pool: "Pool"):
+        self.pool = pool
+        loop.create_task(self._prepare_table())
 
-    async def init_table(self, cursor) -> None:
-        await cursor.create_table(
-            self.DB, {
-                "GuildID": "BIGINT", "ChannelID": "BIGINT",
-                "UserName": "TEXT"
-            }
+    async def _prepare_table(self):
+        # テーブルを準備します。
+        async with self.pool.acquire() as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute(
+                    f"""CREATE TABLE IF NOT EXISTS {self.TABLE} (
+                        GuildID BIGINT, ChannelID BIGINT, UserName TEXT
+                    );"""
+                )
+                await self._update_users(cursor)
+        self.ready.set()
+
+    async def _read(self, cursor, channel, username):
+        await cursor.execute(
+            f"SELECT * FROM {self.TABLE} WHERE ChannelID = %s AND UserName = %s;",
+            (channel.id, username)
         )
-        await cursor.create_table(
-            self.LOG_DB, {
-                "ChannelID": "BIGINT",
-                "TweetID": "BIGINT",
-                "RegTime": "BIGINT"
-            }
+        return await cursor.fetchone()
+
+    async def write(self, channel: discord.TextChannel, username: str) -> None:
+        "設定を保存します。"
+        async with self.pool.acquire() as conn:
+            async with conn.cursor() as cursor:
+                assert not await self._read(cursor, channel, username), "既に設定されています。"
+                await cursor.execute(
+                    f"SELECT * FROM {self.TABLE} WHERE GuildID = %s;",
+                    (channel.guild.id,)
+                )
+                assert len(await cursor.fetchall()) <= self.DEFAULT_MAX, "追加しすぎです。"
+                await cursor.execute(
+                    f"INSERT INTO {self.TABLE} VALUES (%s, %s, %s);",
+                    (channel.guild.id, channel.id, username)
+                )
+
+    async def delete(self, channel: discord.TextChannel, username: str) -> None:
+        "設定を削除します。"
+        async with self.pool.acquire() as conn:
+            async with conn.cursor() as cursor:
+                assert await self._read(cursor, channel, username), "その設定はありません。"
+                await cursor.execute(
+                    f"DELETE FROM {self.TABLE} WHERE ChannelID = %s AND UserName = %s;",
+                    (channel.id, username)
+                )
+
+    async def _update_users(self, cursor):
+        await cursor.execute(
+            f"SELECT ChannelID, UserName FROM {self.TABLE};"
         )
-
-    async def sended(self, cursor, channel_id: int, tweet_id: int) -> None:
-        await cursor.insert_data(
-            self.LOG_DB, {
-                "ChannelID": channel_id, "TweetID": tweet_id,
-                "RegTime": int(time())
-            }
-        )
-        rows = await self._get_sended(cursor, channel_id)
-        if len(rows) == 6:
-            await cursor.delete(
-                self.LOG_DB,
-                {"ChannelID": channel_id, "TweetID": rows[0][1]}
-            )
-
-    async def _get_sended(self, cursor, channel_id: int) -> list:
-        await cursor.cursor.execute(
-            """SELECT * FROM {}
-                WHERE ChannelID = %s
-                ORDER BY RegTime ASC
-                LIMIT 6""".format(self.LOG_DB),
-            (channel_id,)
-        )
-        return await cursor.cursor.fetchall()
-
-    async def check(self, cursor, channel_id: int, tweet_id: int) -> bool:
-        return await cursor.exists(
-            self.LOG_DB, {"ChannelID": channel_id, "TweetID": tweet_id}
-        )
-
-    async def delete_sended(self, cursor, channel_id: int) -> None:
-        target = {"ChannelID": channel_id}
-        if await cursor.exists(self.LOG_DB, target):
-            await cursor.delete(self.LOG_DB, target)
-
-    async def write(
-        self, cursor, guild_id: int, channel_id: int, username: str
-    ) -> None:
-        target = {
-            "GuildID": guild_id, "ChannelID": channel_id
-        }
-        change = {"UserName": username}
-        if await cursor.exists(self.DB, target):
-            await cursor.update_data(self.DB, change, target)
-        else:
-            target.update(change)
-            await cursor.insert_data(self.DB, target)
-
-    async def delete(self, cursor, guild_id: int, channel_id: int) -> None:
-        target = {"GuildID": guild_id, "ChannelID": channel_id}
-        if await cursor.exists(self.DB, target):
-            await cursor.delete(self.DB, target)
-        else:
-            raise KeyError("その設定はされていません。")
-
-    async def read(self, cursor, guild_id: int, channel_id: int) -> tuple:
-        target = dict(GuildID=guild_id, ChannelID=channel_id)
-        if await cursor.exists(self.DB, target):
-            return await cursor.get_data(self.DB, target)
-        else:
-            return ()
-
-    async def reads(self, cursor) -> list:
-        return [row async for row in cursor.get_datas(self.DB, {})]
-
-    async def reads_by_guild_id(self, cursor, guild_id: int) -> list:
-        return [
-            row async for row in cursor.get_datas(
-                self.DB, {"GuildID": guild_id}
-            )
-        ]
-
-
-class Twitter(commands.Cog, DataManager):
-    def __init__(self, bot):
-        self.bot = bot
-        self.queue = {}
-        self.cache = {}
-        self.do_notification = True
-        self.bot.loop.create_task(self.init_database())
-        self.HEADERS = {
-            "Authorization": f"Bearer {self.bot.secret['twitter']['token']}"
+        self.users = {
+            username: channel_id
+            for channel_id, username in await cursor.fetchall()
         }
 
-    async def error_handle_wrapper(self, coro):
-        # エラーを表示するためのラッパーです。
-        # set_exception_handlerでもいいけどbot.loopにそれを設定したくないから。
-        try:
-            return await coro
-        except Exception as e:
-            print("Twitter Notification has raised error:", e)
-            self.bot.loop.create_task(
-                self.error_channel.send(f"Twitter has raised error:{e}")
-            )
+    async def update_users(self) -> List[Tuple[int, str]]:
+        "設定のキャッシュを更新します。"
+        async with self.pool.acquire() as conn:
+            async with conn.cursor() as cursor:
+                await self._update_users(cursor)
 
-    async def init_database(self):
-        # いろいろ準備をするための関数です。
 
-        self.error_channel = self.bot.get_user(634763612535390209)
+class TwitterNotification(commands.Cog, DataManager, AsyncStream):
 
-        # データベースを準備する。
-        super(commands.Cog, self).__init__(
-            self.bot.mysql
-        )
-        await self.init_table()
-
-        # Twitterの通知ループを動かす。
-        self.worker.start()
-        self.notification_task = self.bot.loop.create_task(
-            self.error_handle_wrapper(self.run_twitter_notification()),
-            name="TwitterNotificationLoop"
-        )
-
-    HEADERS = {
+    TWITTERID_HEADERS = {
         "authority": "tweeterid.com",
         "sec-ch-ua": "^\\^Microsoft",
         "accept": "*/*",
@@ -162,194 +107,266 @@ class Twitter(commands.Cog, DataManager):
         "referer": "https://tweeterid.com/",
         "accept-language": "ja,en;q=0.9,en-GB;q=0.8,en-US;q=0.7",
     }
-    ENDPOINT = "https://api.twitter.com/2/users/{}/tweets?max_results=5"
+    BASE_URL = "https://twitter.com/{}/status/{}"
 
-    async def get_user_id(self, username: str, retry: bool = False) -> str:
-        # 指定されたユーザーのIDを取得する。
-        if username in self.cache:
-            return self.cache[username]
-        else:
+    def __init__(self, bot: "Backend"):
+        self.bot = bot
+        self.users: Dict[str, int] = {}
+        self.ready = Event()
+
+        oauth = OAuthHandler(
+            self.bot.secret["twitter"]["consumer_key"],
+            self.bot.secret["twitter"]["consumer_secret"]
+        )
+        oauth.set_access_token(
+            self.bot.secret["twitter"]["access_token"],
+            self.bot.secret["twitter"]["access_token_secret"]
+        )
+        self.api = API(oauth)
+
+        super(commands.Cog, self).__init__(self.bot.loop, self.bot.mysql.pool)
+        super(DataManager, self).__init__(**self.bot.secret["twitter"])
+
+        self.connected = False
+        self.cache: Dict[str, str] = {}
+        self.bot.loop.create_task(self.start_stream())
+
+    def filter(self, *args, **kwargs):
+        # connectedを使えるようにするためにオーバーライドした関数です。
+        self.connected = True
+        super().filter(*args, **kwargs)
+
+    def disconnect(self, *args, **kwargs):
+        # connectedを使えるようにするためにオーバーライドした関数です。
+        self.connected = False
+        super().disconnect(*args, **kwargs)
+
+    def get_url(self, status: Union[Status, Tuple[str, int]]) -> str:
+        "渡されたStatusからツイートのURLを取得します。"
+        return self.BASE_URL.format(
+            status.user.screen_name, status.id_str
+        ) if isinstance(status, Status) else self.BASE_URL.format(*status)
+
+    async def on_status(self, status: "Status"):
+        # ツイートを取得した際に呼ばれる関数です。
+        if status.user.screen_name in self.users:
+            # 通知対象のユーザーのツイートなら通知を行います。
+
+            if not (channel := self.bot.get_channel(
+                self.users[status.user.screen_name]
+            )):
+                # もし通知するチャンネルが見当たらない場合はその設定を削除する。
+                return await self.delete(
+                    self.users[status.user.screen_name], status.user.screen_name
+                )
+
+            # Tweetに飛ぶリンクボタンを追加しておく。
+            view = discord.ui.View(timeout=1)
+            view.add_item(discord.ui.Button(
+                label="Tweetを見る", url=self.get_url(status)
+            ))
+            # メッセージを調整する。
+            if hasattr(status, "retweeted_status") and status.retweeted_status:
+                # リツイート
+                status.text = status.text.replace(
+                    "RT @", "🔁 Retweeted @", 1
+                )
+            elif hasattr(status, "quoted_status") and status.quoted_status:
+                # 引用リツイート
+                status.text = "🔁 Retweeted [Original]({})\n{}".format(
+                    self.get_url(status.quoted_status), status.text
+                )
+            elif (hasattr(status, "in_reply_to_status_id")
+                    and status.in_reply_to_status_id):
+                # 返信
+                status.text = "⤴ Replied [Original]({})\n{}".format(
+                    self.get_url((
+                        status.in_reply_to_screen_name,
+                        status.in_reply_to_status_id
+                    )), status.text
+                )
+            # メンションが飛ばないように@は全角に置き換えておく。
+            status.text = status.text.replace("@", "＠")
+
             try:
-                async with self.bot.session.post(
-                    "https://tweeterid.com/ajax.php",
-                    headers=self.HEADERS, data={"input": username}
-                ) as r:
-                    if (user_id := await r.text()) == "error":
-                        return ""
-                    else:
-                        self.cache[username] = user_id
-                        return user_id
-            except client_exceptions.ClientOSError as e:
-                if retry:
-                    raise e
-                else:
-                    await asyncio.sleep(1)
-                    return await self.get_user_id(username, True)
+                # 通知の送信を行う。
+                await channel.webhook_send(
+                    content=status.text,
+                    username=status.user.screen_name + \
+                        ("✅" if status.user.verified else "") \
+                        + " - RT Twitter Notification",
+                    avatar_url=(
+                        "" if status.user.default_profile_image
+                        else status.user.profile_image_url_https
+                    ), view=view
+                )
+            except discord.Forbidden:
+                await channel.send(
+                    "Twitter通知をしようとしましたが権限がないため通知に失敗しました。\n" \
+                    "チャンネルのWebhookを管理できるように権限を付与してください。\n" \
+                    "またRTにはたくさんの機能があり全てを動かすのなら管理者権限を付与する方が手っ取り早いです。"
+                )
+            except Exception as e:
+                await channel.send(
+                    f"Twitter通知をしようとしましたが失敗しました。\nエラーコード：`{e}`"
+                )
 
-    async def delete_data(self, row: tuple) -> None:
-        await self.delete(row[0], row[1])
-        await self.delete_sended(row[1])
+    @executor_function
+    def get_user_id(self, username: str) -> str:
+        "ユーザー名からユーザーのIDを取得します。※これは子ルーチン関数です。"
+        return self.api.get_user(screen_name=username).id_str
 
-    async def run_twitter_notification(self) -> None:
-        # Twitterの通知を行う関数です。
-        while self.bot.is_ready() and self.do_notification:
-            for row in await self.reads():
-                if row:
-                    channel = self.bot.get_channel(row[1])
-
-                    if (channel is None
-                            or not (user_id := await self.get_user_id(row[-1]))):
-                        # もしチャンネルがみつからないならその設定を削除する。
-                        # またはユーザーが見つからない場合でも削除する。
-                        await self.delete_data(row)
-                        continue
-
-                    # ユーザーのツイートを取得する。
-                    async with self.bot.session.get(
-                        self.ENDPOINT.format(user_id),
-                        headers=self.HEADERS
-                    ) as r:
-                        data = await r.json(loads=loads)
-
-                    if ("errors" in data and data["errors"]
-                            and data["errors"][0]["title"] == "Not Found Error"):
-                        # もしユーザーが見つからないならデータを消す。
-                        await channel.send(
-                            f"Error:{row[-1]}というユーザーのツイートを取得できませんでした。"
-                        )
-                        await self.delete_data(row)
-                    elif "data" in data:
-                        # 取得したツイートはキューに入れる。
-                        # それを十秒毎にWorkerが送信する。
-                        for data in data["data"]:
-                            # キューの準備をする。
-                            if channel.id not in self.queue:
-                                self.queue[channel.id] = {
-                                    "content": [],
-                                    "length": 0,
-                                    "channel": channel
-                                }
-                            # メッセージのURLの埋め込み表示は五つまでだから五つ登録されたら一番最初を削除する。
-                            if self.queue[channel.id]["length"] == 5:
-                                del self.queue[channel.id]["content"][0]
-                                self.queue[channel.id]["length"] -= 1
-
-                            # 既に通知を送信したツイートじゃなければツイート通知をする。
-                            if not await self.check(channel.id, data["id"]):
-                                self.queue[channel.id]["content"].append(
-                                    "https://twitter.com/{}".format(
-                                        f"{row[-1]}/status/{data['id']}"
-                                    )
-                                )
-                                await self.sended(channel.id, data["id"])
-                                self.queue[channel.id]["length"] += 1
-
-                    await asyncio.sleep(10)
-            await asyncio.sleep(1)
+    async def start_stream(self, disconnect: bool = False) -> None:
+        "Twitterのストリームを開始します。"
+        if disconnect and self.connected:
+            self.disconnect()
+        if hasattr(self, "ready"):
+            await self.ready.wait()
+            del self.ready
+        if self.users:
+            follow = []
+            for username in self.users:
+                try:
+                    follow.append(await self.get_user_id(username))
+                except NotFound:
+                    channel = self.bot.get_channel(self.users[username])
+                    await self.delete(channel, username)
+                    del self.users[username]
+                    await channel.send(
+                        "Twitter通知をしようとしましたがエラーが発生しました。\n" \
+                        + f"{username.replace('@', '＠')}のユーザーが見つかりませんでした。"
+                    )
+            self.filter(follow=follow)
 
     def cog_unload(self):
-        self.worker.cancel()
-        self.do_notification = False
-        self.notification_task.cancel()
+        if self.connected:
+            self.disconnect()
 
-    @tasks.loop(seconds=10)
-    async def worker(self):
-        # self.run_twitter_notificationで保存されたキューにあるものを送信する。
-        for key in list(self.queue.keys()):
-            if self.queue[key]["content"]:
-                try:
-                    await self.queue[key]["channel"].webhook_send(
-                        username=f'RT - Twitter Notification',
-                        avatar_url="http://tasuren.syanari.com/RT/rt_icon.png",
-                        content="\n".join(reversed(self.queue[key]["content"]))
-                    )
-                except Exception as e:
-                    if self.bot.test:
-                        print("RTwitter has exception error:", e)
-                finally:
-                    del self.queue[key]
-
-    @commands.command(
-        extras={
-            "headding": {
-                "ja": "Twitter通知機能", "en": "Twitter Notification"
-            }, "parent": "ServerUseful"
+    @commands.group(
+        aliases=["ツイッター", "tw"], extras={
+            "headding": {"ja": "Twitter通知", "en": "Twitter Notification"},
+            "parent": "ServerUseful"
         }
     )
-    @commands.cooldown(1, 15, commands.BucketType.guild)
-    @commands.has_permissions(manage_channels=True)
-    async def twitter(self, ctx, *, word):
+    async def twitter(self, ctx):
         """!lang ja
         --------
-        Twitterのユーザーのツイートを通知を設定します。
+        Twitterの指定したユーザーのツイートを指定したチャンネルに通知させます。
 
-        Parameters
-        ----------
-        word : str
-            Twitterのユーザー名です。  
-            (プロフィール画面にある`@`から始まる名前で`@`は名前に含めなくて良いです。)
-
-        Examples
-        --------
-        `rt!twitter UN_NERV` 特務機関NERVの災害情報を通知する。
-
-        Notes
-        -----        
-        設定したユーザーのツイートじゃないツイートが通知されることがありますが、それは設定したユーザーによるリツイートですので心配する必要はないです。
-
-        Warnings
-        --------
-        デフォルトでは一つのサーバーにつき三つまで設定が可能です。  
-        もし要望があればプレミアム機能を作りプレミアムに加入している人のみ十設定可能にします。  
-        そしてこの機能はまだベータ版ですので不具合がある可能性があります。
+        Aliases
+        -------
+        tw, ツイッター
 
         !lang en
         --------
-        Set twitter user tweet notification to channel.
+        Notify the specified channel of tweets from the specified user on Twitter.
+
+        Aliases
+        -------
+        tw"""
+        if not ctx.invoked_subcommand:
+            await ctx.reply("使用方法が違います。 / It is used in different ways.")
+
+    @twitter.command("set", aliases=["s", "設定"])
+    @commands.has_permissions(manage_channels=True, manage_webhooks=True)
+    @commands.cooldown(1, 60, commands.BucketType.channel)
+    async def set_(self, ctx, onoff: bool, *, username):
+        """!lang ja
+        --------
+        Twitterの通知を設定します。  
+        このコマンドを実行したチャンネルに指定したユーザーのツイートの通知が来るようになります。
 
         Parameters
         ----------
-        word : str
-            Name of target user that you want notification.
+        onoff : bool
+            onまたはoffで通知を有効にするか無効にするかです。
+        username : str
+            通知する対象のユーザーの名前です。  
+            `@`から始まるものです。
 
         Examples
         --------
-        `rt!twitter HumansNoContext`
+        `rt!twitter set on tasuren1`
+        RTの開発者のtasurenのTwitterの通知を有効にします。
 
-        Notes
-        -----
-        You may get notifications of tweets by people other than the user you set up, but that's not a bug because they are retweets by the user you set up.
+        Aliases
+        -------
+        s, 設定
 
-        Warnings
+        !lang en
         --------
-        You can set than 3 notification channel per server.  
-        And this function is BETA!"""
-        if word.lower() in ("off", "disable", "0", "false"):
-            try:
-                await self.delete(ctx.guild.id, ctx.channel.id)
-            except KeyError:
-                await ctx.reply(
-                    {"ja": "まだ設定されていません。",
-                     "en": "Twitter has not set yet."}
-                )
+        Sets up Twitter notifications.  
+        The channel where this command is executed will receive notifications of tweets from the specified user.
+
+        Parameters
+        ----------
+        onoff : bool
+            Enables or disables notifications with on or off.
+        username : str
+            The name of the user to be notified.  
+            It must start with `@`.
+
+        Examples
+        --------
+        `rt!twitter set on tasuren1`
+        Enables Twitter notifications for the RT developer tasuren.
+
+        Aliases
+        -------
+        s"""
+        await ctx.trigger_typing()
+        try:
+            if onoff:
+                await self.get_user_id(username)
+                await self.write(ctx.channel, username)
             else:
-                await self.delete_sended(ctx.channel.id)
-                await ctx.reply("Ok")
+                await self.delete(ctx.channel, username)
+        except AssertionError:
+            await ctx.reply(
+                {"ja": "既に設定されています。\nまたは設定しすぎです。",
+                 "en": "The username is already set.\nOr it is set too high."} \
+                if onoff else {
+                    "ja": "設定されていません。",
+                    "en": "The username is not set yet."
+                }
+            )
+        except NotFound:
+            await ctx.reply(
+                {"ja": "そのユーザーが見つかりませんでした。",
+                 "en": "The user is not found."}
+            )
         else:
-            if len(await self.reads_by_guild_id(ctx.guild.id)) == 3:
-                await ctx.reply(
-                    {"ja": "一つのサーバーにつき三つまで設定が可能です。",
-                     "en": "You can set up to three Twitter notifications per server."}
+            await self.update_users()
+            await self.start_stream(True)
+            await ctx.reply("Ok")
+
+    @twitter.command("list", aliases=["l", "一覧"])
+    async def list_(self, ctx):
+        """!lang ja
+        --------
+        設定しているTwitter通知のリストを表示します。
+
+        Aliases
+        -------
+        l, 一覧
+
+        !lang en
+        --------
+        Displays twitter notification settings
+
+        Aliases
+        -------
+        l"""
+        await ctx.reply(
+            embed=discord.Embed(
+                title="Twitter",
+                description="\n".join(
+                    f"<#{channel_id}>：{username}"
+                    for username, channel_id in self.users.items()
                 )
-            elif await self.get_user_id(word):
-                await self.write(ctx.guild.id, ctx.channel.id, word)
-                await ctx.reply("Ok")
-            else:
-                await ctx.reply(
-                    {"ja": "そのユーザーが見つかりませんでした。",
-                     "en": "The user is not found."}
-                )
+            )
+        )
 
 
 def setup(bot):
-    bot.add_cog(Twitter(bot))
+    bot.add_cog(TwitterNotification(bot))
