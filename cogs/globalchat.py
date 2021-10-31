@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from discord.ext import commands
 import discord
 
+from collections import defaultdict
 from rtlib import DatabaseManager
 from functools import wraps
 from time import time
@@ -114,6 +115,7 @@ class GlobalChat(commands.Cog, DataManager):
     def __init__(self, bot: "Backend"):
         self.bot = bot
         self.blocking = {}
+        self.ban_cache = defaultdict(list)
         self.bot.loop.create_task(self.on_ready())
 
     async def on_ready(self):
@@ -330,9 +332,14 @@ class GlobalChat(commands.Cog, DataManager):
             else:
                 channel = self.bot.get_channel(channel_id)
                 if channel:
+                    if channel.guild.id not in self.ban_cache:
+                        for entry in await channel.guild.bans():
+                            self.ban_cache[channel.guild.id].append(
+                                entry.user.id
+                            )
                     if all(
-                        entry.user.id != message.author.id
-                        for entry in await channel.guild.bans()
+                        user_id != message.author.id
+                        for user_id in self.ban_cache[channel.guild.id]
                     ):
                         try:
                             await channel.webhook_send(
