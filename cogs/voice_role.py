@@ -206,7 +206,7 @@ class VoiceRole(commands.Cog, DataManager):
                 else:
                     del self.queue[key][member]
                     if not self.queue[key]:
-                        del self.queue
+                        del self.queue[key]
 
     async def on_member(self, mode, member, after):
         if member.guild and after.channel:
