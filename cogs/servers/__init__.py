@@ -3,11 +3,10 @@
 from typing import TYPE_CHECKING
 
 from discord.ext import commands
-import discord
 
-from rtlib.ext import Embeds
-
+from .views import ServerList
 from .server import Server
+
 if TYPE_CHECKING:
     from aiomysql import Pool
     from rtlib import Backend
@@ -64,11 +63,11 @@ class Servers(commands.Cog, Server):
     @servers.command("list")
     async def list_(self, ctx):
         servers = await self.getall(
-            self, """--sql
-            ORDER BY RaiseTime DESC
+            self, """ORDER BY RaiseTime DESC
             LIMIT 20
             WHERE RaiseTime;"""
         )
+        view = ServerList(self, servers)
 
     @servers.group(aliases=["更新"])
     @commands.cooldown(10, 1, commands.BucketType.guild)

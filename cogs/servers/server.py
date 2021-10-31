@@ -2,7 +2,7 @@
 # サーバーの情報をしまってraiseなどを簡単に行うためのクラスです。
 # セーブデータの操作もこのクラスで行います。
 
-from typing import TYPING_CHECK, List, Union
+from typing import TYPE_CHECKING, List, Union
 
 import discord
 
@@ -10,7 +10,8 @@ from ujson import dumps, loads
 from time import time
 
 from .constants import DB, INTERVAL, MAX_DETAIL, MAX_TAGS, MAX_TAG
-if TYPING_CHECK:
+
+if TYPE_CHECKING:
     from aiomysql import Pool, Cursor
     from .__init__ import Servers
 
@@ -46,8 +47,7 @@ class Server:
         async with self.cog.pool.acquire() as conn:
             cursor = await conn.cursor()
             await cursor.execute(
-                f"""--sql
-                UPDATE {DB}
+                f"""UPDATE {DB}
                 SET RaiseTime = %s
                 WHERE GuildID = %s;""",
                 (now, self.guild.id)
@@ -72,8 +72,7 @@ class Server:
         async with self.cog.pool.acquire() as conn:
             cursor = await conn.cursor()
             await cursor.execute(
-                f"""--sql
-                UPDATE {DB}
+                f"""UPDATE {DB}
                 SET
                     Detail = %s,
                     Tags = %s,
@@ -89,8 +88,7 @@ class Server:
         async with self.cog.pool.acquire() as conn:
             cursor = await conn.cursor()
             await cursor.execute(
-                f"""--sql
-                UPDATE {DB}
+                f"""UPDATE {DB}
                 SET
                     Extra = %s
                 WHERE
@@ -106,8 +104,7 @@ class Server:
         error_message: str, not_: bool = True
     ) -> None:
         await cursor.execute(
-            f"""--sql
-            SELECT * FROM {DB}
+            f"""SELECT * FROM {DB}
             WHERE GuildID = %s
             LIMIT 1;""", (guild_id,)
         )
@@ -130,8 +127,7 @@ class Server:
             close = False
 
         await cursor.execute(
-            f"""--sql
-            SELECT * FROM {DB}
+            f"""SELECT * FROM {DB}
             WHERE GuildID = %s;""",
             (guild.id,)
         )
@@ -163,8 +159,7 @@ class Server:
             await cog.exists(cog, guild.id, cursor, "既に登録されています。")
 
             await cursor.execute(
-                f"""--sql
-                INSERT INTO {DB} (
+                f"""INSERT INTO {DB} (
                     GuildID, Detail, Tags,
                     RaiseTime, Extra
                 )
@@ -187,8 +182,7 @@ class Server:
         async with pool.acquire() as conn:
             cursor = await conn.cursor()
             await cursor.execute(
-                f"""--sql
-                CREATE TABLE {DB}
+                f"""CREATE TABLE {DB}
                 (
                     GuildID BIGINT NOT NULL PRIMARY KEY,
                     Detail TEXT, Tags TEXT, RaiseTime FLOAT,
@@ -205,8 +199,7 @@ class Server:
 
             await cog.exists(cog, guild_id, cursor, "まだ登録されていません。", False)
             await cursor.execute(
-                f"""--sql
-                DELETE FROM {DB}
+                f"""DELETE FROM {DB}
                 WHERE GuildID = %s;""",
                 (guild_id,)
             )
@@ -238,8 +231,7 @@ class Server:
             after = time()
 
         return await cog.getall(
-            cog, f"""--sql
-            SELECT GuildID FROM {DB}
+            cog, f"""SELECT GuildID FROM {DB}
             ORDER BY RaiseTime DESC
             WHERE RaiseTime > %s AND RaiseTime <= %s
             LIMIT %s;""", (before, after, limit)
