@@ -96,7 +96,8 @@ class UserData:
                     self.reason = row[0]
                 # AFK Plusのデータを読み込んでおく。
                 await cursor.execute(
-                    f"SELECT Reason, Data FROM {TABLES[1]};"
+                    f"SELECT Reason, Data FROM {TABLES[1]} WHERE UserID = %s;",
+                    (user.id,)
                 )
                 for row in await cursor.fetchall():
                     if row:

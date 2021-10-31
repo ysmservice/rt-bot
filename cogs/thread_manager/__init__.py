@@ -301,7 +301,10 @@ class ThreadManager(commands.Cog, DataManager):
                 await message.channel.edit(slowmode_delay=10)
 
             await message.channel.create_thread(
-                name=message.content[:message.content.find("\n")],
+                name=(
+                    message.content[:message.content.find("\n")]
+                    if "\n" in message.content else message.content
+                ),
                 message=message
             )
 
