@@ -102,7 +102,9 @@ class VoiceRole(commands.Cog, DataManager):
         設定を削除する際は設定時と同じコマンドでできます。  
         この機能で設定できるボイスロールの数は三十個までです。  
         また削除されている役職の付与または剥奪をRTがしようとした場合はその設定は削除されます。  
-        また全てのチャンネルに設定したい場合は`rt!vrall 役職の名前またはメンション`で設定をすることができます。
+        また全てのチャンネルに設定したい場合は`rt!vrall 役職の名前またはメンション`で設定をすることができます。  
+        それとAPI制限防止のため役職の付与または剥奪が数秒遅れることがあります。  
+        そして素早く接続切断を繰り返した場合は行われないことがあります。
 
         See Also
         --------
@@ -171,7 +173,7 @@ class VoiceRole(commands.Cog, DataManager):
         await ctx.trigger_typing()
         for channel in ctx.guild.voice_channels:
             try:
-                mode = await self.write(ctx.guild.id, channel.id, role.id)
+                await self.write(ctx.guild.id, channel.id, role.id)
             except OverflowError:
                 await ctx.reply(
                     "VoiceRoleは30個まで設定が可能です。\nなので一部は設定されませんでした。"
