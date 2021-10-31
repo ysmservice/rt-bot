@@ -421,7 +421,7 @@ class AFK(commands.Cog, DataManager):
         # AFKプラスのワードフックがメッセージにあるならAFKを設定する。
         if message.author.id in self.plus_cache:
             for reason, data in self.plus_cache[message.author.id].items():
-                if data.get("word", "") in message.content:
+                if data.get("word", "fdjasklfdsaj;fla") in message.content:
                     await (await self.get(message.author)).set_afk(reason)
                     await message.add_reaction(self.CHECK_EMOJI)
                     break
