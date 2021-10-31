@@ -99,7 +99,7 @@ class RoleLinker(commands.Cog, DataManager):
                         "en": "Role link list"
                     },
                     description="\n".join(
-                        f"<@&{row[1]}>：<@&{row[2]}>"
+                        f"<@&{row[1]}>：<@&{row[2]}>\n　リバース：{'on' if row[3] else 'off'}"
                         for row in await self.get_all(
                             ctx.guild.id
                         )
@@ -212,6 +212,7 @@ class RoleLinker(commands.Cog, DataManager):
         self, mode: str, role: discord.Role,
         member: discord.Member
     ) -> None:
+        # ロールの置き換えをする。
         row = await self.read(
             member.guild.id, role.id
         )
