@@ -715,7 +715,11 @@ class TTS(commands.Cog, VoiceManager, DataManager):
             after: discord.VoiceState
         ) -> None:
         # on_member_join/leaveのどっちかを呼び出すためのものです。
-        if not before.channel:
+        if before.channel and after.channel and before.channel.id != after.channel.id:
+            # もしメンバーがボイスチャンネルを移動したなら。
+            self.bot.dispatch("voice_leave", member, before, after)
+            self.bot.dispatch("voice_join", member, before, after)
+        elif not before.channel:
             # もしメンバーがボイスチャンネルに接続したなら。
             self.bot.dispatch("voice_join", member, before, after)
             await self.on_member("join", member)
@@ -771,7 +775,6 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         self.now = {}
 
         # 削除されていないファイルがあるならそのファイルを削除する。
-        now = time()
         for file_name in listdir("cogs/tts/outputs"):
             try:
                 remove(f"cogs/tts/outputs/{file_name}")

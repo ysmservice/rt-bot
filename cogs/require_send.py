@@ -407,7 +407,7 @@ class RequireSend(commands.Cog, DataManager):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if message.channel.id in self.cache.get(message.guild.id, ()):
+        if message.guild and message.channel.id in self.cache.get(message.guild.id, ()):
             await self.process_check(message)
 
 

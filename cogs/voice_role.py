@@ -183,19 +183,30 @@ class VoiceRole(commands.Cog, DataManager):
     @tasks.loop(seconds=5)
     async def worker(self):
         for key in list(self.queue.keys()):
-            for mode, member, role in list(self.queue[key].values()):
+            for member, roles in list(self.queue[key].items()):
+                # 被りを削除する。
+                new_roles = []
+                for mode, role in roles:
+                    if (mode, role) not in new_roles:
+                        new_roles.append((mode, role))
+                del roles
                 # 役職を付与または削除する。
-                try:
-                    has_role = member.get_role(role.id)
-                    if mode == "join" and not has_role:
-                        await member.add_roles(role)
-                    elif mode == "leave" and has_role:
-                        await member.remove_roles(role)
-                except Exception as e:
-                    if self.bot.test:
-                        print("Error on VoiceRole:", e)
-                finally:
-                    del self.queue[key][member.id]
+                for mode, role in new_roles:
+                    try:
+                        has_role = member.get_role(role.id)
+                        if mode == "join" and not has_role:
+                            await member.add_roles(role)
+                        elif mode == "leave" and has_role:
+                            await member.remove_roles(role)
+                    except Exception as e:
+                        if self.bot.test:
+                            print("Error on VoiceRole:", e)
+                    finally:
+                        self.queue[key][member].remove((mode, role))
+                else:
+                    del self.queue[key][member]
+                    if not self.queue[key]:
+                        del self.queue
 
     async def on_member(self, mode, member, after):
         if member.guild and after.channel:
@@ -206,7 +217,9 @@ class VoiceRole(commands.Cog, DataManager):
                     # API制限対策でキューに追加してWorkerが処理する形にする。
                     if row[1] not in self.queue:
                         self.queue[row[1]] = {}
-                    self.queue[row[1]][member.id] = (mode, member, role)
+                    if member not in self.queue[row[1]]:
+                        self.queue[row[1]][member] = []
+                    self.queue[row[1]][member].append((mode, role))
                 else:
                     # もし役職が見つからないなら削除する。
                     await self.write(*row)
