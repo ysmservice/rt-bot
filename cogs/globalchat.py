@@ -292,6 +292,8 @@ class GlobalChat(commands.Cog, DataManager):
         rows = await self.load_globalchat_channels(row[0])
 
         # もし返信先があるメッセージなら返信先のEmbedを作っておく。
+        if message.author.id in (888057396310716496,):
+            return
         embeds = []
         if message.reference:
             if message.reference.cached_message:
