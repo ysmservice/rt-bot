@@ -220,7 +220,7 @@ class RolePanel(commands.Cog):
 
     @commands.Cog.listener()
     async def on_full_reaction_add(self, payload: discord.RawReactionActionEvent):
-        if self.bot.is_ready():
+        if self.bot.is_ready() and hasattr(payload, "message"):
             if self.check(payload) and not payload.member.bot:
                 emoji = str(payload.emoji)
                 # もしテンプレートの取得ならテンプレートを返す。

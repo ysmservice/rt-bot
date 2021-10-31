@@ -215,7 +215,7 @@ class Poll(commands.Cog):
 
     @commands.Cog.listener()
     async def on_full_reaction_add(self, payload: discord.RawReactionActionEvent):
-        if self.bot.is_ready():
+        if self.bot.is_ready() and hasattr(payload, "message"):
             if self.check_panel(payload):
                 cmid = f"{payload.channel_id}.{payload.message_id}"
                 if payload.event_type == "REACTION_ADD":
