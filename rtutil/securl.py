@@ -22,10 +22,10 @@ HEADERS = {
     "Referer": "https://securl.nu/",
     "Accept-Language": "ja,en;q=0.9,en-GB;q=0.8,en-US;q=0.7",
 }
-CAPTURE_URL_BASE = "https://securl.nu"
 
 
 class SecURLData(TypedDict):
+    "SecURLのURLチェックの結果のデータの型です。"
     status: int
     imgWidth: int
     imgHeight: int
@@ -34,7 +34,7 @@ class SecURLData(TypedDict):
     title: str
     anchors: list
     viruses: list
-    blocakList: list
+    blackList: list
     annoyUrl: str
     img: str
     capturedDate: str
@@ -45,7 +45,26 @@ async def check(
     browser_width: int = 965, browser_height: int = 683,
     headers: dict = HEADERS
 ) -> SecURLData:
-    "渡されたURLをSecURLでチェックします。"
+    """渡されたURLをSecURLでチェックします。
+
+    Parameters
+    ----------
+    session : aiohttp.ClientSession
+        通信に使うsessionです。
+    url : str
+        チェックするURLです。
+    wait_time : int, default 1
+        どれだけ待つかです。
+    browser_width : int, default 965
+        ブラウザのサイズです。
+    browser_height : int, default 683
+        ブラウザのサイズです。
+    headers : dict, default HEADERS
+        通信に使うヘッダーです。通常は変更しなくても大丈夫です。
+
+    Raises
+    ------
+    ValueError : URLにアクセスできなかった際などの失敗時に発生します。"""
     async with session.post(
         "https://securl.nu/jx/get_page_jx.php", data={
             "url": url, 'waitTime': str(wait_time),
@@ -56,9 +75,21 @@ async def check(
         return loads(await r.text())
 
 
-def get_capture(data: SecURLData) -> str:
-    "渡されたデータにある`img`のデータからURLを作ります。"
-    return f"{CAPTURE_URL_BASE}{data['img']}"
+def get_capture(
+    data: SecURLData, full: bool = False
+) -> str:
+    """渡されたデータにある`img`のデータからURLを作ります。
+
+    Parameters
+    ----------
+    data : SecURLData
+        SecURLから返された辞書データです。
+    full : bool
+        上から一番下までの写真のURLを返すかどうかです。"""
+    return (
+        f"https://securl.nu/save_local_captured.php?key={data['img'][10:-4]}"
+        if full else f"{HEADERS['Origin']}{data['img']}"
+    )
 
 
 if __name__ == "__main__":
@@ -69,5 +100,6 @@ if __name__ == "__main__":
             return await check(session, url)
 
     data = run(main(input("URL>")))
-    print(data)
-    print(get_capture(data))
+    print("RawData\t", data)
+    print("Capture\t", get_capture(data))
+    print("CaptureFull\t", get_capture(data, True))
