@@ -245,6 +245,26 @@ class GlobalChat(commands.Cog, DataManager):
                 else:
                     await self.connect_globalchat(name, ctx.channel.id, extras)
                     await ctx.reply("Ok")
+                    
+                    for _, channel_id, _ in rows:
+                        if channel:
+                            if channel.guild.id not in self.ban_cache:
+                                for entry in await channel.guild.bans():
+                                        self.ban_cache[channel.guild.id].append(
+                                            entry.user.id
+                                        )
+                            if all(
+                               user_id != message.author.id
+                               for user_id in self.ban_cache[channel.guild.id]
+                            ):
+                                try:
+                                    await channel.webhook_send(
+                                        username=f"{ctx.guild.name} {ctx.guild.id}",
+                                        avatar_url=ctx.guild.icon.url,
+                                        content=f'{ctx.guild.name}がグローバルチャットに参加しました', embeds=embeds
+                                    )
+                                except Exception as e:
+                                    print("Error on global chat :", e)
         else:
             await ctx.reply(
                 {"ja": "そのグローバルチャットはありません。",
