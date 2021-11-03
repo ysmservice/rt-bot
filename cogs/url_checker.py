@@ -114,6 +114,8 @@ class UrlChecker(commands.Cog):
         if not force:
             self.runnings.remove(ctx.author.id)
 
+    EMOJI = "<:search:876360747440017439>"
+
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if not message.guild or message.author.id == self.bot.user.id:
@@ -123,13 +125,13 @@ class UrlChecker(commands.Cog):
                 ) and "https://discord.com" not in message.content
                 and message.channel.id not in self.channel_runnings
                 and not message.content.startswith(tuple(self.bot.command_prefix))):
-            await message.add_reaction("<:search:876360747440017439>")
+            await message.add_reaction(self.EMOJI)
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction: discord.Reaction, user: discord.User):
         if (not reaction.message.content.endswith(self.bot.cogs["Person"].QUESTIONS)
                 and reaction.message.channel.id not in self.channel_runnings
-                and not user.bot):
+                and not user.bot and str(reaction.emoji) == self.EMOJI):
             self.channel_runnings.append(reaction.message.channel.id)
 
             await reaction.message.remove_reaction(reaction.emoji, user)
