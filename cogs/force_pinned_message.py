@@ -1,9 +1,11 @@
 # RT - Force Pinned Message
 
+from typing import Tuple, Dict, List
+
 from discord.ext import commands, tasks
 import discord
 
-from typing import Tuple, Dict, List
+from collections import defaultdict
 from rtlib import DatabaseManager
 from ujson import loads, dumps
 
@@ -22,6 +24,15 @@ class DataManager(DatabaseManager):
                 MessageID="BIGINT", Bool="TINYINT", Text="TEXT"
             )
         )
+        await self._update_cache(cursor)
+
+    async def _update_cache(self, cursor):
+        async for row in cursor.get_datas(self.TABLE, {}):
+            if row:
+                self.cache[row[0]].append(row[1])
+
+    async def update_cache(self, cursor):
+        return await self._update_cache(cursor)
 
     async def setting(
         self, cursor, guild_id: int, channel_id: int,
@@ -60,6 +71,7 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         self.bot = bot
         self.queue: Dict[int, Tuple[discord.Message, tuple]] = {}
         self.remove_queue: List[int] = []
+        self.cache = defaultdict(list)
         self.bot.loop.create_task(self.on_ready())
 
     async def on_ready(self):
@@ -177,6 +189,7 @@ class ForcePinnedMessage(commands.Cog, DataManager):
                     self.remove_queue.append(ctx.channel.id)
             if onoff and ctx.channel.id in self.remove_queue:
                 self.remove_queue.remove(ctx.channel.id)
+            await self.update_cache()
             await ctx.reply("Ok")
         else:
             await ctx.reply("スレッドに設定することはできません。")
@@ -187,9 +200,10 @@ class ForcePinnedMessage(commands.Cog, DataManager):
             return
 
         if message.channel.id not in self.remove_queue:
-            fpm = await self.get(message.guild.id, message.channel.id)
-            if fpm[2]:
-                self.queue[message.channel.id] = (message, fpm)
+            if message.guild.id in self.cache and message.channel.id in self.cache[message.guild.id]:
+                self.queue[message.channel.id] = (
+                    message, await self.get(message.guild.id, message.channel.id)
+                )
 
     def cog_unload(self):
         self.worker.cancel()

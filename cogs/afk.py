@@ -132,8 +132,8 @@ class UserData:
                 assert len(self.pluses) < MAX_PLUS, "これ以上設定することはできません。"
                 if reason in self.pluses:
                     await cursor.execute(
-                        f"UPDATE {TABLES[1]} SET Data = %s WHERE UserID = %s;",
-                        (dumps(reason), self.user.id)
+                        f"UPDATE {TABLES[1]} SET Reason = %s, Data = %s WHERE UserID = %s;",
+                        (reason, dumps(data), self.user.id)
                     )
                 else:
                     await cursor.execute(
