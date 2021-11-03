@@ -27,6 +27,7 @@ class UrlChecker(commands.Cog):
             }
         }
     )
+    @commands.cooldown(1, 10, commands.BucketType.channel)
     async def securl(
         self, ctx: commands.Context, *, url: str,
         force: bool = "", author = None):
@@ -132,11 +133,6 @@ class UrlChecker(commands.Cog):
                 and message.channel.id not in self.channel_runnings
                 and not message.content.startswith(tuple(self.bot.command_prefix))):
             await message.add_reaction(self.EMOJI)
-            await sleep(5)
-            try:
-                await message.remove_reaction(self.EMOJI, message.guild.me)
-            except Exception:
-                pass
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction: discord.Reaction, user: discord.User):
