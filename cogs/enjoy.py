@@ -23,7 +23,7 @@ class Enjoy(commands.Cog):
             "parent": "Entertainment"
         }
     )
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(1, 15, commands.BucketType.user)
     async def minecraft(self, ctx, *, user):
         """!lang ja
         --------
@@ -196,7 +196,7 @@ class Enjoy(commands.Cog):
             "parent": "Entertainment"
         }
     )
-    @commands.cooldown(1, 5, commands.BucketType.user)
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def game_package(self, ctx, mode):
         """!lang ja
         --------

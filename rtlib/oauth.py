@@ -1,7 +1,7 @@
 # rtlib - OAuth
 
 from typing import Union, Optional, List, Tuple, Callable
-from discord.ext import commands
+from discord.ext import tasks
 from random import randint
 from time import time
 import discord
@@ -55,6 +55,14 @@ class OAuth:
         self.secret_key = secret_key
 
         self.bot.web_manager.events["on_route_add"].append(self._on_route_add)
+        self.runnings = {}
+
+    @tasks.loop(seconds=30)
+    async def remove_runnings_queue(self):
+        now = time()
+        for ip in list(self.runnings.keys()):
+            if now - self.runnings[ip] > 180:
+                del self.runnings[ip]
 
     @require_session
     async def get_url(
@@ -152,6 +160,12 @@ class OAuth:
                         if isinstance(arg, sanic.request.Request)][0]
             request_index = args.index(request)
             request = args[request_index]
+            if request.ip in self.runnings:
+                raise sanic.exceptions.SanicException(
+                    "同時にログインをしようとすることはできません。\nもし同時じゃない場合は二分後にもう一度アクセスしてください。"
+                )
+            else:
+                self.runings[request.ip] = time()
 
             if ((not (userdata := request.cookies.get("session"))
                      and (code := request.args.get("code"))) and require):
@@ -161,10 +175,14 @@ class OAuth:
                 try:
                     response = await self._callback(
                         code, request.url[:request.url.find("?")],
-                        request.path, scope)
+                        request.path, scope
+                    )
                 except Exception as e:
+                    if request.ip in self.runnings:
+                        del self.runings[request.ip]
                     raise sanic.exceptions.SanicException(
-                        f"OAuth認証に失敗しました。\n> {e}", status_code=500)
+                        f"OAuth認証に失敗しました。\n> {e}", status_code=500
+                    )
                 else:
                     return response
                 user = None
@@ -186,8 +204,11 @@ class OAuth:
                             "OAuth認証に失敗しました。\n> ユーザーデータの取得に失敗しました。"
                             + "すみません、RTを使ってる人ですか...？(メイド風の喋り方で。)")
                 return sanic.response.redirect(
-                    await self.get_url(request.url, scope))
+                    await self.get_url(request.url, scope)
+                )
 
+            if request.ip in self.runnings:
+                del self.runings[request.ip]
             # routeに渡すrequestにユーザーオブジェクトを付け加える。
             args[request_index].ctx.user = user
             # デコレータが付いているコルーチン関数を実行する。
