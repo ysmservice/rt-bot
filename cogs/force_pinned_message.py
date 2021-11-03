@@ -27,7 +27,7 @@ class DataManager(DatabaseManager):
         await self._update_cache(cursor)
 
     async def _update_cache(self, cursor):
-        for row in await cursor.get_datas(self.TABLE, {}):
+        async for row in cursor.get_datas(self.TABLE, {}):
             if row:
                 self.cache[row[0]].append(row[1])
 
