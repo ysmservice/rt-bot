@@ -24,7 +24,7 @@ HEADERS = {
 }
 
 
-class SecURLData(TypedDict):
+class SecURLData(TypedDict, total=False):
     "SecURLのURLチェックの結果のデータの型です。"
     status: int
     imgWidth: int

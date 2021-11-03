@@ -73,39 +73,44 @@ class UrlChecker(commands.Cog):
         except ValueError:
             await ctx.reply("そのウェブページへのアクセスに失敗しました。")
         else:
-            warnings = {
-                key: data[key]
-                for key in ("viruses", "annoyUrl", "blackList")
-            }
-            embed = discord.Embed(
-                title="SecURL",
-                description=(
-                    "このサイトは危険なウェブページである可能性があります！"
-                    if (warn := any(warnings.values())) else "危険性はありませんでした"
-                ), color=self.bot.colors["error" if warn else "normal"]
-            )
-            for contents, bool_ in zip(
-                (
-                    ("ウイルス", "未検出", "**検出**"),
-                    ("迷惑サイト", "いいえ", "**はい**"),
-                    ("ブラックリスト", "登録されていません。", "**登録されています。**")
-                ), warnings.values()
-            ):
-                embed.add_field(
-                    name=contents[0], value=contents[int(bool(bool_)) + 1]
+            if data["status"] == 0:
+                warnings = {
+                    key: data[key]
+                    for key in ("viruses", "annoyUrl", "blackList")
+                }
+                embed = discord.Embed(
+                    title="SecURL",
+                    description=(
+                        "このサイトは危険なウェブページである可能性があります！"
+                        if (warn := any(warnings.values())) else "危険性はありませんでした"
+                    ), color=self.bot.colors["error" if warn else "normal"]
                 )
-            embed.set_image(url=securl.get_capture(data))
-            embed.set_footer(
-                text="Powered by SecURL",
-                icon_url="https://www.google.com/s2/favicons?domain=securl.nu"
-            )
-            view = discord.ui.View(timeout=1)
-            view.add_item(
-                discord.ui.Button(
-                    label="スクリーンショット全体を見る", url=securl.get_capture(data, True)
+                for contents, bool_ in zip(
+                    (
+                        ("ウイルス", "未検出", "**検出**"),
+                        ("迷惑サイト", "いいえ", "**はい**"),
+                        ("ブラックリスト", "登録されていません。", "**登録されています。**")
+                    ), warnings.values()
+                ):
+                    embed.add_field(
+                        name=contents[0], value=contents[int(bool(bool_)) + 1]
+                    )
+                embed.set_image(url=securl.get_capture(data))
+                embed.set_footer(
+                    text="Powered by SecURL",
+                    icon_url="https://www.google.com/s2/favicons?domain=securl.nu"
                 )
-            )
-            await ctx.reply(embed=embed, view=view)
+                view = discord.ui.View(timeout=1)
+                view.add_item(
+                    discord.ui.Button(
+                        label="スクリーンショット全体を見る", url=securl.get_capture(data, True)
+                    )
+                )
+                await ctx.reply(embed=embed, view=view)
+            else:
+                await ctx.reply(
+                    f"ウェブページにアクセスできませんでした。\nステータスコード：{data['status']}"
+                )
         if not force:
             self.runnings.remove(ctx.author.id)
 
