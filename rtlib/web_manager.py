@@ -37,6 +37,7 @@ class WebManager:
                  template_engine_exts: Union[List[str], Tuple[str]] = ("html", "xml", "tpl")):
         self.template_engine_exts = template_engine_exts
         self.bot, self.web, self.folder = bot, bot.web, folder
+        self.ban_ips = ["162.158.187.93", "108.162.237.108"]
 
         # Jinja2テンプレートエンジンを定義する。
         self._env = Environment(
@@ -124,7 +125,7 @@ class WebManager:
         # Sanicがレスポンスを返す時に呼ばれる関数です。
         # もしRouteが見つからなかったならファイルを返すことを試みる。
         if (res.body is not None and (b"Requested" in res.body or b"not found" in res.body)
-                and res.status == 404):
+                and res.status == 404 and request.ip not in self.ban_ips):
             path = request.path[1:]
             true_path = self.folder + "/" + path
             # もしフォルダでindex.htmlが存在するならpathをそれに置き換える。
