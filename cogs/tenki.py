@@ -99,7 +99,7 @@ class Tenki(commands.Cog, DataManager):
             }, "parent": "Individual"
         }
     )
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(1, 30, commands.BucketType.user)
     async def tenki(self, ctx):
         """!lang ja
         --------
@@ -197,6 +197,7 @@ class Tenki(commands.Cog, DataManager):
             await self.tenkiset(
                 ctx, interaction.message.content, select.values[0]
             )
+            await interaction.message.edit(view=None)
 
     @commands.command()
     async def tenkiset(self, ctx, code, time=None):
