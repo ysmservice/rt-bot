@@ -33,7 +33,7 @@ class BackendBase(Mixer):
         self.web: sanic.Sanic = sanic.Sanic(name)
         self.__args, self.__kwargs = args, kwargs
         self.limiter = Limiter(
-            self.web, global_limits=["20 per minutes"],
+            self.web, global_limits=["12 per minutes"],
             key_func=get_remote_address
         )
 
