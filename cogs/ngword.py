@@ -167,7 +167,8 @@ class NgWord(commands.Cog, DataManager):
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         # 関係ないメッセージは無視する。
-        if not message.guild or not self.bot.is_ready():
+        if (not message.guild or not self.bot.is_ready()
+                or message.author.id == self.bot.user.id):
             return
 
         if getattr(message.author, "guild_permissions.administrator", True):
