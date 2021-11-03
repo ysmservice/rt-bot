@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from discord.ext import commands
 import discord
 
+from asyncio import sleep
 from rtutil import securl
 from re import findall
 
@@ -26,7 +27,9 @@ class UrlChecker(commands.Cog):
             }
         }
     )
-    async def securl(self, ctx: commands.Context, *, url: str, force: bool = ""):
+    async def securl(
+        self, ctx: commands.Context, *, url: str,
+        force: bool = "", author = None):
         """!lang ja
         --------
         SecURLを使用して渡されたURLのスクリーンショットを撮り危険性をチェックします。
@@ -106,7 +109,10 @@ class UrlChecker(commands.Cog):
                         label="スクリーンショット全体を見る", url=securl.get_capture(data, True)
                     )
                 )
-                await ctx.reply(embed=embed, view=view)
+                await ctx.reply(
+                    embed=embed, view=view,
+                    content=author.mention if force else None
+                )
             else:
                 await ctx.reply(
                     f"ウェブページにアクセスできませんでした。\nステータスコード：{data['status']}"
@@ -126,6 +132,11 @@ class UrlChecker(commands.Cog):
                 and message.channel.id not in self.channel_runnings
                 and not message.content.startswith(tuple(self.bot.command_prefix))):
             await message.add_reaction(self.EMOJI)
+            await sleep(5)
+            try:
+                await message.remove_reaction(self.EMOJI, message.guild.me)
+            except Exception:
+                pass
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction: discord.Reaction, user: discord.User):
@@ -149,7 +160,9 @@ class UrlChecker(commands.Cog):
                 ctx = await self.bot.get_context(reaction.message)
                 await ctx.trigger_typing()
                 for url in urls:
-                    self.bot.loop.create_task(self.securl(ctx, url=url, force=True))
+                    self.bot.loop.create_task(
+                        self.securl(ctx, url=url, force=True, author=user)
+                    )
             else:
                 await reaction.message.channel.send(
                     f"{user.author.mention}, 四つ以上のURLは同時にちぇっくすることができません。"
