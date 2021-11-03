@@ -1,6 +1,6 @@
 # rtlib - Web Manager
 
-from sanic import Sanic, exceptions, response
+from sanic import exceptions, response
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from flask_misaka import Misaka
 
@@ -38,6 +38,7 @@ class WebManager:
         self.template_engine_exts = template_engine_exts
         self.bot, self.web, self.folder = bot, bot.web, folder
         self.ban_ips = ["162.158.187.93", "108.162.237.108"]
+        self.cooldowns = {}
 
         # Jinja2テンプレートエンジンを定義する。
         self._env = Environment(

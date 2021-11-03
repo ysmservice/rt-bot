@@ -4,6 +4,7 @@ from typing import Union, Optional, Callable, Any
 
 from discord.ext import commands
 from copy import copy
+from sanic_limiter import Limiter
 import sanic
 
 from .web_manager import WebManager
@@ -31,6 +32,9 @@ class BackendBase(Mixer):
         # sanicとdiscord.pyのセットアップをする。
         self.web: sanic.Sanic = sanic.Sanic(name)
         self.__args, self.__kwargs = args, kwargs
+        self.limiter = Limiter(
+            self.web, global_limits=["20 per minutes"]
+        )
 
         # Routeなど色々セットアップする。
         self.web.register_listener(self._before_server_stop,
