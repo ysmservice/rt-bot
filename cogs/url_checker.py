@@ -1,23 +1,65 @@
 # RT - Url Checker
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 from discord.ext import commands
 import discord
 
+from rtutil import securl, DatabaseManager
 from asyncio import sleep
-from rtutil import securl
 from re import findall
 
 if TYPE_CHECKING:
+    from mysql import Pool, Cursor
     from rtlib import Backend
 
 
-class UrlChecker(commands.Cog):
+class DataManager(DatabaseManager):
+
+    TABLE = "SecURL"
+
+    def __init__(self, cog: "UrlChecker"):
+        self.cog = cog
+        self.pool: "Pool" = cog.bot.mysql.pool
+        self.cog.bot.loop.create_task(self._prepare_table())
+
+    async def _prepare_table(self, cursor: "Cursor" = None):
+        # テーブルを作成する。
+        await cursor.execute(
+            f"CREATE TABLE IF NOT EXISTS {self.TABLE} (GuildID BIGINT);"
+        )
+        await cursor.execute(
+            f"SELECT * FROM {self.TABLE};"
+        )
+        for row in await cursor.fetchall():
+            if row:
+                self.cache.append(row[0])
+
+    async def onoff(self, guild_id: int, cursor: "Cursor" = None) -> bool:
+        "SecURLリアクションのON/OFFを行う。"
+        if guild_id in self.cache:
+            await cursor.execute(
+                f"DELETE FROM {self.TABLE} WHERE GuildID = %s;",
+                (guild_id,)
+            )
+            self.cache.remove(guild_id)
+            return False
+        else:
+            await cursor.execute(
+                f"INSERT INTO {self.TABLE} VALUES (%s);",
+                (guild_id,)
+            )
+            self.cache.append(guild_id)
+            return True
+
+
+class UrlChecker(commands.Cog, DataManager):
     def __init__(self, bot: "Backend"):
         self.bot = bot
         self.runnings = []
         self.channel_runnings = []
+        self.cache: List[int] = []
+        super(commands.Cog, self).__init__(self)
 
     @commands.command(
         aliases=["check", "URLチェック", "uc", "ss"], extras={
@@ -121,11 +163,33 @@ class UrlChecker(commands.Cog):
         if not force:
             self.runnings.remove(ctx.author.id)
 
+    @commands.command(
+        extras={
+            "headding": {
+                "ja": "URLに安全チェックボタンをつけるかどうか",
+                "en": "..."
+            }, "parent": "ServerSafety"
+        }
+    )
+    async def autosecurl(self, ctx: commands.Context):
+        """!lang ja
+        --------
+        URLが送信されたらリアクションを付与しそのリアクションが押されたらそのURLの危険性をチェックするようにする設定のon/offコマンドです。
+
+        !lang en
+        --------
+        ..."""
+        await ctx.trigger_typing()
+        await ctx.reply(
+            f"{'on' if await self.onoff(ctx.guild.id) else 'off'}にしました。"
+        )
+
     EMOJI = "<:search:876360747440017439>"
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if not message.guild or message.author.id == self.bot.user.id:
+        if (not message.guild or message.author.id == self.bot.user.id
+                or message.guild.id not in self.cache):
             return
 
         if (("http://" in message.content or "https://" in message.content

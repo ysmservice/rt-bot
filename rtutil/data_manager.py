@@ -28,11 +28,11 @@ class DatabaseManager:
             except Exception as e:
                 await kwargs["cursor"].close()
                 if conn:
-                    await conn.close()
+                    conn.close()
                 raise e
             finally:
                 await kwargs["cursor"].close()
                 if conn:
-                    await conn.close()
+                    conn.close()
             return data
         return new_coro
