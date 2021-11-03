@@ -19,14 +19,14 @@ class UrlChecker(commands.Cog):
         self.channel_runnings = []
 
     @commands.command(
-        "check", aliases=["URLチェック", "uc"], extras={
+        aliases=["check", "URLチェック", "uc", "ss"], extras={
             "parent": "Individual", "headding": {
                 "ja": "渡されたURLの写真を撮り危険性をチェックします。",
                 "en": "Take a picture of the URL given to you and check for danger."
             }
         }
     )
-    async def check_(self, ctx: commands.Context, *, url: str, force: bool = ""):
+    async def securl(self, ctx: commands.Context, *, url: str, force: bool = ""):
         """!lang ja
         --------
         SecURLを使用して渡されたURLのスクリーンショットを撮り危険性をチェックします。
@@ -38,7 +38,11 @@ class UrlChecker(commands.Cog):
 
         Examples
         --------
-        `rt!check http://tasuren.f5.si`
+        `rt!securl http://tasuren.f5.si`
+
+        Aliases
+        -------
+        ss, check, uc, URLチェック
 
         !lang en
         --------
@@ -51,7 +55,11 @@ class UrlChecker(commands.Cog):
 
         Examples
         --------
-        `rt!check http://tasuren.f5.si`"""
+        `rt!check http://tasuren.f5.si`
+
+        Aliases
+        -------
+        ss, check, uc, URLチェック"""
         if ctx.author.id in self.runnings and not force:
             return await ctx.reply(
                 {"ja": "同時に実行することはできません。",
@@ -134,7 +142,7 @@ class UrlChecker(commands.Cog):
                 ctx = await self.bot.get_context(reaction.message)
                 await ctx.trigger_typing()
                 for url in urls:
-                    self.bot.loop.create_task(self.check_(ctx, url=url, force=True))
+                    self.bot.loop.create_task(self.securl(ctx, url=url, force=True))
             else:
                 await reaction.message.channel.send(
                     f"{user.author.mention}, 四つ以上のURLは同時にちぇっくすることができません。"
