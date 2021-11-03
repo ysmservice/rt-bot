@@ -56,5 +56,4 @@ class OAuthCog(commands.Cog):
 
 
 def setup(bot):
-    return
     bot.add_cog(OAuthCog(bot))
