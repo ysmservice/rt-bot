@@ -109,7 +109,7 @@ kwargs = {
     "intents": intents,
     "allowed_mentions": discord.AllowedMentions(
         everyone=False, users=False
-    ), "chunk_guilds_at_startup": False
+    )
 }
 if argv[1] in ("test", "alpha"):
     bot = rtlib.Backend(*args, **kwargs)
