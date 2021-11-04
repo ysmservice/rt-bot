@@ -294,19 +294,21 @@ class ThreadManager(commands.Cog, DataManager):
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if (hasattr(message.channel, "topic") and message.channel.topic
-                and "rt>thread" in message.channel.topic and not message.author.bot):
-            # スレッド作成専用チャンネルにメッセージが送信されたならスレッドを作る。
-            if message.channel.slowmode_delay < 10:
-                # もしスローモードが設定されていないなら十秒にする。
-                await message.channel.edit(slowmode_delay=10)
+                and "rt>thread" in message.channel.topic
+                and message.author.id != self.bot.user.id):
+            if "rt>thread bot" in message.channel.topic or not message.author.bot:
+                # スレッド作成専用チャンネルにメッセージが送信されたならスレッドを作る。
+                if message.channel.slowmode_delay < 10:
+                    # もしスローモードが設定されていないなら十秒にする。
+                    await message.channel.edit(slowmode_delay=10)
 
-            await message.channel.create_thread(
-                name=(
-                    message.content[:message.content.find("\n")]
-                    if "\n" in message.content else message.content
-                ),
-                message=message
-            )
+                await message.channel.create_thread(
+                    name=(
+                        message.content[:message.content.find("\n")]
+                        if "\n" in message.content else message.content
+                    ),
+                    message=message
+                )
 
 
 def setup(bot):
