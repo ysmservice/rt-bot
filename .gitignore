@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 __pycache__
 *.secret
 *.crt
@@ -19,9 +18,3 @@ cogs/tts/outputs
 cogs/tts/routine
 youtube-cookies.txt
 *.json
-=======
-*.*-workspace
-__pycache__
-auth.json
-rt-frontend
->>>>>>> 445cdbf6b8af8e8dcb60440a180fd6ea6a0ff323
