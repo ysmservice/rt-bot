@@ -1,0 +1,8 @@
+# Normal
+sanic
+sanic-limiter
+ujson
+aiomysql
+# Discord Web Manager
+py-cord
+jishaku
