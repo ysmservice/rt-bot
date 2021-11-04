@@ -3,6 +3,7 @@
 from sanic.log import logger
 from discord import Intents
 
+from importlib import import_module
 from ujson import load, dumps
 from os import listdir
 
@@ -14,6 +15,7 @@ with open("auth.json", "r") as f:
 
 
 def on_setup(bot: TypedBot) -> None:
+    # 拡張やBlueprintを読み込む。
     bot.load_extension("jishaku")
     for name in listdir("cogs"):
         if not name.startswith("_"):
@@ -23,6 +25,12 @@ def on_setup(bot: TypedBot) -> None:
                 logger.warning(f"Failed to load the extension : {e}")
             else:
                 logger.info(f"Loaded extension : {name}")
+    for name in listdir("blueprints"):
+        if not name.startswith("_"):
+            module = import_module(f"blueprints.{name}")
+            if hasattr(module, "bp"):
+                bot.app.blueprint(module.bp)
+                logger.info(f"Loaded blueprint : {name}")
 
 
 app = NewSanic(
