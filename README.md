@@ -1,0 +1,2 @@
+# rt-backend
+DiscordのBotであるRTのバックエンドです。
