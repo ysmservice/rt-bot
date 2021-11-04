@@ -1,2 +1,4 @@
 *.*-workspace
 __pycache__
+auth.json
+rt-frontend
