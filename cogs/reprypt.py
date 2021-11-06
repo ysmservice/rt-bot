@@ -174,7 +174,6 @@ class Reprypt(commands.Cog):
             allowed_mentions=discord.AllowedMentions.none()
         )
 
-    @commands.Cog.route("/api/reprypt", methods=["POST", "OPTIONS"])
     async def reprypt_api(self, request):
         headers = {"Access-Control-Allow-Origin": "*"}
         now = time()

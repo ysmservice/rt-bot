@@ -1,0 +1,18 @@
+{
+    "token": {
+        "test": "テスト用BotのTOKEN、実行時に引数にtestと渡された際に使用されます。",
+        "production": "本番環境用のTOKEN",
+    	"sub": "りつたんのTOKEN"
+    },
+    "topgg": "TopGGのTOKENです。テスト用Botのみ入力省略可です。",
+    "mysql": {
+        "user": "データベースのユーザー名", "password": "⇦のパスワード", "db": "データベース名",
+        "port": ポート, "host": "データベースのアドレス、テストなら普通`localhost`"
+    },
+    "twitter": {
+        "consumer_key": "TwitterのAPIのコンシューマーキー、以下もTwitterのもの。入力しない場合は`twitter`キーごと削除しましょう。",
+        "consumer_secret": "...",
+        "access_token": "...",
+        "access_token_secret": "..."
+    }
+}

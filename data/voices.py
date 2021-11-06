@@ -1,7 +1,5 @@
 # 読み上げで使える声の一覧です。
 
-import cogs.tts.voiceroid as voiceroid
-
 
 voices = {
     "mei": {
@@ -59,12 +57,3 @@ voices = {
         "mode": "OpenJTalk"
     }
 }
-# Voiceroidをvoicesに追加する。
-for key in voiceroid.VOICEROIDS:
-    continue # まだベータだから
-    voices[key] = {
-        "path": key,
-        "name": voiceroid.VOICEROIDS[key]["name"],
-        "description": "VOICEROID デモ音声",
-        "mode": "VOICEROID"
-    }

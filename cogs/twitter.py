@@ -114,22 +114,23 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
         self.users: Dict[str, int] = {}
         self.ready = Event()
 
-        oauth = OAuthHandler(
-            self.bot.secret["twitter"]["consumer_key"],
-            self.bot.secret["twitter"]["consumer_secret"]
-        )
-        oauth.set_access_token(
-            self.bot.secret["twitter"]["access_token"],
-            self.bot.secret["twitter"]["access_token_secret"]
-        )
-        self.api = API(oauth)
+        if "twitter" in self.bot.secret:
+            oauth = OAuthHandler(
+                self.bot.secret["twitter"]["consumer_key"],
+                self.bot.secret["twitter"]["consumer_secret"]
+            )
+            oauth.set_access_token(
+                self.bot.secret["twitter"]["access_token"],
+                self.bot.secret["twitter"]["access_token_secret"]
+            )
+            self.api = API(oauth)
 
-        super(commands.Cog, self).__init__(self.bot.loop, self.bot.mysql.pool)
-        super(DataManager, self).__init__(**self.bot.secret["twitter"])
+            super(commands.Cog, self).__init__(self.bot.loop, self.bot.mysql.pool)
+            super(DataManager, self).__init__(**self.bot.secret["twitter"])
 
-        self.connected = False
-        self.cache: Dict[str, str] = {}
-        self.bot.loop.create_task(self.start_stream())
+            self.connected = False
+            self.cache: Dict[str, str] = {}
+            self.bot.loop.create_task(self.start_stream())
 
     def filter(self, *args, **kwargs):
         # connectedを使えるようにするためにオーバーライドした関数です。

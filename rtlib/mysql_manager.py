@@ -2,9 +2,10 @@
 
 from typing import Union, Any, Dict, Tuple
 
-from asyncio import AbstractEventLoop, get_event_loop
+from asyncio import AbstractEventLoop, get_event_loop, iscoroutinefunction
 from aiomysql import create_pool, connect
 from pymysql.err import OperationalError
+from functools import wraps
 import warnings
 import ujson
 
@@ -405,3 +406,39 @@ class MySQLManager:
             self.connection = None
         if self.pool is not None:
             self.pool.close()
+
+
+class DatabaseManager:
+    def __init_subclass__(cls) -> None:
+        super().__init_subclass__()
+        for c in cls.__mro__:
+            if (cls.__name__.startswith("Data")
+                    and not c.__name__.startswith(
+                        ("DatabaseL", "DatabaseM"))):
+                for name in dir(c):
+                    if not name.startswith("_"):
+                        coro = getattr(cls, name)
+                        if iscoroutinefunction(coro):
+                            setattr(cls, name, cls.prepare_cursor(coro))
+
+    async def _close(self, conn, cursor):
+        await cursor.close()
+        conn.close()
+        del cursor
+
+    @staticmethod
+    def prepare_cursor(coro):
+        @wraps(coro)
+        async def new_coro(self, *args, **kwargs):
+            conn = await self.db.get_database()
+            cursor = conn.get_cursor()
+            await cursor.prepare_cursor()
+            try:
+                data = await coro(self, cursor, *args, **kwargs)
+            except Exception as e:
+                await self._close(conn, cursor)
+                raise e
+            else:
+                await self._close(conn, cursor)
+                return data
+        return new_coro

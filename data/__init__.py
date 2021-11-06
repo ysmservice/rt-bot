@@ -1,7 +1,18 @@
 # RTの基本データ。
 
+from typing import Optional
+
 from discord.ext import commands
+
 from .voices import *
+
+
+class Colors:
+    normal = 0x0066ff
+    unknown = 0x80989b
+    error = 0xeb6ea5
+    player = 0x2ca9e1
+    queue = 0x007bbb
 
 
 data = {
@@ -20,13 +31,7 @@ data = {
         ],
         "alpha": ["r3!", "r3>"]
     },
-    "colors": {
-        "normal": 0x0066ff,
-        "unknown": 0x80989b,
-        "error": 0xeb6ea5,
-        "player": 0x2ca9e1,
-        "queue": 0x007bbb
-    },
+    "colors": {name: getattr(Colors, name) for name in dir(Colors)},
     "admins": [
         634763612535390209, 266988527915368448,
         667319675176091659, 693025129806037003
@@ -41,33 +46,8 @@ RTCHAN_COLORS = {
 }
 
 
-HEADERS = {
-    "Access-Control-Allow-Origin": "https://rt-bot.com",
-    "Access-Control-Allow-Credentials": "true"
-}
-TEST_HEADERS = {
-    "Access-Control-Allow-Origin": "http://127.0.0.1:5500",
-    # "Access-Control-Allow-Origin": "http://192.168.1.14",
-    "Access-Control-Allow-Credentials": "true"
-}
-def get_headers(bot, request) -> dict:
-    # 上のものを取得する関数です。
-    if bot.test:
-        headers = TEST_HEADERS
-        if "192.168.1.14" in request.url:
-            headers["Access-Control-Allow-Origin"] = "http://192.168.1.14"
-        elif "127.0.0.1" in request.url:
-            headers["Access-Control-Allow-Origin"] = "http://127.0.0.1:5500"
-        elif "tasuren" in request.url:
-            headers["Access-Control-Allow-Origin"] = "http://tasuren.f5.si:5500"
-        else:
-            headers["Access-Control-Allow-Origin"] = "http://localhost:5500"
-    else:
-        headers = HEADERS
-    return headers
-
-
-def is_admin(user_id=None):
+def is_admin(user_id: Optional[int] = None):
+    "管理者かチェックをする関数です。"
     def check(ctx):
         if isinstance(user_id, int):
             return user_id in data["admins"]

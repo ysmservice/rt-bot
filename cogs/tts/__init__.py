@@ -55,7 +55,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         super(commands.Cog, self).__init__(bot.session, VOICES)
         self.bot.loop.create_task(self.on_ready())
 
-        if self.bot.user.id != 888635684552863774:
+        if self.bot.user.id != 888635684552863774 and False:
             try:
                 self.bot.web.add_route(
                     self.routine_route, "/tts/routine/<file_name>"

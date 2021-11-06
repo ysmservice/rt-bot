@@ -1,52 +1,20 @@
-[![Discord Bots](https://top.gg/api/widget/status/716496407212589087.svg)](https://top.gg/bot/716496407212589087) [![Discord Bots](https://top.gg/api/widget/servers/716496407212589087.svg)](https://top.gg/bot/716496407212589087) ![Discord](https://img.shields.io/discord/718641964672876614?label=support&logo=discord) ![GitHub issues](https://img.shields.io/github/issues/RT-Team/rt-backend) `(C) 2020 RT Team`
+[![Discord Bots](https://top.gg/api/widget/status/716496407212589087.svg)](https://top.gg/bot/716496407212589087) [![Discord Bots](https://top.gg/api/widget/servers/716496407212589087.svg)](https://top.gg/bot/716496407212589087) ![Discord](https://img.shields.io/discord/718641964672876614?label=support&logo=discord) ![GitHub issues](https://img.shields.io/github/issues/RT-Team/rt-backend)
 # RT Backend
-DiscordのBotのRTのバックエンドです。  
+DiscordのBotのRTのBotです。  
+DiscordのBotアカウントであるRTに接続してRTのサービスを開始します。  
+ウェブ認証などのために`rt-backend`とWebSocketで通信も行います。  
 RTについて知らない人は[ここ](https://rt-bot.com)を見てみましょう。
 
-## ライセンス
-ライセンスは現在`BSD 4-Clause License`で`LICENSE`ファイルに記載されています。  
+## LICENSE
+`BSD 4-Clause License` (`LICENSE`ファイルに詳細があります。)
 
-## コントリビューション
-`contributing.md`を見てください。
+## Contributing
+`contributing.md`をご覧ください。
 
-### 環境
-```
-Python  3.8以上
-MySQL   `mysql`というデータベースを使用します。
-```
-### 必要なモジュールをすべてインストール
-`pip3 install -r requirements.txt`
-### TOKEN, MySQLの設定
-以下の形で`token.secret`というファイルで保存してください。
-```json
-{
-    "token": {
-        "test": "テスト用token",
-	    "production": "本番用BotToken",
-	    "sub": "..."
-    },
-    "topgg": "TopGG token (optional)",
-    "mysql": {
-        "user": "root",
-    	"password": "mysqlのパスワード"
-    },
-    "twitter": {
-        "token": "Twitter Access Token (optional)"
-    },
-    "oauth": {
-        "test": {
-            "client_id": "test用BotのOAuthクライアントID",
-            "client_secret": "test用BotのOAuthクライアントシークレット"
-        },
-        "production": {
-            "client_id": "本番用BotのOAuthクライアントID",
-            "client_secret": "本番用BotのOAuthクライアントシークレット"
-        }
-    }
-}
-```
-### 起動コマンド
-テスト用：`sudo -E python3 main.py test`  
-本番用：`sudo -E python3 main.py production`  
-もしRT Teamで開発環境を整えるのが面倒な場合はtasurenに言えば整えた状態の`rt-backend`のフォルダくれます。  
-↑ですが、MySQLはもちろん自分で設定です。
+## Installation
+1. 必要なものを`pip install -r requirements.txt`でインストールをします。
+2. 必要なTOKENなどを`auth.template.json`を参考に`auth.json`に書き込む。
+3. `rt-backend`リポジトリにあるプログラムを動かす。
+4. `python3 main.py test`でテストを実行する。(この際TOKENは`test`のキーにあるものが使用されます。)
+### 本番環境
+起動コマンドは`sudo -E python3 main.py production`で`auth.json`のTOKENで`production`のTOKENが必要となります。

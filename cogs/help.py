@@ -4,11 +4,10 @@ from discord.ext import commands
 import discord
 
 from rtlib.ext import componesy, Embeds
-from rtlib import OAuth, slash
+from rtlib import slash
 
 from sanic.response import json
 from typing import List, Tuple
-from data import get_headers
 
 
 class Help(commands.Cog):
@@ -40,8 +39,6 @@ class Help(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.Cog.route("/help/<category>/<command_name>")
-    @OAuth.login_want()
     async def help_detail(self, request, category, command_name):
         self.help = self.bot.cogs["DocHelp"].data
         category = self.CATEGORIES.get(category, category)

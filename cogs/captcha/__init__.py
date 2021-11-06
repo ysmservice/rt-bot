@@ -3,7 +3,7 @@
 from discord.ext import commands, tasks
 import discord
 
-from rtlib import DatabaseManager, mysql, OAuth
+from rtlib import DatabaseManager, mysql
 from sanic.exceptions import SanicException
 from .image_captcha import ImageCaptcha
 from .word_captcha import WordCaptcha
@@ -185,8 +185,6 @@ class Captcha(commands.Cog, DataManager):
                 if now - captcha.queue[key][1] > 3600:
                     del captcha.queue[key]
 
-    @commands.Cog.route("/captcha")
-    @OAuth.login_require()
     async def captcha_redirect(self, request):
         # ウェブ認証をする前に本人かどうかの確認をとるためにOAuth認証に通す。
         for key in list(self.captchas["web"].queue.keys()):
