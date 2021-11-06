@@ -7,6 +7,7 @@ import discord
 
 from pymysql.err import OperationalError
 
+from .websocket import websocket, WebSocket
 from . import mysql_manager as mysql
 from .ext import componesy
 from .typed import RT
@@ -50,13 +51,14 @@ discord.ext.easy = componesy
 
 def setup(bot, only: Union[Tuple[str, ...], List[str]] = []):
     "rtlibにあるエクステンションを全てまたは指定されたものだけ読み込みます。"
-    for name in ("embeds", "on_full_reaction", "dochelp", "debug"):
+    for name in ("embeds", "on_full_reaction", "dochelp", "debug", "on_cog_add"):
         if name in only or only == []:
             try:
                 bot.load_extension("rtlib.ext." + name)
             except commands.errors.ExtensionAlreadyLoaded:
                 pass
     bot.load_extension("rtlib.slash")
+    bot.load_extension("rtlib.websocket")
 
 
 # discord.ext.tasksのタスクがデータベースの操作失敗によって止まることがないようにする。
