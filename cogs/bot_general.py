@@ -153,7 +153,7 @@ class BotGeneral(commands.Cog):
 
         self._now_status_index = 0 if self._now_status_index else 1
 
-    @websocket.websocket("/ping", auto_connect=False, reconnect = False)
+    @websocket.websocket("/ping", auto_connect=False, reconnect=False)
     async def ping_(self, ws: websocket.WebSocket, _):
         await ws.send("ping")
 

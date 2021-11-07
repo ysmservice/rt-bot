@@ -1,13 +1,12 @@
 # RT - Help
 
-from discord.ext import commands
+from typing import Tuple, List
+
+from discord.ext import commands, tasks
 import discord
 
 from rtlib.ext import componesy, Embeds
-from rtlib import slash
-
-from sanic.response import json
-from typing import List, Tuple
+from rtlib import RT, slash
 
 
 class Help(commands.Cog):
@@ -36,34 +35,25 @@ class Help(commands.Cog):
         "Other": "その他"
     }
 
-    def __init__(self, bot):
+    def __init__(self, bot: RT):
         self.bot = bot
+        self.update_help.start()
 
-    async def help_detail(self, request, category, command_name):
-        self.help = self.bot.cogs["DocHelp"].data
-        category = self.CATEGORIES.get(category, category)
-        lang = (self.bot.cogs["Language"].get(request.ctx.user.id)
-                if request.ctx.user else "ja")
-        if command_name:
-            data = {"g-title": category, "status": "Not found"}
-            data["content"] = (f"# {command_name}\n"
-                            + self.help[category][command_name][lang][1]
-                                .replace("### ", "## ")
-                            if command_name in self.help.get(category, {})
-                            else ".0.エラー：見つかりませんでした。")
-            if not data["content"].startswith(".0.") and data["content"]:
-                data["status"] = "ok"
-        else:
-            count = 0
-            data = {
-                str(count := count + 1):[
-                    key, self.help[category][key][lang][0]
-                ]
-                for key in self.help[category]
-            } if category in self.help else {}
-            data["status"] = "ok" if data else "Not found"
-            data["title"] = category
-        return json(data, headers=get_headers(self.bot, request))
+    async def update_help_web(self):
+        "ウェブのヘルプを更新します。"
+        async with self.bot.session.post(
+            f"{self.bot.get_url()}/api/help/update",
+            json=self.bot.cogs["DocHelp"].data
+        ) as r:
+            # self.bot.print("[HelpUpdater]", await r.json())
+            ...
+
+    @tasks.loop(seconds=30)
+    async def update_help(self):
+        await self.update_help_web()
+
+    def cog_unload(self):
+        self.update_help.cancel()
 
     def search(self, word: str, lang: str) -> Tuple[str, str, List[Tuple[str, str]], List[Tuple[str, str]]]:
         # 指定された言葉で検索またはヘルプの取得を行う関数です。

@@ -25,3 +25,10 @@ class RT(commands.AutoShardedBot):
 
     def print(self, *args, **kwargs) -> None:
         return print(f"[Backend]", *args, **kwargs)
+
+    def get_ip(self) -> str:
+        return "localhost" if self.test else "rt-bot.com"
+
+    def get_url(self) -> str:
+        origin = self.get_ip()
+        return f"http{'s' if origin[0] == 'r' else ''}://{origin}"

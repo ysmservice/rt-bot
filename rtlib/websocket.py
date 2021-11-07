@@ -96,7 +96,8 @@ class EventFunction(WebSocketEvent):
 
 @overload
 def websocket(
-    uri: str, auto_connect: bool = False, reconnect: bool = True, **kwargs
+    uri: str, auto_connect: bool = False, reconnect: bool = True,
+    log: bool = False, **kwargs
 ) -> EventDecorator:
     ...
 
@@ -154,12 +155,12 @@ class WebSocket:
 
     def __new__(
         cls, cog: commands.Cog, uri: str,
-        event_handlers: Dict[str, Callable[..., Coroutine]],
+        event_handlers: Dict[str, Callable[..., Coroutine]], log: bool = False,
         auto_connect: bool = False, reconnect: bool = False, **kwargs
     ) -> Tuple["WebSocket", Coroutine]:
         self = super().__new__(cls)
         self.uri, self.event_handlers, self._kwargs = uri, event_handlers, kwargs
-        self.cog, self._reconnect = cog, reconnect
+        self.cog, self._reconnect, self._log = cog, reconnect, log
 
         if auto_connect:
             # 自動接続が指定されているなら自動通信を開始する。
@@ -169,9 +170,10 @@ class WebSocket:
 
     def print(self, *args, **kwargs) -> None:
         "ログ出力をします。"
-        self.cog.bot.print(
-            f"[{self.cog.__cog_name__}]", f"[WebSocket:{self.uri}]", *args, **kwargs
-        )
+        if self._log:
+            self.cog.bot.print(
+                f"[{self.cog.__cog_name__}]", f"[WebSocket:{self.uri}]", *args, **kwargs
+            )
 
     async def run_event(
         self, event_type: str, data: PacketData, *args, **kwargs
