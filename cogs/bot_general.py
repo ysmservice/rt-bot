@@ -4,13 +4,14 @@ from discord.ext import commands, tasks
 import discord
 
 from traceback import TracebackException
-from rtlib.ext import Embeds, componesy
 from inspect import cleandoc
 from itertools import chain
 from random import choice
 from time import time
 
 from .server_tool import PERMISSION_TEXTS
+from rtlib.ext import Embeds, componesy
+from rtlib import RT, websocket
 
 
 ERROR_CHANNEL = 842744343911596062
@@ -77,8 +78,9 @@ class BotGeneral(commands.Cog):
         ("{}help | {} users", lambda bot: len(bot.users))
     )
 
-    def __init__(self, bot):
+    def __init__(self, bot: RT):
         self.bot, self.rt = bot, bot.data
+        self.wslatency = "..."
 
         # RT情報Embedsを作る。
         embeds = self.info_embeds = []
@@ -119,20 +121,19 @@ class BotGeneral(commands.Cog):
         self._now_status_index = 0
         self._start_time = time()
         self.status_updater.start()
+        self.update_wslatency.start()
 
     @commands.Cog.listener()
     async def on_ready(self):
         self.on_error_channel = self.bot.get_channel(ERROR_CHANNEL)
 
-    def _get_ping(self) -> int:
+    def _get_ping(self) -> str:
         # pingを返します。
-        try:
-            return round(self.bot.latency * 1000)
-        except OverflowError:
-            return 200
+        return "%.1f" % round(self.bot.latency * 1000, 1)
 
     def cog_unload(self) -> None:
         self.status_updater.cancel()
+        self.update_wslatency.cancel()
 
     @tasks.loop(seconds=60)
     async def status_updater(self) -> None:
@@ -152,6 +153,22 @@ class BotGeneral(commands.Cog):
 
         self._now_status_index = 0 if self._now_status_index else 1
 
+    @websocket.websocket("/ping", auto_connect=False, reconnect = False)
+    async def ping_(self, ws: websocket.WebSocket, _):
+        await ws.send("ping")
+
+    @ping_.event("ping")
+    async def pong(self, _, __):
+        ...
+
+    @tasks.loop(seconds=10)
+    async def update_wslatency(self):
+        await self.ping_.connect(pass_connection_failed_error=True)
+        start = time()
+        await self.pong.wait()
+        self.wslatency = "%.1f" % round((time() - start) * 1000)
+        await self.ping_.close()
+
     @commands.command(
         extras={"headding": {"ja": "レイテンシを表示します。", "en": "Show you RT latency."},
                 "parent": "RT"},
@@ -167,10 +184,22 @@ class BotGeneral(commands.Cog):
         --------
         You can view RT latency.  
         If latency is over to 400, network is bad."""
-        await ctx.reply(
-            {"ja": f"現在のRTのレイテンシ：{self._get_ping()}ms",
-             "en": f"Pong! {self._get_ping()}ms"}
+        embed = discord.Embed(
+            title={
+                "ja": "現在のRTのレイテンシ",
+                "en": "Latency of current RT"
+            }, color=self.bot.Colors.normal
         )
+        embed.add_field(
+            name="Discord Connection Latency",
+            value=f"{self._get_ping()}ms"
+        )
+        # Backendとの通信状況を調べる。
+        embed.add_field(
+            name="Backend Connection Latency",
+            value=f"{self.wslatency}ms"
+        )
+        await ctx.reply(embed=embed)
 
     @commands.command(
         extras={"headding": {

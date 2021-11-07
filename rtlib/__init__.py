@@ -7,9 +7,9 @@ import discord
 
 from pymysql.err import OperationalError
 
-from .websocket import websocket, WebSocket
 from . import mysql_manager as mysql
 from .ext import componesy
+from . import websocket
 from .typed import RT
 
 
