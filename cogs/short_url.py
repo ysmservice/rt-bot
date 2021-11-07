@@ -88,7 +88,7 @@ class ShortURL(commands.Cog, DataManager):
                 row[2]: row[1] for row in await self.getrealall()
             }
         ) as r:
-            self.bot.print("[ShortURL_CacheUpdater]", await r.json())
+            # self.bot.print("[ShortURL_CacheUpdater]", await r.json())
             ...
 
     @commands.group(
