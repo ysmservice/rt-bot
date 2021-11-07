@@ -50,6 +50,10 @@ class Help(commands.Cog):
 
     @tasks.loop(seconds=30)
     async def update_help(self):
+        self.bot.dispatch("update_api")
+
+    @commands.Cog.listener()
+    async def on_update_api(self):
         await self.update_help_web()
 
     def cog_unload(self):
