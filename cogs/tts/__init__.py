@@ -204,7 +204,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                     if text == alias:
                         if self.bot.user.id == 888635684552863774:
                             url = f"http{'://localhost' if self.bot.test else 's://rt-bot.com'}/" \
-                                f"tts/routine/{path[path.rfind('/') + 1:]}"
+                                f"api/tts/routine/get/{path[path.rfind('/') + 1:]}"
                         else:
                             url = path
                         break
