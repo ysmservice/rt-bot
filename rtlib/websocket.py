@@ -164,7 +164,7 @@ class WebSocket:
 
         if auto_connect:
             # 自動接続が指定されているなら自動通信を開始する。
-            self.cog.bot.loop.create_task(self.connect(False))
+            self.task = self.cog.bot.loop.create_task(self.connect(False))
 
         return self
 
@@ -311,6 +311,7 @@ class WebSocketManager(commands.Cog):
 
             # 見つけたWebSocketの関数の通信を開始する。
             for uri in websockets:
+                self.print("Make WebSocket :", uri)
                 websocket = WebSocket(
                     cog, uri, websockets[uri],
                     **getattr(cog, "websocket_kwargs", {})
@@ -329,6 +330,8 @@ class WebSocketManager(commands.Cog):
             await websocket.close(
                 reason="コグの削除による切断です。"
             )
+            if hasattr(websocket, "task"):
+                websocket.task.cancel()
         del websocket
 
     @commands.Cog.listener()
@@ -338,10 +341,15 @@ class WebSocketManager(commands.Cog):
             if hasattr(func, "_websocket"):
                 await self._close_websocket(cog.websockets[func._websocket[0]])
 
-    def cog_unload(self):
-        for websocket in self.websocekts:
-            print(1)
+    @commands.Cog.listener()
+    async def on_close(self, _):
+        self.bot.print("Closing websockets...")
+        for websocket in self._websockets:
             self.bot.loop.create_task(self._close_websocket(websocket))
+
+    def print(self, *args, **kwargs):
+        "ログを出力します。"
+        self.bot.print("[WebSocketManager]", *args, **kwargs)
 
 
 def setup(bot):
