@@ -40,6 +40,7 @@ class Help(commands.Cog):
     def __init__(self, bot: RT):
         self.bot = bot
         self.update_help.start()
+        self.bot.backend = False
 
     async def update_help_web(self):
         "ウェブのヘルプを更新します。"
@@ -59,7 +60,9 @@ class Help(commands.Cog):
                 if (await r.text()) == "pong":
                     self.bot.dispatch("update_api")
         except ClientConnectionError:
-            pass
+            self.bot.backend = False
+        else:
+            self.bot.backend = True
 
     @commands.Cog.listener()
     async def on_update_api(self):

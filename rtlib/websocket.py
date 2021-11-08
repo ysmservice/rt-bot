@@ -232,6 +232,7 @@ class WebSocket:
         self.print(f"Finished websocket connection ({self.running})")
 
         if self.running != "doing" and self._reconnect:
+            await self.close()
             self.print("I will try to reconnect.")
             self.running = "doing"
             await sleep(3)
@@ -272,6 +273,7 @@ class WebSocket:
         if self.ws:
             await self.ws.close(code, reason)
             self.print(f"Disconnected from websocket ({self.running})")
+        self.ws = None
         # もし`wait`でイベントを待っている関数があるなら終了させる。
         for func in self.event_handlers.values():
             if func.waiting:
@@ -338,6 +340,7 @@ class WebSocketManager(commands.Cog):
 
     def cog_unload(self):
         for websocket in self.websocekts:
+            print(1)
             self.bot.loop.create_task(self._close_websocket(websocket))
 
 

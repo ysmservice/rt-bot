@@ -11,7 +11,7 @@ from time import time
 
 from .server_tool import PERMISSION_TEXTS
 from rtlib.ext import Embeds, componesy
-from rtlib import RT, websocket
+from rtlib import RT
 
 
 ERROR_CHANNEL = 842744343911596062
@@ -121,7 +121,6 @@ class BotGeneral(commands.Cog):
         self._now_status_index = 0
         self._start_time = time()
         self.status_updater.start()
-        self.update_wslatency.start()
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -133,7 +132,6 @@ class BotGeneral(commands.Cog):
 
     def cog_unload(self) -> None:
         self.status_updater.cancel()
-        self.update_wslatency.cancel()
 
     @tasks.loop(seconds=60)
     async def status_updater(self) -> None:
@@ -153,27 +151,13 @@ class BotGeneral(commands.Cog):
 
         self._now_status_index = 0 if self._now_status_index else 1
 
-    @websocket.websocket("/ping", auto_connect=False, reconnect=False)
-    async def ping_(self, ws: websocket.WebSocket, _):
-        await ws.send("ping")
-
-    @ping_.event("ping")
-    async def pong(self, _, __):
-        ...
-
-    @tasks.loop(seconds=10)
-    async def update_wslatency(self):
-        await self.ping_.connect(pass_connection_failed_error=True)
-        start = time()
-        await self.pong.wait()
-        self.wslatency = "%.1f" % round((time() - start) * 1000)
-        await self.ping_.close()
-
     @commands.command(
         extras={"headding": {"ja": "レイテンシを表示します。", "en": "Show you RT latency."},
                 "parent": "RT"},
         slash_command=True,
-        description="レイテンシを表示します。 / Show you RT latency.")
+        description="レイテンシを表示します。 / Show you RT latency."
+    )
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def ping(self, ctx):
         """!lang ja
         --------
@@ -195,10 +179,16 @@ class BotGeneral(commands.Cog):
             value=f"{self._get_ping()}ms"
         )
         # Backendとの通信状況を調べる。
-        embed.add_field(
-            name="Backend Connection Latency",
-            value=f"{self.wslatency}ms"
-        )
+        if self.bot.backend:
+            start = time()
+            async with self.bot.session.get(
+                f"{self.bot.get_url()}/api/ping"
+            ) as r:
+                if await r.text() == "pong":
+                    embed.add_field(
+                        name="Backend Connection Latency",
+                        value="%.1fms" % round((time() - start) * 1000, 1)
+                    )
         await ctx.reply(embed=embed)
 
     @commands.command(
