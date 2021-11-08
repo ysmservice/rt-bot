@@ -5,6 +5,8 @@ from typing import Tuple, List
 from discord.ext import commands, tasks
 import discord
 
+from aiohttp.client_exceptions import ClientConnectionError
+
 from rtlib.ext import componesy, Embeds
 from rtlib import RT, slash
 
@@ -50,7 +52,14 @@ class Help(commands.Cog):
 
     @tasks.loop(seconds=30)
     async def update_help(self):
-        self.bot.dispatch("update_api")
+        try:
+            async with self.bot.session.get(
+                f"{self.bot.get_url()}/api/ping"
+            ) as r:
+                if (await r.text()) == "pong":
+                    self.bot.dispatch("update_api")
+        except ClientConnectionError:
+            pass
 
     @commands.Cog.listener()
     async def on_update_api(self):

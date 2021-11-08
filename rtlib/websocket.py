@@ -96,7 +96,7 @@ class EventFunction(WebSocketEvent):
 
 @overload
 def websocket(
-    uri: str, auto_connect: bool = False, reconnect: bool = True,
+    uri: str, auto_connect: bool = False, reconnect: bool = False,
     log: bool = False, **kwargs
 ) -> EventDecorator:
     ...
@@ -164,7 +164,7 @@ class WebSocket:
 
         if auto_connect:
             # 自動接続が指定されているなら自動通信を開始する。
-            self.cog.bot.loop.create_task(self.connect())
+            self.cog.bot.loop.create_task(self.connect(False))
 
         return self
 
@@ -230,6 +230,12 @@ class WebSocket:
                     await self.close(1003, "そのイベントが見つかりませんでした。")
 
         self.print(f"Finished websocket connection ({self.running})")
+
+        if self.running != "doing" and self._reconnect:
+            self.print("I will try to reconnect.")
+            self.running = "doing"
+            await sleep(3)
+            self.cog.bot.loop.create_task(self.connect(pcfe))
 
     async def send(self, event_type: str, data: PacketData = "") -> None:
         "データを送信します。"
@@ -305,7 +311,7 @@ class WebSocketManager(commands.Cog):
             for uri in websockets:
                 websocket = WebSocket(
                     cog, uri, websockets[uri],
-                    **getattr(cog, "websocket_kwargs", {}).get(uri, {})
+                    **getattr(cog, "websocket_kwargs", {})
                 )
                 self._websockets.append(websocket)
                 # WebSocketを関数に保存しておく。
