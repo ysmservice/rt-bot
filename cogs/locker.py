@@ -159,7 +159,7 @@ class Locker(commands.Cog, DataManager):
 
     @tasks.loop(seconds=30)
     async def auto_unlock_loop(self):
-        # 自動で解除するように設定されているものをさ解除する。
+        # 自動で解除するように設定されているものを解除する。
         now = time()
         for row in await self.loads():
             if row:
