@@ -108,8 +108,13 @@ class Captcha(commands.Cog, DataManager):
 
         Examples
         --------
+        設定する際
         `rt!captcha web @認証済み`  
         ウェブ認証で認証成功時には`認証済み`という役職を付与する用に設定します。
+        
+        解除する際
+        `rt!captcha off`
+        認証を有効にしているチャンネルで実行すると、設定を解除できます。
 
         Notes
         -----
