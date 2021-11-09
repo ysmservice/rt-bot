@@ -1,20 +1,19 @@
-# RTLib - (C) 2021 RT-Team
-# Author : tasuren
+# RT - Lib
+
+from typing import Union, Tuple, List
 
 from discord.ext import commands, tasks
 import discord
 
 from pymysql.err import OperationalError
-from typing import Union, Tuple, List
-from functools import wraps
-import asyncio
 
-from .web_manager import WebManager
-from .backend import *
 from . import mysql_manager as mysql
 from .ext import componesy
-from .oauth import OAuth
+from . import websocket
+from .typed import RT
 
+
+DatabaseManager = mysql.DatabaseManager
 
 
 async def webhook_send(
@@ -45,117 +44,24 @@ async def webhook_send(
             raise e
 
 
+# webhook_sendを新しく定義する。
 discord.abc.Messageable.webhook_send = webhook_send
 discord.ext.easy = componesy
 
 
 def setup(bot, only: Union[Tuple[str, ...], List[str]] = []):
-    """rtlibにあるエクステンションを全てまたは指定されたものだけ読み込みます。
-
-    Notes
-    -----
-    これを使えば正しい順番で読み込まれるため、通常はこれを使い一括でRTのエクステンションを読み込むべきです。
-
-    Parameters
-    ----------
-    bot
-        DiscordのBotです。
-    only : Union[Tuple[str, ...], List[str]], optional
-        読み込むエクステンションを限定します。  
-        例：`("componesy", "embeds")`とすれば`componesy`と`embeds`のみを正しい順番で読み込みます。"""
-    for name in ("embeds", "on_full_reaction", "dochelp", "debug"):
+    "rtlibにあるエクステンションを全てまたは指定されたものだけ読み込みます。"
+    for name in ("embeds", "on_full_reaction", "dochelp", "debug", "on_cog_add"):
         if name in only or only == []:
             try:
                 bot.load_extension("rtlib.ext." + name)
             except commands.errors.ExtensionAlreadyLoaded:
                 pass
     bot.load_extension("rtlib.slash")
+    bot.load_extension("rtlib.websocket")
 
 
-class DatabaseLocker:
-    def __init_subclass__(cls) -> None:
-        super().__init_subclass__()
-        if not hasattr(cls, "lock"):
-            for name in dir(cls.__mro__[-3]):
-                if not name.startswith("_"):
-                    coro = getattr(cls, name)
-                    if asyncio.iscoroutinefunction(coro):
-                        setattr(cls, name, cls.wait_until_unlock(coro))
-            cls.lock = None
-
-    async def _close_cursor(self, auto_cursor):
-        if auto_cursor:
-            await self.cursor.close()
-        # 違うやつが操作できるようにする。
-        self.lock.set()
-
-    @staticmethod
-    def wait_until_unlock(coro):
-        @wraps(coro)
-        async def new_coro(self, *args, **kwargs):
-            if self.lock is None:
-                self.lock = asyncio.Event(
-                    loop=getattr(getattr(self, "db", None), "loop", None)
-                )
-                self.lock.set()
-            # 他のデータベース操作が終わるまで待つ。
-            await self.lock.wait()
-            # 今度はこっちがデータベースを操作する番ということで他が捜査できないようにする。
-            self.lock.clear()
-            # もし自動でcursorを取得するように言われたならそうする。
-            if (auto_cursor := getattr(self, "auto_cursor", False)):
-                self.cursor = self.db.get_cursor()
-                await self.cursor.prepare_cursor()
-            # エラーが起きた際にカーソルを閉じれないということを防ぐためにエラーを一度回収する。
-            try:
-                data = await asyncio.wait_for(
-                    coro(self, *args, **kwargs), timeout=5
-                )
-            except Exception as e:
-                await self._close_cursor(auto_cursor)
-                raise e
-            else:
-                await self._close_cursor(auto_cursor)
-            return data
-        return new_coro
-
-
-class DatabaseManager:
-    def __init_subclass__(cls) -> None:
-        super().__init_subclass__()
-        for c in cls.__mro__:
-            if (cls.__name__.startswith("Data")
-                    and not c.__name__.startswith(
-                        ("DatabaseL", "DatabaseM"))):
-                for name in dir(c):
-                    if not name.startswith("_"):
-                        coro = getattr(cls, name)
-                        if asyncio.iscoroutinefunction(coro):
-                            setattr(cls, name, cls.prepare_cursor(coro))
-
-    async def _close(self, conn, cursor):
-        await cursor.close()
-        conn.close()
-        del cursor
-
-    @staticmethod
-    def prepare_cursor(coro):
-        @wraps(coro)
-        async def new_coro(self, *args, **kwargs):
-            conn = await self.db.get_database()
-            cursor = conn.get_cursor()
-            await cursor.prepare_cursor()
-            try:
-                data = await coro(self, cursor, *args, **kwargs)
-            except Exception as e:
-                await self._close(conn, cursor)
-                raise e
-            else:
-                await self._close(conn, cursor)
-                return data
-        return new_coro
-
-
+# discord.ext.tasksのタスクがデータベースの操作失敗によって止まることがないようにする。
 default = tasks.Loop.__init__
 def _init(self, *args, **kwargs):
     default(self, *args, **kwargs)

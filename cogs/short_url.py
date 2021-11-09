@@ -3,10 +3,9 @@
 from discord.ext import commands
 import discord
 
-from rtlib import DatabaseManager, WebManager
+from rtlib import DatabaseManager, RT
 
-from sanic.response import redirect
-from random import sample, choice
+from random import sample
 from time import time
 
 
@@ -36,7 +35,7 @@ class DataManager(DatabaseManager):
         await cursor.cursor.execute(
             """SELECT * FROM ShortURL
                 WHERE UserID = %s
-                ORDER BY Reg ASC""",
+                ORDER BY Reg ASC;""",
             (user_id,)
         )
         row = await cursor.cursor.fetchone()
@@ -60,6 +59,11 @@ class DataManager(DatabaseManager):
         assert await cursor.exists(self.DB, target), "見つかりませんでした。"
         return (await cursor.get_data(self.DB, target))[1]
 
+    async def getrealall(self, cursor) -> list:
+        return [
+            row async for row in cursor.get_datas(self.DB, {}) if row
+        ]
+
 
 CHARS = list(range(41, 91)) + list(range(61, 123))
 
@@ -69,13 +73,23 @@ def random_string(length: int) -> str:
 
 
 class ShortURL(commands.Cog, DataManager):
-    def __init__(self, bot):
+    def __init__(self, bot: RT):
         self.bot = bot
         self.bot.loop.create_task(self.init_database())
 
     async def init_database(self):
         super(commands.Cog, self).__init__(self.bot.mysql)
         await self.init_table()
+
+    @commands.Cog.listener("on_update_api")
+    async def update_cache(self):
+        async with self.bot.session.post(
+            f"{self.bot.get_url()}/api/shorturl", json={
+                row[2]: row[1] for row in await self.getrealall()
+            }
+        ) as r:
+            # self.bot.print("[ShortURL_CacheUpdater]", await r.json())
+            ...
 
     @commands.group(
         extras={
@@ -166,6 +180,7 @@ class ShortURL(commands.Cog, DataManager):
         except AssertionError:
             await ctx.reply("その短縮URLは既に存在するので作れません。")
         else:
+            await self.update_cache()
             await ctx.reply(f"短縮しました。>>>http://rtbo.tk/{custom}")
 
     @url.command("list", aliases=["一覧"])
@@ -231,26 +246,8 @@ class ShortURL(commands.Cog, DataManager):
         except AssertionError:
             await ctx.reply("その短縮URLが見つかりませんでした。")
         else:
+            await self.update_cache()
             await ctx.reply("その短縮URLを削除しました。")
-
-    ROUTINE_URLS = (
-        "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        "https://www.youtube.com/watch?v=ok7UX3utzvI",
-        "https://www.youtube.com/watch?v=lO9alUUIopI",
-        "https://www.youtube.com/watch?v=p1pu96oz9Q4",
-        "https://www.youtube.com/watch?v=yJ9hikxlGpU",
-        "https://www.youtube.com/watch?v=H221MRRgFZs"
-    )
-    HOSTS = ("localhost", "rtbo.tk")
-
-    @commands.Cog.route("/<custom>", host=HOSTS[1])
-    @WebManager.cooldown(3)
-    async def short_url(self, _, custom: str):
-        try:
-            url = await self.get(custom)
-        except AssertionError:
-            url = choice(self.ROUTINE_URLS)
-        return redirect(url)
 
 
 def setup(bot):

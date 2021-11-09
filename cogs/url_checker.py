@@ -6,11 +6,10 @@ from discord.ext import commands
 import discord
 
 from rtutil import securl, DatabaseManager
-from asyncio import sleep
 from re import findall
 
 if TYPE_CHECKING:
-    from mysql import Pool, Cursor
+    from aiomysql import Pool, Cursor
     from rtlib import Backend
 
 

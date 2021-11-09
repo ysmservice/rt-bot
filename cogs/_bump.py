@@ -5,7 +5,6 @@ import discord
 
 from typing import Any
 
-from rtutil.SettingAPI import SettingData, ListBox, utils
 from rtlib import DatabaseManager, mysql
 from asyncio import sleep
 from ujson import loads
@@ -121,38 +120,7 @@ class Bump(commands.Cog, DataManager):
         await self.init_table()
         self.notification.start()
 
-    async def callback(self, ctx, item):
-        if getattr(ctx, "mode", "write") == "read":
-            data = await self.load(ctx.guild.id, item.name)
-            onoff = "on" if data else "off"
-            if onoff == "on" and data[-1].get("role"):
-                onoff = ctx.guild.get_role(data[-1]["role"])
-            item = utils.make_list(
-                item.name, {
-                    "ja": f"{item.name}通知をするかどうかです。役職名を選択すれば役職メンションをして通知をします。",
-                    "en": "Whether to do notification or not. If you select role name, RT do mention when do notification."
-                },
-                ["on", "off"] + ctx.guild.roles, "name", onoff
-            )
-            return item
-        else:
-            role = item.texts[item.index]
-            row = await self.load(ctx.guild.id, item.name)
-            if role == "off":
-                await self.save(ctx.guild.id, item.name, {"onoff": False})
-            else:
-                new = row[-1]
-                if role != "on":
-                    role = getattr(
-                        discord.utils.get(ctx.guild.roles, name=role),
-                        "id", 0
-                    )
-                new.update({
-                    "role": role, "onoff": True
-                })
-                await self.save(ctx.guild.id, item.name, new)
-
-    @commands.command(extras=get_extras("bump", callback))
+    @commands.command(extras=get_extras("bump"))
     @commands.has_permissions(administrator=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def bump(self, ctx, onoff: bool, *, role: discord.Role = None):

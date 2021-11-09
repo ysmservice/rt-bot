@@ -7,7 +7,7 @@ from sanic.response import json
 from datetime import datetime
 from time import time
 
-from data import is_admin, get_headers
+from data import is_admin
 from rtlib import DatabaseManager
 from rtlib.ext import Embeds
 
@@ -60,7 +60,6 @@ class News(commands.Cog, DataManager):
     async def get_rows(self) -> list:
         return reversed(await self.get_news_all())
 
-    @commands.Cog.route("/news/<number>")
     async def news_api(self, request, number=None) -> None:
         rows = await self.get_rows()
         if number:

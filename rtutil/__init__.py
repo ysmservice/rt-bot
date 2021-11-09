@@ -3,7 +3,6 @@
 from typing import List
 
 from .minesweeper import Ms as Minesweeper
-from .SettingAPI import *
 from .data_manager import DatabaseManager
 
 import discord

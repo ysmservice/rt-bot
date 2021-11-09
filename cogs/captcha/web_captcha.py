@@ -18,6 +18,7 @@ class WebCaptcha:
             if self.cog.bot.test
             else "https://rt-bot.com/"
         )
+        """
         try:
             self.cog.bot.web.add_route(
                 self.endpoint, "/api/captcha/<userdata>",
@@ -25,6 +26,7 @@ class WebCaptcha:
             )
         except Exception as e:
             print("Ignored error on WebCaptcha:", e)
+        """
 
     def encrypt(self, data: dict) -> str:
         return reprypt.encrypt(

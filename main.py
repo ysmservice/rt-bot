@@ -3,138 +3,99 @@ LICENSE : ./LICENSE
 README  : ./readme.md
 """
 
-desc = """
-  _____ _______   _____  _                       _   ____        _
- |  __ \\__   __| |  __ \\(_)                     | | |  _ \\      | |
- | |__) | | |    | |  | |_ ___  ___ ___  _ __ __| | | |_) | ___ | |_
- |  _  /  | |    | |  | | / __|/ __/ _ \\| '__/ _` | |  _ < / _ \\| __|
- | | \\ \\  | |    | |__| | \\__ \\ (_| (_) | | | (_| | | |_) | (_) | |_
- |_|  \\_\\ |_|    |_____/|_|___/\\___\\___/|_|  \\__,_| |____/ \\___/ \\__|
-Now loading..."""
-print(desc)
+print("RT Discord Bot (C) 2020 RT-Team\nNow loading...")
+
+import discord
 
 from aiohttp import ClientSession
-from asyncio import sleep
+from ujson import load, dumps
 from os import listdir
 from sys import argv
-import discord
-import ujson
-import rtlib
 
-from data import data, is_admin
+from logging import handlers
+import logging
 
-
-# 設定ファイルの読み込み。
-with open("token.secret", "r", encoding="utf-8_sig") as f:
-    secret = ujson.load(f)
-TOKEN = secret["token"][argv[1]]
+from data import data, is_admin, Colors
+from rtlib import RT, mysql, setup
 
 
-# その他設定をする。
-prefixes = data["prefixes"][argv[1]]
+with open("auth.json", "r") as f:
+    secret = load(f)
 
 
-# Backendのセットアップをする。
-def on_init(bot):
-    bot.admins = data["admins"]
-
-    bot.session = ClientSession(loop=bot.loop)
-    @bot.listen()
-    async def on_close(loop):
-        await bot.session.close()
-        del bot.mysql
-
-    bot.mysql = bot.data["mysql"] = rtlib.mysql.MySQLManager(
-        loop=bot.loop, user=secret["mysql"]["user"],
-        password=secret["mysql"]["password"], db="mysql",
-        pool = True, minsize=1, maxsize=50 if bot.test else 1000,
-      autocommit=True
-    )
-    oauth_secret = secret["oauth"][argv[1]]
-    bot.oauth = bot.data["oauth"] = rtlib.OAuth(
-        bot, oauth_secret["client_id"], oauth_secret["client_secret"],
-        oauth_secret["client_secret"]
-    )
-    bot.secret = secret
-    bot.oauth_secret = secret["oauth"][argv[1]]
-    del oauth_secret
-
-    # エクステンションを読み込む。
-    rtlib.setup(bot)
-    bot.load_extension("jishaku")
-    bot.load_extension("rtutil.oauth_manager")
-    bot.load_extension("rtutil.setting_api")
-
-    async def setting_up():
-        await sleep(3)
-        await bot.change_presence(
-            activity=discord.Game(
-                name="起動準備"
-            ), status=discord.Status.dnd
-        )
-
-    bot._loaded = False
-
-    @bot.event
-    async def on_ready():
-        # cogsフォルダにあるエクステンションを読み込む。
-        if not bot._loaded:
-            for path in listdir("cogs"):
-                if path[0] in ("#", ".", "_"):
-                    continue
-                try:
-                    if path.endswith(".py"):
-                        bot.load_extension("cogs." + path[:-3])
-                    elif "." not in path and path != "__pycache__" and path[0] != ".":
-                        bot.load_extension("cogs." + path)
-                except discord.ext.commands.NoEntryPointError as e:
-                    if "setup" not in str(e):
-                        raise e
-                bot.print("Loaded extension", path)
-            bot.dispatch("full_ready")
-            bot._loaded = True
-
-    bot.loop.create_task(setting_up())
-
-# テスト時は普通のBackendを本番はシャード版Backendを定義する。
+# Botの準備を行う。
 intents = discord.Intents.default()
 intents.typing = False
-intents.guild_typing = False
-intents.dm_typing = False
 intents.members = True
-args = (prefixes,)
-kwargs = {
-    "help_command": None,
-    "on_init_bot": on_init,
-    "intents": intents,
-    "allowed_mentions": discord.AllowedMentions(
-        everyone=False, users=False
-    )
-}
-if argv[1] in ("test", "alpha"):
-    bot = rtlib.Backend(*args, **kwargs)
-    bot.test = True
-elif argv[1] == "production":
-    bot = rtlib.AutoShardedBackend(*args, **kwargs)
-    bot.test = False
-
-
-server = (eval(argv[2]) if len(argv) > 2 else True)
-
-
+bot = RT(
+    data["prefixes"][argv[-1]], help_command=None, intents=intents,
+    allowed_mentions=discord.AllowedMentions(everyone=False, users=False),
+    activity=discord.Game("起動準備"), status=discord.Status.dnd
+)
+bot.secret = secret
+bot.test = argv[-1] != "production"
 bot.data = data
-bot.colors = data["colors"]
+bot.admins = data["admins"]
+bot.secret = secret
+bot.mysql = bot.data["mysql"] = mysql.MySQLManager(
+    loop=bot.loop, **secret["mysql"], pool=True,
+    minsize=1, maxsize=50 if bot.test else 1000, autocommit=True
+)
+bot.pool = bot.mysql.pool
 bot.is_admin = is_admin
+bot.colors = data["colors"]
+bot.Colors = Colors
+bot._load = False
 
 
-# jishakuの管理者かどうか確認するためのコルーチン関数を用意する。
+# 起動中だと教えられるようにするためのコグを読み込む。
+bot.load_extension("cogs._first")
+
+
+# Jishakuのためのオーナーかどうか確認する関数を用意しておく。
 async def _is_owner(user):
     return bot.is_admin(user.id)
 bot.is_owner = _is_owner
 del is_admin, _is_owner
 
 
-bot.run(
-    TOKEN, host="0.0.0.0" if server else "127.0.0.1",
-    port=80 if server else 5500
+@bot.listen()
+async def on_ready():
+    bot.print("Connected to discord")
+    bot.session = ClientSession(loop=bot.loop, json_serialize=dumps)
+    bot.unload_extension("cogs._first")
+
+    # 拡張を読み込む。
+    setup(bot)
+    bot.load_extension("jishaku")
+    for name in listdir("cogs"):
+        if not name.startswith("_"):
+            try:
+                bot.load_extension(
+                    f"cogs.{name[:-3] if name.endswith('.py') else name}"
+                )
+            except discord.ext.commands.NoEntryPointError as e:
+                if "setup" not in str(e):
+                    raise e
+            else:
+                bot.print("[Extension]", "Loaded", name)
+    bot.print("Completed to boot RT")
+
+    bot.dispatch("full_ready")
+    bot._load = True
+
+
+# loggingの準備をする。
+logger = logging.getLogger('discord')
+handler = handlers.RotatingFileHandler(
+    filename='log/discord.log', encoding='utf-8', mode='w',
+    maxBytes=10000000, backupCount=5
 )
+handler.setLevel(logging.DEBUG)
+handler.setFormatter(logging.Formatter(
+    "[%(asctime)s][%(levelname)s][%(name)s] %(message)s"
+))
+logger.addHandler(handler)
+
+
+bot.run(secret["token"][argv[-1]])

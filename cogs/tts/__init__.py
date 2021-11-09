@@ -1,22 +1,28 @@
 # RT - TTS
 
+from typing import Optional, Type, Dict, List
+
 from discord.ext import commands, tasks
 import discord
 
-from typing import Optional, Type, Dict, List
 from aiofiles.os import remove as async_remove
-from rtlib.ext import componesy, Embeds
-from sanic.response import file_stream
-from urllib.parse import unquote
+from aiofiles import open as async_open
 from os import listdir, remove
+from os.path import exists
+
+from jishaku.functools import executor_function
+from urllib.parse import unquote
+from base64 import encodebytes
 from pydub import AudioSegment
 from functools import wraps
-from time import time
+
+from rtlib.ext import componesy, Embeds
+from rtlib import websocket, RT
+from rtlib.slash import Option
 
 from .voice_manager import VoiceManager, voiceroid
 from .data_manager import DataManager
 from data import voices as VOICES
-from rtlib.slash import Option
 
 
 def require_connected(coro):
@@ -48,20 +54,12 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         "error": "<:error:878914351338246165>"
     }
 
-    def __init__(self, bot):
+    def __init__(self, bot: RT):
         self.bot = bot
         self.cache: Dict[int, dict] = {}
         self.now: Dict[int, dict] = {}
         super(commands.Cog, self).__init__(bot.session, VOICES)
         self.bot.loop.create_task(self.on_ready())
-
-        if self.bot.user.id != 888635684552863774:
-            try:
-                self.bot.web.add_route(
-                    self.routine_route, "/tts/routine/<file_name>"
-                )
-            except Exception as e:
-                print(e)
 
     async def on_ready(self):
         super(VoiceManager, self).__init__(
@@ -206,7 +204,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                     if text == alias:
                         if self.bot.user.id == 888635684552863774:
                             url = f"http{'://localhost' if self.bot.test else 's://rt-bot.com'}/" \
-                                f"tts/routine/{path[path.rfind('/') + 1:]}"
+                                f"api/tts/routine/get/{path[path.rfind('/') + 1:]}"
                         else:
                             url = path
                         break
@@ -570,7 +568,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         name="add", aliases=["あどど"],
         description="ネタ音声を追加します。 / Add rutine voice."
     )
-    @commands.cooldown(1, 5, commands.BucketType.user)
+    @commands.cooldown(1, 15, commands.BucketType.user)
     async def add_routine(
             self, ctx, *,
             aliases: Option(
@@ -662,6 +660,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         name="remove", aliases=["rm", "りむーぶ", "del", "delete"],
         description="ネタ音声を削除します。 / Remove routine voice."
     )
+    @commands.cooldown(1, 15, commands.BucketType.user)
     async def remove_routine(
             self, ctx, *,
             alias: Option(str, "target", "削除するネタ音声に登録してる言葉です。")
@@ -681,14 +680,26 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         rm, りむーぶ, del, delete"""
         data = await self.read_routine(ctx.author.id)
         if data and self.bot.user.id != 888635684552863774:
+            await ctx.trigger_typing()
+
+            files = []
             for key in list(data.keys()):
                 if alias in data[key]["aliases"]:
                     del data[key]
                     await async_remove(key)
+                    files.append(key)
             await self.write_routine(ctx.author.id, data)
 
             if ctx.author.id in self.cache:
                 self.cache["routine"] = data
+
+            async with self.bot.session.post(
+                f"{self.bot.get_url()}/api/tts/routine/delete",
+                json={"files": [path[path.rfind("/") + 1:] for path in files]}
+            ) as r:
+                self.bot.print("[TTS.RoutineDelete]", files)
+                ...
+
             await ctx.reply("Ok")
         else:
             await ctx.reply(
@@ -781,6 +792,8 @@ class TTS(commands.Cog, VoiceManager, DataManager):
             except Exception as e:
                 print("Passed error on TTS:", e)
 
+        self.bot.loop.create_task(self.tts_routine.close())
+
         self.auto_leave.cancel()
 
     async def do_nothing(self, _):
@@ -812,12 +825,36 @@ class TTS(commands.Cog, VoiceManager, DataManager):
             if all(member.bot for member in voice_client.channel.members):
                 self.bot.dispatch("voice_abandoned", voice_client)
 
-    async def routine_route(self, request, file_name):
-        if "%" in file_name:
-            file_name = unquote(file_name)
-        return await file_stream(
-            f"cogs/tts/routine/{file_name}"
-        )
+    @executor_function
+    def aioexists(self, path: str) -> bool:
+        return exists(path)
+
+    @websocket.websocket("/api/tts/routine/loader", auto_connect=True, reconnect=True, log=True)
+    async def tts_routine(self, ws: websocket.WebSocket, _):
+        "りつたんからTTSのRoutineをバックエンドを経由して使うためのウェブソケット通信です。"
+        await ws.send("ready")
+
+    @tts_routine.event("load")
+    async def test(self, ws: websocket.WebSocket, filename: str):
+        # Routineのファイルを返す。
+        if "%" in filename:
+            filename = unquote(filename)
+        # ファイルがあるか確認をする。
+        path = f"cogs/tts/routine/{filename}"
+        if await self.aioexists(path):
+            async with async_open(path, "rb") as f:
+                data = {
+                    "filename": filename,
+                    "data": encodebytes(await f.read()).decode()
+                }
+            async with self.bot.session.post(
+                f"{self.bot.get_url()}/api/tts/routine/post", json=data
+            ) as r:
+                self.bot.print("[TTS.RoutineUploader]", filename, await r.json())
+                ...
+            await ws.send("ok")
+        else:
+            await ws.send("not_found")
 
 
 def setup(bot):

@@ -3,8 +3,7 @@
 from discord.ext import commands
 import discord
 
-from rtlib import mysql, DatabaseManager
-from rtutil.SettingAPI import *
+from rtlib import DatabaseManager
 from typing import List
 
 
@@ -78,17 +77,6 @@ class NgWord(commands.Cog, DataManager):
             )
             await ctx.reply(embed=embed)
 
-    async def add_ngword(self, ctx, item):
-        # NGワードを追加する。
-        if ctx.mode == "read":
-            return item
-        else:
-            for word in item.text.splitlines():
-                try:
-                    await self.add(ctx.guild.id, word)
-                except ValueError:
-                    pass
-
     @ngword.command(
         name="add", aliases=["あどど"]
     )
@@ -101,7 +89,7 @@ class NgWord(commands.Cog, DataManager):
         Parameters
         ----------
         words : NGワード(複数)
-            空白を使うことで複数一括で登録できます。
+            改行を使うことで複数一括で登録できます。
 
         Examples
         --------
@@ -114,27 +102,15 @@ class NgWord(commands.Cog, DataManager):
         Parameters
         ----------
         words : NG word(s)
-            You can add multiple words at once by using a blank space.
+            By using line feeds, you can register multiple items at once.
 
         Examples
         --------
         `rt!ngword add Ahoy! Idiot`"""
-        await self.add_ngword(
-            Context("write", ctx.author),
-            TextBox("item1", "", words)
-        )
-        await ctx.send(f"{ctx.author.mention}, Ok", replace_language=False)
-
-    async def remove_ngword(self, ctx, item):
-        # NGワードを削除する。
-        if ctx.mode == "read":
-            return item
-        else:
-            for word in item.text.splitlines():
-                try:
-                    await self.remove(ctx.guild.id, word)
-                except ValueError:
-                    SettingAPI.error(f"{word}が見つかりませんでした。 / Not found {word}.")
+        await ctx.trigger_typing()
+        for word in words.splitlines():
+            await self.add(ctx.guild.id, word)
+        await ctx.reply("Ok")
 
     @ngword.command(
         name="remove", aliases=["りむーぶ", "rm", "delete", "del"]
@@ -158,11 +134,10 @@ class NgWord(commands.Cog, DataManager):
         Examples
         --------
         `rt!ngword remove Badngword"""
-        await self.remove_ngword(
-            Context("write", ctx.author),
-            TextBox("item1", "", words)
-        )
-        await ctx.send(f"{ctx.author.mention}, Ok", replace_language=False)
+        await ctx.trigger_typing()
+        for word in words.splitlines():
+            await self.remove(ctx.guild.id, word)
+        await ctx.reply("Ok")
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
