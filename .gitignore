@@ -18,3 +18,4 @@ cogs/tts/outputs
 cogs/tts/routine
 youtube-cookies.txt
 *.json
+.vscode
