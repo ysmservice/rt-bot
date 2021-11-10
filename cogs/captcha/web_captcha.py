@@ -1,101 +1,72 @@
 # RT - Captcha Web Manager
 
+from typing import TypedDict, Dict, Tuple
+
 import discord
 
-from typing import Dict, Tuple
 from time import time
-import reprypt
 import ujson
+
+
+class SuccessedUserData(TypedDict):
+    guild_id: int
+    user_id: int
+    channel: discord.TextChannel
 
 
 class WebCaptcha:
     def __init__(self, captcha_cog, secret: str):
         self.cog = captcha_cog
         self.secret: str = secret
-        self.queue: Dict[str, Tuple[int, float]] = {}
+        self.queue: Dict[str, Tuple[int, float, discord.TextChannel]] = {}
         self.base_url = (
-            "http://localhost:5500/"
+            "http://localhost/"
             if self.cog.bot.test
             else "https://rt-bot.com/"
         )
-        """
-        try:
-            self.cog.bot.web.add_route(
-                self.endpoint, "/api/captcha/<userdata>",
-                methods=["GET", "POST"]
-            )
-        except Exception as e:
-            print("Ignored error on WebCaptcha:", e)
-        """
 
-    def encrypt(self, data: dict) -> str:
-        return reprypt.encrypt(
-            ujson.dumps(data), self.secret,
-            converter=reprypt.convert_hex
-        )
+    async def success_user(self, userdata: SuccessedUserData):
+        "ユーザーの認証成功時の処理を実行する。"
+        if ((guild := self.cog.bot.get_guild(userdata["guild_id"]))
+            and (member := guild.get_member(userdata["user_id"]))):
+            # 役職などを取得して役職を付与する。
+            row = await self.cog.load(userdata["guild_id"])
+            role = guild.get_role(row[3])
 
-    def decrypt(self, data: str) -> dict:
-        return ujson.loads(reprypt.decrypt(
-            data, self.secret,
-            converter=reprypt.convert_hex
-        ))
-
-    async def endpoint(self, request, userdata):
-        # hCaptchaの認証のエンドポイントです。
-        # URLにあるユーザー特定用の暗号化されたユーザーデータを読み込む。
-        userdata = self.decrypt(userdata)
-        key = f"{userdata['guild_id']}-{userdata['user_id']}"
-        if key in self.queue:
-            # hCaptchaの認証結果を取得する。
-            data = {"secret": self.secret,
-                    "response": request.form.get("h-captcha-response")}
-            async with self.cog.bot.session.post(
-                    "https://hcaptcha.com/siteverify",
-                    data=data) as r:
-                data = await r.json(loads=ujson.loads)
-
-            if data["success"]:
-                # もしhCaptchaの認証が成功しているなら。
-                if ((guild := self.cog.bot.get_guild(userdata["guild_id"]))
-                    and (member := guild.get_member(userdata["user_id"]))):
-                    # 役職などを取得して役職を付与する。
-                    row = await self.cog.load(userdata["guild_id"])
-                    role = guild.get_role(row[3])
-                    if role:
-                        try:
-                            await member.add_roles(role)
-                        except Exception as e:
-                            result = ("認証に失敗しました。"
-                                "付与する役職がRTの役職より下にあるか確認してください。\n"
-                                "Failed, make sure that the role position below the RT role position.")
-                        else:
-                            result = ("認証に成功しました。"
-                                      "役職が付与されました。\n"
-                                      "Success!")
-                            del self.queue[key]
-                    else:
-                        result = ("うぅ、、役職が見つからなかったから認証できなかったのです。"
-                                  "すみません！！\n"
-                                  "Ah, I couldn't find the role to add to you.")
+            if role:
+                try:
+                    await member.add_roles(role)
+                except discord.Forbidden:
+                    result = (
+                        "認証に失敗しました。"
+                        "付与する役職がRTの役職より下にあるか確認してください。\n"
+                        "Failed, make sure that the role position below the RT role position.\n"
+                    )
+                else:
+                    result = (
+                        "認証に成功しました。"
+                        "役職が付与されました。\n"
+                        "Success!"
+                    )
+                    del self.queue[f"{userdata['guild_id']}-{member.id}"]
             else:
-                result = ("認証に失敗しました。"
-                    "あなたがロボットではないことの確認ができなかったです。\n"
-                    "Failed, I couldn't make sure you were not Robot. I'm sorry!")
+                result = (
+                    "役職が見つからないので役職を付与できませんでした。"
+                    "すみません！！\n"
+                    "Ah, I couldn't find the role to add to you."
+                )
         else:
             result = (
-                "あなたが誰なのかわからないので"
-                "認証に失敗しました。"
-                "Discordに戻ってもう一度URLを開いてください。\n"
-                "Failed, Who are you? Please back to discord and open captcha link again."
+                "あなたの所在がわからないため認証に失敗しました。"
             )
-
-        return await self.cog.bot.web_manager.template(
-            "captcha_result.html", result=result
+        await userdata["channel"].send(
+            f"<@{userdata['user_id']}>, {result}"
         )
 
-    async def captcha(self, channel: discord.TextChannel,
-                      member: discord.Member) -> None:
-        self.queue[f"{member.guild.id}-{member.id}"] = (member.id, time())
+    async def captcha(
+        self, channel: discord.TextChannel, member: discord.Member
+    ) -> None:
+        self.queue[f"{member.guild.id}-{member.id}"] = (member.id, time(), channel)
         embed = discord.Embed(
             title={"ja": "ウェブ認証", "en": "Web Captcha"},
             description={

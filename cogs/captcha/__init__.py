@@ -1,15 +1,17 @@
 # RT - Captcha
 
+from typing import TypedDict
+
 from discord.ext import commands, tasks
 import discord
 
-from rtlib import DatabaseManager, mysql
-from sanic.exceptions import SanicException
+from asyncio import sleep
+from time import time
+
+from rtlib import DatabaseManager, mysql, websocket
 from .image_captcha import ImageCaptcha
 from .word_captcha import WordCaptcha
 from .web_captcha import WebCaptcha
-from asyncio import sleep
-from time import time
 
 
 class DataManager(DatabaseManager):
@@ -27,8 +29,10 @@ class DataManager(DatabaseManager):
             }
         )
 
-    async def save(self, cursor, channel: discord.TextChannel,
-                   mode: str, role_id: int, extras: dict) -> None:
+    async def save(
+        self, cursor, channel: discord.TextChannel,
+        mode: str, role_id: int, extras: dict
+    ) -> None:
         target = {"GuildID": channel.guild.id}
         change = {
             "ChannelID": channel.id, "Mode": mode,
@@ -53,10 +57,16 @@ class DataManager(DatabaseManager):
         return ()
 
 
+class Captchas(TypedDict):
+    image: ImageCaptcha
+    word: WordCaptcha
+    web: WebCaptcha
+
+
 class Captcha(commands.Cog, DataManager):
     def __init__(self, bot):
         self.bot = bot
-        self.captchas = {
+        self.captchas: Captchas = {
             "image": ImageCaptcha(self),
             "word": WordCaptcha(self),
             "web": WebCaptcha(
@@ -69,7 +79,8 @@ class Captcha(commands.Cog, DataManager):
         self.sitekey = (
             "20000000-ffff-ffff-ffff-000000000002"
             if bot.test else
-            "0a50268d-fa1e-405f-9029-710309aad1b0")
+            "0a50268d-fa1e-405f-9029-710309aad1b0"
+        )
         self.queue_killer.start()
         self.bot.loop.create_task(self.init_database())
 
@@ -185,25 +196,20 @@ class Captcha(commands.Cog, DataManager):
                 if now - captcha.queue[key][1] > 3600:
                     del captcha.queue[key]
 
-    async def captcha_redirect(self, request):
-        # ウェブ認証をする前に本人かどうかの確認をとるためにOAuth認証に通す。
-        for key in list(self.captchas["web"].queue.keys()):
-            guild_id = key[:key.find("-")]
-            if self.captchas["web"].queue[key][0] == request.ctx.user.id:
-                guild = self.bot.get_guild(int(guild_id))
-                if guild and guild.get_member(request.ctx.user.id):
-                    userdata = self.captchas["web"].encrypt(
-                        {"guild_id": guild.id, "user_id": request.ctx.user.id}
-                    )
-                    return await self.bot.web_manager.template(
-                        "captcha.html", userdata=userdata, sitekey=self.sitekey
-                    )
-                else:
-                    break
-        raise SanicException(
-            message="あなたが誰かどうか特定できませんでした。",
-            status_code=403
-        )
+    @websocket.websocket("/api/captcha")
+    async def websocket_(self, ws: websocket.WebSocket, _):
+        await ws.send("on_ready")
+
+    @websocket_.event("on_success")
+    async def on_seccess(self, ws: websocket.WebSocket, user_id: str):
+        for key, (_, _, channel) in list(self.captchas["web"].queues.items()):
+            if key.endswith(user_id):
+                await self.captchas["web"].success_user(
+                    {
+                        "user_id": user_id, "guild_id": key[:key.find("-")],
+                        "channel": channel
+                    }
+                )
 
 
 def setup(bot):
