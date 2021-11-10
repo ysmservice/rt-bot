@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from rtlib import Backend
 
 
-MAX_TIMEOUT = 60
+MAX_TIMEOUT = 4320
 
 
 class DataManager:
@@ -287,7 +287,7 @@ class RequireSend(commands.Cog, DataManager):
         timeout : float
             何分以内に入力しなければならないかです。  
             サーバーに参加した人がこれに設定した分指定したチャンネルに何も送信しなかったらキックされます。  
-            60分すなわち一時間以上に設定することはできません。
+            三日すなわち4320分以上に設定することはできません。
         channel : テキストチャンネルの名前かメンションまたはID, optinoal
             対象の入力必須とするチャンネルです。  
             もしこの引数を入力しなかった場合はコマンドを実行したチャンネルが代わりに設定されます。
@@ -304,7 +304,8 @@ class RequireSend(commands.Cog, DataManager):
         ----------
         timeout : float
             This is the number of minutes the input must be received.  
-            If no one who joins the server sends anything to the specified channel for the amount of time set here, it will be kicked.
+            If no one who joins the server sends anything to the specified channel for the amount of time set here, it will be kicked.  
+            Max is 4320.
         channel : Name, Mention or ID of the text channel, optinoal
             This is the channel to which the target input is required.  
             If this argument is not entered, the channel where the command was executed will be set instead.
