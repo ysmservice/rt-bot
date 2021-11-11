@@ -316,10 +316,8 @@ class MusicNormal(commands.Cog, DataManager):
         Aliases
         -------
         dis, leave, bye"""
-        if ctx.guild.voice_client:
-            await ctx.guild.voice_client.disconnect()
         if ctx.guild.id in self.now:
-            del self.now[ctx.guild.id]
+            self.shutdown_player(ctx.guild.id, reason="")
         await ctx.reply(
             {"ja": "⏹ 切断しました。",
              "en": "⏹ Disconnected!"}
@@ -1004,19 +1002,25 @@ class MusicNormal(commands.Cog, DataManager):
             if self.bot.test:
                 print("Error on tts:", e)
 
+    async def wrap_if(self, coro, condition):
+        if condition:
+            return await coro
+
     def shutdown_player(
         self, guild_id: int, reason: str, disconnect: bool = True,
         force: bool = False
     ) -> None:
-        if guild_id in self.now and (
-            not self.now[guild_id].voice_client.is_playing() or force
-        ):
+        if guild_id in self.now:
             self.now[guild_id].force_end = True
             self.now[guild_id].clear()
+            self.now[guild_id].skip()
             if disconnect:
                 for coro in list(map(self.wrap_error, (
-                        self.now[guild_id].voice_client.disconnect(force=True),
-                        self.now[guild_id].channel.send(reason)
+                        self.now[guild_id].voice_client.disconnect(),
+                        self.wrap_if(
+                            self.now[guild_id].channel.send(reason),
+                            lambda : reason
+                        )
                     )
                 )):
                     self.bot.loop.create_task(coro)

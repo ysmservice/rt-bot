@@ -60,7 +60,7 @@ class MusicPlayer:
             if c == 4:
                 return self.remove_queue(0)
 
-        if not self.force_end:
+        if not self.force_end and self.queues:
             try:
                 await self.play()
             except Exception as e:
