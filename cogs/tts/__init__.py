@@ -829,7 +829,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
     def aioexists(self, path: str) -> bool:
         return exists(path)
 
-    @websocket.websocket("/api/tts/routine/loader", auto_connect=True, reconnect=True, log=True)
+    @websocket.websocket("/api/tts/routine/loader", auto_connect=True, reconnect=True)
     async def tts_routine(self, ws: websocket.WebSocket, _):
         "りつたんからTTSのRoutineをバックエンドを経由して使うためのウェブソケット通信です。"
         await ws.send("ready")
