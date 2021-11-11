@@ -1,11 +1,13 @@
 # RT - Captcha Web Manager
 
-from typing import TypedDict, Dict, Tuple
+from typing import TYPE_CHECKING, TypedDict, Dict, Tuple
 
 import discord
 
 from time import time
-import ujson
+
+if TYPE_CHECKING:
+    from .__init__ import Captcha
 
 
 class SuccessedUserData(TypedDict):
@@ -15,7 +17,7 @@ class SuccessedUserData(TypedDict):
 
 
 class WebCaptcha:
-    def __init__(self, captcha_cog, secret: str):
+    def __init__(self, captcha_cog: "Captcha", secret: str):
         self.cog = captcha_cog
         self.secret: str = secret
         self.queue: Dict[str, Tuple[int, float, discord.TextChannel]] = {}
@@ -28,7 +30,7 @@ class WebCaptcha:
     async def success_user(self, userdata: SuccessedUserData):
         "ユーザーの認証成功時の処理を実行する。"
         if ((guild := self.cog.bot.get_guild(userdata["guild_id"]))
-            and (member := guild.get_member(userdata["user_id"]))):
+                and (member := guild.get_member(userdata["user_id"]))):
             # 役職などを取得して役職を付与する。
             row = await self.cog.load(userdata["guild_id"])
             role = guild.get_role(row[3])
@@ -48,7 +50,7 @@ class WebCaptcha:
                         "役職が付与されました。\n"
                         "Success!"
                     )
-                    del self.queue[f"{userdata['guild_id']}-{member.id}"]
+                    self.cog.remove_cache(member)
             else:
                 result = (
                     "役職が見つからないので役職を付与できませんでした。"

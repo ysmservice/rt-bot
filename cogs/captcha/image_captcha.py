@@ -72,6 +72,7 @@ class ImageCaptcha(ImageCaptcha):
                             {"ja": f"{message.author.mention}, 認証に成功しました。",
                              "en": f"{message.author.mention}, Success!"}
                         )
+                        self.cog.remove_cache(message.author)
                 else:
                     await message.channel.send(
                         {"ja": f"{message.author.mention}, 設定されている役職が見つからないため認証に失敗しました。",

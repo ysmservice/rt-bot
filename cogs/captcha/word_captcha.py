@@ -47,6 +47,7 @@ class WordCaptcha(commands.Cog):
                              "en": f"{message.author.mention}, Success!"}
                         )
                         await message.delete()
+                        self.cog.remove_cache(message.author)
                 else:
                     await message.channel.send(
                         {"ja": f"{message.author.mention}, 役職が見つからないため認証に失敗しました。",

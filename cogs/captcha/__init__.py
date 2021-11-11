@@ -1,14 +1,13 @@
 # RT - Captcha
 
-from typing import TypedDict
+from typing import TypedDict, Dict
 
 from discord.ext import commands, tasks
 import discord
 
-from asyncio import sleep
 from time import time
 
-from rtlib import DatabaseManager, mysql, websocket
+from rtlib import DatabaseManager, websocket
 from .image_captcha import ImageCaptcha
 from .word_captcha import WordCaptcha
 from .web_captcha import WebCaptcha
@@ -70,10 +69,11 @@ class Captcha(commands.Cog, DataManager):
             "image": ImageCaptcha(self),
             "word": WordCaptcha(self),
             "web": WebCaptcha(
-                self,
-                (self.bot.secret["test_hCaptcha"]
+                self, (
+                    self.bot.secret["test_hCaptcha"]
                     if bot.test else
-                 self.bot.secret["hCaptcha"])
+                    self.bot.secret["hCaptcha"]
+                )
             )
         }
         self.sitekey = (
@@ -82,6 +82,7 @@ class Captcha(commands.Cog, DataManager):
             "0a50268d-fa1e-405f-9029-710309aad1b0"
         )
         self.queue_killer.start()
+        self.cache: Dict[str, float] = {}
         self.bot.loop.create_task(self.init_database())
 
     @commands.command(
@@ -174,7 +175,9 @@ class Captcha(commands.Cog, DataManager):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
-        if not self.bot.is_ready():
+        if (not self.bot.is_ready() or member.bot
+                or (key := f"{member.guild.id}-{member.id}") in self.cache):
+            # 準備中,Botまたは既に認証を送信したのなら何もしない。
             return
 
         row = await self.load(member.guild.id)
@@ -183,11 +186,12 @@ class Captcha(commands.Cog, DataManager):
             channel = discord.utils.get(member.guild.text_channels, id=row[1])
             if channel:
                 await captcha.captcha(channel, member)
+            self.cache[key] = time() + 3600
 
     def cog_unload(self):
         self.queue_killer.cancel()
 
-    @tasks.loop(minutes=5)
+    @tasks.loop(minutes=1)
     async def queue_killer(self):
         # 放置されて溜まってしまっている認証queueを削除する。
         now = time()
@@ -195,21 +199,29 @@ class Captcha(commands.Cog, DataManager):
             for key in list(captcha.queue.keys()):
                 if now - captcha.queue[key][1] > 3600:
                     del captcha.queue[key]
+        # 溜まったキャッシュを削除する。
+        for key, timeout in list(self.cache.items()):
+            if timeout <= now:
+                del self.cache[key]
 
-    @websocket.websocket("/api/captcha")
+    def remove_cache(self, member: discord.Member) -> None:
+        del self.cache[f"{member.guild.id}-{member.id}"]
+
+    @websocket.websocket("/api/captcha/websocket", auto_connect=True, reconnect=True)
     async def websocket_(self, ws: websocket.WebSocket, _):
         await ws.send("on_ready")
 
     @websocket_.event("on_success")
     async def on_seccess(self, ws: websocket.WebSocket, user_id: str):
-        for key, (_, _, channel) in list(self.captchas["web"].queues.items()):
+        for key, (_, _, channel) in list(self.captchas["web"].queue.items()):
             if key.endswith(user_id):
                 await self.captchas["web"].success_user(
                     {
-                        "user_id": user_id, "guild_id": key[:key.find("-")],
+                        "user_id": int(user_id), "guild_id": int(key[:key.find("-")]),
                         "channel": channel
                     }
                 )
+            del self.captchas["web"].queue[key]
 
 
 def setup(bot):

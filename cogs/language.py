@@ -107,10 +107,10 @@ class Language(commands.Cog):
                 if isinstance(text, str) and text[0] == "{" and text[-1] == "}":
                     try:
                         result = eval(text)
-                    except ValueError as e:
+                    except ValueError:
                         result = str(text)
                     else:
-                        result = result.get(lang, result["ja"])
+                        result = result.get(lang, result.get("ja", text))
                 elif isinstance(text, dict):
                     result = text.get(lang, text["ja"])
                 else:
