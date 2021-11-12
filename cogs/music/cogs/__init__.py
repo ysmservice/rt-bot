@@ -21,7 +21,7 @@ async def get_music(
 
     if "nicovideo.jp" in url or "nico.ms" in url:
         return await niconico.get_music(url, author, loop, **kwargs)
-    elif "www.youtube.com" in url or "youtu.be" in url:
+    elif "youtube.com" in url or "youtu.be" in url:
         if "list" in url:
             return await youtube.get_playlist(url, author, loop, **kwargs)
         else:
