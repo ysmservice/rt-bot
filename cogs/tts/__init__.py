@@ -124,6 +124,11 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                 "ja": "ボイスチャンネルに接続してください。",
                 "en": "..."
             }
+        elif ctx.guild.id in self.bot.cogs["MusicNormal"].now:
+            data = {
+                "ja": "音楽プレイヤーと同時に使用することはできません。\nサブのRTであるりつたんを使用してください。",
+                "en": "..."
+            }
         else:
             if hasattr(ctx, "interaction"):
                 reply = ctx.interaction.edit_original_message
@@ -783,6 +788,13 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         await ctx.reply("下のメニューバーから声を選択してください。", view=view)
 
     def cog_unload(self):
+        # 読み上げを終わらせておく。
+        for guild_id in list(self.now.keys()):
+            self.bot.loop.create_task(
+                self.now[guild_id]["guild"].voice_client.disconnect()
+            )
+            del self.now[guild_id]
+
         self.now = {}
 
         # 削除されていないファイルがあるならそのファイルを削除する。

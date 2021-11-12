@@ -181,7 +181,7 @@ class MusicNormal(commands.Cog, DataManager):
             return await ctx.reply(
                 content={
                     "ja": "読み上げと同時に使用することはできません。\nサブのRTであるりつたんを使用してください。",
-                    "en": 'Cannot be used at the same time as reading out loud.\nUse 'りつたん'(Ritsu Chan), the sub RT, for this purpose.'
+                    "en": "Cannot be used at the same time as reading out loud.\nPlease use the sub RT, Ritsu Chan."
                 }
             )
 
