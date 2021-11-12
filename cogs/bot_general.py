@@ -1,9 +1,12 @@
 # RT - Bog General
 
+from typing import Dict
+
 from discord.ext import commands, tasks
 import discord
 
 from traceback import TracebackException
+from collections import defaultdict
 from inspect import cleandoc
 from itertools import chain
 from random import choice
@@ -81,7 +84,12 @@ class BotGeneral(commands.Cog):
     def __init__(self, bot: RT):
         self.bot, self.rt = bot, bot.data
         self.wslatency = "..."
+        self.cache: Dict[int, Dict[str, float]] = defaultdict(dict)
+        self.remove_cache.start()
 
+        self.make_embed_template()
+
+    def make_embed_template(self):
         # RT情報Embedsを作る。
         embeds = self.info_embeds = []
         # RTの情報のEmbedを作る。
@@ -132,6 +140,7 @@ class BotGeneral(commands.Cog):
 
     def cog_unload(self) -> None:
         self.status_updater.cancel()
+        self.remove_cache.cancel()
 
     @tasks.loop(seconds=60)
     async def status_updater(self) -> None:
@@ -220,8 +229,18 @@ class BotGeneral(commands.Cog):
         else:
             await ctx.reply(f"{secret_arg}...、あなた何奴！？")
 
+    @tasks.loop(seconds=5)
+    async def remove_cache(self):
+        # クールダウンを一度送信したら次送信しないようにするために使うキャッシュの期限切れの削除をする。
+        now = time()
+        for aid, cmds in list(self.cache.items()):
+            for cmd, timeout in list(cmds.items()):
+                if now > timeout:
+                    print(now, aid, cmd)
+                    del self.cache[aid][cmd]
+
     @commands.Cog.listener()
-    async def on_command_error(self, ctx, error):
+    async def on_command_error(self, ctx: commands.Context, error: Exception):
         # エラー時のメッセージ。翻訳はdescriptionのみ。
         kwargs, color = {}, self.bot.colors["error"]
         if isinstance(error, commands.errors.CommandNotFound):
@@ -247,14 +266,19 @@ class BotGeneral(commands.Cog):
                 "en": f"It can't found that command.\n`rt!help <word>`This can search command.\nSuggetion:{suggestion}"}
             color = self.bot.colors["unknown"]
         elif isinstance(error, commands.errors.CommandOnCooldown):
-            title = "429 Too Many Requests"
-            description = {"ja": ("現在このコマンドはクールダウンとなっています。\n"
-                                  + "{:.2f}秒後に実行できます。".format(
-                                      error.retry_after)),
-                           "en": ("Currently, this command is on cooldown.\n"
-                                  + "You can do this command after {:.2f} seconds.".format(
-                                      error.retry_after))}
-            color = self.bot.colors["unknown"]
+            if ctx.command.qualified_name in self.cache.get(ctx.author.id, {}):
+                return
+            else:
+                title = "429 Too Many Requests"
+                description = {"ja": ("現在このコマンドはクールダウンとなっています。\n"
+                                    + "{:.2f}秒後に実行できます。".format(
+                                        error.retry_after)),
+                            "en": ("Currently, this command is on cooldown.\n"
+                                    + "You can do this command after {:.2f} seconds.".format(
+                                        error.retry_after))}
+                self.cache[ctx.author.id][ctx.command.qualified_name] = \
+                    time() + error.retry_after
+                color = self.bot.colors["unknown"]
         elif isinstance(error, (commands.errors.MemberNotFound,
                         commands.errors.UserNotFound)):
             title = "400 Bad Request"
