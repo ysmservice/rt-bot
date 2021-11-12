@@ -177,6 +177,14 @@ class MusicNormal(commands.Cog, DataManager):
         `rt!play https://www.youtube.com/watch?v=Th-Z6le3bHA`
         `rt!play Never Gonna Give You Up`
         `/play We are number one`"""
+        if ctx.guild.id in self.bot.cogs["TTS"].now:
+            return await ctx.reply(
+                content={
+                    "ja": "読み上げと同時に使用することはできません。\nサブのRTであるりつたんを使用してください。",
+                    "en": 'Cannot be used at the same time as reading out loud.\nUse 'りつたん'(Ritsu Chan), the sub RT, for this purpose.'
+                }
+            )
+
         if ctx.guild.id not in self.now:
             # もし接続していないなら接続をする。
             if ctx.author.voice:
