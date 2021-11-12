@@ -5,7 +5,7 @@ from typing import Any, Literal
 from discord.ext import commands, tasks
 import discord
 
-from rtlib import DatabaseManager, mysql
+from rtlib import DatabaseManager
 from asyncio import sleep
 from ujson import loads
 from time import time
@@ -67,7 +67,7 @@ class DataManager(DatabaseManager):
             return await cursor.cursor.fetchall()
 
 
-def get_extras(mode: str, callback) -> dict:
+def get_extras(mode: str) -> dict:
     return {
         "headding": {
             "ja": f"{mode}の通知のON/OFFをします。",
@@ -174,7 +174,7 @@ class Bump(commands.Cog, DataManager):
         await self.write("bump", ctx.guild.id, onoff, role)
         await ctx.reply("Ok", replace_language=False)
 
-    @commands.command(extras=get_extras("up", callback))
+    @commands.command(extras=get_extras("up"))
     @commands.has_permissions(administrator=True)
     async def up(self, ctx, onoff: bool, *, role: discord.Role = None):
         await self.write("up", ctx.guild.id, onoff, role)
