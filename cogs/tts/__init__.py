@@ -133,6 +133,8 @@ class TTS(commands.Cog, VoiceManager, DataManager):
             if hasattr(ctx, "interaction"):
                 reply = ctx.interaction.edit_original_message
                 await ctx.reply("Now loading...")
+            else:
+                await ctx.trigger_typing()
             data = {
                 "ja": "接続しました。",
                 "en": "..."
