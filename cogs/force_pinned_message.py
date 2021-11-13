@@ -247,7 +247,8 @@ class ForcePinnedMessage(commands.Cog, DataManager):
                     avatar_url=member.avatar.url, wait=True, **kwargs
                 )
             except Exception as e:
-                print("(ignore) Error on ForcePinnedMessage:", e)
+                if not isinstance(e, (discord.Forbidden, discord.HTTPException)):
+                    print("(ignore) Error on ForcePinnedMessage:", e)
 
             if message.guild and message.channel and member:
                 await self.setting(
