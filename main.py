@@ -9,6 +9,7 @@ import discord
 
 from aiohttp import ClientSession
 from ujson import load, dumps
+from uvloop import install
 from os import listdir
 from sys import argv
 
@@ -21,6 +22,7 @@ from rtlib import RT, mysql, setup
 
 with open("auth.json", "r") as f:
     secret = load(f)
+install()
 
 
 # Botの準備を行う。

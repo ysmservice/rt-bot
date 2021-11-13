@@ -10,8 +10,8 @@ log
 pypi
 templates
 parser_names.csv
-cogs/tts/lib/
-cogs/tts/dic/
+cogs/tts/lib
+cogs/tts/dic
 cogs/tts/outputs
 cogs/tts/routine
 youtube-cookies.txt
