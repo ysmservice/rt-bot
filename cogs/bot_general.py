@@ -236,7 +236,6 @@ class BotGeneral(commands.Cog):
         for aid, cmds in list(self.cache.items()):
             for cmd, timeout in list(cmds.items()):
                 if now > timeout:
-                    print(now, aid, cmd)
                     del self.cache[aid][cmd]
 
     @commands.Cog.listener()

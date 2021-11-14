@@ -155,7 +155,7 @@ class WebSocket:
 
     def __new__(
         cls, cog: commands.Cog, uri: str,
-        event_handlers: Dict[str, Callable[..., Coroutine]], log: bool = False,
+        event_handlers: Dict[str, Callable[..., Coroutine]], log: bool = True,
         auto_connect: bool = False, reconnect: bool = False, **kwargs
     ) -> Tuple["WebSocket", Coroutine]:
         self = super().__new__(cls)
@@ -191,17 +191,15 @@ class WebSocket:
                     self.uri, **self._kwargs
                 )
             except OSError as e:
-                if "Connect call failed" in str(e):
-                    if self._reconnect:
-                        self.print("Failed to connect to websocket, I will try to reconnect.")
-                        await sleep(3)
-                        continue
+                if self._reconnect:
+                    self.print("Failed to connect to websocket, I will try to reconnect.")
+                    await sleep(3)
+                    continue
+                else:
+                    if pcfe:
+                        return
                     else:
-                        if pcfe:
-                            return
-                        else:
-                            raise ConnectionFailed("WebSocketサーバーに接続できませんでした。")
-                raise e
+                        raise ConnectionFailed("WebSocketサーバーに接続できませんでした。")
             else:
                 break
 
