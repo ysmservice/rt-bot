@@ -31,7 +31,7 @@ class RT(commands.AutoShardedBot):
 
     def get_url(self) -> str:
         origin = self.get_ip()
-        return f"http{'s' if origin[0] == 'r' else ''}://{origin}"
+        return f"http{'s' if origin[0] == '1' else ''}://{origin}"
 
     async def close(self) -> None:
         self.print("Closing...")
