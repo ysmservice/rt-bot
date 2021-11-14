@@ -318,7 +318,10 @@ class ServerTool(commands.Cog):
             }, "parent": "ServerUseful"
         }
     )
-    async def embed(self, ctx, color: Union[discord.Color, str], *, content):
+    @commands.cooldown(1, 10, commands.BucketType.channel)
+    async def embed(
+        self, ctx: commands.Context, color: Union[discord.Color, str], *, content
+    ):
         """!lang ja
         -------
         Embed(埋め込み)を作成します。  
@@ -348,7 +351,8 @@ class ServerTool(commands.Cog):
         -----
         デフォルトでは作られる埋め込みの投稿者は実行者の名前そしてアイコンになります。  
         もしRTの名前でアイコンで埋め込みを投稿して欲しい場合は`--rticon`をタイトルの前に入れてください。  
-        `rt>embed`をチャンネルのトピックに入れることで、そのチャンネルに送ったメッセージを自動でEmbedにしてくれます。
+        `rt>embed`をチャンネルのトピックに入れることで、そのチャンネルに送ったメッセージを自動でEmbedにしてくれます。  
+        また既に作ったものに返信をしてコマンドを実行すれば編集ができます。
 
         Examples
         --------
@@ -403,10 +407,26 @@ class ServerTool(commands.Cog):
                  "en": "Bad color argument."}
             )
         else:
-            send = ctx.channel.webhook_send
-            if rt:
+            if ctx.message.reference:
+                message = await ctx.channel.fetch_message(
+                    ctx.message.reference.message_id
+                )
                 kwargs = {"embed": kwargs["embed"]}
-                send = ctx.send
+                if message.author.id == self.bot.user.id:
+                    send = message.edit
+                else:
+                    wb = discord.utils.get(
+                        await message.channel.webhooks(),
+                        name="R2-Tool" if self.bot.test else "RT-Tool"
+                    )
+                    return await wb.edit_message(
+                        message.id, **kwargs
+                    )
+            else:
+                send = ctx.channel.webhook_send
+                if rt:
+                    kwargs = {"embed": kwargs["embed"]}
+                    send = ctx.send
 
             await send(**kwargs)
 
