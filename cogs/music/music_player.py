@@ -52,7 +52,8 @@ class MusicPlayer:
 
     async def _after(self, e, error: bool = False, c: int = 0):
         # 再生終了後に呼び出される関数で後処理をする。
-        self.queues[0].close()
+        if self.queues:
+            self.queues[0].close()
         if e:
             print("Error on Music:", e)
         if not self._loop or error:
