@@ -15,7 +15,7 @@ class Moderation(commands.Cog):
             }, "parent": "ServerSafety"
         }, aliases=["バン", "ばん", "BAN"]
     )
-    async def ban(self, ctx, members, mode="ban"):
+    async def ban(self, ctx, *, members, mode="ban"):
         """!lang ja
         --------
         メンバーをBANできます。
