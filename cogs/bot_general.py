@@ -359,19 +359,23 @@ class BotGeneral(commands.Cog):
             description = description[4096 - length + 1:]
         if "400" in title:
             # 引数がおかしい場合はヘルプボタンを表示する。
-            for name in self.bot.cogs["Help"].CATEGORIES:
-                if self.bot.cogs["Help"].CATEGORIES[name] == ctx.command.extras.get("parent", ""):
-                    break
             kwargs["view"] = componesy.View("BAView")
             kwargs["view"].add_item(
                 "link_button", label="ヘルプを見る", emoji="❔",
-                url=f"https://rt-bot.com/help.html?g={name}&c={ctx.command.name}"
+                url=self.get_command_url(ctx.command)
             )
 
         kwargs["embed"] = discord.Embed(
             title=title, description=description, color=color
         )
         await ctx.send(**kwargs)
+
+    def get_command_url(self, command: commands.Command) -> str:
+        "渡されたコマンドのヘルプのURLを返します。"
+        for name in self.bot.cogs["Help"].CATEGORIES:
+            if self.bot.cogs["Help"].CATEGORIES[name] == command.extras.get("parent", ""):
+                break
+        return f"https://rt-bot.com/help.html?g={name}&c={command.name}"
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
