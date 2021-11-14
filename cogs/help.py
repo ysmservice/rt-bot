@@ -59,7 +59,7 @@ class Help(commands.Cog):
             ) as r:
                 if (await r.text()) == "pong":
                     self.bot.dispatch("update_api")
-        except ClientConnectionError:
+        except Exception:
             self.bot.backend = False
         else:
             self.bot.backend = True
