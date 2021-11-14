@@ -30,8 +30,7 @@ class RT(commands.AutoShardedBot):
         return "localhost" if self.test else "146.59.153.178"
 
     def get_url(self) -> str:
-        origin = self.get_ip()
-        return f"http{'s' if origin[0] == '1' else ''}://{origin}"
+        return f"http://{self.get_ip()}"
 
     async def close(self) -> None:
         self.print("Closing...")
