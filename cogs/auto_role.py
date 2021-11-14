@@ -116,7 +116,10 @@ class AutoRole(commands.Cog, DataManager):
         row = await self.read(member.guild.id)
         if row:
             if (role := member.guild.get_role(row[1])):
-                await member.add_roles(role)
+                try:
+                    await member.add_roles(role)
+                except discord.Forbidden:
+                    pass
             else:
                 await self.delete(member.guild.id)
 
