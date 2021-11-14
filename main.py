@@ -16,8 +16,8 @@ from sys import argv
 from logging import handlers
 import logging
 
+from rtlib import RT, mysql, setup, websocket
 from data import data, is_admin, Colors
-from rtlib import RT, mysql, setup
 
 
 with open("auth.json", "r") as f:
@@ -36,6 +36,8 @@ bot = RT(
 )
 bot.secret = secret
 bot.test = argv[-1] != "production"
+if not bot.test:
+    websocket.WEBSOCKET_URI_BASE = "ws://146.59.153.178"
 bot.data = data
 bot.admins = data["admins"]
 bot.secret = secret
