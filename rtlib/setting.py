@@ -13,7 +13,7 @@ from aiohttp import ClientSession
 from inspect import signature
 from ujson import dumps
 
-from .websocket import websocket
+from . import websocket
 from .slash import Option
 
 if TYPE_CHECKING:
@@ -32,9 +32,12 @@ class CommandRunData(TypedDict):
 class Context:
     "ダッシュボードから呼ばれたコマンドで実行されるContextです。"
 
-    def __init__(self, bot: RT, data: CommandRunData, command: commands.Command):
+    def __init__(
+        self, cog: "SettingManager", data: CommandRunData, command: commands.Command
+    ):
         self.data = data
-        self.bot = bot
+        self.setting_manager = cog
+        self.bot: "RT" = self.setting_manager.bot
         self.guild: Optional[discord.Guild] = self.bot.get_guild(data["guild_id"])
         self.channel: Optional[
             Union[discord.abc.GuildChannel, discord.DMChannel]
@@ -50,7 +53,7 @@ class Context:
         self.cog = command.cog
         self.voice_client: Optional[discord.VoiceClient] = \
             getattr(self.guild, "voice_client", None)
-        self.prefix = "r2!" if bot.test else "rt!"
+        self.prefix = "r2!" if self.bot.test else "rt!"
         self.me: Union[discord.Member, discord.ClientUser] = \
             getattr(self.guild, "me", self.bot.user)
         self.message = self
@@ -63,7 +66,7 @@ class Context:
         self, content: str = None, embed: discord.Embed = None, *args, **kwargs
     ):
         "返信をします。"
-        async with self.bot.session.post(
+        async with self.setting_manager.session.post(
             f"{self.bot.get_url()}/api/settings/reply/{self.data['ip']}",
             data=self.bot.cogs["Language"].get_text(
                 embed.to_dict() if embed else content, self.author.id
@@ -87,12 +90,12 @@ class SettingManager(commands.Cog):
                 commands.Command, Literal["user", "guild", "channel"]
             ]
         ] = {}
+        self.before = {}
 
     async def session(self) -> ClientSession:
         if not hasattr(self, "session"):
             self._session = ClientSession(
-                loop=self.bot.loop, json_serialize=dumps,
-                raise_for_errors=True
+                loop=self.bot.loop, json_serialize=dumps
             )
         return self._session
 
@@ -107,12 +110,12 @@ class SettingManager(commands.Cog):
             "Role", "Message", "Guild"
         ):
             return [annotation.__name__]
-        elif isinstance(origin := get_origin(annotation), Union):
-            return ["Literal"] + [
+        elif (origin := get_origin(annotation)) == Union:
+            return ["Union"] + [
                 self.get_parsed_args(child) for child in get_args(annotation)
             ]
-        elif isinstance(origin, Literal):
-            return ["str"] * len(get_args(annotation))
+        elif origin == Literal:
+            return ["Literal"] + list(get_args(annotation))
         else:
             return ["str"]
 
@@ -123,31 +126,39 @@ class SettingManager(commands.Cog):
                 command, command.__original_kwargs__["setting"]
             )
 
-    @commands.Cog.listener()
-    async def on_update_api(self):
+    @commands.Cog.listener("on_update_api")
+    async def update(self):
         "APIにBotにあるコマンドの設定のJSONデータを送る。"
         # データを作る。
         data = defaultdict(dict)
-        for command, (category, mode) in self.data.values():
+        for command, category in self.data.values():
             kwargs = {
-                parameter.name: self.get_parsed_args(parameter.annotation)
-                for parameter in signature(command._callback).parameters.values()
+                parameter.name: (
+                    self.get_parsed_args(parameter.annotation),
+                    "null" if parameter.default == parameter.empty
+                    else parameter.default, parameter.kind == parameter.KEYWORD_ONLY
+                ) for parameter in signature(command._callback).parameters.values()
             }
             data[category][command.name] = {
-                "help": self.bot.cogs["Help"].get_command_url(command),
-                "kwargs": kwargs, "mode": mode, "sub_category": getattr(
+                "help": self.bot.cogs["BotGeneral"].get_command_url(command),
+                "kwargs": kwargs, "sub_category": getattr(
                     command.parent, "name", None
                 ), "headding": command.extras.get("headding")
             }
-        # データを送る。
-        async with self.bot.session.post(
-            f"{self.bot.get_url()}/api/settings/commands/update",
-            json=data
-        ) as r:
-            if self.bot.test:
-                self.bot.print("[SettingManager]", "Posted command setting data.")
+        if self.before != data:
+            # データを送る。
+            async with self.bot.session.post(
+                f"{self.bot.get_url()}/api/settings/commands/update",
+                json=data
+            ) as r:
+                if self.bot.test:
+                    self.bot.print(
+                        "[SettingManager]", "Posted command setting data.",
+                        await r.text()
+                    )
+            self.before = data
 
-    @websocket.websocket("/api/settings/websocket")
+    @websocket.websocket("/api/settings/websocket", auto_connect=True, reconnect=True)
     async def setting_websocket(self, ws: websocket.WebSocket, _):
         # ユーザーがダッシュボードから設定を更新した際に、すぐに反応できるようにするためのものです。
         await ws.send("on_ready")
@@ -167,10 +178,47 @@ class SettingManager(commands.Cog):
     async def run_command(self, command: commands.Command, data: CommandRunData):
         "コマンドを走らせます。"
         try:
-            if await command.can_run(ctx := Context(self.bot, data, command)):
+            if await command.can_run(ctx := Context(self, data, command)):
                 return await command(ctx, **data["kwargs"])
         except Exception as e:
             self.bot.dispatch("command_error", ctx, e)
+
+    @commands.group("settest")
+    async def setting_test(self, ctx: Context):
+        ...
+
+    @setting_test.command(
+        extras={
+            "headding": {
+                "ja": "ダッシュボードテスト用のコマンド",
+                "en": "Test command for dashboard"
+            }, "parent": "Other"
+        }, setting="guild"
+    )
+    async def setting_test_guild(
+        self, ctx: Context, normal, number: int, member: discord.Member,
+        channel: discord.TextChannel, member_or_str: Union[discord.Member, str],
+        literal: Literal["1", "2", "3"], embed: bool, default="aiueo",
+        *, bigbox
+    ):
+        content = "\n".join(
+            f"* {key}: {value}" for key, value in {
+                "normal": normal, "number": number, "member": member,
+                "channel": channel, "member_or_str": member_or_str,
+                "literal": literal, "embed": embed, "default": default,
+                "bigbox": bigbox.replace("\n", " [改行] ")
+            }
+        )
+        content = {
+            "content": f"# 返信テスト (content)\n{content}",
+            "embed": discord.Embed(title="返信テスト (embed)", description=content)
+        }
+        del content["content" if embed else "embed"]
+        await ctx.reply(**content)
+
+    @setting_test.command(setting="channel", aliases=["stc"])
+    async def setting_test_channel(self, ctx: Context):
+        await ctx.reply(f"You selected {ctx.channel.name}.")
 
 
 def setup(bot):
