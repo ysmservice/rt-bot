@@ -155,7 +155,7 @@ class WebSocket:
 
     def __new__(
         cls, cog: commands.Cog, uri: str,
-        event_handlers: Dict[str, Callable[..., Coroutine]], log: bool = True,
+        event_handlers: Dict[str, Callable[..., Coroutine]], log: bool = False,
         auto_connect: bool = False, reconnect: bool = False, **kwargs
     ) -> Tuple["WebSocket", Coroutine]:
         self = super().__new__(cls)

@@ -15,7 +15,7 @@ class Moderation(commands.Cog):
             }, "parent": "ServerSafety"
         }, aliases=["バン", "ばん", "BAN"]
     )
-    async def ban(self, ctx, *members: List[discord.Member]):
+    async def ban(self, ctx, members, mode="ban"):
         """!lang ja
         --------
         メンバーをBANできます。
@@ -38,19 +38,24 @@ class Moderation(commands.Cog):
         Examples
         --------
         `rt!ban @tasuren @tasuren-sub`"""
+        members = [
+            await commands.converter.MemberConverter().convert(ctx, member)
+            for member in members
+        ]
         excepts = []
         for m in members:
             try:
-                await ctx.guild.ban(m, reason=f"実行者:{ctx.author}")
+                await getattr(ctx.guild, mode)(m, reason=f"実行者:{ctx.author}")
             except:
                 excepts.append(m)
-        if len(excepts) == 0:
-            await ctx.reply("完了。", delete_after=5)
-        else:
+        if excepts:
+            mode = mode.upper()
             await ctx.reply(
-                f"BANを実行しました。\n(しかし、{', '.join(excepts)}のBANに失敗しました。)",
+                f"{mode}を実行しました。\n(しかし、{', '.join(map(str, excepts))}の{mode}に失敗しました。)",
                 delete_after=5
             )
+        else:
+            await ctx.reply("ok", delete_after=5)
 
     @commands.has_permissions(kick_members=True)
     @commands.command(
@@ -62,41 +67,11 @@ class Moderation(commands.Cog):
         }, aliases=["キック", "きっく", "KICK"]
     )
     async def kick(self, ctx, *members: List[discord.Member]):
-        """!lang ja
-        --------
-        メンバーをキックできます。
+        await self.ban(ctx, *members, mode="kick")
 
-        Parameters
-        ----------
-        members : メンバーのメンションか名前
-            誰をキックするかのメンションです。  
-            空白で区切って複数人指定もできます。
+    kick._callback.__doc__ = ban._callback.__doc__.replace("ban", "kick").replace("BAN", "Kick") \
+        .replace("Ban", "Kick")
 
-        !lang en
-        --------
-        Kick members
-
-        Parameters
-        ----------
-        members : Mention or Name of members
-            Target members
-
-        Examples
-        --------
-        `rt!kick @tasuren @tasuren-sub`"""
-        excepts = []
-        for m in members:
-            try:
-                await ctx.guild.kick(m, reason=f"実行者:{ctx.author}")
-            except:
-                excepts.append(m)
-        if len(excepts) == 0:
-            await ctx.reply("完了。", delete_after=5)
-        else:
-            await ctx.reply(
-                f"キックを実行しました。\n(しかし、{', '.join(excepts)}のキックに失敗しました。)",
-                delete_after=5
-            )
 
 def setup(bot):
     bot.add_cog(Moderation(bot))
