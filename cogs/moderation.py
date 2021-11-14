@@ -67,7 +67,7 @@ class Moderation(commands.Cog):
         }, aliases=["キック", "きっく", "KICK"]
     )
     async def kick(self, ctx, *members: List[discord.Member]):
-        await self.ban(ctx, *members, mode="kick")
+        await self.ban(ctx, members=members, mode="kick")
 
     kick._callback.__doc__ = ban._callback.__doc__.replace("ban", "kick").replace("BAN", "Kick") \
         .replace("Ban", "Kick")
