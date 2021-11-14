@@ -24,7 +24,7 @@ class Moderation(commands.Cog):
         ----------
         members : メンバーのメンションか名前
             誰をBANするかです。  
-            空白で区切って複数人指定もできます。
+            カンマで区切って複数人指定もできます。
 
         !lang en
         --------
@@ -40,7 +40,7 @@ class Moderation(commands.Cog):
         `rt!ban @tasuren @tasuren-sub`"""
         members = [
             await commands.converter.MemberConverter().convert(ctx, member)
-            for member in members
+            for member in members.split(",")
         ]
         excepts = []
         for m in members:
