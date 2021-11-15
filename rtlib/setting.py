@@ -22,11 +22,19 @@ if TYPE_CHECKING:
 
 class CommandRunData(TypedDict):
     command: str
-    kwargs: Dict[str, str]
+    kwargs: Dict[str, Union[str, int, float, bool]]
     guild_id: Union[int, Literal[0]]
     user_id: int
     channel_id: Union[int, Literal[0]]
     ip: str
+
+
+class Setting:
+    def __init__(
+        self, mode: Literal["guild", "channel", "user"],
+        name: Optional[str] = None
+    ):
+        self.mode, self.name = mode, name
 
 
 class Context:
@@ -86,9 +94,7 @@ class SettingManager(commands.Cog):
     def __init__(self, bot: "RT"):
         self.bot = bot
         self.data: Dict[
-            str, Tuple[
-                commands.Command, Literal["user", "guild", "channel"]
-            ]
+            str, Tuple[commands.Command, Setting]
         ] = {}
         self.before = {}
 
@@ -104,20 +110,18 @@ class SettingManager(commands.Cog):
         if isinstance(annotation, Option):
             annotation = annotation.annotation
         if annotation in (str, int, float, bool):
-            return [annotation.__name__]
+            return annotation.__name__
         elif getattr(annotation, "__name__", "") in (
             "Member", "User", "TextChannel", "VoiceChannel", "StageChannel", "Thread",
             "Role", "Message", "Guild"
         ):
-            return [annotation.__name__]
+            return "str"
         elif (origin := get_origin(annotation)) == Union:
-            return ["Union"] + [
-                self.get_parsed_args(child) for child in get_args(annotation)
-            ]
+            return "str"
         elif origin == Literal:
-            return ["Literal"] + list(get_args(annotation))
+            return list(get_args(annotation))
         else:
-            return ["str"]
+            return "str"
 
     @commands.Cog.listener()
     async def on_command_add(self, command: commands.Command):
@@ -131,33 +135,32 @@ class SettingManager(commands.Cog):
         "APIにBotにあるコマンドの設定のJSONデータを送る。"
         # データを作る。
         data = defaultdict(dict)
-        for command, category in self.data.values():
+        for command, setting in self.data.values():
             kwargs = {
                 parameter.name: (
                     self.get_parsed_args(parameter.annotation),
-                    "null" if parameter.default == parameter.empty
+                    "" if parameter.default == parameter.empty
                     else parameter.default, parameter.kind == parameter.KEYWORD_ONLY
                 ) for parameter in signature(command._callback).parameters.values()
+                if parameter.name not in ("self", "ctx")
             }
-            data["guild" if category == "channel" else category][command.name] = {
-                "help": self.bot.cogs["BotGeneral"].get_command_url(command),
-                "kwargs": kwargs, "sub_category": getattr(
-                    command.parent, "name", None
-                ), "headding": command.extras.get("headding"),
-                "require_channel": category == "channel"
-            }
-        if self.before != data:
-            # データを送る。
-            async with self.bot.session.post(
-                f"{self.bot.get_url()}/api/settings/commands/update",
-                json=data
-            ) as r:
-                if self.bot.test:
-                    self.bot.print(
-                        "[SettingManager]", "Posted command setting data.",
-                        await r.text()
-                    )
-            self.before = data
+            data["guild" if setting.mode == "channel" else setting.mode][command.name] = {
+                    "help": self.bot.cogs["BotGeneral"].get_command_url(command),
+                    "kwargs": kwargs, "sub_category": getattr(
+                        command.parent, "name", None
+                    ), "headding": command.extras.get("headding"),
+                    "require_channel": setting.mode == "channel",
+                    "display_name": setting.name or command.name
+                }
+        # データを送る。
+        async with self.bot.session.post(
+            f"{self.bot.get_url()}/api/settings/commands/update",
+            json=data
+        ) as r:
+            if self.bot.test:
+                ...
+                # self.bot.print("[SettingUpdater]", await r.text())
+        self.before = data
 
     @websocket.websocket("/api/settings/websocket", auto_connect=True, reconnect=True)
     async def setting_websocket(self, ws: websocket.WebSocket, _):
@@ -194,7 +197,7 @@ class SettingManager(commands.Cog):
                 "ja": "ダッシュボードテスト用のコマンド",
                 "en": "Test command for dashboard"
             }, "parent": "Other"
-        }, setting="guild"
+        }, setting=Setting("guild", "Setting Test Command")
     )
     async def setting_test_guild(
         self, ctx: Context, normal, number: int, member: discord.Member,
@@ -217,7 +220,7 @@ class SettingManager(commands.Cog):
         del content["content" if embed else "embed"]
         await ctx.reply(**content)
 
-    @setting_test.command(setting="channel", aliases=["stc"])
+    @setting_test.command(setting=Setting("channel"), aliases=["stc"])
     async def setting_test_channel(self, ctx: Context):
         await ctx.reply(f"You selected {ctx.channel.name}.")
 

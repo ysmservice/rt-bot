@@ -8,6 +8,8 @@ from aiofiles import open as async_open
 from json import loads
 from copy import copy
 
+from discord.mentions import A
+
 from data import is_admin
 
 
@@ -181,6 +183,15 @@ class Language(commands.Cog):
         for row in await cursor.fetchall():
             if row:
                 self.cache[row[0]] = row[1]
+
+    @commands.Cog.listener()
+    async def on_update_api(self):
+        async with self.bot.session.post(
+            f"{self.bot.get_url()}/api/account/language", json=self.cache
+        ) as r:
+            if self.bot.test:
+                ...
+                # self.bot.print("[LanguageUpdate]", await r.text())
 
     async def on_ready(self):
         async with self.pool.acquire() as conn:
