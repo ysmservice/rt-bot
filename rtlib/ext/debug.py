@@ -105,7 +105,7 @@ class Debug(commands.Cog):
     def make_monitor_embed(self):
         embed = discord.Embed(
             title="RT-Run info",
-            description="Running on Arch Linux",
+            description="Running on Ubuntu Linux",
             color=0x0066ff
         )
         embed.add_field(
