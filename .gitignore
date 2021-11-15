@@ -18,3 +18,4 @@ youtube-cookies.txt
 data/*.json
 auth.json
 .vscode
+.DS_Store

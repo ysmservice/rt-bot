@@ -213,6 +213,8 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         for channel_id in list(self.queue.keys()):
             if channel_id in self.remove_queue:
                 self.remove_queue.remove(channel_id)
+            if channel_id not in self.queue:
+                continue
             message, fpm = self.queue[channel_id]
             new_message = None
             try:
