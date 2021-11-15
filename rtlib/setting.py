@@ -139,11 +139,12 @@ class SettingManager(commands.Cog):
                     else parameter.default, parameter.kind == parameter.KEYWORD_ONLY
                 ) for parameter in signature(command._callback).parameters.values()
             }
-            data[category][command.name] = {
+            data["guild" if category == "channel" else category][command.name] = {
                 "help": self.bot.cogs["BotGeneral"].get_command_url(command),
                 "kwargs": kwargs, "sub_category": getattr(
                     command.parent, "name", None
-                ), "headding": command.extras.get("headding")
+                ), "headding": command.extras.get("headding"),
+                "require_channel": category == "channel"
             }
         if self.before != data:
             # データを送る。
