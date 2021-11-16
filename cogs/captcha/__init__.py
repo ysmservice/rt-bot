@@ -7,7 +7,7 @@ import discord
 
 from time import time
 
-from rtlib import DatabaseManager, websocket
+from rtlib import RT, DatabaseManager, websocket
 from .image_captcha import ImageCaptcha
 from .word_captcha import WordCaptcha
 from .web_captcha import WebCaptcha
@@ -62,9 +62,45 @@ class Captchas(TypedDict):
     web: WebCaptcha
 
 
+class ClickCaptchaView(discord.ui.View):
+    def __init__(self, bot_id: int, *args, **kwargs):
+        self.bot_id = bot_id
+        kwargs["timeout"] = kwargs.get("timeout", None)
+        super().__init__(*args, **kwargs)
+
+    @discord.ui.button(
+        label="認証",  custom_id="ClickCaptchaButton",
+        style=discord.ButtonStyle.primary, emoji="🔎",
+    )
+    async def captcha(self, _, interaction: discord.Interaction):
+        if interaction.message.author.id == self.bot_id:
+            role = interaction.guild.get_role(
+                int(interaction.message.content)
+            )
+            content = ""
+            if role:
+                if interaction.user.get_role(role.id) is None:
+                    try:
+                        await interaction.user.add_roles(role)
+                    except discord.Forbidden:
+                        content = "権限がないのでロールを付与できませんでした。"
+                    except discord.HTTPException as e:
+                        content = f"何かエラーが発生してロールを付与できませんでした。\ncode:{e}"
+                    else:
+                        content = "ロールを付与しました。"
+            else:
+                content = "付与するロールが見つからなかったので認証に失敗しました。"
+            if content:
+                await interaction.response.send_message(
+                    content=content, ephemeral=True
+                )
+
+
 class Captcha(commands.Cog, DataManager):
-    def __init__(self, bot):
+    def __init__(self, bot: RT):
         self.bot = bot
+        self.view = ClickCaptchaView(self.bot.user.id)
+        self.bot.add_view(self.view)
         self.captchas: Captchas = {
             "image": ImageCaptcha(self),
             "word": WordCaptcha(self),
@@ -108,10 +144,12 @@ class Captcha(commands.Cog, DataManager):
 
         Parameters
         ----------
-        mode : image, web, 左の二つ以外の場合は合言葉
+        mode : image, web, click, 左の三つ以外の場合は合言葉
             設定する認証の種類です。  
             `image`が画像認証で実行したチャンネルに送信される画像にある数字を正しく入力するという認証です。  
             `web`がhCaptchaを利用したウェブでの本格認証です。  
+            `click`がボタンを押したらロールを付与するというボタンのメッセージを作ります。  
+            `click`の場合強度は手軽ですがそこまで高くないです。  
             上記二つ以外を入力した場合はその入力した言葉を使った合言葉認証で設定されます。  
             もし設定をオフにするなら`off`にして役職(role)を指定しないでください。
         role : 役職名または役職のメンション, optional
@@ -164,6 +202,14 @@ class Captcha(commands.Cog, DataManager):
         This command can only be executed by someone with administrative privileges."""
         if role is None:
             await self.delete(ctx.channel)
+        elif mode == "click":
+            return await ctx.send(
+                str(role.id), embed=discord.Embed(
+                    title="ワンクリック認証",
+                    description="下のボタンをクリックすることで認証できます。",
+                    color=self.bot.colors["normal"]
+                ), view=self.view
+            )
         else:
             extras = ""
             if mode not in self.captchas:
