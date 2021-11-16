@@ -9,6 +9,7 @@ from discord.ext import commands
 
 from asyncio import Event, sleep, Task
 from collections import defaultdict
+from traceback import print_exc
 from ujson import loads, dumps
 from functools import wraps
 
@@ -183,6 +184,12 @@ class WebSocket:
         return await self.event_handlers[event_type](self, data, *args, **kwargs)
 
     async def connect(self, pcfe: bool):
+        try:
+            return await self._connect(pcfe)
+        except Exception:
+            print_exc()
+
+    async def _connect(self, pcfe):
         "WebSocketに接続して通信を開始します。"
         while not self.cog.bot.is_closed() and self.running == "doing":
             # 接続を試みて失敗した場合にreconnectがTrueの時のみ三秒後もう一度接続する。
@@ -217,8 +224,8 @@ class WebSocket:
                 if data["event_type"] in self.event_handlers:
                     # イベントハンドラを実行してもしデータを返されたならそれを送り返す。
                     if (return_data := await self.run_event(
-                        data["event_type"], data["data"])
-                    ):
+                        data["event_type"], data["data"]
+                    )):
                         await self.send(data["event_type"], return_data)
                 else:
                     # もしイベントが見つからなかったのならWebSocketを切断する。

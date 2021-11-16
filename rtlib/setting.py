@@ -24,6 +24,7 @@ class CommandRunData(TypedDict):
     command: str
     kwargs: Dict[str, Union[str, int, float, bool]]
     guild_id: Union[int, Literal[0]]
+    category: str
     user_id: int
     channel_id: Union[int, Literal[0]]
     ip: str
@@ -144,7 +145,8 @@ class SettingManager(commands.Cog):
                 ) for parameter in signature(command._callback).parameters.values()
                 if parameter.name not in ("self", "ctx")
             }
-            data["guild" if setting.mode == "channel" else setting.mode][command.name] = {
+            data["guild" if setting.mode == "channel" else setting.mode] \
+                [command.qualified_name] = {
                     "help": self.bot.cogs["BotGeneral"].get_command_url(command),
                     "kwargs": kwargs, "sub_category": getattr(
                         command.parent, "name", None
@@ -169,15 +171,16 @@ class SettingManager(commands.Cog):
 
     @setting_websocket.event("on_post")
     async def post(self, ws: websocket.WebSocket, data: CommandRunData):
-        self.bot.loop.create_task(
-            self.run_command(self.data[data["command"]][0], data),
-            name=f"UpdateSetting[{data['command']}]: {data['user_id']}"
-        )
+        if isinstance(data, dict):
+            self.bot.loop.create_task(
+                self.run_command(self.data[data["command"]][0], data),
+                name=f"UpdateSetting[{data.get('command')}]: {data.get('user_id')}"
+            )
         await ws.send("on_posted")
 
     @setting_websocket.event("on_posted")
     async def posted(self, ws: websocket.WebSocket, _):
-        await self.setting_websocket(ws)
+        await self.setting_websocket(ws, None)
 
     async def run_command(self, command: commands.Command, data: CommandRunData):
         "コマンドを走らせます。"
@@ -222,6 +225,7 @@ class SettingManager(commands.Cog):
 
     @setting_test.command(setting=Setting("channel"), aliases=["stc"])
     async def setting_test_channel(self, ctx: Context):
+        print(1)
         await ctx.reply(f"You selected {ctx.channel.name}.")
 
 
