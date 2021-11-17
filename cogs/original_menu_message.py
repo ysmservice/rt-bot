@@ -1,15 +1,20 @@
 # RT - Original Menu Message
 
+from typing import Callable, Coroutine
+
 from discord.ext import commands
 import discord
 
-from rtlib import mysql, DatabaseManager
+from rtlib import RT, DatabaseManager
 from rtlib.ext import componesy
 from time import time
 
 
 class DataManager(DatabaseManager):
-    def __init__(self, db, maxsize: int = 30):
+
+    MAX_SIZE = 30
+
+    def __init__(self, db, maxsize: int = MAX_SIZE):
         self.db = db
         self.maxsize = maxsize
 
@@ -60,15 +65,49 @@ class DataManager(DatabaseManager):
         raise KeyError("そのメニューメッセージは見つかりませんでした。")
 
 
+CUSTOM_ID = "OriginalMenuMessage"
+
+
+class MenuView(discord.ui.View):
+    def __init__(
+        self, bot_id: int, on_interaction: Callable[
+            [discord.Interaction], Coroutine
+        ], *args, **kwargs
+    ):
+        self.bot_id, self.on_interaction = bot_id, on_interaction
+        kwargs["timeout"] = kwargs.get("kwargs", None)
+        super().__init__(*args, **kwargs)
+
+    async def _on_interaction(self, interaction):
+        if interaction.message.author.id == self.bot_id:
+            return await self.on_interaction(interaction)
+
+    @discord.ui.button(emoji="⏪", custom_id=f"{CUSTOM_ID}DashLeft")
+    async def dash_left(self, _, interaction):
+        await self._on_interaction(interaction)
+
+    @discord.ui.button(emoji="◀️", custom_id=f"{CUSTOM_ID}Left")
+    async def left(self, _, interaction):
+        await self._on_interaction(interaction)
+
+    @discord.ui.button(emoji="▶️", custom_id=f"{CUSTOM_ID}Right")
+    async def right(self, _, interaction):
+        await self._on_interaction(interaction)
+
+    @discord.ui.button(emoji="⏩", custom_id=f"{CUSTOM_ID}DashRight")
+    async def dash_right(self, _, interaction):
+        await self._on_interaction(interaction)
+
+
 class OriginalMenuMessage(commands.Cog, DataManager):
     def __init__(self, bot):
         self.bot = bot
         self.bot.loop.create_task(self.on_ready())
+        self.view = MenuView(self.bot.user.id, self.on_interaction)
+        self.bot.add_view(self.view)
 
     async def on_ready(self):
-        super(commands.Cog, self).__init__(
-            self.bot.mysql
-        )
+        super(commands.Cog, self).__init__(self.bot.mysql)
         await self.init_table()
 
     def make_embed(self, color: discord.Color, data: list) -> discord.Embed:
@@ -76,8 +115,6 @@ class OriginalMenuMessage(commands.Cog, DataManager):
             title=data[0], description=data[1],
             color=color
         )
-
-    CUSTOM_ID = "OriginalMenuMessage"
 
     @commands.command(
         aliases=["embeds", "メニュー", "めにゅー"],
@@ -102,7 +139,8 @@ class OriginalMenuMessage(commands.Cog, DataManager):
             メニュー入れる文字列です。  
             `$タイトル`のようにメニューのページのタイトルを設定して、その次の行にそのページの説明を書きます。  
             よくわからない場合は下の例を見ましょう。  
-            もしメッセージに入れきれないほど書く場合はテキストファイルに書き込み、この引数を`file`としてそのテキストファイルを添付してコマンドを実行してください。
+            もしメッセージに入れきれないほど書く場合はテキストファイルに書き込み、この引数を`file`としてそのテキストファイルを添付してコマンドを実行してください。  
+            テキストファイルにすれば作り直す際に楽です。
 
         Examples
         --------
@@ -126,7 +164,9 @@ class OriginalMenuMessage(commands.Cog, DataManager):
         content: str
             The string to menu.  
             Set the title of the page in the menu, as in `$ Title`, followed by a description of the page.  
-            If you're not sure, look at the example below.
+            If you're not sure, look at the example below.  
+            If you write more than you can fit in a message, write it in a text file and run the command with this argument as `file`.  
+            If you write it in a text file, it will be easier to recreate it.
 
         Examples
         --------
@@ -161,19 +201,12 @@ class OriginalMenuMessage(commands.Cog, DataManager):
                     content[:(index := content.find("\n"))],
                     content[index:]
                 ]
-        view = componesy.View("MenuView")
-        view.add_item(
-            "Button", None, emoji="◀️",
-            custom_id=f"{self.CUSTOM_ID}Left"
-        )
-        view.add_item(
-            "Button", None, emoji="▶️",
-            custom_id=f"{self.CUSTOM_ID}Right"
-        )
+
         if data:
             message = await ctx.send(
-                content="1", embed=self.make_embed(ctx.author.color, data["1"]),
-                view=view.get_view()
+                content=f"1/{len(data)}",
+                embed=self.make_embed(ctx.author.color, data["1"]),
+                view=self.view
             )
             await self.write(
                 ctx.guild.id, ctx.channel.id, message.id, data
@@ -193,31 +226,41 @@ class OriginalMenuMessage(commands.Cog, DataManager):
         except KeyError:
             pass
         else:
-            plus = -1 if mode == "left" else 1
-            data = row[3].get(
-                index := str(int(interaction.message.content) + plus)
+            index = interaction.message.content.find("/")
+            if index == -1:
+                content = interaction.message.content
+            else:
+                content = interaction.message.content[index + 1:]
+            index = str(
+                (
+                    1 if mode.endswith("Left")
+                    else interaction.message.content[index + 1:]
+                ) if mode.startswith("Dash") else (
+                    int(
+                        interaction.message.content[:1 if index == -1 else index]
+                    ) + (-1 if mode == "Left" else 1)
+                )
             )
-            if data:
-                await interaction.message.edit(
-                    content=index, embed=self.make_embed(
+            content = (
+                index if content == interaction.message.content
+                else f"{index}/{content}"
+            )
+
+            if (data := row[3].get(index)):
+                await interaction.response.edit_message(
+                    content=content, embed=self.make_embed(
                         interaction.message.embeds[0].color, data
                     )
                 )
-            try:
-                await interaction.response.defer()
-            except Exception as e:
-                self.ignored_error = e
-                if self.bot.test:
-                    print("Error on original menu message:", e)
+            else:
+                await interaction.response.send_message(
+                    content="これ以上ページを切り替えられません。", ephemeral=True
+                )
 
-    @commands.Cog.listener()
-    async def on_interaction(self, interaction):
-        if ((custom_id := interaction.data.get("custom_id", ""))
-                .startswith(self.CUSTOM_ID)):
-            await self.on_button_pushed(
-                custom_id.replace(self.CUSTOM_ID, "").lower(),
-                interaction
-            )
+    async def on_interaction(self, interaction: discord.Interaction):
+        await self.on_button_pushed(
+            interaction.data["custom_id"].replace(CUSTOM_ID, ""), interaction
+        )
 
 
 def setup(bot):
