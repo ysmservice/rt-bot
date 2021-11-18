@@ -52,8 +52,9 @@ class Context:
             Union[discord.abc.GuildChannel, discord.DMChannel]
         ] = (
             self.guild.get_channel(data["channel_id"])
-            or self.bot.get_user(data["user_id"])
+            if self.guild else self.bot.get_user(data["user_id"])
         )
+        print(data["user_id"])
         self.author: Union[discord.User, discord.Member] = (
             self.guild.get_member(data["user_id"]) if self.guild
             else self.bot.get_user(data["user_id"])
@@ -99,8 +100,9 @@ class SettingManager(commands.Cog):
         ] = {}
         self.before = {}
 
-    async def session(self) -> ClientSession:
-        if not hasattr(self, "session"):
+    @property
+    def session(self) -> ClientSession:
+        if not hasattr(self, "_session"):
             self._session = ClientSession(
                 loop=self.bot.loop, json_serialize=dumps
             )
@@ -113,10 +115,11 @@ class SettingManager(commands.Cog):
         if annotation in (str, int, float, bool):
             return annotation.__name__
         elif getattr(annotation, "__name__", "") in (
-            "Member", "User", "TextChannel", "VoiceChannel", "StageChannel", "Thread",
-            "Role", "Message", "Guild"
+            "Member", "User", "TextChannel", "VoiceChannel", "StageChannel",
+            "Thread", "Role"
         ):
-            return "str"
+            return annotation.__name__.replace("Text", "").replace("Voice", "") \
+                .replace("Stage", "").replace("Thread", "Channel").replace("User", "Member")
         elif (origin := get_origin(annotation)) == Union:
             return "str"
         elif origin == Literal:
@@ -225,8 +228,11 @@ class SettingManager(commands.Cog):
 
     @setting_test.command(setting=Setting("channel"), aliases=["stc"])
     async def setting_test_channel(self, ctx: Context):
-        print(1)
         await ctx.reply(f"You selected {ctx.channel.name}.")
+
+    def cog_unload(self):
+        if hasattr(self, "_session"):
+            self.bot.loop.create_task(self._session.close())
 
 
 def setup(bot):
