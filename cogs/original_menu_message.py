@@ -181,12 +181,12 @@ class OriginalMenuMessage(commands.Cog, DataManager):
         if content == "file":
             if ctx.message.attachments:
                 at = ctx.message.attachments[0]
-                if at.filename.endswith(".txt") and at.size <= 12000:
+                if at.filename.endswith(".txt") and at.size <= 1500000:
                     content = (await at.read()).decode()
                 else:
                     return await ctx.reply(
-                        {"ja": "ファイル形式は`txt`にしてください。",
-                         "en": "The file type must be `txt`."}
+                        {"ja": "ファイル形式は`txt`にしてください。\nまたはファイルサイズが巨大すぎます。",
+                         "en": "The file type must be `txt`. Or the file size so big that I can't recieve it."}
                     )
             else:
                 return await ctx.reply(
