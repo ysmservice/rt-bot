@@ -54,7 +54,6 @@ class Context:
             self.guild.get_channel(data["channel_id"])
             if self.guild else self.bot.get_user(data["user_id"])
         )
-        print(data["user_id"])
         self.author: Union[discord.User, discord.Member] = (
             self.guild.get_member(data["user_id"]) if self.guild
             else self.bot.get_user(data["user_id"])
@@ -76,11 +75,14 @@ class Context:
         self, content: str = None, embed: discord.Embed = None, *args, **kwargs
     ):
         "返信をします。"
+        content = self.bot.cogs["Language"].get_text(
+            embed if embed else content, self.author.id
+        )
+        if isinstance(content, discord.Embed):
+            content = content.to_dict()
         async with self.setting_manager.session.post(
             f"{self.bot.get_url()}/api/settings/reply/{self.data['ip']}",
-            data=self.bot.cogs["Language"].get_text(
-                embed.to_dict() if embed else content, self.author.id
-            )
+            json={"data": content}
         ) as r:
             if self.bot.test:
                 self.bot.print("[SettingManager]", "[POST]", await r.text())
