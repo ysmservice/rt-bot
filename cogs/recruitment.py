@@ -159,9 +159,10 @@ class Recruitment(commands.Cog):
 
     @commands.Cog.listener()
     async def on_full_reaction_add(self, payload):
-        if ("RT募集パネル" in payload.message.content and payload.message.author.bot
-                and payload.message.guild and payload.message.embeds
-                and str(payload.emoji) == self.EMOJI and not payload.member.bot):
+        if (hasattr(payload, "message") and "RT募集パネル" in payload.message.content
+                and payload.message.author.bot and payload.message.guild
+                and payload.message.embeds and str(payload.emoji) == self.EMOJI
+                and not payload.member.bot):
             # キューに追加する。
             payload.emoji, payload.embed = str(payload.emoji), payload.message.embeds[0]
 

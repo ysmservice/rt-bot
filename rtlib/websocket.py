@@ -236,12 +236,12 @@ class WebSocket:
 
         self.print(f"Finished websocket connection ({self.running})")
 
-        if self.running != "doing" and self._reconnect:
+        if not self.cog.bot.is_closed() and self._reconnect:
             await self.close()
             self.print("I will try to reconnect.")
             self.running = "doing"
             await sleep(3)
-            self.cog.bot.loop.create_task(self.connect(pcfe))
+            self.task = self.cog.bot.loop.create_task(self.connect(pcfe))
 
     async def send(self, event_type: str, data: PacketData = "") -> None:
         "データを送信します。"
