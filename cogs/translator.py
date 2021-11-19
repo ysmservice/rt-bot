@@ -4,9 +4,11 @@ from discord.ext import commands
 import discord
 
 from jishaku.functools import executor_function
-from deep_translator import GoogleTranslator
 from asyncio import sleep
 from typing import List
+import deep_translator
+
+from rtlib import RT
 
 
 CHP_HELP = {
@@ -16,8 +18,11 @@ CHP_HELP = {
 例：`rt>translate ja` (これをトピックに入れたチャンネルに送信したメッセージは全て日本語に翻訳されます。)  
 
 ### 言語コード例
-日本語 `ja`  
-英語　 `en`  
+```
+日本語 ja
+英語　 en
+自動　 auto
+```
 他は調べれば出るので`言語名 言語コード`とかで調べてください。
 
 ### エイリアス
@@ -45,13 +50,13 @@ It's in the personal category with the `translate` command.""")
 
 
 class Translator(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: RT):
         self.bot = bot
         self.bot.loop.create_task(self.on_command_added())
 
     @executor_function
     def translate(self, text: str, target: str) -> str:
-        return GoogleTranslator(target=target).translate(text)
+        return deep_translator.GoogleTranslator(target=target).translate(text)
 
     async def on_command_added(self):
         # ヘルプにチャンネルプラグイン版翻訳を追加するだけ。
@@ -63,13 +68,12 @@ class Translator(commands.Cog):
             )
 
     @commands.command(
-        name="translate", aliases=["trans", "ほんやく", "翻訳"],
-        extras={
+        name="translate", aliases=["trans", "ほんやく", "翻訳"], extras={
             "headding": {"ja": "翻訳をします。", "en": "This can do translate."},
             "parent": "Individual"
         }
     )
-    @commands.cooldown(1, 4, commands.BucketType.user)
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def translate_(self, ctx, lang, *, content):
         """!lang ja
         --------
@@ -79,7 +83,8 @@ class Translator(commands.Cog):
         ----------
         lang : 言語コード
             どの言語に翻訳するかの言語コードです。  
-            例えば日本語にしたい場合は`ja`で、英語にしたい場合は`en`です。
+            例えば日本語にしたい場合は`ja`で、英語にしたい場合は`en`です。  
+            `auto`とすると自動で翻訳先を英語または日本語に設定します。
         content : str
             翻訳する内容です。
 
@@ -121,34 +126,50 @@ class Translator(commands.Cog):
         --------
         translate(channel plugin) : Only for translate channel."""
         await ctx.trigger_typing()
-        await ctx.reply(
-            embed=discord.Embed(
-                title={"ja": "翻訳結果",
-                       "en": "translate result"},
-                description=await self.translate(content, lang),
-                color=self.bot.colors["normal"]
-            ).set_footer(
-                text="Powered by Google Translate",
-                icon_url="http://tasuren.syanari.com/RT/GoogleTranslate.png"
+
+        if lang == "auto":
+            # もし自動で翻訳先を判別するなら英文字が多いなら日本語にしてそれ以外は英語にする。
+            lang = "ja" if (
+                sum(64 < ord(char) < 123 for char in content)
+                >= len(content) / 2
+            ) else "en"
+
+        try:
+            await ctx.reply(
+                embed=discord.Embed(
+                    title={"ja": "翻訳結果",
+                        "en": "translate result"},
+                    description=await self.translate(content, lang),
+                    color=self.bot.colors["normal"]
+                ).set_footer(
+                    text="Powered by Google Translate",
+                    icon_url="http://tasuren.syanari.com/RT/GoogleTranslate.png"
+                )
             )
-        )
+        except deep_translator.exceptions.LanguageNotSupportedException:
+            await ctx.reply("その言語は対応していません。")
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if isinstance(message.channel, discord.Thread):
             return
         if ((message.author.bot and not (
-                message.author.discriminator == "0000" and " #" in message.author.name
-            )) or not message.guild or not message.channel.topic):
+            message.author.discriminator == "0000" and " #" in message.author.name
+        )) or not message.guild or not message.channel.topic):
             return
 
         for line in message.channel.topic.splitlines():
             if line.startswith(("rt>translate", "rt>tran", "rt>翻訳", "rt>ほんやく")):
                 if 1 < len((splited := line.split())):
-                    await self.translate_(
-                        await self.bot.get_context(message),
-                        splited[1], content=message.content
-                    )
+                    try:
+                        await self.translate_.prepare(
+                            ctx := await self.bot.get_context(message)
+                        )
+                        await self.translate_(
+                            ctx, splited[1], content=message.content
+                        )
+                    except Exception as e:
+                        self.bot.dispatch("command_error", ctx, e)
                 break
 
 
