@@ -162,11 +162,9 @@ class Translator(commands.Cog):
             if line.startswith(("rt>translate", "rt>tran", "rt>翻訳", "rt>ほんやく")):
                 if 1 < len((splited := line.split())):
                     try:
-                        await self.translate_.prepare(
+                        message.content = f"{splited[1]} {message.content}"
+                        await self.translate_.invoke(
                             ctx := await self.bot.get_context(message)
-                        )
-                        await self.translate_(
-                            ctx, splited[1], content=message.content
                         )
                     except Exception as e:
                         self.bot.dispatch("command_error", ctx, e)
