@@ -43,6 +43,8 @@ class RoleSelect(discord.ui.Select):
                     continue
             faileds.append(role_id)
 
+        self.view.cog.release(interaction.user.id)
+
         # 付与または削除に失敗した役職があるのならそれのメッセージを作る。
         word = get_ja(is_add)
         faileds = "\n".join(f"・<@&{role_id}>" for role_id in faileds)
@@ -62,7 +64,6 @@ class RoleSelect(discord.ui.Select):
                     {faileds}"""
                 )}, view=None
         )
-        self.view.cog.release(interaction.user.id)
 
 
 class RoleSelectView(discord.ui.View):
