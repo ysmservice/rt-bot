@@ -1,37 +1,33 @@
 # RT - Bulk
 
+from typing import Union, Literal, List
+
 from discord.ext import commands
 import discord
 
 
-class GuildRole(commands.Converter):
-    async def convert(self, ctx, arg):
-        if arg == "everyone":
-            return "guild"
-        else:
-            if "<" in arg:
-                return ctx.guild.get_role(int(arg[3:-1]))
-            else:
-                return discord.utils.get(ctx.guild.roles, name=arg)
+GuildRole = Union[discord.Role, Literal["everyone"]]
+Mode = Literal["add", "remove"]
 
 
 class Bulk(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    def add_error_field(self, embed: discord.Embed,
-                        failed_members: list, t: str) -> discord.Embed:
+    def add_error_field(
+        self, embed: discord.Embed, failed_members: List[discord.Member], t: str
+    ) -> discord.Embed:
         # ここのtには`送信`とかが入る。
         embed.add_field(
             name={"ja": f"{t}に失敗したメンバー一覧",
                   "en": f"List of members who failed {t}"},
-            value=("\n".join(f"{member.mention}\n　{e}"
-                             for member, e in failed_members)
-                   if failed_members
-                   else {
-                       "ja": f"{t}に失敗したメンバーはいません。",
-                       "en": f"No member has failed {t}."
-                    })
+            value=("\n".join(
+                f"{member.mention}\n　{e}"
+                for member, e in failed_members)
+                if failed_members else {
+                    "ja": f"{t}に失敗したメンバーはいません。",
+                    "en": f"No member has failed {t}."
+                })
         )
         return embed
 
@@ -131,9 +127,52 @@ class Bulk(commands.Cog):
         embed = self.add_error_field(embed, failed_members, "送信")
         await ctx.reply(embed=embed)
 
-    @bulk.command()
+    @bulk.group()
     @commands.has_permissions(manage_roles=True)
-    async def role(self, ctx, mode, target: GuildRole, role: discord.Role):
+    async def role(self, ctx):
+        """!lang ja
+        --------
+        ロールの一括系コマンドグループです。
+
+        !lang en
+        --------
+        This is the batch system command group for roles."""
+
+    @role.command()
+    @commands.cooldown(1, 15)
+    async def edit(self, ctx, mode: Mode, *, role: discord.Role):
+        """!lang ja
+        --------
+        指定された役職に全ての権限を付与または削除します。
+
+        Parameters
+        ----------
+        mode : add または remove
+            addにした場合は全ての権限を付与してremoveの場合は剥奪をします。
+        role : ロールの名前またはメンション
+            対象のロールです。
+
+        !lang en
+        --------
+        Grants or removes all privileges for the specified position.
+
+        Parameters
+        ----------
+        mode : add or remove
+            If "add" is selected, all privileges will be granted, and if "remove" is selected, all privileges will be revoked.
+        role : Name or Mention of the role
+            The target role."""
+        await ctx.trigger_typing()
+        await role.edit(
+            permissions=getattr(
+                discord.Permissions, "all" if mode == "add" else "none"
+            )()
+        )
+        await ctx.reply("Ok")
+
+    @role.command()
+    @commands.cooldown(1, 60, commands.BucketType.guild)
+    async def manage(self, ctx, mode: Mode, target: GuildRole, role: discord.Role):
         """!lang ja
         --------
         実行したサーバーにいるメンバー全員に指定された役職を付与または剥奪をします。
@@ -165,10 +204,6 @@ class Bulk(commands.Cog):
             A role witch adds or removes.
         """
         await ctx.trigger_typing()
-        
-        if mode not in ("add", "remove"):
-            raise commands.errors.CommandError(
-                "引数modeはaddまたはremoveが使えます。")
 
         failed_members = []
 
