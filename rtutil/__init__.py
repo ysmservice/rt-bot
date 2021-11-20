@@ -2,10 +2,10 @@
 
 from typing import List
 
+import discord
+
 from .minesweeper import Ms as Minesweeper
 from .data_manager import DatabaseManager
-
-import discord
 
 
 def check_int(v: str) -> bool:
@@ -46,3 +46,9 @@ class Roler(discord.ext.commands.Converter):
     # discord.pyのコマンドフレームワークのコンバーターで複数の役職をロールオブジェクトに交換します。
     async def convert(self, ctx, arg):
         return role2obj(ctx.guild, arg)
+
+async def get_webhook(
+    channel: discord.TextChannel, name: str = "RT-Tool"
+) -> discord.Webhook:
+    "ウェブフックを取得します。"
+    return discord.utils.get(await channel.webhooks(), name=name)
