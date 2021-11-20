@@ -47,6 +47,7 @@ class Roler(discord.ext.commands.Converter):
     async def convert(self, ctx, arg):
         return role2obj(ctx.guild, arg)
 
+
 async def get_webhook(
     channel: discord.TextChannel, name: str = "RT-Tool"
 ) -> discord.Webhook:
