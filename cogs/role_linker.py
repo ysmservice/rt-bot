@@ -1,10 +1,13 @@
 # RT - Role Linker
 
-from discord.ext import commands
+from typing import Optional, Dict, List
+
+from discord.ext import commands, tasks
 import discord
 
-from rtlib import mysql, DatabaseManager
-from typing import Optional
+from collections import defaultdict
+from rtlib import DatabaseManager
+from time import time
 
 
 class DataManager(DatabaseManager):
@@ -29,8 +32,6 @@ class DataManager(DatabaseManager):
         target = {
             "GuildID": guild_id, "Original": original_role_id
         }
-        if reverse and await cursor.exists(self.DB, {"Original": role_id}):
-            raise ValueError("既に設定されているのでその役職で設定できません。")
         change = dict(Role=role_id, Reverse=int(reverse))
         if await cursor.exists(self.DB, target):
             await cursor.update_data(self.DB, change, target)
@@ -64,6 +65,7 @@ class RoleLinker(commands.Cog, DataManager):
     def __init__(self, bot):
         self.bot = bot
         self.bot.loop.create_task(self.on_ready())
+        self.running: Dict[int, List[int]] = defaultdict(list)
 
     async def on_ready(self):
         super(commands.Cog, self).__init__(
@@ -209,30 +211,46 @@ class RoleLinker(commands.Cog, DataManager):
             await ctx.reply("Ok")
 
     async def role_update(
-        self, mode: str, role: discord.Role,
-        member: discord.Member
+        self, mode: str, role: discord.Role, member: discord.Member,
+        did: Optional[List[int]] = None
     ) -> None:
-        # ロールの置き換えをする。
-        row = await self.read(
-            member.guild.id, role.id
-        )
+        # ロールの置き換えをする
+        did = did or []
+        if member.id not in self.running[member.guild.id]:
+            self.running[member.guild.id].append(member.id)
+        row = await self.read(member.guild.id, role.id)
         if row:
             link_role = member.guild.get_role(row[0])
             if link_role:
-                role, coro = member.get_role(row[0]), None
+                role, add = member.get_role(row[0]), None
                 if mode == "add":
                     if not row[1] and not role:
-                        coro = member.add_roles(link_role)
+                        add = True
                     elif row[1] and role:
-                        coro = member.remove_roles(link_role)
+                        add = False
                 elif mode == "remove":
                     if not row[1] and role:
-                        coro = member.remove_roles(link_role)
+                        add = False
                     elif row[1] and not role:
-                        coro = member.add_roles(link_role)
+                        add = True
 
-                if coro:
-                    await coro
+                if add is not None:
+                    do = True
+                    if add:
+                        if link_role.id in did:
+                            # 繰り返しを検知したらストップする。
+                            do = False
+                        else:
+                            did.append(link_role.id)
+                    if do:
+                        await (
+                            member.add_roles if add else member.remove_roles
+                        )(link_role)
+                        return await self.role_update(
+                            "add" if add else "remove", link_role, member, did
+                        )
+        if member.id in self.running[member.guild.id]:
+            self.running[member.guild.id].remove(member.id)
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
@@ -241,12 +259,14 @@ class RoleLinker(commands.Cog, DataManager):
                 if not after.get_role(role.id):
                     # もしロールが削除されたなら。
                     self.bot.dispatch("role_remove", role, after)
-                    await self.role_update("remove", role, after)
+                    if after.id not in self.running[after.guild.id]:
+                        await self.role_update("remove", role, after)
             for role in after.roles:
                 if not before.get_role(role.id):
                     # もしロールが追加されたなら。
                     self.bot.dispatch("role_add", role, after)
-                    await self.role_update("add", role, after)
+                    if after.id not in self.running[after.guild.id]:
+                        await self.role_update("add", role, after)
 
 
 def setup(bot):

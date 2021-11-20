@@ -158,7 +158,8 @@ class NgWord(commands.Cog, DataManager):
     @log()
     async def on_message(self, message: discord.Message):
         # 関係ないメッセージは無視する。
-        if not message.guild or message.author.id == self.bot.user.id:
+        if (not message.guild or message.author.id == self.bot.user.id
+                or isinstance(message.author, discord.User)):
             return
 
         if not message.author.guild_permissions.administrator:
@@ -167,7 +168,7 @@ class NgWord(commands.Cog, DataManager):
                     await message.delete()
                     embed = discord.Embed(
                         title={"ja": "NGワードを削除しました。",
-                                "en": "Removed the NG Word."},
+                               "en": "Removed the NG Word."},
                         color=self.bot.colors["unknown"]
                     )
                     embed.add_field(
