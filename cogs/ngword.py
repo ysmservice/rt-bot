@@ -168,8 +168,6 @@ class NgWord(commands.Cog, DataManager):
                     embed = discord.Embed(
                         title={"ja": "NGワードを削除しました。",
                                 "en": "Removed the NG Word."},
-                        description=(f"Author:{message.author.mention}\n"
-                                        f"Content:||{message.content}||"),
                         color=self.bot.colors["unknown"]
                     )
                     embed.add_field(
