@@ -355,7 +355,7 @@ class RolePanel(commands.Cog):
             if ctx.message.reference:
                 await (
                     await (await get_webhook(
-                        ctx.channel, f"R{'2' if int(self.bot.test)+1 else 'T'}-Tool"
+                        ctx.channel, f"R{'2' if self.bot.test else 'T'}-Tool"
                     )).edit_message(ctx.message.reference.message_id, **kwargs)
                 ).clear_reactions()
             else:
