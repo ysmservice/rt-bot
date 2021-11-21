@@ -265,7 +265,8 @@ class BotGeneral(commands.Cog):
                 "en": f"It can't found that command.\n`rt!help <word>`This can search command.\nSuggetion:{suggestion}"}
             color = self.bot.colors["unknown"]
         elif isinstance(error, commands.errors.CommandOnCooldown):
-            if ctx.command.qualified_name in self.cache.get(ctx.author.id, {}):
+            if (ctx.command.qualified_name in self.cache.get(ctx.author.id, {})
+                    and not hasattr(ctx, "__setting_context__")):
                 return
             else:
                 title = "429 Too Many Requests"
@@ -306,8 +307,10 @@ class BotGeneral(commands.Cog):
                 commands.BadLiteralArgument)
         ):
             title = "400 Bad Request"
-            description = {"ja": "コマンドの引数が適切ではありません。\nまたは必要な引数が足りません。",
-                           "en": "It's command's function is bad."}
+            description = {
+                "ja": f"コマンドの引数が適切ではありません。\nまたは必要な引数が足りません。\nCode:`{error}`",
+                "en": "It's command's function is bad."
+            }
         elif isinstance(error, commands.errors.MissingPermissions):
             title = "403 Forbidden"
             description = {

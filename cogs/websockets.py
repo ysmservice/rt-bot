@@ -22,7 +22,7 @@ class WebSockets(commands.Cog):
         ]
     ) -> dict:
         return {
-            "id": channel.id, "name": channel.name,
+            "id": str(channel.id), "name": channel.name,
             "voice": isinstance(
                 channel, (discord.VoiceChannel, discord.StageChannel)
             )
@@ -36,19 +36,19 @@ class WebSockets(commands.Cog):
 
     def convert_role(self, role: discord.Role) -> dict:
         return {
-            "name": role.name, "id": role.id
+            "name": role.name, "id": str(role.id)
         }
 
     def convert_user(self, user: Union[discord.User, discord.Member]) -> dict:
         return {
-            "name": user.name, "id": user.id, "icon_url": getattr(
+            "name": user.name, "id": str(user.id), "icon_url": getattr(
                 user.avatar, "url", DISCORD
             )
         }
 
     def convert_guild(self, guild: discord.Guild) -> dict:
         return {
-            "name": guild.name, "id": guild.id, "icon_url": getattr(
+            "name": guild.name, "id": str(guild.id), "icon_url": getattr(
                 guild.icon, "url", DISCORD
             ), "text_channels": self.convert_channels(guild.text_channels),
             "voice_channels": self.convert_channels(guild.voice_channels),

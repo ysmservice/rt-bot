@@ -3,6 +3,7 @@ aiofiles
 ujson
 git+https://github.com/Rapptz/discord.py
 aiomysql
+pytz
 # rtutil
 ## OAuth
 reprypt
