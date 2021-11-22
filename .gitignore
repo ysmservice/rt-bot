@@ -19,3 +19,4 @@ data/*.json
 auth.json
 .vscode
 .DS_Store
+\#*\#
