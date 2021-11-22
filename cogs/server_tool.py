@@ -325,76 +325,11 @@ class ServerTool(commands.Cog):
     ):
         """!lang ja
         -------
-        Embed(埋め込み)を作成します。  
-        以下のようすることで作成が可能です。
-        ```
-        rt!embed カラーコード タイトル
-        説明
-        ```
-        カラーコードは埋め込みにつける色です。　　
-        カラーコードの指定方法は[ここ](https://rt-team.github.io/notes/color)を確認してみましょう。  
-        ※`null`にすると自分の名前の色になります。基本はこうすれば良いです。  
-        そしてフィールドで分けたい場合は以下のように`## `または`##! `でできます。  
-        また`### `とすればフィールドより小さいフィールドを作れます。
-        ```
-        rt!embed カラーコード タイトル
-        説明
-        ## フィールド1名
-        フィールド1説明
-        ### フィールド1説明の子供フィールド
-        フィールド1説明の子供フィールドの説明
-
-        ## フィールド2名
-        フィールド2説明
-        ##! 横にならばないフィールド名
-        横に並ばないフィールド説明
-        ##! 横に並ばないフィールド名
-        横に並ばないフィールド名
-        ```
-
-        Notes
-        -----
-        デフォルトでは作られる埋め込みの投稿者は実行者の名前そしてアイコンになります。  
-        もしRTの名前でアイコンで埋め込みを投稿して欲しい場合は`--rticon`をタイトルの前に入れてください。  
-        `rt>embed`をチャンネルのトピックに入れることで、そのチャンネルに送ったメッセージを自動でEmbedにしてくれます。  
-        また既に作ったものに返信をしてコマンドを実行すれば編集ができます。
-
-        Examples
-        --------
-        ```
-        rt!embed red 処罰履歴
-        @tasurenをKickしました。
-        ## 理由
-        えっちなことを言ったから。。
-        ```
-
-        ```
-        rt!embed null ルール
-        ##! ルール一
-        仲良く
-        ##! ルール二
-        NSFWなものはNG
-        ```
+        [こちらをご覧ください。](https://rt-team.github.io/notes/embed)
 
         !lang en
         --------
-        Make embed message.
-
-        Examples
-        --------
-        ```
-        rt!embed red title
-        description
-        ```
-
-        ```
-        rt!embed null Rule
-        This is the rule.
-        ##! No1
-        Do not talking.
-        ##! No2
-        This is the false rule.
-        ```"""
+        Let's see [here](https://rt-team.github.io/notes/embed)."""
         rt = False
         if "--rticon" in content:
             content = content.replace(
