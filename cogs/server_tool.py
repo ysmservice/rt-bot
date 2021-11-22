@@ -6,6 +6,7 @@ from discord.ext import commands
 import discord
 
 from rtlib.ext import Embeds
+from rtutil import markord
 
 from datetime import datetime, timedelta
 from asyncio import TimeoutError, sleep
@@ -267,7 +268,7 @@ class ServerTool(commands.Cog):
                  "en": "I can't read messages that on the future."}
             )
 
-    def easy_embed(
+    def old_easy_embed(
             self, content: str,
             color: discord.Color = discord.Embed.Empty
         ):
@@ -325,7 +326,7 @@ class ServerTool(commands.Cog):
         """!lang ja
         -------
         Embed(埋め込み)を作成します。  
-        以下のようにします。
+        以下のようすることで作成が可能です。
         ```
         rt!embed カラーコード タイトル
         説明
@@ -333,17 +334,21 @@ class ServerTool(commands.Cog):
         カラーコードは埋め込みにつける色です。　　
         カラーコードの指定方法は[ここ](https://rt-team.github.io/notes/color)を確認してみましょう。  
         ※`null`にすると自分の名前の色になります。基本はこうすれば良いです。  
-        そしてフィールドで分けたい場合は`<`または`<!`でできます。
+        そしてフィールドで分けたい場合は以下のように`## `または`##! `でできます。  
+        また`### `とすればフィールドより小さいフィールドを作れます。
         ```
         rt!embed カラーコード タイトル
         説明
-        <フィールド名
-        フィールド説明
-        <フィールド名
-        フィールド説明
-        <!横にならばないフィールド名
+        ## フィールド1名
+        フィールド1説明
+        ### フィールド1説明の子供フィールド
+        フィールド1説明の子供フィールドの説明
+
+        ## フィールド2名
+        フィールド2説明
+        ##! 横にならばないフィールド名
         横に並ばないフィールド説明
-        <!横に並ばないフィールド名
+        ##! 横に並ばないフィールド名
         横に並ばないフィールド名
         ```
 
@@ -357,10 +362,17 @@ class ServerTool(commands.Cog):
         Examples
         --------
         ```
+        rt!embed red 処罰履歴
+        @tasurenをKickしました。
+        ## 理由
+        えっちなことを言ったから。。
+        ```
+
+        ```
         rt!embed null ルール
-        <!ルール一
+        ##! ルール一
         仲良く
-        <!ルール二
+        ##! ルール二
         NSFWなものはNG
         ```
 
@@ -378,9 +390,9 @@ class ServerTool(commands.Cog):
         ```
         rt!embed null Rule
         This is the rule.
-        <!No1
+        ##! No1
         Do not talking.
-        <!No2
+        ##! No2
         This is the false rule.
         ```"""
         rt = False
@@ -396,9 +408,9 @@ class ServerTool(commands.Cog):
             kwargs = {
                 "username": ctx.author.display_name,
                 "avatar_url": getattr(ctx.author.avatar, "url", ""),
-                "embed": self.easy_embed(
-                    ">>" + content,
-                    ctx.author.color if color == "null" else color
+                "embed": markord.embed(
+                    "# " + content,
+                    color=ctx.author.color if color == "null" else color
                 )
             }
         except TypeError:
