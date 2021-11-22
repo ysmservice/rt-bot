@@ -1,10 +1,12 @@
 # RT - NG Word
 
+from typing import List
+
 from discord.ext import commands
 import discord
 
 from rtlib import DatabaseManager
-from typing import List
+from .log import log
 
 
 class DataManager(DatabaseManager):
@@ -95,6 +97,10 @@ class NgWord(commands.Cog, DataManager):
         --------
         `rt!ngword add あほー`
 
+        Notes
+        -----
+        チャンネルプラグインのログ出力機能のログチャンネルを作っている場合はそこにログが出力されます。
+
         !lang en
         --------
         Add NG words.
@@ -106,7 +112,16 @@ class NgWord(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!ngword add Ahoy! Idiot`"""
+        ```
+        rt!ngword add ahoy
+        Ahoy
+        idiot
+        Idiot
+        ```
+
+        Notes
+        -----
+        If you have created a log channel for the log output function of the channel plugin, the log will be output there."""
         await ctx.trigger_typing()
         for word in words.splitlines():
             await self.add(ctx.guild.id, word)
@@ -140,26 +155,29 @@ class NgWord(commands.Cog, DataManager):
         await ctx.reply("Ok")
 
     @commands.Cog.listener()
+    @log()
     async def on_message(self, message: discord.Message):
         # 関係ないメッセージは無視する。
-        if (not message.guild or not self.bot.is_ready()
-                or message.author.id == self.bot.user.id):
+        if (not message.guild or message.author.id == self.bot.user.id
+                or isinstance(message.author, discord.User)):
             return
 
-        if getattr(message.author, "guild_permissions.administrator", True):
+        if not message.author.guild_permissions.administrator:
             for word in await self.get(message.guild.id):
                 if word in message.content:
                     await message.delete()
-                    await message.channel.send(
-                        embed=discord.Embed(
-                            title={"ja": "NGワードを削除しました。",
-                                   "en": "Removed the NG Word."},
-                            description=(f"Author:{message.author.mention}\n"
-                                         f"Content:||{message.content}||"),
-                            color=self.bot.colors["unknown"]
-                        ), target=(message.guild.owner or message.author).id
+                    embed = discord.Embed(
+                        title={"ja": "NGワードを削除しました。",
+                               "en": "Removed the NG Word."},
+                        color=self.bot.colors["unknown"]
                     )
-                    break
+                    embed.add_field(
+                        name="Author",
+                        value=f"{message.author.mention} ({message.author.id})",
+                        inline=False
+                    )
+                    embed.add_field(name="Content", value=message.content)
+                    return embed
 
 
 def setup(bot):

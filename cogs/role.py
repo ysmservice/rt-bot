@@ -1,257 +1,385 @@
 # RT - Role Panel
 
-from discord.ext import commands, tasks
+from typing import TYPE_CHECKING, Callable, Literal, Union, Dict, List
+from types import SimpleNamespace
+
+from discord.ext import commands
 import discord
 
-from typing import Dict
-from emoji import UNICODE_EMOJI_ENGLISH
-from asyncio import create_task
-from time import time
+from rtutil import get_webhook
+from rtlib import RT
+
+from inspect import cleandoc
+
+if TYPE_CHECKING:
+    from .oldrole import OldRolePanel
+
+
+get_ja: Callable[[str], str] = \
+    lambda mode: "付与" if mode is True or mode == "Add" else "剥奪"
+Mode = Literal["Add", "Remove"]
+
+
+class RoleSelect(discord.ui.Select):
+
+    CUSTOM_ID = "RoleSelectView"
+    view: "RoleSelectView"
+
+    async def callback(self, interaction: discord.Interaction):
+        # 役職の付与または剥奪を行う。
+        is_add = self.custom_id.endswith("Add")
+        faileds = []
+        for role_id in map(int, self.values):
+            if (role := interaction.guild.get_role(int(role_id))):
+                has = bool(interaction.user.get_role(role.id))
+                try:
+                    if has and not is_add:
+                        await interaction.user.remove_roles(role)
+                    elif not has and is_add:
+                        await interaction.user.add_roles(role)
+                except discord.Forbidden:
+                    pass
+                else:
+                    continue
+            faileds.append(role_id)
+
+        self.view.cog.release(interaction.user.id)
+
+        # 付与または削除に失敗した役職があるのならそれのメッセージを作る。
+        word = get_ja(is_add)
+        faileds = "\n".join(f"・<@&{role_id}>" for role_id in faileds)
+        faileds = "".join((
+            f"\nですが以下のロールの{word}に失敗しました。\n",
+            "RTに権限があるかそして役職が存在しているかを確認してください。\n",
+            faileds
+        )) if faileds else ""
+
+        await interaction.response.edit_message(
+            content={
+                "ja": f"役職の{word}をしました。{faileds}",
+                "en": cleandoc(
+                    f"""{word}ed role(s).
+                    However, some of the roles failed to be 
+                    {word.lower()}ed.
+                    {faileds}"""
+                )}, view=None
+        )
+
+
+class RoleSelectView(discord.ui.View):
+    def __init__(
+        self, user_id: int, options: List[discord.SelectOption],
+        max_: Union[int, None], mode: Mode, cog: "RolePanel",
+        *args, **kwargs
+    ):
+        self.cog, self.user_id = cog, user_id
+        length = len(options)
+        if max_ is None or length < max_:
+            max_ = length
+        assert 1 <= length <= 25, "選択項目数がおかしいです。"
+        del length
+        kwargs["timeout"] = kwargs.get("timeout", 60)
+        super().__init__(*args, **kwargs)
+        self.add_item(RoleSelect(
+            custom_id=f"{RoleSelect.CUSTOM_ID}{mode}", placeholder=f"Role Selector",
+            max_values=max_, options=options
+        ))
+        self.cog.acquire(self.user_id)
+
+    async def on_timeout(self):
+        self.cog.release(self.user_id)
+
+
+get_max: Callable[[str], int] = lambda text: int(text[:text.find("個")])
+
+
+class RolePanelView(discord.ui.View):
+
+    CUSTOM_ID = "RolePanelView"
+
+    def __init__(self, cog: "RolePanel", *args, **kwargs):
+        self.cog = cog
+        kwargs["timeout"] = None
+        super().__init__(*args, **kwargs)
+
+    async def process_member(
+        self, interaction: discord.Interaction, mode: Mode
+    ) -> None:
+        if self.cog.is_running(interaction.user.id):
+            return await interaction.response.send_message(
+                {"ja": "現在別で追加または削除が行われているのでロールの操作ができません。" \
+                    "\nもし別の追加または削除を行った際のメッセージを消してしまった場合は一分待ってください。",
+                 "en": "The role cannot be manipulated because it is currently being added or deleted separately." 
+                    "\nIf you have deleted a message when you added or deleted another one, please wait a minute."},
+                ephemeral=True
+            )
+
+        if ((only_one := "複数" not in interaction.message.embeds[0].footer.text)
+                and mode == "Add"):
+            # もし一つしか付与できないモードならまだ何も役職を持っていないことを確認する。
+            max_ = get_max(interaction.message.embeds[0].footer.text)
+            if max_ <= sum(
+                str(role.id) in interaction.message.embeds[0].description
+                for role in interaction.user.roles
+            ):
+                return await interaction.response.send_message(
+                    {"ja": cleandoc(f"""この役職パネルは{max_}個までしか役職を手に入れることができません。
+                        なので既につけている役職を削除してください。"""),
+                     "en": cleandoc(f"""You can only get a maximum of {max_} positions in this role panel.
+                        So please delete the roles you already have.""")},
+                    ephemeral=True
+                )
+        else:
+            max_ = None
+
+        try:
+            await interaction.response.send_message(
+                {
+                    "ja": f"一分以内に{get_ja(mode)}してほしいロールを選択をしてください。",
+                    "en": f"Please select role within a minute."
+                }, view=RoleSelectView(
+                    interaction.user.id, [
+                        discord.SelectOption(
+                            label=getattr(
+                                interaction.guild.get_role(int_role_id),
+                                "name", role_id
+                            ), value=role_id, emoji=emoji
+                        ) for emoji, role_id in map(
+                            lambda row: (row[0], row[1][3:-1]),
+                            self.cog.old.parse_description(
+                                interaction.message.embeds[0].description,
+                                interaction.guild
+                            ).items()
+                        ) if self.check(
+                            mode, int_role_id := int(role_id), interaction.user
+                        )
+                    ], max_, mode, self.cog
+                ), ephemeral=True
+            )
+        except AssertionError:
+            await interaction.response.send_message(
+                {"ja": f"{get_ja(mode)}するロールがもうありません。",
+                 "en": f"There are no more roles to {mode.lower()}."},
+                ephemeral=True
+            )
+
+    @staticmethod
+    def check(mode: Mode, role_id: int, member: discord.Member) -> bool:
+        return (
+            not (has := bool(member.get_role(role_id))) and mode == "Add"
+        ) or (has and mode == "Remove")
+
+    @discord.ui.button(
+        custom_id=f"{CUSTOM_ID}Add", label="Add",
+        style=discord.ButtonStyle.success, emoji="➕"
+    )
+    async def add(self, _, interaction):
+        await self.process_member(interaction, "Add")
+
+    @discord.ui.button(
+        custom_id=f"{CUSTOM_ID}Remove", label="Remove",
+        style=discord.ButtonStyle.danger, emoji="➖"
+    )
+    async def remove(self, _, interaction):
+        await self.process_member(interaction, "Remove")
+
+    def add_only(self, content: str, payload: discord.RawReactionActionEvent) -> str:
+        if (isinstance(payload.message.embeds[0].footer.text, str)
+                and "複数" not in payload.message.embeds[0].footer.text):
+            index = content.find("\n")
+            return f"{content[:index]} --only {get_max(payload.message.embeds[0].footer.text)}{content[index:]}"
+        return content
+
+    @discord.ui.button(
+        custom_id=f"{CUSTOM_ID}Template", label="Template", emoji="🛠"
+    )
+    async def template(self, _, interaction: discord.Interaction):
+        await self.cog.old.send_template(
+            SimpleNamespace(message=interaction.message),
+            interaction.response.send_message, self.add_only, ephemeral=True
+        )
 
 
 class RolePanel(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: RT):
         self.bot = bot
-        self.emojis = [chr(0x1f1e6 + i) for i in range(26)]
-        self.queue: Dict[str, discord.RawReactionActionEvent] = {}
-        self.worker.start()
+        self.view = RolePanelView(self)
+        self.old: "OldRolePanel" = self.bot.cogs["OldRolePanel"]
+        self.bot.add_view(self.view)
+        self.running: List[int] = []
 
     @commands.command(
-        extras={"headding": {"ja": "役職パネルを作成します。", "en": "..."},
-                "parent": "ServerPanel"}
+        aliases=["役職パネル", "役職", "r"], extras={
+            "headding": {
+                "ja": "役職パネル", "en": "Role panel"
+            }, "parent": "ServerPanel"
+        }
     )
-    @commands.has_permissions(administrator=True)
-    async def role(self, ctx, title, *, content):
+    @commands.cooldown(1, 10, commands.BucketType.channel)
+    @commands.has_permissions(manage_roles=True)
+    async def role(self, ctx: commands.Context, title, *, content):
         """!lang ja
         --------
         役職パネルを作成します。  
-        このコマンドは管理者権限を持っている人のみ実行が可能です。
+        RTの役職パネルはリアクションではなくボタンとセレクター形式でモダンです。
 
         Parameters
         ----------
         title : str
-            役職パネルのタイトルです。
-        content : str
-            改行で分けた役職パネルに入れる役職の名前またはメンション。  
-            行の最初に絵文字を置くとその絵文字が役職パネルに使われます。  
-            もし絵文字を置かない場合は自動で英文字の絵文字が割り振られます。
-
-        Examples
-        --------
-        ```
-        rt!role 遊んでいるゲーム
-        Minecraft
-        フォートナイト
-        Geometry dash
-        🥰 サノバウィッチ
-        😘 ナルキッソス
-        闘神都市 II
-        ```
+            役職パネルのタイトルです。  
+            空白を含めたい場合は`"`で囲んでください。
+        content : 内容
+            役職パネルに入れる役職です。  
+            改行で一つづつわけて役職のメンションか名前を入れてください。  
+            作成される役職パネルにはみやすいように自動で絵文字が付きます。  
+            この絵文字をカスタムしたい場合は役職の最初に絵文字を置いてください。  
+            また、付与できる最大数をカスタムしたい場合は`--only 個数`をcontentの前に以下のように置いてください。
+            ```
+            rt!role タイトル --only 個数
+            役職1
+            役職2
+            ...
+            ```
+            それと一つの役職パネルに入れることができる役職の最大個数は25個です。
 
         Notes
         -----
-        🛠の絵文字を押すことでテンプレートを取得することができます。  
-        もし上手くいかない際はこの[トラブルシューティング](https://rt-team.github.io/trouble/role)を見てみましょう。
+        もし前に作った役職パネルを編集したい場合は`Template`ボタンを押すことで同じ役職パネルを作るコマンドを取得できます。  
+        そして役職パネルに返信をしてコマンドを実行すればその役職パネルを編集して新しくすることができます。
 
-        Raises
-        ------
-        400 Bad Request : 役職が見つからない際に発生します。
+        Examples
+        --------
+        通常
+        ```
+        rt!role やっているプログラミング言語
+        Python
+        Ruby
+        C言語
+        C++
+        C#
+        Rust
+        Go
+        V言語
+        BrainFuck
+        F#
+        BASIC
+        なでしこ
+        他
+        ```
+        個数限定
+        (この例では二つまでしか選択できない絵文字をカスタムしている役職パネルです。)
+        ```
+        rt!role ゲーム担当 --only 2
+        ⚔️ 戦闘担当
+        ❤️ 回復担当
+        🛡️ 防御担当
+        ```
 
         !lang en
         --------
         Create a role panel.  
-        This command can only be executed by a person who has administrative privileges.
+        RT's role panel is modern, with buttons and selectors instead of reactions.
 
         Parameters
         ----------
         title : str
-            Title of the position panel.  
-            If you want to include spaces in the title, put them between double quotation marks.
-        content : str
-            The name of the role panel, separated by a new line.  
-            If you put an emoji at the beginning of the line, the emoji will be used in the position panel.  
-            If no emoji is placed, an English emoji will be assigned automatically.
-
-        Examples
-        --------
-        ```
-        rt!role "Game you are playing"
-        Minecraft
-        Fortnite
-        Geometry dash
-        Doki Doki Literary Club!
-        🥰 Sanova Witch
-        😊 Narcissus
-        闘神都市 II
-        ```
+            The title of the role panel.  
+            If you want to include a blank space, enclose it with `"`.
+        content : content
+            The title of the role panel.  
+            Separate one by one with a new line and put the role's mention or name.  
+            The role panel will automatically include an emoticon to make it easier to read.  
+            If you want to customize this emoji, put it at the beginning of the role.  
+            Also, if you want to customize the maximum number of pieces that can be added, put `--only <max count>` before the content like this
+            ```
+            rt!role title --only <max count>
+            Role 1
+            Role 2
+            ...
+            ```
+            And the maximum number of roles that can be in one role panel is 25.
 
         Notes
         -----
-        You can get the template by pressing the 🛠 emoji.
+        If you want to edit a previously created role panel, you can click the `Template` button to get the command to create a new role panel.  
+        You can then reply to the role panel and run the command to edit it and make it new.
 
-        Raises
-        ------
-        400 Bad Request : Occurs when a position cannot be found."""
-        emojis = self.parse_description(content, ctx.guild)
-        if emojis:
-            embed = discord.Embed(
-                title=title,
-                description="\n".join(
-                    f"{emoji} {emojis[emoji]}"
-                    for emoji in emojis
-                ), color=ctx.author.color
-            )
-            embed.set_footer(
-                text={
-                    "ja": "※連打防止のため役職の付与は数秒遅れます。",
-                    "en": "※There will be a delay of a few seconds in granting the position to prevent consecutive hits."
-                }
-            )
-
-            message = await ctx.webhook_send(
-                "RT役職パネル", embed=embed, username=ctx.author.display_name,
-                avatar_url=getattr(ctx.author.avatar, "url", ""), wait=True
-            )
-            await message.add_reaction("🛠")
-            for emoji in emojis:
-                await message.add_reaction(emoji)
+        Examples
+        --------
+        Normal
+        ```
+        rt!role "What programming language are you using?"
+        Python
+        Ruby
+        C
+        C++
+        C#
+        Rust
+        Go
+        V
+        BrainFuck
+        F#
+        BASIC
+        なでしこ
+        Others
+        ```
+        Number of persons
+        (In this example, it is a role panel with custom emoji that can only be selected up to two.)
+        ```
+        rt!role "Game Positions" --only 2
+        ⚔️ Combatant
+        ❤️ Healer
+        🛡️ Defender
+        ```"""
+        first = content[:content.find("\n")]
+        only_one = "--only" in first
+        if only_one:
+            content = content.replace("--only ", "")
+            max_ = first.replace("--only ", "")
+            del first
+            content = content.replace(f"{max_}\n", "")
+            max_ = int(max_)
         else:
-            raise commands.errors.CommandError(
-                {"ja": "何も役職を指定されていないため役職パネルを作れません。",
-                 "en": "I can't make the role panel because nothing role."}
-            )
+            max_ = 25
 
-    async def update_role(
-            self, payload: discord.RawReactionActionEvent,
-            emojis: Dict[str, str] = None) -> None:
-        # 役職の付与剥奪を行う。
-        # Embedから絵文字とメンションを取り出す。
-        if emojis is None:
-            emojis = self.parse_description(
-                payload.message.embeds[0].description, payload.message.guild
-            )
-        key = str(payload.emoji)
-        if key not in emojis:
-            key = "<a" + key[1:]
-        # 無駄な空白を消すためにsplitする。
-        emojis[key] = emojis[key].split()[0]
-        role = payload.message.guild.get_role(
-            int(emojis[key][3:-1])
+        embed = self.bot.cogs["OldRolePanel"].make_embed(
+            title, self.bot.cogs["OldRolePanel"].parse_description(
+                content, ctx.guild
+            ), ctx.author.color
         )
+        if embed.description.count("\n") + 1 <= 25:
+            embed.set_footer(text=f"{f'{max_}個まで選択可能' if only_one else '複数選択可能'}")
+            kwargs = {
+                "content": None, "embed": embed, "view": self.view
+            }
 
-        if role:
-            # 役職が存在するならリアクションの付与と剥奪をする。
-            try:
-                if payload.event_type == "REACTION_ADD":
-                    await payload.member.add_roles(role)
-                elif payload.event_type == "REACTION_REMOVE":
-                    await payload.member.remove_roles(role)
-            except discord.Forbidden:
-                await payload.member.send(
-                    "役職の付与に失敗しました。\nサーバー管理者に以下のサイトを見るように伝えてください。\n" \
-                    "https://rt-team.github.io/trouble/role"
+            if ctx.message.reference:
+                await (
+                    await (await get_webhook(
+                        ctx.channel, f"R{'2' if self.bot.test else 'T'}-Tool"
+                    )).edit_message(ctx.message.reference.message_id, **kwargs)
+                ).clear_reactions()
+            else:
+                await ctx.channel.webhook_send(
+                    wait=True, avatar_url=getattr(ctx.author.avatar, "url", ""),
+                    username=ctx.author.display_name, **kwargs
                 )
-
-            del role
         else:
-            try:
-                await payload.member.send(
-                    "".join(f"{payload.message.guild.name}での役職の付与に失敗しました。",
-                            "\n付与する役職を見つけることができませんでした。"))
-            except Exception as e:
-                print(e)
+            await ctx.reply(
+                {"ja": "25個以上を一つの役職パネルに入れることはできません。",
+                 "en": "No more than 25 pieces can be placed in a single role panel."}
+            )
 
-    def parse_description(self, content: str, guild: discord.Guild) -> Dict[str, str]:
-        # 文字列の行にある絵文字とその横にある文字列を取り出す関数です。
-        i, emojis, result = -1, [], {}
-        for line in content.splitlines():
-            if line and line != "\n":
-                i += 1
-                not_mention: bool = "@" not in line
+    def acquire(self, user_id: int) -> None:
+        if user_id not in self.running:
+            self.running.append(user_id)
 
-                if line[0] == "<" and all(char in line for char in (">", ":")):
-                    if not_mention or line.count(">") != 1:
-                        # もし外部絵文字なら。
-                        emojis.append(line[:line.find(">") + 1])
-                elif line[0] in UNICODE_EMOJI_ENGLISH or line[0] in self.emojis:
-                    # もし普通の絵文字なら。
-                    emojis.append(line[0])
-                else:
-                    # もし絵文字がないのなら作る。
-                    emojis.append(self.emojis[i])
-                    line = self.emojis[i] + " " + line
+    def release(self, user_id: int) -> None:
+        if user_id in self.running:
+            self.running.remove(user_id)
 
-                result[emojis[-1]] = line.replace(emojis[-1], "")
-
-                # もし取り出した役職名の最初が空白なら空白を削除する。
-                if result[emojis[-1]][0] in (" ", "　"):
-                    result[emojis[-1]] = result[emojis[-1]][1:]
-                # もしメンションじゃないならメンションに変える。
-                if not_mention:
-                    role = discord.utils.get(guild.roles, name=result[emojis[-1]])
-                    if role is None:
-                        raise commands.errors.RoleNotFound(
-                            f"{result[emojis[-1]]}という役職が見つかりませんでした。"
-                        )
-                    else:
-                        result[emojis[-1]] = role.mention
-
-        return result
-
-    def cog_unload(self):
-        self.worker.cancel()
-
-    @tasks.loop(seconds=4)
-    async def worker(self):
-        # キューにあるpayloadをupdate_roleに渡して役職の付与剥奪をする。
-        # 連打された際に毎回役職を付与剥奪しないように。
-        for cmid in list(self.queue.keys()):
-            create_task(self.update_role(self.queue[cmid]))
-            del self.queue[cmid]
-
-    def check(self, payload: discord.RawReactionActionEvent) -> bool:
-        # 役職パネルかチェックする。
-        return (payload.message.embeds and payload.message.author.bot
-                and payload.message.content == "RT役職パネル" and payload.message.guild
-                and any(str(payload.emoji) == str(reaction.emoji)
-                        or getattr(payload.emoji, "name", "") == \
-                            getattr(reaction.emoji, "name", "fdslafsjkfjskaj")
-                        for reaction in payload.message.reactions))
-
-    @commands.Cog.listener()
-    async def on_full_reaction_add(self, payload: discord.RawReactionActionEvent):
-        if self.bot.is_ready() and hasattr(payload, "message"):
-            if self.check(payload) and not payload.member.bot:
-                emoji = str(payload.emoji)
-                # もしテンプレートの取得ならテンプレートを返す。
-                if payload.event_type == "REACTION_ADD":
-                    if emoji == "🛠":
-                        emojis = self.parse_description(
-                            payload.message.embeds[0].description,
-                            payload.message.guild
-                        )
-                        await payload.member.send(
-                            f"rt!role {payload.message.embeds[0].title}\n" + "\n".join(
-                                (e + " " + getattr(
-                                    payload.message.guild.get_role(
-                                        int(m.split()[0][3:-1])
-                                    ), "name", "役職が見つかりませんでした。")
-                                ) for e, m in emojis.items()
-                            )
-                        )
-                        return
-                if emoji in payload.message.embeds[0].description:
-                    # キューに追加する。
-                    i = f"{payload.channel_id}.{payload.message_id}.{payload.member.id}"
-                    i += "." + emoji
-                    self.queue[i] = payload
-                else:
-                    await payload.message.remove_reaction(emoji, payload.member)
-
-    @commands.Cog.listener()
-    async def on_full_reaction_remove(self, payload: discord.RawReactionActionEvent):
-        if str(payload.emoji) != "🛠":
-            await self.on_full_reaction_add(payload)
+    def is_running(self, user_id: int) -> bool:
+        return user_id in self.running
 
 
 def setup(bot):

@@ -6,6 +6,7 @@ from discord.ext import commands
 import discord
 
 from rtlib.ext import Embeds
+from rtutil import markord
 
 from datetime import datetime, timedelta
 from asyncio import TimeoutError, sleep
@@ -267,7 +268,7 @@ class ServerTool(commands.Cog):
                  "en": "I can't read messages that on the future."}
             )
 
-    def easy_embed(
+    def old_easy_embed(
             self, content: str,
             color: discord.Color = discord.Embed.Empty
         ):
@@ -324,65 +325,11 @@ class ServerTool(commands.Cog):
     ):
         """!lang ja
         -------
-        Embed(埋め込み)を作成します。  
-        以下のようにします。
-        ```
-        rt!embed カラーコード タイトル
-        説明
-        ```
-        カラーコードは埋め込みにつける色です。　　
-        カラーコードの指定方法は[ここ](https://rt-team.github.io/notes/color)を確認してみましょう。  
-        ※`null`にすると自分の名前の色になります。基本はこうすれば良いです。  
-        そしてフィールドで分けたい場合は`<`または`<!`でできます。
-        ```
-        rt!embed カラーコード タイトル
-        説明
-        <フィールド名
-        フィールド説明
-        <フィールド名
-        フィールド説明
-        <!横にならばないフィールド名
-        横に並ばないフィールド説明
-        <!横に並ばないフィールド名
-        横に並ばないフィールド名
-        ```
-
-        Notes
-        -----
-        デフォルトでは作られる埋め込みの投稿者は実行者の名前そしてアイコンになります。  
-        もしRTの名前でアイコンで埋め込みを投稿して欲しい場合は`--rticon`をタイトルの前に入れてください。  
-        `rt>embed`をチャンネルのトピックに入れることで、そのチャンネルに送ったメッセージを自動でEmbedにしてくれます。  
-        また既に作ったものに返信をしてコマンドを実行すれば編集ができます。
-
-        Examples
-        --------
-        ```
-        rt!embed null ルール
-        <!ルール一
-        仲良く
-        <!ルール二
-        NSFWなものはNG
-        ```
+        [こちらをご覧ください。](https://rt-team.github.io/notes/embed)
 
         !lang en
         --------
-        Make embed message.
-
-        Examples
-        --------
-        ```
-        rt!embed red title
-        description
-        ```
-
-        ```
-        rt!embed null Rule
-        This is the rule.
-        <!No1
-        Do not talking.
-        <!No2
-        This is the false rule.
-        ```"""
+        Let's see [here](https://rt-team.github.io/notes/embed)."""
         rt = False
         if "--rticon" in content:
             content = content.replace(
@@ -396,9 +343,9 @@ class ServerTool(commands.Cog):
             kwargs = {
                 "username": ctx.author.display_name,
                 "avatar_url": getattr(ctx.author.avatar, "url", ""),
-                "embed": self.easy_embed(
-                    ">>" + content,
-                    ctx.author.color if color == "null" else color
+                "embed": markord.embed(
+                    "# " + content,
+                    color=ctx.author.color if color == "null" else color
                 )
             }
         except TypeError:
