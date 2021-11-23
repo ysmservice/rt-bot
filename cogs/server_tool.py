@@ -655,6 +655,7 @@ class ServerTool(commands.Cog):
     @commands.Cog.listener()
     async def on_full_reaction_add(self, payload):
         if (not payload.guild_id or not payload.member or payload.member.bot
+                or not hasattr(payload, "message")
                 or (getattr(payload.message.channel, "topic", "")
                 and "rt>star" in payload.message.channel.topic)):
             return
