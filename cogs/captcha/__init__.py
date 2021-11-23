@@ -361,6 +361,7 @@ class Captcha(commands.Cog, DataManager, TimeoutDataManager):
                     }
                 )
             del self.captchas["web"].queue[key]
+        await ws.send("on_ready")
 
 
 def setup(bot):
