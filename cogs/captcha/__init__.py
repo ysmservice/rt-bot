@@ -159,9 +159,12 @@ class ClickCaptchaView(discord.ui.View):
             else:
                 content = "付与するロールが見つからなかったので認証に失敗しました。"
             if content:
-                await interaction.response.send_message(
-                    content=content, ephemeral=True
-                )
+                try:
+                    await interaction.response.send_message(
+                        content=content, ephemeral=True
+                    )
+                except discord.NotFound:
+                    pass
 
 
 class Captcha(commands.Cog, DataManager, TimeoutDataManager):
