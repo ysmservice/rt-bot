@@ -342,6 +342,7 @@ class Captcha(commands.Cog, DataManager, TimeoutDataManager):
 
     @websocket.websocket("/api/captcha", auto_connect=True, reconnect=True, log=True)
     async def websocket_(self, ws: websocket.WebSocket, _):
+        self.websocket_.ws.print("I'm ready to captcha.")
         await ws.send("on_ready")
 
     @websocket_.event("on_success")
