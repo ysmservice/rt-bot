@@ -5,8 +5,10 @@ from typing import Tuple, Dict, List
 from discord.ext import commands, tasks
 import discord
 
-from collections import defaultdict
 from rtlib import DatabaseManager
+from rtutil import markord
+
+from collections import defaultdict
 from ujson import loads, dumps
 
 
@@ -124,13 +126,8 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         Notes
         -----
         下に来るメッセージは数秒毎に更新されるので数秒は下に来ないことがあります。  
-        以下のように最初に`>>`を置いて`embed`コマンドの構文を使えば埋め込みにすることができます。
-        ```
-        rt!pin on >>タイトル
-        説明
-        <フィールド名
-        フィールド内容
-        ```
+        またcontentを`embed`コマンドの構文を使えば埋め込みにすることができます。  
+        書き方は`rt!help embed`を見てください。
 
         Warnings
         --------
@@ -175,8 +172,8 @@ class ForcePinnedMessage(commands.Cog, DataManager):
             await ctx.trigger_typing()
             if content.startswith(">>"):
                 content = "<" + dumps(
-                    self.bot.cogs["ServerTool"].easy_embed(
-                        content, ctx.author.color
+                    markord.embed(
+                        "# " + content, ctx.author.color
                     ).to_dict()
                 ) + ">"
             await self.setting(
