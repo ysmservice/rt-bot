@@ -76,7 +76,8 @@ class TimeoutDataManager(RUDatabaseManager):
                             )
                         except Exception as e:
                             print(self.cog.__cog_name__, "Passed remove cache:", obj, key, e)
-                if now - self.cache[(key := f"{obj.id}-{user.id}")] > timeout:
+                if ((key := f"{obj.id}-{user.id}") in self.cache
+                        and now - self.cache[key] > timeout):
                     del self.cache[key]
 
 
