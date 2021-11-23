@@ -72,6 +72,7 @@ async def on_ready():
     # 拡張を読み込む。
     setup(bot)
     bot.load_extension("jishaku")
+    bot.load_extension("cogs._oldrole")
     for name in listdir("cogs"):
         if not name.startswith("_"):
             try:
