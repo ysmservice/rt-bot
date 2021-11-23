@@ -141,7 +141,7 @@ class RolePanelView(discord.ui.View):
                     interaction.user.id, [
                         discord.SelectOption(
                             label=getattr(
-                                interaction.guild.get_role(int_role_id),
+                                interaction.guild.get_role(int(role_id)),
                                 "name", role_id
                             ), value=role_id, emoji=emoji
                         ) for emoji, role_id in map(
@@ -151,7 +151,7 @@ class RolePanelView(discord.ui.View):
                                 interaction.guild
                             ).items()
                         ) if self.check(
-                            mode, int_role_id := int(role_id), interaction.user
+                            mode, int(role_id), interaction.user
                         )
                     ], max_, mode, self.cog
                 ), ephemeral=True
