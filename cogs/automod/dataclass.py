@@ -266,11 +266,13 @@ class Guild:
     async def trial_message(self, message: discord.Message) -> None:
         """メッセージをスパムチェックします。"""
 
-        if (not hasattr(message.author, "guild_permissions") or all(
-            getattr(message.author.guild_permissions, name)
-            for name in ("manage_roles", "ban_members")
-        ) or (message.author.bot and message.author.public_flags.verified_bot)
-        or message.author.discriminator == "0000"):
+        if (not hasattr(message.author, "guild_permissions")
+                or all(
+                    getattr(message.author.guild_permissions, name)
+                    for name in ("manage_roles", "ban_members")
+                )
+                or (message.author.bot and message.author.public_flags.verified_bot)
+                or message.author.discriminator == "0000"):
             # 管理者または認証済みのBotまたはwebhookならチェックをしない。
             return
 
@@ -315,7 +317,8 @@ class Guild:
             )
             warn += 0.5
 
-        if ("//discord.gg/" in message.content and "http" in message.content
+        if (self.data.get("ignore_remover", False)
+                and "//discord.gg/" in message.content and "http" in message.content
                 and message.channel.id not in self.data.get("ignore_invite_remover", [])):
             await message.delete()
             await message.author.send("招待リンクを貼ることはしてはいけません。")
