@@ -75,10 +75,10 @@ class WebCaptcha:
             description={
                 "ja": cleandoc("""喋るには認証をしなければいけません。
                     認証を開始するには下にあるボタンから認証ページにアクセスしてください。
-                    ※一時間放置されると無効になるので一時間放置した場合はサーバーに参加し直してください。"""),
+                    ※放置されると無効になります。"""),
                 "en": cleandoc("""You must do authentication to speak.
                     Please access to that url to do authentication.
-                    * If you leave it for an hour, it will become invalid, so if you leave it for an hour, please rejoin the server.""")
+                    * If you leave it, it will become invalid.""")
             }, color=self.cog.bot.colors["normal"]
         )
         embed.set_footer(

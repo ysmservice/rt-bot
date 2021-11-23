@@ -1,25 +1,30 @@
 # RT - Captcha Word Manager
 
-from typing import Dict, Tuple
-from time import time
+from typing import TYPE_CHECKING, Dict, Tuple
 
 from discord.ext import commands
 import discord
 
+from time import time
+
+if TYPE_CHECKING:
+    from .__init__ import Captcha
+
 
 class WordCaptcha(commands.Cog):
-    def __init__(self, captcha_cog):
+    def __init__(self, captcha_cog: "Captcha"):
         self.cog = captcha_cog
         self.queue: Dict[str, Tuple[Tuple[int, str], float]] = {}
         self.cog.bot.add_listener(self.on_message, "on_message")
 
-    async def captcha(self, channel: discord.TextChannel,
-                      member: discord.Member) -> None:
+    async def captcha(
+        self, channel: discord.TextChannel, member: discord.Member
+    ) -> None:
         await channel.send(
             {"ja": f"{member.mention}, 合言葉を入力してください。" \
-                "\n一時間放置されると無効になるので一時間放置した場合はサーバーに参加し直してください。",
+                f"\n放置すると無効になります。",
              "en": f"{member.mention}, Please type password." \
-                "\nIf you leave it for an hour, it will become invalid, so if you leave it for an hour, please rejoin the server."},
+                f"\nIf you leave it, it will become invalid."},
             target=member.id
         )
         row = await self.cog.load(channel.guild.id)
