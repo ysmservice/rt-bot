@@ -44,7 +44,7 @@ class TimeoutDataManager(RUDatabaseManager):
             (guild_id, timeout, int(kick), timeout, int(kick))
         )
 
-    async def read_timeout(self, guild_id: int, cursor: Cursor = None) -> Optional[Tuple[int, bool]]:
+    async def read_timeout(self, cursor, guild_id: int) -> Optional[Tuple[int, bool]]:
         await cursor.execute(
             f"SELECT Timeout, Kick FROM {self.TABLE} WHERE GuildID = %s;",
             (guild_id,)
@@ -64,7 +64,7 @@ class TimeoutDataManager(RUDatabaseManager):
                     obj = obj
                 else:
                     obj = obj.guild
-                row = await self.read_timeout(obj.id, cursor=cursor)
+                row = await self.read_timeout(cursor, obj.id)
                 timeout, kick = row or (60, False)
                 user = discord.Object(int(key[i+1:]))
                 if now - captcha.queue[key][1] > (timeout := 60 * timeout):
@@ -341,15 +341,14 @@ class Captcha(commands.Cog, DataManager, TimeoutDataManager):
 
     @websocket.websocket("/api/captcha", auto_connect=True, reconnect=True, log=True)
     async def websocket_(self, ws: websocket.WebSocket, _):
-        print("on_ready")
         await ws.send("on_ready")
 
     @websocket_.event("on_success")
     async def on_seccess(self, ws: websocket.WebSocket, user_id: str):
-        print("on_success", user_id)
+        self.websocket_.ws.print(f"On success: {user_id}")
         for key, (_, _, channel) in list(self.captchas["web"].queue.items()):
             if key.endswith(user_id):
-                print("do", key)
+                self.websocket_.ws.print(f"Adding role to {user_id}...")
                 await self.captchas["web"].success_user(
                     {
                         "user_id": int(user_id), "guild_id": int(key[:key.find("-")]),
