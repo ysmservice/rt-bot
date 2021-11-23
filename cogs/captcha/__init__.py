@@ -346,7 +346,7 @@ class Captcha(commands.Cog, DataManager, TimeoutDataManager):
 
     @websocket_.event("on_success")
     async def on_seccess(self, ws: websocket.WebSocket, user_id: str):
-        print("on_success" user_id)
+        print("on_success", user_id)
         for key, (_, _, channel) in list(self.captchas["web"].queue.items()):
             if key.endswith(user_id):
                 print("do", key)
