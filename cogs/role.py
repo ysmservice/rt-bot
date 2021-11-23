@@ -145,7 +145,7 @@ class RolePanelView(discord.ui.View):
                                 "name", role_id
                             ), value=role_id, emoji=emoji
                         ) for emoji, role_id in map(
-                            lambda row: (row[0], row[1][3:-1]),
+                            lambda row: (row[0], row[1].split()[0][3:-1]),
                             self.cog.old.parse_description(
                                 interaction.message.embeds[0].description,
                                 interaction.guild
