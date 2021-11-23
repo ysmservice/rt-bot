@@ -1,14 +1,18 @@
 # RT - Captcha Image Manager
 
+from typing import TYPE_CHECKING, Optional, Dict, Tuple
+
+import discord
+
 from jishaku.functools import executor_function
 from captcha.image import ImageCaptcha
-from typing import Optional, Dict, Tuple
 from aiofiles.os import remove
 from random import randint
 from os import listdir
 from time import time
 
-import discord
+if TYPE_CHECKING:
+    from .__init__ import Captcha
 
 
 class ImageCaptcha(ImageCaptcha):
@@ -16,7 +20,7 @@ class ImageCaptcha(ImageCaptcha):
     PASSWORD_LENGTH = 5
 
     def __init__(
-        self, captcha_cog,
+        self, captcha_cog: "Captcha",
         font_path: str = "data/captcha/SourceHanSans-Normal.otf"
     ):
         self.cog = captcha_cog
@@ -36,16 +40,17 @@ class ImageCaptcha(ImageCaptcha):
         self.write(characters, path)
         return characters
 
-    async def captcha(self, channel: discord.TextChannel,
-                      member: discord.Member) -> None:
+    async def captcha(
+        self, channel: discord.TextChannel, member: discord.Member
+    ) -> None:
         name = f"{channel.id}-{member.id}"
         path = f"data/captcha/{name}.png"
         self.queue[name] = (await self.create_image(path), time())
         await channel.send(
             {"ja": f"{member.mention}, 画像にある数字を入力してください。" \
-                "\n一時間放置されると無効になるので一時間放置した場合はサーバーに参加し直してください。",
+                f"\n放置すると無効になります。",
              "en": f"{member.mention}, Please, type number on the picture." \
-                 "\nIf you leave it for an hour, it will become invalid, so if you leave it for an hour, please rejoin the server."},
+                 "\nIf you leave it, it will become invalid."},
             target=member.id, file=discord.File(path)
         )
         await remove(path)
