@@ -38,7 +38,7 @@ def separate(text: str, character: str = "\n") -> Tuple[str, str]:
 def embed(markdown: str, **kwargs) -> Embed:
     """渡されたマークダウンの文字列をタイトルと説明とフィールドが設定されている`discord.Embed`に変換します。  
     見出しは三段階設定することができ、一段でタイトルで二段でフィールドそして三段で`**#** ...`のようになります。  
-    もしフィールドの`inline`を`False`にしたい場合は`##! `のようにしてください。
+    もしフィールドの`inline`を`False`にしたい場合は`## !`のようにしてください。
 
     Parameters
     ----------
@@ -73,8 +73,8 @@ def embed(markdown: str, **kwargs) -> Embed:
     embed = Embed(**kwargs)
     for field in fields:
         (name, value), inline = separate(field), True
-        if "#! " in name:
-            inline, name = False, name.replace("#! ", "# ", 1)
+        if name.startswith("!"):
+            inline, name = False, name[1:]
         embed.add_field(
             name=name, value=decoration(value), inline=inline
         )
