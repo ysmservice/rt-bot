@@ -94,7 +94,10 @@ class ChannelPluginGeneral(commands.Cog):
                             username=message.author.display_name + " RT's Auto Spoiler",
                             avatar_url=message.author.avatar.url,
                         )
-                        await message.delete()
+                        try:
+                            await message.delete()
+                        except (discord.NotFound, discord.Forbidden):
+                            pass
                 elif cmd.startswith("rt>ce"):
                     # Can't Edit
                     await message.channel.webhook_send(

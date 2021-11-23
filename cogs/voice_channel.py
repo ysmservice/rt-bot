@@ -248,6 +248,9 @@ class VCChannel(commands.Cog, DataManager):
     async def on_update(
         self, member: discord.Member, vc: discord.VoiceChannel
     ) -> None:
+        if not vc:
+            return
+    
         for row in await self.read(vc.id):
             try:
                 # チャンネルを削除を試みる。

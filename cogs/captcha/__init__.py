@@ -1,16 +1,84 @@
 # RT - Captcha
 
-from typing import TypedDict, Dict
+from typing import TypedDict, Optional, Dict, Tuple
 
 from discord.ext import commands, tasks
 import discord
 
+from rtutil import DatabaseManager as RUDatabaseManager
+from rtlib import RT, DatabaseManager, websocket
+
+from aiomysql import Pool, Cursor
+from ujson import loads, dumps
 from time import time
 
-from rtlib import RT, DatabaseManager, websocket
 from .image_captcha import ImageCaptcha
 from .word_captcha import WordCaptcha
 from .web_captcha import WebCaptcha
+
+
+class TimeoutDataManager(RUDatabaseManager):
+
+    TABLE = "captchaTimeout"
+
+    def __init__(self, cog: "Captcha"):
+        self.pool: Pool = cog.bot.mysql.pool
+        self.cog = cog
+        self.cog.bot.loop.create_task(self.init_timeout_table())
+
+    async def init_timeout_table(self, cursor: Cursor = None) -> None:
+        "データベースにテーブルを作る関数でクラスのインスタンス化時に自動で実行されます。"
+        await cursor.execute(
+            f"""CREATE TABLE IF NOT EXISTS {self.TABLE} (
+                GuildID BIGINT PRIMARY KEY NOT NULL, Timeout INT, Kick TINYINT
+            );"""
+        )
+
+    async def save_timeout(
+        self, guild_id: int, timeout: int = 60, kick: bool = False, cursor: Cursor = None
+    ) -> None:
+        assert 1 <= timeout <= 180, "タイムアウトの範囲が広すぎます。"
+        await cursor.execute(
+            f"""INSERT INTO {self.TABLE} VALUES (%s, %s, %s)
+                ON DUPLICATE KEY UPDATE Timeout = %s, Kick = %s;""",
+            (guild_id, timeout, int(kick), timeout, int(kick))
+        )
+
+    async def read_timeout(self, cursor, guild_id: int) -> Optional[Tuple[int, bool]]:
+        await cursor.execute(
+            f"SELECT Timeout, Kick FROM {self.TABLE} WHERE GuildID = %s;",
+            (guild_id,)
+        )
+        if (row := await cursor.fetchone()):
+            return (row[0], bool(row[1]))
+
+    async def process_cache(self, now: float, cursor: Cursor = None) -> None:
+        "コグにあるキャッシュでタイムアウトしているものを削除します。"
+        for captcha in list(self.cog.captchas.values()):
+            for key in list(captcha.queue.keys()):
+                id_ = int(key[:(i:=key.find("-"))])
+                obj = self.cog.bot.get_channel(id_)
+                if obj is None:
+                    obj = self.cog.bot.get_guild(id_)
+                if isinstance(obj, discord.Guild):
+                    obj = obj
+                else:
+                    obj = obj.guild
+                row = await self.read_timeout(cursor, obj.id)
+                timeout, kick = row or (60, False)
+                user = discord.Object(int(key[i+1:]))
+                if now - captcha.queue[key][1] > (timeout := 60 * timeout):
+                    del captcha.queue[key]
+                    if kick:
+                        try:
+                            await obj.kick(
+                                user, reason="認証のタイムアウトのため。"
+                            )
+                        except Exception as e:
+                            print(self.cog.__cog_name__, "Passed remove cache:", obj, key, e)
+                if ((key := f"{obj.id}-{user.id}") in self.cache
+                        and now - self.cache[key] > timeout):
+                    del self.cache[key]
 
 
 class DataManager(DatabaseManager):
@@ -96,7 +164,7 @@ class ClickCaptchaView(discord.ui.View):
                 )
 
 
-class Captcha(commands.Cog, DataManager):
+class Captcha(commands.Cog, DataManager, TimeoutDataManager):
     def __init__(self, bot: RT):
         self.bot = bot
         self.view = ClickCaptchaView(self.bot.user.id)
@@ -120,6 +188,12 @@ class Captcha(commands.Cog, DataManager):
         self.queue_killer.start()
         self.cache: Dict[str, float] = {}
         self.bot.loop.create_task(self.init_database())
+        super(DataManager, self).__init__(self)
+
+    async def get_timeout(self, guild_id: int) -> int:
+        if (row := await self.read_timeout(guild_id)):
+            return row[0]
+        return 60
 
     @commands.command(
         aliases=["ca", "認証", "きゃぷちゃ", "auth", "cpic"],
@@ -161,7 +235,7 @@ class Captcha(commands.Cog, DataManager):
         設定する際
         `rt!captcha web @認証済み`  
         ウェブ認証で認証成功時には`認証済み`という役職を付与する用に設定します。
-        
+
         解除する際
         `rt!captcha off`
         認証を有効にしているチャンネルで実行すると、設定を解除できます。
@@ -170,9 +244,11 @@ class Captcha(commands.Cog, DataManager):
         -----
         認証をするチャンネルは認証済みの人から見えないようにするのを推奨します。  
         そうすれば荒らしをする自動で動くユーザーが来た際に荒らしの影響を認証済みユーザーは受けません。  
-        このコマンドを実行することができるのは管理者権限を持っている人のみです。
+        このコマンドを実行することができるのは管理者権限を持っている人のみです。  
+        また、認証にタイムアウトを設定したい場合は`rt!ct 何分 キックをするかどうか(on/off)`のようにしましょう。(デフォルトは一時間でタイムアウトでキックはしません。)  
+        (ワンクリック認証はタイムアウトを設定できないので`requiresend`などを使用しましょう。)
 
-        !lang en
+        !Lang en
         --------
         Set up authentication.  
         By setting up authentication, you can allow people who join the server to speak if they are not self-bots (users who run automatically).  
@@ -199,7 +275,8 @@ class Captcha(commands.Cog, DataManager):
         -----
         It is recommended to make the authenticating channel invisible to authenticated users and set slowmode.  
         This way, if an automated vandal comes along, the authenticated users will not be affected by the vandalism.  
-        This command can only be executed by someone with administrative privileges."""
+        This command can only be executed by someone with administrative privileges.
+        Also, if you want to set a timeout for authentication, use something like `rt!ct <how many minutes to timeout> <kick (on/off)>`. (Default is `rt!ct 60 off`)"""
         if role is None:
             await self.delete(ctx.channel)
         elif mode == "click":
@@ -217,6 +294,18 @@ class Captcha(commands.Cog, DataManager):
                 mode = "word"
             await self.save(ctx.channel, mode, role.id, extras)
         await ctx.reply("Ok")
+
+    @commands.command()
+    async def ct(self, ctx: commands.Context, timeout: int, kick: bool):
+        try:
+            await self.save_timeout(ctx.guild.id, timeout, kick)
+        except AssertionError:
+            await ctx.reply(
+                {"ja": "タイムアウトは一分から三時間までの範囲である必要があります。",
+                 "en": "The timeout should be in the range of one minute to three hours."}
+            )
+        else:
+            await ctx.reply("Ok")
 
     async def init_database(self):
         super(commands.Cog, self).__init__(
@@ -237,35 +326,31 @@ class Captcha(commands.Cog, DataManager):
             channel = discord.utils.get(member.guild.text_channels, id=row[1])
             if channel:
                 await captcha.captcha(channel, member)
-            self.cache[key] = time() + 3600
+            self.cache[key] = time()
 
     def cog_unload(self):
         self.queue_killer.cancel()
 
-    @tasks.loop(minutes=1)
+    @tasks.loop(seconds=30)
     async def queue_killer(self):
         # 放置されて溜まってしまっている認証queueを削除する。
         now = time()
-        for captcha in list(self.captchas.values()):
-            for key in list(captcha.queue.keys()):
-                if now - captcha.queue[key][1] > 3600:
-                    del captcha.queue[key]
-        # 溜まったキャッシュを削除する。
-        for key, timeout in list(self.cache.items()):
-            if timeout <= now:
-                del self.cache[key]
+        await self.process_cache(now)
 
     def remove_cache(self, member: discord.Member) -> None:
         del self.cache[f"{member.guild.id}-{member.id}"]
 
-    @websocket.websocket("/api/captcha", auto_connect=True, reconnect=True,)
+    @websocket.websocket("/api/captcha", auto_connect=True, reconnect=True, log=True)
     async def websocket_(self, ws: websocket.WebSocket, _):
+        self.websocket_.ws.print("I'm ready to captcha.")
         await ws.send("on_ready")
 
     @websocket_.event("on_success")
     async def on_seccess(self, ws: websocket.WebSocket, user_id: str):
+        self.websocket_.ws.print(f"On success: {user_id}")
         for key, (_, _, channel) in list(self.captchas["web"].queue.items()):
             if key.endswith(user_id):
+                self.websocket_.ws.print(f"Adding role to {user_id}...")
                 await self.captchas["web"].success_user(
                     {
                         "user_id": int(user_id), "guild_id": int(key[:key.find("-")]),

@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, TypedDict, Dict, Tuple
 
 import discord
 
+from inspect import cleandoc
 from time import time
 
 if TYPE_CHECKING:
@@ -72,19 +73,19 @@ class WebCaptcha:
         embed = discord.Embed(
             title={"ja": "ウェブ認証", "en": "Web Captcha"},
             description={
-                "ja": ("喋るには認証をしなければいけません。"
-                    "\n認証を開始するには以下にアクセスしてください。\n"
-                    f"Captcha URL : {self.base_url}captcha"
-                    "\n※一時間放置されると無効になるので一時間放置した場合はサーバーに参加し直してください。"),
-                "en": ("You must do authentication to speak."
-                    "\nPlease access to that url to do authentication."
-                    f"Captcha URL : {self.base_url}captcha"
-                    "\n* If you leave it for an hour, it will become invalid, so if you leave it for an hour, please rejoin the server.")
+                "ja": cleandoc("""喋るには認証をしなければいけません。
+                    認証を開始するには下にあるボタンから認証ページにアクセスしてください。
+                    ※放置されると無効になります。"""),
+                "en": cleandoc("""You must do authentication to speak.
+                    Please access to that url to do authentication.
+                    * If you leave it, it will become invalid.""")
             }, color=self.cog.bot.colors["normal"]
         )
         embed.set_footer(
-            text="Powered by hCaptcha"
+            text="Powered by hCaptcha", icon_url="https://www.google.com/s2/favicons?domain=hcaptcha.com"
         )
+        view = discord.ui.View()
+        view.add_item(discord.ui.Button(label="認証を行う", url=f"{self.base_url}captcha"))
         await channel.send(
-            member.mention, embed=embed, target=member.id
+            member.mention, embed=embed, view=view, target=member.id
         )

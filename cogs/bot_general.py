@@ -264,6 +264,12 @@ class BotGeneral(commands.Cog):
                     f"`rt!help <word>`で検索が可能です。\nもしかして：{suggestion}",
                 "en": f"It can't found that command.\n`rt!help <word>`This can search command.\nSuggetion:{suggestion}"}
             color = self.bot.colors["unknown"]
+        elif isinstance(error, discord.Forbidden):
+            title = "500 Internal Server Error"
+            description = {
+                "ja": "RTに権限がないため正常にコマンドを実行できませんでした。",
+                "en": "The command could not be executed successfully because RT does not have permissions."
+            }
         elif isinstance(error, commands.errors.CommandOnCooldown):
             if (ctx.command.qualified_name in self.cache.get(ctx.author.id, {})
                     and not hasattr(ctx, "__setting_context__")):
@@ -326,16 +332,12 @@ class BotGeneral(commands.Cog):
             title = "403 Forbidden"
             description = {"ja": "あなたはこのコマンドの実行に必要な役職を持っていないため、このコマンドを実行できません。",
                            "en": "You can't do this command. Because you need permission"}
-        elif isinstance(error, discord.Forbidden):
-            title = "500 Internal Server Error"
-            description = {
-                "ja": "RTに権限がないため正常にコマンドを実行できませんでした。",
-                "en": "The command could not be executed successfully because RT does not have permissions."
-            }
         elif isinstance(error, commands.errors.CheckFailure):
             title = "403 Forbidden"
             description = {"ja": "あなたはこのコマンドを実行することができません。",
                            "en": "You can't do this command."}
+        elif isinstance(error, commands.CommandInvokeError):
+            return await self.on_command_error(ctx, error.original)
         else:
             error_message = "".join(
                 TracebackException.from_exception(error).format()
