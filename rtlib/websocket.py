@@ -9,6 +9,7 @@ from discord.ext import commands
 
 from asyncio import Event, sleep, Task
 from collections import defaultdict
+from traceback import print_exc
 from ujson import loads, dumps
 from functools import wraps
 
@@ -183,6 +184,12 @@ class WebSocket:
         return await self.event_handlers[event_type](self, data, *args, **kwargs)
 
     async def connect(self, pcfe: bool):
+        try:
+            return await self._connect(pcfe)
+        except Exception:
+            print_exc()
+
+    async def _connect(self, pcfe):
         "WebSocketに接続して通信を開始します。"
         while not self.cog.bot.is_closed() and self.running == "doing":
             # 接続を試みて失敗した場合にreconnectがTrueの時のみ三秒後もう一度接続する。
@@ -228,7 +235,7 @@ class WebSocket:
                 self.print(f"Finished websocket connection ({self.running})")
 
                 if (not self.cog.bot.is_closed() and self._reconnect
-                        and not self.reload and self.running != "reload"):
+                        and self.running != "unload"):
                     await self.close()
                     self.print("I will try to reconnect.")
                     self.running = "doing"
@@ -252,9 +259,11 @@ class WebSocket:
         try:
             data = await coro
         except wsexceptions.ConnectionClosedOK:
-            self.running = "ok"
+            if self.running != "unload":
+                self.running = "ok"
         except wsexceptions.ConnectionClosedError:
-            self.running = "error"
+            if self.running != "unload":
+                self.running = "error"
         else:
             return data
 
@@ -268,7 +277,7 @@ class WebSocket:
     async def close(self, code: int = 1000, reason: str = "") -> None:
         "WebSocket通信を終了します。"
         if code == 4000:
-            self.running = "reload"
+            self.running = "unload"
         else:
             self.running = "ok" if self._check_error(code) else "error"
         if self.ws:
