@@ -340,14 +340,17 @@ class Captcha(commands.Cog, DataManager, TimeoutDataManager):
     def remove_cache(self, member: discord.Member) -> None:
         del self.cache[f"{member.guild.id}-{member.id}"]
 
-    @websocket.websocket("/api/captcha", auto_connect=True, reconnect=True)
+    @websocket.websocket("/api/captcha", auto_connect=True, reconnect=True, log=True)
     async def websocket_(self, ws: websocket.WebSocket, _):
+        print("on_ready")
         await ws.send("on_ready")
 
     @websocket_.event("on_success")
     async def on_seccess(self, ws: websocket.WebSocket, user_id: str):
+        print("on_success", user_id)
         for key, (_, _, channel) in list(self.captchas["web"].queue.items()):
             if key.endswith(user_id):
+                print("do", key)
                 await self.captchas["web"].success_user(
                     {
                         "user_id": int(user_id), "guild_id": int(key[:key.find("-")]),
