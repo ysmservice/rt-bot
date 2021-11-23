@@ -321,7 +321,7 @@ class Bump(commands.Cog, DataManager):
 
         if check:
             row = await self.load(message.guild.id, data["mode"])
-            if row[-1]["onoff"]:
+            if row and row[-1]["onoff"]:
                 # 既に書き込まれてるデータに次通知する時間とチャンネルを書き込む。
                 new = row[-1]
                 new["notification"] = time() + data["time"]
