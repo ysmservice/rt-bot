@@ -179,8 +179,8 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         )
 
     async def after_playing(
-            self, guild: discord.Guild, file_path: str, e: Optional[Type[Exception]]
-        ) -> None:
+        self, guild: discord.Guild, file_path: str, e: Optional[Type[Exception]]
+    ) -> None:
         # 読み上げ後は読み上げたファイルを削除してもう一度playを実行します。
         if (not file_path.startswith("http") and file_path != "None"
                 and "routine" not in file_path):
@@ -443,9 +443,12 @@ class TTS(commands.Cog, VoiceManager, DataManager):
     )
     @commands.has_permissions(administrator=True)
     async def set_dictionary(
-            self, ctx,
-            before: Option(str, "target", "交換対象とする文字列です。"),
-            *, after: Option(str, "replace", "交換する文字列です。")):
+        self, ctx, before: Option(
+            str, "target", "交換対象とする文字列です。"
+        ), *, after: Option(
+            str, "replace", "交換する文字列です。"
+        )
+    ):
         """!lang ja
         --------
         辞書を設定します。  
@@ -488,9 +491,10 @@ class TTS(commands.Cog, VoiceManager, DataManager):
     )
     @commands.has_permissions(administrator=True)
     async def delete_dictionary(
-                self, ctx, *,
-                word: Option(str, "target", "削除する辞書の交換対象名です。")
-            ):
+        self, ctx, *, word: Option(
+            str, "target", "削除する辞書の交換対象名です。"
+        )
+    ):
         """!lang ja
         --------
         辞書を削除します。
@@ -571,18 +575,21 @@ class TTS(commands.Cog, VoiceManager, DataManager):
             self.cache[ctx.author.id]["routine"] = data
         await ctx.reply("Ok")
 
+    @executor_function
+    async def get_durations(self, path: str) -> float:
+        return AudioSegment.from_file(path, path[path.rfind(".") + 1:]).duration_seconds
+
     @routine.command(
         name="add", aliases=["あどど"],
         description="ネタ音声を追加します。 / Add rutine voice."
     )
     @commands.cooldown(1, 15, commands.BucketType.user)
     async def add_routine(
-            self, ctx, *,
-            aliases: Option(
-                str, "triggers",
-                "ネタ音声の再生のトリガーとなる文字列です。空白で複数選択可能です。 / Aliases."
-            )
-        ):
+        self, ctx, *, aliases: Option(
+            str, "triggers",
+            "ネタ音声の再生のトリガーとなる文字列です。空白で複数選択可能です。 / Aliases."
+        )
+    ):
         """!lang ja
         --------
         ネタボイスを登録します。  
@@ -637,7 +644,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                 path = f"cogs/tts/routine/{ctx.author.id}-{ctx.message.attachments[0].filename}"
                 await ctx.message.attachments[0].save(path)
                 # 時間が7秒以上じゃないか確認する。
-                if AudioSegment.from_file(path, path[path.rfind(".") + 1:]).duration_seconds <= 7:
+                if await self.get_durations(path) <= 7:
                     data[path] = {
                         "aliases": aliases.split(),
                         "file_name": ctx.message.attachments[0].filename
@@ -669,9 +676,10 @@ class TTS(commands.Cog, VoiceManager, DataManager):
     )
     @commands.cooldown(1, 15, commands.BucketType.user)
     async def remove_routine(
-            self, ctx, *,
-            alias: Option(str, "target", "削除するネタ音声に登録してる言葉です。")
-        ):
+        self, ctx, *, alias: Option(
+            str, "target", "削除するネタ音声に登録してる言葉です。"
+        )
+    ):
         """!lang ja
         --------
         登録したネタボイスを削除します。
@@ -728,10 +736,10 @@ class TTS(commands.Cog, VoiceManager, DataManager):
 
     @commands.Cog.listener()
     async def on_voice_state_update(
-            self, member: discord.Member,
-            before: discord.VoiceState,
-            after: discord.VoiceState
-        ) -> None:
+        self, member: discord.Member,
+        before: discord.VoiceState,
+        after: discord.VoiceState
+    ) -> None:
         # on_member_join/leaveのどっちかを呼び出すためのものです。
         if before.channel and after.channel and before.channel.id != after.channel.id:
             # もしメンバーがボイスチャンネルを移動したなら。
