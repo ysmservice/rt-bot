@@ -5,12 +5,16 @@ from typing import Tuple, Dict, List
 from discord.ext import commands, tasks
 import discord
 
+from rtlib import RT, DatabaseManager as OldDatabaseManager
+from rtutil import DatabaseManager
+
 from collections import defaultdict
-from rtlib import DatabaseManager
+from aiomysql import Pool, Cursor
 from ujson import loads, dumps
+from time import time
 
 
-class DataManager(DatabaseManager):
+class DataManager(OldDatabaseManager):
 
     TABLE = "ForcePinnedMessage"
 
@@ -66,13 +70,53 @@ class DataManager(DatabaseManager):
             return 0, 0, False, ""
 
 
+class IntervalDataManager(DatabaseManager):
+
+    TABLE = "ForcePinnedMessageInterval"
+
+    def __init__(self, cog: "ForcePinnedMessage"):
+        self.cog = cog
+        self.pool: Pool = self.cog.bot.mysql.pool
+        self.cog.bot.loop.create_task(self.prepare_table())
+
+    async def prepare_table(self, cursor: Cursor = None) -> None:
+        "テーブルを準備する。クラスのインスタンス化時に自動で実行されます。"
+        await cursor.execute(
+            f"""CREATE TABLE IF NOT EXISTS {self.TABLE} (
+                ChannelID BIGINT NOT NULL PRIMARY KEY, Minutes FLOAT
+            );"""
+        )
+
+    async def write(
+        self, channel_id: int, minutes: float, cursor: Cursor = None
+    ) -> None:
+        "インターバルを書き込みます。"
+        await cursor.execute(
+            f"""INSERT INTO {self.TABLE} VALUES (%s, %s)
+                ON DUPLICATE KEY UPDATE Minutes = %s;""",
+            (channel_id, minutes, minutes)
+        )
+
+    async def read(self, channel_id: int, cursor: Cursor) -> float:
+        "インターバルを取得します。見つからなければ`5.0`が返されます。"
+        await cursor.execute(
+            f"SELECT Minutes FROM {self.TABLE} WHERE ChannelID = %s;",
+            (channel_id,)
+        )
+        if (row := await cursor.fetchone()):
+            return row[0]
+        else:
+            return 5.0
+
+
 class ForcePinnedMessage(commands.Cog, DataManager):
-    def __init__(self, bot):
+    def __init__(self, bot: RT):
         self.bot = bot
-        self.queue: Dict[int, Tuple[discord.Message, tuple]] = {}
+        self.queue: Dict[int, Tuple[discord.Message, float]] = {}
         self.remove_queue: List[int] = []
-        self.cache = defaultdict(list)
+        self.cache: Dict[int, List[int]] = defaultdict(list)
         self.bot.loop.create_task(self.on_ready())
+        self.interval = IntervalDataManager(self)
 
     async def on_ready(self):
         await self.bot.wait_until_ready()
@@ -92,7 +136,7 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         }, aliases=["ピン留め", "ぴんどめ", "fpm", "forcepinmessage"]
     )
     @commands.has_permissions(manage_messages=True)
-    async def pin(self, ctx, onoff: bool, *, content=""):
+    async def pin(self, ctx: commands.Context, onoff: bool, *, content=""):
         """!lang ja
         --------
         いつも下にくるメッセージを作ることができます。  
@@ -124,13 +168,14 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         Notes
         -----
         下に来るメッセージは数秒毎に更新されるので数秒は下に来ないことがあります。  
-        以下のように最初に`>>`を置いて`embed`コマンドの構文を使えば埋め込みにすることができます。
+        以下のように最初に`# `を置いて`embed`コマンドの構文を使えば埋め込みにすることができます。
         ```
-        rt!pin on >>タイトル
+        rt!pin on # タイトル
         説明
-        <フィールド名
+        ## フィールド名
         フィールド内容
         ```
+        また、送信頻度を一時間に一回などのしたい場合は`rt!pinit <何分>`のようにすれば良いです。
 
         Warnings
         --------
@@ -173,16 +218,22 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         Please note that this is to prevent RTs from sending too many messages, which would limit the API."""
         if hasattr(ctx.channel, "topic"):
             await ctx.trigger_typing()
-            if content.startswith(">>"):
+
+            if content.startswith("# "):
+                # もし埋め込みならjsonにする。
                 content = "<" + dumps(
                     self.bot.cogs["ServerTool"].easy_embed(
                         content, ctx.author.color
                     ).to_dict()
                 ) + ">"
+
+            # Saveをする。
             await self.setting(
                 ctx.guild.id, ctx.channel.id, 0,
                 ctx.author.id, onoff, content
             )
+
+            # Queueなどの処理をする。
             if not onoff and ctx.channel.id in self.queue:
                 del self.queue[ctx.channel.id]
                 if ctx.channel.id not in self.remove_queue:
@@ -190,9 +241,22 @@ class ForcePinnedMessage(commands.Cog, DataManager):
             if onoff and ctx.channel.id in self.remove_queue:
                 self.remove_queue.remove(ctx.channel.id)
             await self.update_cache()
+
             await ctx.reply("Ok")
         else:
             await ctx.reply("スレッドに設定することはできません。")
+
+    @commands.command()
+    async def pinit(self, ctx: commands.Context, interval: float):
+        if 0.083 <= interval <= 180:
+
+            if ctx.channel.id in self.cache[ctx.guild.id]:
+                await self.interval.write(ctx.channel.id, interval * 60)
+                await ctx.reply("Ok")
+            else:
+                await ctx.reply("強制ピン留めがこのチャンネルには設定されていません。")
+        else:
+            await ctx.reply("インターバルは五秒から三時間までしか設定できません。")
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -200,37 +264,45 @@ class ForcePinnedMessage(commands.Cog, DataManager):
             return
 
         if message.channel.id not in self.remove_queue:
-            if message.guild.id in self.cache and message.channel.id in self.cache[message.guild.id]:
-                self.queue[message.channel.id] = (
-                    message, await self.get(message.guild.id, message.channel.id)
-                )
+            if (message.guild.id in self.cache
+                    and message.channel.id in self.cache[message.guild.id]):
+                self.queue[message.channel.id] = (message, time())
 
     def cog_unload(self):
         self.worker.cancel()
 
     @tasks.loop(seconds=5)
     async def worker(self):
-        for channel_id in list(self.queue.keys()):
+        "Queueに入れられたメッセージを読み取って強制ピン留めのメッセージ送信を行います。"
+        now = time()
+        for channel_id, (message, time_) in list(self.queue.items()):
+            # 事前処理
             if channel_id in self.remove_queue:
                 self.remove_queue.remove(channel_id)
             if channel_id not in self.queue:
                 continue
-            message, fpm = self.queue[channel_id]
+
+            # インターバルをチェックする。
+            if now - time_ < await self.interval.read(channel_id):
+                continue
+
+            # 送信内容などの取得を行う。
+            fpm = await self.get(message.guild.id, message.channel.id)
+
+            # 前回のメッセージの削除を試みる。
             new_message = None
-            try:
-                if fpm[1] != 0:
-                    # 前回のメッセージの削除を試みる。
-                    before_message = await message.channel.fetch_message(fpm[1])
+            if fpm[1] != 0:
+                before_message = await message.channel.fetch_message(fpm[1])
 
-                    if before_message:
+                if before_message:
+                    try:
                         await before_message.delete()
-            except (discord.NotFound, discord.Forbidden, discord.HTTPException):
-                pass
-            try:
+                    except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+                        pass
+            if channel_id in self.queue:
                 del self.queue[channel_id]
-            except KeyError:
-                pass
 
+            # メッセージなどの調整をする。
             member = message.guild.get_member(fpm[0])
             if member is None:
                 member = self.bot.get_user(fpm[0])
@@ -243,6 +315,7 @@ class ForcePinnedMessage(commands.Cog, DataManager):
             else:
                 kwargs = {"content": content}
 
+            # メッセージの送信を行う。
             try:
                 new_message = await message.channel.webhook_send(
                     username=f"{getattr(member, 'display_name', member.name)} RT-ForcePinnedMessage",
@@ -252,6 +325,7 @@ class ForcePinnedMessage(commands.Cog, DataManager):
                 if not isinstance(e, (discord.Forbidden, discord.HTTPException)):
                     print("(ignore) Error on ForcePinnedMessage:", e)
 
+            # 送信したメッセージを次消せるように記録しておく。
             if message.guild and message.channel and member:
                 await self.setting(
                     message.guild.id, message.channel.id,
@@ -259,6 +333,7 @@ class ForcePinnedMessage(commands.Cog, DataManager):
                     member.id, True, fpm[3]
                 )
             else:
+                # もしチャンネルが見つからないなどの理由でメッセージ送信に失敗したなら設定を削除する。
                 await self.delete(channel_id)
 
 
