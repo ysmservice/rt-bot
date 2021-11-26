@@ -48,9 +48,10 @@ class Locker(commands.Cog, DataManager):
         self.auto_unlock_loop.start()
 
     async def channel_lock(
-            self, channel: discord.TextChannel, lock: bool,
-            roles: List[discord.Role] = []) -> List[discord.Role]:
-        # 指定されたチャンネルをロックします。
+        self, channel: discord.TextChannel, lock: bool,
+        roles: List[discord.Role] = []
+    ) -> List[discord.Role]:
+        "指定されたチャンネルをロックします。"
         cans, lock = [], not lock
         if not channel.overwrites:
             overwrites = {

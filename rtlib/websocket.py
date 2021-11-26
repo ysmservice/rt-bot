@@ -9,6 +9,7 @@ from discord.ext import commands
 
 from asyncio import Event, sleep, Task
 from collections import defaultdict
+from traceback import print_exc
 from ujson import loads, dumps
 from functools import wraps
 
@@ -183,6 +184,12 @@ class WebSocket:
         return await self.event_handlers[event_type](self, data, *args, **kwargs)
 
     async def connect(self, pcfe: bool):
+        try:
+            return await self._connect(pcfe)
+        except Exception:
+            print_exc()
+
+    async def _connect(self, pcfe):
         "WebSocketに接続して通信を開始します。"
         while not self.cog.bot.is_closed() and self.running == "doing":
             # 接続を試みて失敗した場合にreconnectがTrueの時のみ三秒後もう一度接続する。
@@ -201,40 +208,40 @@ class WebSocket:
                     else:
                         raise ConnectionFailed("WebSocketサーバーに接続できませんでした。")
             else:
-                break
+                self.print("Connected to websocket")
 
-        self.print("Connected to websocket")
+                # 接続した際にもし「on_connect」があるならそれを実行する。
+                if "on_connect" in self.event_handlers:
+                    await self.run_event("on_connect", {})
 
-        # 接続した際にもし「on_connect」があるならそれを実行する。
-        if "on_connect" in self.event_handlers:
-            await self.run_event("on_connect", {})
+                # メインの通信を開始する。
+                while not self.cog.bot.is_closed() and self.running == "doing":
+                    data = await self.recv()
 
-        # メインの通信を開始する。
-        while not self.cog.bot.is_closed() and self.running == "doing":
-            data = await self.recv()
+                    if data:
+                        if data["event_type"] in self.event_handlers:
+                            # イベントハンドラを実行してもしデータを返されたならそれを送り返す。
+                            if (return_data := await self.run_event(
+                                data["event_type"], data["data"])
+                            ):
+                                await self.send(data["event_type"], return_data)
+                        else:
+                            # もしイベントが見つからなかったのならWebSocketを切断する。
+                            self.print(
+                                f"Disconnected from bot because bot gave me an event that dosen't exists : {data['event_type']}"
+                            )
+                            await self.close(1003, "そのイベントが見つかりませんでした。")
 
-            if data:
-                if data["event_type"] in self.event_handlers:
-                    # イベントハンドラを実行してもしデータを返されたならそれを送り返す。
-                    if (return_data := await self.run_event(
-                        data["event_type"], data["data"])
-                    ):
-                        await self.send(data["event_type"], return_data)
+                self.print(f"Finished websocket connection ({self.running})")
+
+                if (not self.cog.bot.is_closed() and self._reconnect
+                        and self.running != "unload"):
+                    await self.close()
+                    self.print("I will try to reconnect.")
+                    self.running = "doing"
+                    await sleep(3)
                 else:
-                    # もしイベントが見つからなかったのならWebSocketを切断する。
-                    self.print(
-                        f"Disconnected from bot because bot gave me an event that dosen't exists : {data['event_type']}"
-                    )
-                    await self.close(1003, "そのイベントが見つかりませんでした。")
-
-        self.print(f"Finished websocket connection ({self.running})")
-
-        if not self.cog.bot.is_closed() and self._reconnect:
-            await self.close()
-            self.print("I will try to reconnect.")
-            self.running = "doing"
-            await sleep(3)
-            self.task = self.cog.bot.loop.create_task(self.connect(pcfe))
+                    break
 
     async def send(self, event_type: str, data: PacketData = "") -> None:
         "データを送信します。"
@@ -252,9 +259,11 @@ class WebSocket:
         try:
             data = await coro
         except wsexceptions.ConnectionClosedOK:
-            self.running = "ok"
+            if self.running != "unload":
+                self.running = "ok"
         except wsexceptions.ConnectionClosedError:
-            self.running = "error"
+            if self.running != "unload":
+                self.running = "error"
         else:
             return data
 
@@ -265,9 +274,12 @@ class WebSocket:
     def _check_error(self, code: int) -> bool:
         return code in (1000, 1001)
 
-    async def close(self, code: int = 1000, reason: str = ""):
+    async def close(self, code: int = 1000, reason: str = "") -> None:
         "WebSocket通信を終了します。"
-        self.running = "ok" if self._check_error(code) else "error"
+        if code == 4000:
+            self.running = "unload"
+        else:
+            self.running = "ok" if self._check_error(code) else "error"
         if self.ws:
             await self.ws.close(code, reason)
             self.print(f"Disconnected from websocket ({self.running})")
@@ -325,9 +337,7 @@ class WebSocketManager(commands.Cog):
         # 渡されたウェブソケットを閉じる。
         if websocket in self._websockets:
             self._websockets.remove(websocket)
-            await websocket.close(
-                reason="コグの削除による切断です。"
-            )
+            await websocket.close(4000, "コグの削除による切断です。")
             if hasattr(websocket, "task"):
                 websocket.task.cancel()
         del websocket

@@ -195,7 +195,10 @@ class UrlChecker(commands.Cog, DataManager):
                 ) and "https://discord.com" not in message.content
                 and message.channel.id not in self.channel_runnings
                 and not message.content.startswith(tuple(self.bot.command_prefix))):
-            await message.add_reaction(self.EMOJI)
+            try:
+                await message.add_reaction(self.EMOJI)
+            except discord.NotFound:
+                pass
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction: discord.Reaction, user: discord.User):

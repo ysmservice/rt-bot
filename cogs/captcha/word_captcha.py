@@ -51,8 +51,12 @@ class WordCaptcha(commands.Cog):
                             {"ja": f"{message.author.mention}, 認証に成功しました。",
                              "en": f"{message.author.mention}, Success!"}
                         )
-                        await message.delete()
-                        self.cog.remove_cache(message.author)
+                        try:
+                            await message.delete()
+                        except (discord.HTTPException, discord.Forbidden):
+                            pass
+                        finally:
+                            self.cog.remove_cache(message.author)
                 else:
                     await message.channel.send(
                         {"ja": f"{message.author.mention}, 役職が見つからないため認証に失敗しました。",
