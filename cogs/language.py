@@ -254,7 +254,7 @@ class Language(commands.Cog):
         # 言語コードが使えない場合はValueErrorを発生する。
         if language not in self.LANGUAGES:
             code = "invalid language code is inserted. 無効な言語コードです。"
-            raise ValueError(f"Error: {code}")
+            return await ctx.reply(code)
 
         # 返信内容と変更内容を用意する。
         color = self.bot.colors["normal"]
