@@ -293,13 +293,13 @@ class ForcePinnedMessage(commands.Cog, DataManager):
             # 前回のメッセージの削除を試みる。
             new_message = None
             if fpm[1] != 0:
-                before_message = await message.channel.fetch_message(fpm[1])
+                try:
+                    before_message = await message.channel.fetch_message(fpm[1])
 
-                if before_message:
-                    try:
+                    if before_message:
                         await before_message.delete()
-                    except (discord.NotFound, discord.Forbidden, discord.HTTPException):
-                        pass
+                except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+                    pass
             if channel_id in self.queue:
                 del self.queue[channel_id]
 
