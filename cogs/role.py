@@ -12,7 +12,7 @@ from rtlib import RT
 from inspect import cleandoc
 
 if TYPE_CHECKING:
-    from .oldrole import OldRolePanel
+    from ._oldrole import OldRolePanel
 
 
 get_ja: Callable[[str], str] = \
@@ -114,7 +114,7 @@ class RolePanelView(discord.ui.View):
                 ephemeral=True
             )
 
-        if ((only_one := "複数" not in interaction.message.embeds[0].footer.text)
+        if ("複数" not in interaction.message.embeds[0].footer.text
                 and mode == "Add"):
             # もし一つしか付与できないモードならまだ何も役職を持っていないことを確認する。
             max_ = get_max(interaction.message.embeds[0].footer.text)
@@ -141,17 +141,17 @@ class RolePanelView(discord.ui.View):
                     interaction.user.id, [
                         discord.SelectOption(
                             label=getattr(
-                                interaction.guild.get_role(int_role_id),
+                                interaction.guild.get_role(int(role_id)),
                                 "name", role_id
                             ), value=role_id, emoji=emoji
                         ) for emoji, role_id in map(
-                            lambda row: (row[0], row[1][3:-1]),
+                            lambda row: (row[0], row[1].split()[0][3:-1]),
                             self.cog.old.parse_description(
                                 interaction.message.embeds[0].description,
                                 interaction.guild
                             ).items()
                         ) if self.check(
-                            mode, int_role_id := int(role_id), interaction.user
+                            mode, int(role_id), interaction.user
                         )
                     ], max_, mode, self.cog
                 ), ephemeral=True

@@ -5,8 +5,9 @@ from typing import Tuple
 from discord.ext import commands, tasks
 import discord
 
+from rtlib import RT, DatabaseManager
+
 from collections import defaultdict
-from rtlib import DatabaseManager
 from asyncio import sleep
 
 
@@ -121,7 +122,7 @@ class DataManager(DatabaseManager):
 
 
 class Level(commands.Cog, DataManager):
-    def __init__(self, bot):
+    def __init__(self, bot: RT):
         self.bot = bot
         self.queue = defaultdict(dict)
         self.bot.loop.create_task(self.on_ready())

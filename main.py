@@ -43,7 +43,7 @@ bot.admins = data["admins"]
 bot.secret = secret
 bot.mysql = bot.data["mysql"] = mysql.MySQLManager(
     loop=bot.loop, **secret["mysql"], pool=True,
-    minsize=1, maxsize=50 if bot.test else 1000, autocommit=True
+    minsize=1, maxsize=50 if bot.test else 50000, autocommit=True
 )
 bot.pool = bot.mysql.pool
 bot.is_admin = is_admin
@@ -72,6 +72,7 @@ async def on_ready():
     # 拡張を読み込む。
     setup(bot)
     bot.load_extension("jishaku")
+    bot.load_extension("cogs._oldrole")
     for name in listdir("cogs"):
         if not name.startswith("_"):
             try:

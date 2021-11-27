@@ -159,9 +159,12 @@ class ClickCaptchaView(discord.ui.View):
             else:
                 content = "付与するロールが見つからなかったので認証に失敗しました。"
             if content:
-                await interaction.response.send_message(
-                    content=content, ephemeral=True
-                )
+                try:
+                    await interaction.response.send_message(
+                        content=content, ephemeral=True
+                    )
+                except discord.NotFound:
+                    pass
 
 
 class Captcha(commands.Cog, DataManager, TimeoutDataManager):
@@ -248,7 +251,7 @@ class Captcha(commands.Cog, DataManager, TimeoutDataManager):
         また、認証にタイムアウトを設定したい場合は`rt!ct 何分 キックをするかどうか(on/off)`のようにしましょう。(デフォルトは一時間でタイムアウトでキックはしません。)  
         (ワンクリック認証はタイムアウトを設定できないので`requiresend`などを使用しましょう。)
 
-        !Lang en
+        !lang en
         --------
         Set up authentication.  
         By setting up authentication, you can allow people who join the server to speak if they are not self-bots (users who run automatically).  
@@ -340,9 +343,9 @@ class Captcha(commands.Cog, DataManager, TimeoutDataManager):
     def remove_cache(self, member: discord.Member) -> None:
         del self.cache[f"{member.guild.id}-{member.id}"]
 
-    @websocket.websocket("/api/captcha", auto_connect=True, reconnect=True, log=True)
+    @websocket.websocket("/api/captcha", auto_connect=True, reconnect=True)
     async def websocket_(self, ws: websocket.WebSocket, _):
-        self.websocket_.ws.print("I'm ready to captcha.")
+        self.websocket_.ws.print("I'm ready to captcha")
         await ws.send("on_ready")
 
     @websocket_.event("on_success")
@@ -358,6 +361,7 @@ class Captcha(commands.Cog, DataManager, TimeoutDataManager):
                     }
                 )
             del self.captchas["web"].queue[key]
+        await ws.send("on_ready")
 
 
 def setup(bot):
