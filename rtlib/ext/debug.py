@@ -88,9 +88,11 @@ class Debug(commands.Cog):
 
     @debug.command(aliases=["rh"])
     @require_admin
-    async def reload_help(self, ctx):
+    async def reload(self, ctx):
         async with ctx.typing():
+            self.bot.cogs["SettingManager"].reset()
             for coro in (
+                self.bot.cogs["SettingManager"].update(),
                 self.bot.cogs["DocHelp"].on_full_ready(),
                 self.bot.cogs["Translator"].on_command_added(),
                 self.bot.cogs["ChannelPluginGeneral"].on_command_added()

@@ -154,17 +154,26 @@ class SettingManager(commands.Cog):
         else:
             return "str"
 
-    @commands.Cog.listener()
-    async def on_command_add(self, command: commands.Command):
-        if command.__original_kwargs__.get("setting"):
-            self.data[command.qualified_name] = (
-                command, command.__original_kwargs__["setting"]
-            )
+    def reset(self):
+        self.data = {}
 
     @commands.Cog.listener("on_update_api")
     async def update(self):
         "APIにBotにあるコマンドの設定のJSONデータを送る。"
         # データを作る。
+        for command in self.bot.commands:
+            if command.__original_kwargs__.get("setting"):
+                for name, (cmd, _) in list(self.data.items()):
+                    if hash(cmd.callback) == hash(command.callback):
+                        if command.parent:
+                            del self.data[name]
+                        else:
+                            break
+                self.data[command.qualified_name] = (
+                    command, command.__original_kwargs__["setting"]
+                )
+
+        # バックエンド用のデータを作る。
         data = defaultdict(dict)
         for command, setting in self.data.values():
             kwargs = {
@@ -242,109 +251,11 @@ class SettingManager(commands.Cog):
                     )
                 ):
                     setattr(ctx, name, getattr(parsed_ctx, name))
+            print(ctx.content, ctx.command.qualified_name)
 
             return await self.bot.invoke(ctx.message)
         except Exception as e:
             self.bot.dispatch("command_error", ctx, e)
-
-    @commands.group("settest")
-    async def setting_test(self, ctx: Context):
-        ...
-
-    """
-    @setting_test.command(
-        extras={
-            "headding": {
-                "ja": "ダッシュボードテスト用のコマンド",
-                "en": "Test command for dashboard"
-            }, "parent": "Other"
-        }, setting=Setting("guild", "Setting Test Command")
-    )
-    async def setting_test_guild(
-        self, ctx: Context, normal, number: int, member: discord.Member,
-        channel: discord.TextChannel, member_or_str: Union[discord.Member, str],
-        literal: Literal["1", "2", "3"], embed: bool, default="aiueo",
-        *, bigbox
-    ):
-        content = "\n".join(
-            f"* {key}: {value}" for key, value in {
-                "normal": normal, "number": number, "member": member,
-                "channel": channel, "member_or_str": member_or_str,
-                "literal": literal, "embed": embed, "default": default,
-                "bigbox": bigbox.replace("\n", " [改行] ")
-            }.items()
-        )
-        content = {
-            "content": f"# 返信テスト (content)\n{content}",
-            "embed": discord.Embed(title="返信テスト (embed)", description=content)
-        }
-        del content["content" if embed else "embed"]
-        await ctx.reply(**content)
-    """
-
-    @setting_test.command(
-        setting=Setting("guild", channel=discord.TextChannel),
-        aliases=["stc"], headding={
-            "ja": "メッセージを特定のチャンネルに送信します。", "en": "Send message"
-        }, parent="ServerTool"
-    )
-    @commands.has_permissions(administrator=True)
-    @commands.cooldown(1, 5, commands.BucketType.channel)
-    async def send(self, ctx: Context, *, content: str):
-        await ctx.channel.send(content)
-        await ctx.reply(f"{ctx.channel.name}にメッセージを送信しました。")
-
-    @commands.command(
-        setting=Setting("user"), headding={
-            "ja": "IDチェッカー", "en": "ID Checker"
-        }, parent="Individual"
-    )
-    async def checker(self, ctx):
-        await ctx.reply(f"あなたのIDは`{ctx.author.id}`です。")
-
-    @commands.command(setting=Setting("Tools", "Loading表示"))
-    @commands.cooldown(1, 10, commands.BucketType.guild)
-    async def setting_test_loading(self, ctx: Context, number: Literal[1, 2, 3, 4, 5]):
-        await sleep(number)
-        await ctx.reply("Loading楽しかった？")
-
-    OKES = ["+", "-", "*", "/", "."]
-    OKCHARS = list(map(str, range(9))) + OKES
-
-    def safety(self, word):
-        return "".join(char for char in str(word) if char in self.OKCHARS)
-
-    @commands.command(
-        setting=Setting("Tools", "簡易電卓"), headding={
-            "ja": "式を入力して計算を行うことができます。", "en": "Calculation by expression"
-        }, parent="Individual"
-    )
-    async def calc(
-        self, ctx: Context, *, expression: str
-    ):
-        if len(expression) < 400:
-            await ctx.reply(f"計算結果：`{eval(self.safety(expression))}`")
-        else:
-            raise commands.BadArgument("計算範囲が大きすぎます！頭壊れます。")
-
-    @commands.command(
-        setting=Setting("Tools", "文字列逆順"),
-        headding={
-            "ja": "文字列を逆順にします。", "en": "Reverse text"
-        },
-        parent="Individual"
-    )
-    async def reverse(self, ctx: Context, *, bigbox):
-        await ctx.reply(f"結果：\n```\n{bigbox[::-1]}\n```")
-
-    @commands.command(
-        setting=Setting("Tools", "文字列交換"),
-        headding={
-            "ja": "文字列の交換を行います。", "en": "Replace text"
-        }, parent="Individual"
-    )
-    async def replace(self, ctx: Context, before, after, *, text):
-        await ctx.reply(f"結果：{text.replace(before, after)}")
 
     def cog_unload(self):
         if hasattr(self, "_session"):
