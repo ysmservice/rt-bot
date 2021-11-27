@@ -109,6 +109,12 @@ class ShortURL(commands.Cog, DataManager):
         if not ctx.invoked_subcommand:
             await ctx.reply("使用方法が違います。")
 
+    ALLOWED_CHARACTERS = "".join(
+        "".join(chr(i) for i in range(x, y)) for x, y in (
+            (48, 58), (65, 91), (97, 123)
+        )
+    )
+
     @url.command(aliases=["短縮", "add"])
     async def short(self, ctx, url: str, custom: str = None):
         """!lang ja
@@ -174,6 +180,10 @@ class ShortURL(commands.Cog, DataManager):
                     break
             else:
                 return await ctx.reply("すみませんが作れませんでした。\nもう一回やってみてください。")
+        elif not all(char in self.ALLOWED_CHARACTERS for char in custom):
+            return await ctx.reply(
+                f"以下の文字しか使用できません。\n`{self.ALLOWED_CHARACTERS}`"
+            )
         
         try:
             await self.add(ctx.author.id, url, custom)
