@@ -6,9 +6,9 @@
 
 int main(int argc, char **argv) {
 	int size;
-	char chars[1024];
+	char chars[8000];
 
-	if (fgets(chars, 1024 - 1, stdin) == 0)
+	if (fgets(chars, 8000 - 1, stdin) == 0)
 		return 0;
 
 	unsigned char *wav = AquesTalk_Synthe_Utf8(
