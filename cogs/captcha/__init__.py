@@ -251,7 +251,7 @@ class Captcha(commands.Cog, DataManager, TimeoutDataManager):
         また、認証にタイムアウトを設定したい場合は`rt!ct 何分 キックをするかどうか(on/off)`のようにしましょう。(デフォルトは一時間でタイムアウトでキックはしません。)  
         (ワンクリック認証はタイムアウトを設定できないので`requiresend`などを使用しましょう。)
 
-        !Lang en
+        !lang en
         --------
         Set up authentication.  
         By setting up authentication, you can allow people who join the server to speak if they are not self-bots (users who run automatically).  
