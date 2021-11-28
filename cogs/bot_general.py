@@ -375,12 +375,17 @@ class BotGeneral(commands.Cog):
         )
         await ctx.send(**kwargs)
 
+    def get_help_url(self, category: str, name: str) -> str:
+        return f"https://rt-bot.com/help.html?g={category}&c={name}"
+
     def get_command_url(self, command: commands.Command) -> str:
         "渡されたコマンドのヘルプのURLを返します。"
         for name in self.bot.cogs["Help"].CATEGORIES:
-            if self.bot.cogs["Help"].CATEGORIES[name] == command.extras.get("parent", ""):
-                break
-        return f"https://rt-bot.com/help.html?g={name}&c={command.name}"
+            if self.bot.cogs["Help"].CATEGORIES[name] == command.extras.get(
+                "parent", command.__original_kwargs__.get("parent", "")
+            ):
+                return self.get_help_url(name, command.name)
+        return ""
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):

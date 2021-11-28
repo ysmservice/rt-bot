@@ -15,12 +15,7 @@ class Tools(commands.Cog):
     def __init__(self, bot: RT):
         self.bot = bot
 
-    @commands.group("settest")
-    async def setting_test(self, ctx: Context):
-        if not ctx.invoked_subcommand:
-            await ctx.reply("...")
-
-    @setting_test.command(
+    @commands.command(
         aliases=["stc"], headding={
             "ja": "メッセージを特定のチャンネルに送信します。", "en": "Send message"
         }
@@ -35,13 +30,15 @@ class Tools(commands.Cog):
     @commands.command(
         headding={
             "ja": "IDチェッカー", "en": "ID Checker"
-        }, parent="Individual"
+        }
     )
     @Setting("user")
     async def checker(self, ctx):
         await ctx.reply(f"あなたのIDは`{ctx.author.id}`です。")
 
-    @commands.command()
+    @commands.command(
+        headding={"ja": "ダッシュボードのローディング表示テスト用のものです。"}
+    )
     @commands.cooldown(1, 10, commands.BucketType.guild)
     @Setting("Tools", "Loading表示")
     async def setting_test_loading(self, ctx: Context, number: Literal[1, 2, 3, 4, 5]):
@@ -57,7 +54,7 @@ class Tools(commands.Cog):
     @commands.command(
         headding={
             "ja": "式を入力して計算を行うことができます。", "en": "Calculation by expression"
-        }, parent="Individual"
+        }
     )
     @Setting("Tools", "簡易電卓")
     async def calc(
@@ -71,8 +68,7 @@ class Tools(commands.Cog):
     @commands.command(
         headding={
             "ja": "文字列を逆順にします。", "en": "Reverse text"
-        },
-        parent="Individual"
+        }
     )
     @Setting("Tools", "文字列逆順")
     async def reverse(self, ctx: Context, *, bigbox):
@@ -81,11 +77,25 @@ class Tools(commands.Cog):
     @commands.command(
         headding={
             "ja": "文字列の交換を行います。", "en": "Replace text"
-        }, parent="Individual"
+        }
     )
     @Setting("Tools", "文字列交換")
     async def replace(self, ctx: Context, before, after, *, text):
         await ctx.reply(f"結果：{text.replace(before, after)}")
+
+    @commands.command(
+        "RTを追い出します。", headding={
+            "ja": "RTをサーバーから追い出します。", "en": "Kick RT"
+        }
+    )
+    @commands.has_guild_permissions(administrator=True)
+    @Setting("guild")
+    async def leave(self, ctx: Context, password="ここに「うらみのワルツ」と入力してください。"):
+        if password == "うらみのワルツ":
+            await ctx.guild.leave()
+            await ctx.reply("* 返事がない。ただの屍のようだ。")
+        else:
+            await ctx.reply("「うらみのワルツ」を入力しなければ抜けません。")
 
 
 def setup(bot):

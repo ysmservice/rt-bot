@@ -35,14 +35,15 @@ class CommandRunData(TypedDict):
 class Setting:
     @overload
     def __init__(
-        _, mode: Literal["guild", "channel", "user"],
-        name: Optional[str] = None, **kwargs
+        _, mode: str, name: Optional[str] = None,
+        help_command: Tuple[str, str] = None, **kwargs
     ):
         ...
 
-    def __new__(cls, mode, name=None, **kwargs):
+    def __new__(cls, mode, name=None, help_command=None, **kwargs):
         self = super().__new__(cls)
         self.mode, self.name, self.kwargs = mode, name, kwargs
+        self.help_command = help_command
         def _decorator(func):
             func._setting = self
             return func
@@ -195,8 +196,11 @@ class SettingManager(commands.Cog):
                 for key, value in setting.kwargs.items()
             })
             data[setting.mode][command.qualified_name] = {
-                "help": self.bot.cogs["BotGeneral"].get_command_url(command),
-                "kwargs": kwargs, "sub_category": getattr(
+                "help": (
+                    self.bot.cogs["BotGeneral"].get_help_url(*setting.help_command)
+                    if setting.help_command
+                    else self.bot.cogs["BotGeneral"].get_command_url(command)
+                ), "kwargs": kwargs, "sub_category": getattr(
                     command.parent, "name", None
                 ), "headding": (
                     command.extras.get("headding")
@@ -231,6 +235,7 @@ class SettingManager(commands.Cog):
 
     async def run_command(self, command: commands.Command, data: CommandRunData):
         "コマンドを走らせます。"
+        ctx = None
         try:
             # コマンドのメッセージを組み立てる。
             content = f"{self.bot.command_prefix[0]}{command.qualified_name}"
@@ -258,7 +263,8 @@ class SettingManager(commands.Cog):
 
             return await self.bot.invoke(ctx.message)
         except Exception as e:
-            self.bot.dispatch("command_error", ctx, e)
+            if ctx:
+                self.bot.dispatch("command_error", ctx, e)
 
     def cog_unload(self):
         if hasattr(self, "_session"):
