@@ -20,3 +20,4 @@ auth.json
 .vscode
 .DS_Store
 \#*\#
+!cogs/tts/lib/AquesTalk/aquestalk.c
