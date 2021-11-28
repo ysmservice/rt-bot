@@ -1,18 +1,21 @@
 # RT - Enjoy Cog
 
+from typing import List, Dict, Iterator
+
 from discord.ext import commands
 import discord
 
-from PIL import Image, ImageDraw, ImageFont
-from typing import List, Dict, Iterator
+from rtlib import RT, setting
+from rtlib.ext import Embeds
+
 from jishaku.functools import executor_function
 from aiofiles.os import remove
 from bs4 import BeautifulSoup
-from rtlib.ext import Embeds
+from PIL import Image
 
 
 class Enjoy(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: RT):
         self.bot = bot
 
     @commands.command(
@@ -24,6 +27,7 @@ class Enjoy(commands.Cog):
         }
     )
     @commands.cooldown(1, 15, commands.BucketType.user)
+    @setting.Setting("enjoy", "Minecraft Java User Skin")
     async def minecraft(self, ctx, *, user):
         """!lang ja
         --------
@@ -60,29 +64,29 @@ class Enjoy(commands.Cog):
         mc"""
         await ctx.trigger_typing()
         async with self.bot.session.get(
-                f"https://api.mojang.com/users/profiles/minecraft/{user}"
-                ) as r:
+            f"https://api.mojang.com/users/profiles/minecraft/{user}"
+        ) as r:
             if r.status == 204:
                 await ctx.reply(
                     {"ja": "そのユーザーが見つかりませんでした。",
                      "en": "Not found that user."}
                 )
             else:
-                data = await r.json()
                 embed = discord.Embed(
                     title=user,
                     color=self.bot.colors["normal"]
                 )
-                embed.add_field(name="UUID", value=f"`{data['id']}`")
+                embed.add_field(name="UUID", value=f"`{(await r.json())['id']}`")
                 embed.set_image(
                     url=f"https://minecraft.tools/en/skins/getskin.php?name={user}"
                 )
                 await ctx.reply(embed=embed, replace_language=False)
 
     async def get_nhk(self) -> dict:
+        "NHKのデータを取得します。"
         async with self.bot.session.get(
             "https://www3.nhk.or.jp/news/json16/syuyo.json"
-            ) as r:
+        ) as r:
             return (await r.json())["channel"]
 
     NHK_BASE_URL = "https://www3.nhk.or.jp/news/"

@@ -5,13 +5,14 @@ from typing import TYPE_CHECKING, TypedDict, Optional, Dict
 from discord.ext import commands, tasks
 import discord
 
+from rtlib import RT, setting
+
 from datetime import datetime, timedelta
 from collections import defaultdict
 from ujson import loads, dumps
 from asyncio import Event
 
 if TYPE_CHECKING:
-    from rtlib import Backend
     from aiomysql import Pool
 
 
@@ -165,7 +166,7 @@ class AFK(commands.Cog, DataManager):
 
     CHECK_EMOJI = "<:check_mark:885714065106808864>"
 
-    def __init__(self, bot: "Backend"):
+    def __init__(self, bot: RT):
         self.bot, self.before = bot, ""
         self.cache: Dict[int, str] = {}
         self.plus_cache: Dict[int, Dict[str, PlusData]] = defaultdict(dict)
@@ -203,7 +204,14 @@ class AFK(commands.Cog, DataManager):
                  "en": "It is wrong way to use this command."}
             )
 
-    @afk.command("set", aliases=["s", "設定"])
+    HELP = ("Individual", "afk")
+
+    @afk.command(
+        "set", aliases=["s", "設定"], headding={
+            "ja": "AFKを設定します。", "en": "Set AFK"
+        }
+    )
+    @setting.Setting("afk", "0 AFK Set", HELP)
     async def set_(self, ctx: commands.Context, *, reason):
         """!lang ja
         --------
@@ -266,7 +274,12 @@ class AFK(commands.Cog, DataManager):
     def get_data(self, mode: str) -> PlusData:
         return {"time": mode} if ":" in mode else {"word": mode}
 
-    @plus.command("set", aliases=["s", "設定"])
+    @plus.command(
+        "set", aliases=["s", "設定"], hedding={
+            "ja": "AFKプラスの設定をします。", "en": "Setting for AFK Plus"
+        }
+    )
+    @setting.Setting("afk", "2 AFK Plus Set", HELP)
     async def set_plus(self, ctx: commands.Context, mode, *, reason):
         """!lang ja
         --------
@@ -337,7 +350,12 @@ class AFK(commands.Cog, DataManager):
                  "en": "Mode length must be less than 25."}
             )
 
-    @plus.command(aliases=["del", "削除"])
+    @plus.command(
+        aliases=["del", "削除"], headding={
+            "ja": "AFKプラスの設定を削除します。", "en": "Delete AFK Plus"
+        }
+    )
+    @setting.Setting("afk", "3 AFK Plus Delete", HELP)
     async def delete(self, ctx: commands.Context, *, mode):
         """!lang ja
         --------
@@ -374,7 +392,13 @@ class AFK(commands.Cog, DataManager):
         else:
             await ctx.reply("Ok")
 
-    @plus.command("list", aliases=["l", "一覧"])
+    @plus.command(
+        "list", aliases=["l", "一覧"], headding={
+            "ja": "AFK Plusの設定リストを表示します。",
+            "en": "Show you the settings of AFK Plus."
+        }
+    )
+    @setting.Setting("afk", "1 AFK Plus List", HELP)
     async def list_(self, ctx: commands.Context):
         """!lang ja
         --------

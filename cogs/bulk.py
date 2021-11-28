@@ -5,6 +5,8 @@ from typing import Union, Literal, List
 from discord.ext import commands
 import discord
 
+from rtlib import setting
+
 
 GuildRole = Union[discord.Role, Literal["everyone"]]
 Mode = Literal["add", "remove"]
@@ -52,8 +54,15 @@ class Bulk(commands.Cog):
         if not ctx.invoked_subcommand:
             await ctx.reply("使用方法が違います。")
 
-    @bulk.command()
+    BULK_HELP = ("ServerTool", "bulk")
+
+    @bulk.command(
+        headding={
+            "ja": "一括でメッセージを送信します。", "en": "Send messages in bulk."
+        }
+    )
     @commands.has_guild_permissions(administrator=True)
+    @setting.Setting("guild", "Bulk Send", BULK_HELP)
     async def send(self, ctx, target: GuildRole, *, content):
         """!lang ja
         --------
@@ -129,7 +138,7 @@ class Bulk(commands.Cog):
         await ctx.reply(embed=embed)
 
     @bulk.group()
-    @commands.has_permissions(manage_roles=True)
+    @commands.has_guild_permissions(manage_roles=True)
     async def role(self, ctx):
         """!lang ja
         --------
@@ -139,8 +148,14 @@ class Bulk(commands.Cog):
         --------
         This is the batch system command group for roles."""
 
-    @role.command()
+    @role.command(
+        headding={
+            "ja": "一括で役職の権限を全て設定または解除します。",
+            "en": "Sets or removes all permissions of a role in a batch."
+        }
+    )
     @commands.cooldown(1, 15)
+    @setting.Setting("guild", "Bulk Role Edit", BULK_HELP)
     async def edit(self, ctx, mode: Mode, *, role: discord.Role):
         """!lang ja
         --------
@@ -171,9 +186,15 @@ class Bulk(commands.Cog):
         )
         await ctx.reply("Ok")
 
-    @role.command()
+    @role.command(
+        headding={
+            "ja": "一括で役職の付与/剥奪を行います。",
+            "en": "Add/remove role in batches."
+        }
+    )
     @commands.cooldown(1, 60, commands.BucketType.guild)
-    async def manage(self, ctx, mode: Mode, target: GuildRole, role: discord.Role):
+    @setting.Setting("guild", "Bulk Role Add/Remove", BULK_HELP)
+    async def manage(self, ctx, mode: Mode, target: GuildRole, *, role: discord.Role):
         """!lang ja
         --------
         実行したサーバーにいるメンバー全員に指定された役職を付与または剥奪をします。

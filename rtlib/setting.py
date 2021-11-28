@@ -125,6 +125,9 @@ class Context:
     ):
         ...
 
+    async def delete(self) -> None:
+        ...
+
 
 class SettingManager(commands.Cog):
 
@@ -186,9 +189,11 @@ class SettingManager(commands.Cog):
         for command, setting in self.data.values():
             kwargs = {
                 parameter.name: (
-                    self.get_parsed_args(parameter.annotation),
+                    ant := self.get_parsed_args(parameter.annotation),
                     "" if parameter.default == parameter.empty
-                    else parameter.default, parameter.kind == parameter.KEYWORD_ONLY
+                    else parameter.default,
+                    parameter.kind == parameter.KEYWORD_ONLY \
+                        and ant == "str"
                 ) for parameter in command.clean_params.values()
             }
             kwargs.update({

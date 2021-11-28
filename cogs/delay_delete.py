@@ -3,7 +3,7 @@
 from discord.ext import commands, tasks
 import discord
 
-from rtlib import DatabaseManager
+from rtlib import RT, DatabaseManager, setting
 from time import time
 
 
@@ -27,7 +27,7 @@ class DataManager(DatabaseManager):
         await cursor.cursor.execute(
             """SELECT * FROM {}
                 WHERE ChannelID = %s
-                ORDER BY MessageID DESC""".format(self.DB),
+                ORDER BY MessageID DESC;""".format(self.DB),
             (channel_id,)
         )
         return await cursor.cursor.fetchall()
@@ -53,7 +53,7 @@ class DataManager(DatabaseManager):
 
 
 class DelayDelete(commands.Cog, DataManager):
-    def __init__(self, bot):
+    def __init__(self, bot: RT):
         self.bot = bot
         self.bot.loop.create_task(self.init_database())
 
@@ -64,10 +64,12 @@ class DelayDelete(commands.Cog, DataManager):
 
     @commands.command(
         aliases=["dd", "遅延削除"], extras={
-            "headding": {"ja": "遅延削除メッセージ", "en": "..."},
+            "headding": {"ja": "遅延削除メッセージ", "en": "Delay Delete Message"},
             "parent": "ServerTool"
         }
     )
+    @commands.cooldown(1, 30, commands.BucketType.channel)
+    @setting.Setting("guild", "DelayDeleteMessage", channel=discord.TextChannel)
     async def delaydelete(self, ctx, minutes: int, *, content):
         """!lang ja
         --------
@@ -94,8 +96,35 @@ class DelayDelete(commands.Cog, DataManager):
 
         Aliases
         -------
-        dd, 遅延削除"""
-        new = await ctx.webhook_send(
+        dd, 遅延削除
+
+        !lang en
+        --------
+        Delayed deletion function.  
+        This function deletes the created message after a specified period of time.
+
+        Parameters
+        ----------
+        minutes : int
+            The number of minutes after which the message will be deleted.
+        content : str
+            What message to send.
+
+        Notes
+        -----
+        Similar to this function, you can delete messages sent to a specified channel after a specified time.  
+        To use this feature, send `rt>delaydelete minutes later` to the topic in the target channel.
+
+        Warnings
+        --------
+        This function can remember up to 160 messages to be delayed deleted.  
+        If you register more than 160 messages for delayed deletion, the last message registered for delayed deletion will not be deleted.  
+        This is to prevent misuse. Thank you for your understanding.
+
+        Aliases
+        -------
+        dd, Delayed deletion"""
+        new = await ctx.channel.webhook_send(
             username=ctx.author.display_name,
             avatar_url=getattr(ctx.author.avatar, "url", None),
             wait=True, content=content.replace("@", "＠")
