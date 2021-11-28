@@ -10,11 +10,10 @@ import discord
 
 from collections import defaultdict
 from aiohttp import ClientSession
-from traceback import print_exc
-from inspect import signature
+from functools import partial
 from datetime import datetime
-from asyncio import sleep
 from ujson import dumps
+from time import time
 from pytz import utc
 
 from . import websocket
@@ -34,11 +33,20 @@ class CommandRunData(TypedDict):
 
 
 class Setting:
+    @overload
     def __init__(
-        self, mode: Literal["guild", "channel", "user"],
+        _, mode: Literal["guild", "channel", "user"],
         name: Optional[str] = None, **kwargs
     ):
+        ...
+
+    def __new__(cls, mode, name=None, **kwargs):
+        self = super().__new__(cls)
         self.mode, self.name, self.kwargs = mode, name, kwargs
+        def _decorator(func):
+            func._setting = self
+            return func
+        return _decorator
 
 
 class Context:
@@ -105,8 +113,10 @@ class Context:
             f"{self.bot.get_url()}/api/settings/reply/{self.data['ip']}",
             json={"data": content}
         ) as r:
-            if self.bot.test:
-                self.bot.print("[SettingManager]", "[POST]", await r.text())
+            self.bot.print(
+                "[SettingManager]", "[Reply]",
+                f"Response: {await r.text()}, Content: {content}"
+            )
 
     @overload
     async def reply(
@@ -134,7 +144,9 @@ class SettingManager(commands.Cog):
     def session(self) -> ClientSession:
         if not hasattr(self, "_session"):
             self._session = ClientSession(
-                loop=self.bot.loop, json_serialize=dumps
+                loop=self.bot.loop, json_serialize=partial(
+                    dumps, ensure_ascii=False
+                )
             )
         return self._session
 
@@ -157,22 +169,17 @@ class SettingManager(commands.Cog):
     def reset(self):
         self.data = {}
 
+    def add_command(self, command: commands.Command) -> None:
+        self.data[command.qualified_name] = (command, command.callback._setting)
+
+    @commands.Cog.listener()
+    async def on_command_add(self, command: commands.Command):
+        if hasattr(command.callback, "_setting"):
+            self.add_command(command)
+
     @commands.Cog.listener("on_update_api")
     async def update(self):
         "APIにBotにあるコマンドの設定のJSONデータを送る。"
-        # データを作る。
-        for command in self.bot.commands:
-            if command.__original_kwargs__.get("setting"):
-                for name, (cmd, _) in list(self.data.items()):
-                    if hash(cmd.callback) == hash(command.callback):
-                        if command.parent:
-                            del self.data[name]
-                        else:
-                            break
-                self.data[command.qualified_name] = (
-                    command, command.__original_kwargs__["setting"]
-                )
-
         # バックエンド用のデータを作る。
         data = defaultdict(dict)
         for command, setting in self.data.values():
@@ -181,8 +188,7 @@ class SettingManager(commands.Cog):
                     self.get_parsed_args(parameter.annotation),
                     "" if parameter.default == parameter.empty
                     else parameter.default, parameter.kind == parameter.KEYWORD_ONLY
-                ) for parameter in signature(command._callback).parameters.values()
-                if parameter.name not in ("self", "ctx")
+                ) for parameter in command.clean_params.values()
             }
             kwargs.update({
                 key: (self.get_parsed_args(value), "", False)
@@ -202,9 +208,7 @@ class SettingManager(commands.Cog):
             f"{self.bot.get_url()}/api/settings/commands/update",
             json=data
         ) as r:
-            if self.bot.test:
-                ...
-                # self.bot.print("[SettingUpdater]", await r.text())
+            self.bot.print("[SettingManager]", "[Updater]", time(), await r.text())
         self.before = data
 
     @websocket.websocket("/api/settings/websocket", auto_connect=True, reconnect=True)
@@ -251,7 +255,6 @@ class SettingManager(commands.Cog):
                     )
                 ):
                     setattr(ctx, name, getattr(parsed_ctx, name))
-            print(ctx.content, ctx.command.qualified_name)
 
             return await self.bot.invoke(ctx.message)
         except Exception as e:

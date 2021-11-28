@@ -86,14 +86,14 @@ class Debug(commands.Cog):
         ctx.message.content = f"{ctx.prefix}{command}"
         await self.bot.process_commands(ctx.message)
 
-    @debug.command(aliases=["rh"])
+    @debug.command(aliases=["rh", "r"])
     @require_admin
     async def reload(self, ctx):
         async with ctx.typing():
             self.bot.cogs["SettingManager"].reset()
             for coro in (
-                self.bot.cogs["SettingManager"].update(),
                 self.bot.cogs["DocHelp"].on_full_ready(),
+                self.bot.cogs["SettingManager"].update(),
                 self.bot.cogs["Translator"].on_command_added(),
                 self.bot.cogs["ChannelPluginGeneral"].on_command_added()
             ):

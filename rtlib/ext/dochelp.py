@@ -175,7 +175,7 @@ class DocHelp(commands.Cog):
             extras = command.extras if command.extras else {
                 "headding": command.__original_kwargs__.get("headding", {}),
                 "parent": command.__original_kwargs__.get("parent" "Other")
-            } if command.description else {}
+            }
             if extras and extras["headding"] and not after:
                 # ドキュメンテーションをマークダウンにする。
                 data = self.parse(command)
