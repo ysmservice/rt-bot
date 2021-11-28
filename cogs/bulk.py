@@ -53,6 +53,7 @@ class Bulk(commands.Cog):
             await ctx.reply("使用方法が違います。")
 
     @bulk.command()
+    @commands.has_guild_permissions(administrator=True)
     async def send(self, ctx, target: GuildRole, *, content):
         """!lang ja
         --------
