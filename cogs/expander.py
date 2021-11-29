@@ -1,9 +1,12 @@
 # RT - Message Link Expander
 
+from typing import Literal
+
 from discord.ext import commands
 import discord
 
-from rtlib import DatabaseManager
+from rtlib import RT, DatabaseManager, setting
+
 from re import findall
 
 
@@ -66,7 +69,7 @@ class Expander(commands.Cog, DataManager):
         "(?P<guild>[0-9]{18})/(?P<channel>[0-9]{18})/(?P<message>[0-9]{18})"
     )
 
-    def __init__(self, bot):
+    def __init__(self, bot: RT):
         self.bot = bot
         self.bot.loop.create_task(self.on_ready())
 
@@ -84,8 +87,9 @@ class Expander(commands.Cog, DataManager):
             }, "parent": "ServerUseful"
         }
     )
-    @commands.has_permissions(administrator=True)
-    async def expand(self, ctx, onoff: bool, mode = "g"):
+    @commands.has_guild_permissions(administrator=True)
+    @setting.Setting("guild", "Message Link Expander", channel=discord.TextChannel)
+    async def expand(self, ctx, onoff: bool, mode: Literal["g"] = "g"):
         """!lang ja
         --------
         メッセージリンクの展開のオンオフの切り替えコマンドです。  

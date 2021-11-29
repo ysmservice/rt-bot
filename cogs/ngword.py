@@ -5,7 +5,7 @@ from typing import List
 from discord.ext import commands
 import discord
 
-from rtlib import DatabaseManager
+from rtlib import DatabaseManager, setting
 from .log import log
 
 
@@ -57,12 +57,15 @@ class NgWord(commands.Cog, DataManager):
             item.multiple_line = True
             return item
 
+    HELP = ("ServerSafety", "ngword")
+
     @commands.group(
         aliases=["えぬじーわーど", "ng"], extras={
             "headding": {"ja": "NGワード", "en": "NG Word"},
             "parent": "ServerSafety"
         }
     )
+    @setting.Setting("guild", "NG Word")
     async def ngword(self, ctx):
         """!lang ja
         --------
@@ -74,15 +77,18 @@ class NgWord(commands.Cog, DataManager):
         if not ctx.invoked_subcommand:
             embed = discord.Embed(
                 title={"ja": "NGワードリスト", "en": "NG Words"},
-                description=", ".join(await self.get(ctx.guild.id)),
+                description="* ".join(await self.get(ctx.guild.id)),
                 color=self.bot.colors["normal"]
             )
             await ctx.reply(embed=embed)
 
     @ngword.command(
-        name="add", aliases=["あどど"]
+        name="add", aliases=["あどど"], headding={
+            "ja": "NGワードを追加します。", "en": "Remove NG Word"
+        }
     )
-    @commands.has_permissions(manage_messages=True)
+    @commands.has_guild_permissions(manage_messages=True)
+    @setting.Setting("guild", "NG Word Add", HELP)
     async def add_(self, ctx, *, words):
         """!lang ja
         --------
@@ -128,9 +134,12 @@ class NgWord(commands.Cog, DataManager):
         await ctx.reply("Ok")
 
     @ngword.command(
-        name="remove", aliases=["りむーぶ", "rm", "delete", "del"]
+        name="remove", aliases=["りむーぶ", "rm", "delete", "del"], headding={
+            "ja": "NGワードを削除します。", "en": "Remove NG Word"
+        }
     )
-    @commands.has_permissions(manage_messages=True)
+    @commands.has_guild_permissions(manage_messages=True)
+    @setting.Setting("guild", "NG Word Remove", HELP)
     async def remove_(self, ctx, *, words):
         """!lang ja
         --------

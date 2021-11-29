@@ -5,7 +5,8 @@ from typing import Any, Literal
 from discord.ext import commands, tasks
 import discord
 
-from rtlib import DatabaseManager
+from rtlib import DatabaseManager, setting
+
 from asyncio import sleep
 from ujson import loads
 from time import time
@@ -129,8 +130,9 @@ class Bump(commands.Cog, DataManager):
         )
 
     @commands.command(extras=get_extras("bump"))
-    @commands.has_permissions(administrator=True)
+    @commands.has_guild_permissions(administrator=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
+    @setting.Setting("guild", "Bump通知")
     async def bump(self, ctx, onoff: bool, *, role: discord.Role = None):
         """!lang ja
         --------
@@ -175,7 +177,8 @@ class Bump(commands.Cog, DataManager):
         await ctx.reply("Ok", replace_language=False)
 
     @commands.command(extras=get_extras("up"))
-    @commands.has_permissions(administrator=True)
+    @commands.has_guild_permissions(administrator=True)
+    @setting.Setting("guild", "Up通知")
     async def up(self, ctx, onoff: bool, *, role: discord.Role = None):
         await self.write("up", ctx.guild.id, onoff, role)
         await ctx.reply("Ok", replace_language=False)

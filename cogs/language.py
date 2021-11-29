@@ -1,16 +1,15 @@
 # RT - Language
 
+from typing import Literal, Union, List, Tuple
+
 from discord.ext import commands
 import discord
 
-from typing import Literal, Union, List, Tuple
+from rtlib import RT, setting
+from data import is_admin
+
 from aiofiles import open as async_open
 from json import loads
-from copy import copy
-
-from discord.mentions import A
-
-from data import is_admin
 
 
 class Language(commands.Cog):
@@ -32,7 +31,7 @@ class Language(commands.Cog):
 
     LANGUAGES = ("ja", "en")
 
-    def __init__(self, bot):
+    def __init__(self, bot: RT):
         self.bot = bot
         self.cache = {}
         self.bot.cogs["OnSend"].add_event(self._new_send, "on_send")
@@ -226,7 +225,8 @@ class Language(commands.Cog):
             "parent": "RT"
         }
     )
-    async def language(self, ctx, language):
+    @setting.Setting("user", "!Language")
+    async def language(self, ctx, language: Literal["ja", "en"]):
         """!lang ja
         --------
         Change the language setting for RT.
@@ -273,7 +273,6 @@ class Language(commands.Cog):
         await ctx.trigger_typing()
 
         # データベースに変更内容を書き込む。
-        targets = {"id": ctx.author.id}
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cursor:
                 await cursor.execute(
