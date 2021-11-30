@@ -1,12 +1,17 @@
-import discord
+# RT - Moderation
+
+from typing import Literal, List
+
 from discord.ext import commands
-from typing import List
+import discord
+
+from rtlib import RT, setting
+
 
 class Moderation(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: RT):
         self.bot = bot
 
-    @commands.has_permissions(ban_members=True)
     @commands.command(
         extras={
             "headding": {
@@ -15,7 +20,12 @@ class Moderation(commands.Cog):
             }, "parent": "ServerSafety"
         }, aliases=["バン", "ばん", "BAN"]
     )
-    async def ban(self, ctx, *, members, mode="ban"):
+    @commands.has_guild_permissions(ban_members=True)
+    @setting.Setting("guild", "BAN/Kick")
+    async def ban(
+        self, ctx, *, members: str = "カンマで区切ることでめんばーを複数指定可能です。",
+        mode: Literal["kick", "ban"] = "ban"
+    ):
         """!lang ja
         --------
         メンバーをBANできます。

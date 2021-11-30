@@ -1,9 +1,11 @@
 # RT - Welocme Message
 
+from typing import Literal
+
 from discord.ext import commands
 import discord
 
-from rtlib import DatabaseManager
+from rtlib import DatabaseManager, RT, setting
 from asyncio import sleep
 
 
@@ -50,14 +52,12 @@ class DataManager(DatabaseManager):
 
 
 class Welcome(commands.Cog, DataManager):
-    def __init__(self, bot):
+    def __init__(self, bot: RT):
         self.bot = bot
         self.bot.loop.create_task(self.on_ready())
 
     async def on_ready(self):
-        super(commands.Cog, self).__init__(
-            self.bot.mysql
-        )
+        super(commands.Cog, self).__init__(self.bot.mysql)
         await self.init_table()
 
     @commands.command(
@@ -69,8 +69,9 @@ class Welcome(commands.Cog, DataManager):
         }
     )
     @commands.cooldown(1, 8, commands.BucketType.guild)
-    @commands.has_permissions(administrator=True)
-    async def welcome(self, ctx, mode, *, content):
+    @commands.has_guild_permissions(administrator=True)
+    @setting.Setting("guild", "Welcome Message", channel=discord.TextChannel)
+    async def welcome(self, ctx, mode: Literal["join", "remove"], *, content):
         """!lang ja
         --------
         ウェルカムメッセージを設定します。    

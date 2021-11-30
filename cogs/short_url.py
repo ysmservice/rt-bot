@@ -3,7 +3,7 @@
 from discord.ext import commands
 import discord
 
-from rtlib import DatabaseManager, RT
+from rtlib import DatabaseManager, RT, setting
 
 from random import sample
 from time import time
@@ -114,8 +114,14 @@ class ShortURL(commands.Cog, DataManager):
             (48, 58), (65, 91), (97, 123)
         )
     )
+    HELP = ("Individual", "url")
 
-    @url.command(aliases=["短縮", "add"])
+    @url.command(
+        aliases=["短縮", "add"], headding={
+            "ja": "URLを短縮します。", "en": "Shortens URL"
+        }
+    )
+    @setting.Setting("url", "URL Shorter", HELP)
     async def short(self, ctx, url: str, custom: str = None):
         """!lang ja
         --------
@@ -193,7 +199,13 @@ class ShortURL(commands.Cog, DataManager):
             await self.update_cache()
             await ctx.reply(f"短縮しました。>>>http://rtbo.tk/{custom}")
 
-    @url.command("list", aliases=["一覧"])
+    @url.command(
+        "list", aliases=["一覧"], headding={
+            "ja": "短縮したURLのリストを表示します。",
+            "en": "Displays shorted URLs"
+        }
+    )
+    @setting.Setting("url", "URL Shorter List", HELP)
     async def list_(self, ctx):
         """!lang ja
         --------
@@ -220,8 +232,15 @@ class ShortURL(commands.Cog, DataManager):
         else:
             await ctx.reply("まだ何も短縮URLは登録されていません。")
 
-    @url.command("remove", aliases=["rm", "delete", "del", "削除"])
-    async def remove_(self, ctx, custom):
+    @url.command(
+        "remove", aliases=["rm", "delete", "del", "削除"], headding={
+            "ja": "短縮URLを削除します。", "en": "Remove shorted URL"
+        }
+    )
+    @setting.Setting("url", "URL Shorter Remove", HELP)
+    async def remove_(
+        self, ctx, custom="URLの最後の部分です。 (End of URL (`...` of `http://rtbo.tk/...`))"
+    ):
         """!lang ja
         --------
         登録している短縮URLを削除します。

@@ -5,7 +5,7 @@ from typing import Tuple
 from discord.ext import commands, tasks
 import discord
 
-from rtlib import RT, DatabaseManager
+from rtlib import RT, DatabaseManager, setting
 
 from collections import defaultdict
 from asyncio import sleep
@@ -94,9 +94,9 @@ class DataManager(DatabaseManager):
         return await cursor.cursor.fetchall()
 
     async def set_reward(
-            self, cursor, level: int, guild_id: int, role_id: int,
-            replace_role_id: int = 0
-        ) -> None:
+        self, cursor, level: int, guild_id: int, role_id: int,
+        replace_role_id: int = 0
+    ) -> None:
         target = {"GuildID": guild_id, "Level": level}
         change = {"Role": role_id,
                   "ReplaceRole": replace_role_id}
@@ -208,7 +208,14 @@ class Level(commands.Cog, DataManager):
             for embed in embeds:
                 await ctx.send(embed=embed)
 
-    @level.command(aliases=["notf", "nof", "通知"])
+    HELP = ("ServerUseful", "level")
+
+    @level.command(
+        aliases=["notf", "nof", "通知"], headding={
+            "ja": "レベル通知設定", "en": "..."
+        }
+    )
+    @setting.Setting("user", "Level Notification", HELP)
     async def notification(self, ctx, onoff: bool):
         """!lang ja
         -------
@@ -239,6 +246,7 @@ class Level(commands.Cog, DataManager):
         await ctx.reply("Ok")
 
     @level.group(aliases=["rd", "報酬"])
+    @commands.has_guild_permissions(manage_roles=True)
     async def reward(self, ctx):
         """!lang ja
         --------
@@ -260,10 +268,16 @@ class Level(commands.Cog, DataManager):
         if not ctx.invoked_subcommand:
             await ctx.reply("使用方法が違います。")
 
-    @reward.command("set")
+    @reward.command(
+        "set", headding={
+            "ja": "レベル報酬の設定", "en": "Level reward setting"
+        }
+    )
+    @setting.Setting("guild", "Level Reward Set", HELP)
     async def set_reward_(
-            self, ctx, level: int, role: discord.Role,
-            replace_role: discord.Role = None):
+        self, ctx, level: int, role: discord.Role,
+        replace_role: discord.Role = None
+    ):
         """!lang ja
         --------
         報酬を設定します。  
@@ -310,7 +324,12 @@ class Level(commands.Cog, DataManager):
         )
         await ctx.reply("Ok")
 
-    @reward.command()
+    @reward.command(
+        headding={
+            "ja": "レベル報酬リセット", "en": "Level reward reset"
+        }
+    )
+    @setting.Setting("guild", "Level Reward Reset", HELP)
     async def reset(self, ctx, level: int):
         """!lang ja
         -------
@@ -363,8 +382,8 @@ class Level(commands.Cog, DataManager):
                 print("Error on level:", e)
 
     async def on_levelup(
-            self, level: int, guild_id: int,
-            message: discord.Message) -> None:
+        self, level: int, guild_id: int, message: discord.Message
+    ) -> None:
         if await self.get_notification(message.author.id):
             # リアクションをつける。
             try:

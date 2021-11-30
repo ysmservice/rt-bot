@@ -1,10 +1,11 @@
 # RT - Voice Role
 
+from typing import Union
+
 from discord.ext import commands, tasks
 import discord
 
-from rtlib import DatabaseManager
-from typing import Union
+from rtlib import DatabaseManager, RT, setting
 
 
 class DataManager(DatabaseManager):
@@ -58,7 +59,7 @@ class DataManager(DatabaseManager):
 
 
 class VoiceRole(commands.Cog, DataManager):
-    def __init__(self, bot):
+    def __init__(self, bot: RT):
         self.bot = bot
         self.bot.loop.create_task(self.init_database())
         self.queue = {}
@@ -76,6 +77,7 @@ class VoiceRole(commands.Cog, DataManager):
             }, "parent": "ServerUseful"
         }
     )
+    @setting.Setting("guild", "Voice Role")
     async def voicerole(
         self, ctx, channel: Union[discord.VoiceChannel, discord.StageChannel],
         *, role: discord.Role
