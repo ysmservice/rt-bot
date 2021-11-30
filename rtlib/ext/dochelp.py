@@ -172,11 +172,15 @@ class DocHelp(commands.Cog):
 
     async def on_command_add(self, command, after: bool = False):
         if command.callback.__doc__:
-            if command.extras and not after:
+            extras = command.extras if command.extras else {
+                "headding": command.__original_kwargs__.get("headding", {}),
+                "parent": command.__original_kwargs__.get("parent" "Other")
+            }
+            if extras and extras["headding"] and not after:
                 # ドキュメンテーションをマークダウンにする。
                 data = self.parse(command)
                 # もしカテゴリーが設定されているならそのカテゴリーコマンドを入れる。
-                if (category := command.extras.get("parent", "Others")) not in self.data:
+                if (category := extras.get("parent", "Others")) not in self.data:
                     self.data[category] = {}
                 # self.treeにカテゴリ名がわかるように保存しておく。
                 if command.name not in self.categories:
@@ -188,7 +192,7 @@ class DocHelp(commands.Cog):
                 }
                 for lang in data:
                     self.data[category][command.name][lang] = [
-                        command.extras.get("headding", {}).get(lang, "..."),
+                        extras.get("headding", {}).get(lang, "..."),
                         copy(data[lang])
                     ]
             elif (parent := command.root_parent):

@@ -5,12 +5,11 @@ from typing import Tuple, Dict, List
 from discord.ext import commands, tasks
 import discord
 
-from rtlib import RT, DatabaseManager as OldDatabaseManager
+from rtlib import RT, DatabaseManager as OldDatabaseManager, setting
 from rtutil import DatabaseManager, markord
 
 from collections import defaultdict
 from aiomysql import Pool, Cursor
-
 from ujson import loads, dumps
 from time import time
 
@@ -136,7 +135,8 @@ class ForcePinnedMessage(commands.Cog, DataManager):
             "parent": "ServerTool"
         }, aliases=["ピン留め", "ぴんどめ", "fpm", "forcepinmessage"]
     )
-    @commands.has_permissions(manage_messages=True)
+    @commands.has_guild_permissions(manage_messages=True)
+    @setting.Setting("guild", "Force Pinned Message", channel=discord.TextChannel)
     async def pin(self, ctx: commands.Context, onoff: bool, *, content=""):
         """!lang ja
         --------

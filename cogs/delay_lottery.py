@@ -3,8 +3,7 @@
 from discord.ext import commands, tasks
 import discord
 
-from rtlib import DatabaseManager
-from typing import NamedTuple
+from rtlib import RT, DatabaseManager, setting
 from time import time
 
 
@@ -69,7 +68,7 @@ class DelayLottery(commands.Cog, DataManager):
         "error": "<:error:878914351338246165>"
     }
 
-    def __init__(self, bot):
+    def __init__(self, bot: RT):
         self.bot = bot
         self.bot.loop.create_task(self.init_database())
 
@@ -85,7 +84,8 @@ class DelayLottery(commands.Cog, DataManager):
             }, "parent": "ServerPanel"
         }
     )
-    @commands.cooldown(1, 8, commands.BucketType.guild)
+    @commands.cooldown(1, 30, commands.BucketType.channel)
+    @setting.Setting("guild", "Delay Lottery", channel=discord.TextChannel)
     async def dlottery(self, ctx, count: int, minutes: int, *, description):
         """!lang ja
         --------

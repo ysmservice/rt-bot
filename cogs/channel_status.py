@@ -3,7 +3,7 @@
 from discord.ext import commands, tasks
 import discord
 
-from rtlib import mysql, DatabaseManager
+from rtlib import RT, DatabaseManager, setting
 
 
 class DataManager(DatabaseManager):
@@ -20,15 +20,12 @@ class DataManager(DatabaseManager):
 
     async def load(self, cursor, guild_id: int) -> list:
         await cursor.cursor.execute(
-            """SELECT * FROM channelStatus
-                WHERE GuildID = ?""", (guild_id,)
+            "SELECT * FROM channelStatus WHERE GuildID = %s;", (guild_id,)
         )
         return await cursor.cursor.fetchall()
 
     async def load_all(self, cursor) -> list:
-        await cursor.cursor.execute(
-            "SELECT * FROM channelStatus"
-        )
+        await cursor.cursor.execute("SELECT * FROM channelStatus;")
         return await cursor.cursor.fetchall()
 
     async def save(self, cursor, guild_id: int, channel_id: int, text: str) -> None:
@@ -47,7 +44,7 @@ class DataManager(DatabaseManager):
 
 
 class ChannelStatus(commands.Cog, DataManager):
-    def __init__(self, bot):
+    def __init__(self, bot: RT):
         self.bot = bot
         self.bot.loop.create_task(self.on_ready())
 
@@ -64,7 +61,8 @@ class ChannelStatus(commands.Cog, DataManager):
             "en": "Displays the number of members and other information in the channel name."
         }, "parent": "ServerUseful"
     })
-    @commands.has_permissions(manage_channels=True)
+    @commands.has_guild_permissions(manage_channels=True)
+    @setting.Setting("guild", "Channel Status", channel=discord.TextChannel)
     async def status(self, ctx, *, text):
         """!lang ja
         --------

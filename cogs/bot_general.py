@@ -271,7 +271,8 @@ class BotGeneral(commands.Cog):
                 "en": "The command could not be executed successfully because RT does not have permissions."
             }
         elif isinstance(error, commands.errors.CommandOnCooldown):
-            if ctx.command.qualified_name in self.cache.get(ctx.author.id, {}):
+            if (ctx.command.qualified_name in self.cache.get(ctx.author.id, {})
+                    and not hasattr(ctx, "__setting_context__")):
                 return
             else:
                 title = "429 Too Many Requests"
@@ -312,8 +313,10 @@ class BotGeneral(commands.Cog):
                 commands.BadLiteralArgument)
         ):
             title = "400 Bad Request"
-            description = {"ja": "コマンドの引数が適切ではありません。\nまたは必要な引数が足りません。",
-                           "en": "It's command's function is bad."}
+            description = {
+                "ja": f"コマンドの引数が適切ではありません。\nまたは必要な引数が足りません。\nCode:`{error}`",
+                "en": "It's command's function is bad."
+            }
         elif isinstance(error, commands.errors.MissingPermissions):
             title = "403 Forbidden"
             description = {
@@ -361,19 +364,28 @@ class BotGeneral(commands.Cog):
             description = description[4096 - length + 1:]
         if "400" in title:
             # 引数がおかしい場合はヘルプボタンを表示する。
-            for name in self.bot.cogs["Help"].CATEGORIES:
-                if self.bot.cogs["Help"].CATEGORIES[name] == ctx.command.extras.get("parent", ""):
-                    break
             kwargs["view"] = componesy.View("BAView")
             kwargs["view"].add_item(
                 "link_button", label="ヘルプを見る", emoji="❔",
-                url=f"https://rt-bot.com/help.html?g={name}&c={ctx.command.name}"
+                url=self.get_command_url(ctx.command)
             )
 
         kwargs["embed"] = discord.Embed(
             title=title, description=description, color=color
         )
         await ctx.send(**kwargs)
+
+    def get_help_url(self, category: str, name: str) -> str:
+        return f"https://rt-bot.com/help.html?g={category}&c={name}"
+
+    def get_command_url(self, command: commands.Command) -> str:
+        "渡されたコマンドのヘルプのURLを返します。"
+        for name in self.bot.cogs["Help"].CATEGORIES:
+            if self.bot.cogs["Help"].CATEGORIES[name] == command.extras.get(
+                "parent", command.__original_kwargs__.get("parent", "")
+            ):
+                return self.get_help_url(name, command.name)
+        return ""
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):

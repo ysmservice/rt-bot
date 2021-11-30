@@ -9,7 +9,7 @@ from collections import defaultdict
 from aiomysql import Pool, Cursor
 from ujson import loads, dumps
 
-from rtutil import DatabaseManager
+from rtutil import DatabaseManager, setting
 from rtlib import RT
 
 from .automod.modutils import emoji_count
@@ -120,15 +120,18 @@ class Blocker(commands.Cog, DataManager):
         Aliases
         -------
         b"""
-        if not ctx.invoked_subcommand and not mode:
+        if not ctx.invoked_subcommand:
             await ctx.reply(
                 {"ja": "使用方法が違います。",
                  "en": "It is wrong way to use this command."}
             )
 
+    HELP = ("ServerSafety", "blocker")
+
     @blocker.command(aliases=["設定", "t"])
-    @commands.has_permissions(manage_messages=True)
+    @commands.has_guild_permissions(manage_messages=True)
     @commands.cooldown(1, 10, commands.BucketType.guild)
+    @setting.Setting("guild", "Emoji Blocker 0", HELP)
     async def toggle(self, ctx: commands.Context, *, mode: DataManager.Mode):
         """!lang ja
         --------
@@ -164,7 +167,13 @@ class Blocker(commands.Cog, DataManager):
              "en": f"I set {'enable' if onoff else 'disable'} to {mode} block setting."}
         )
 
-    @blocker.group(aliases=["ロール", "役職", "r"])
+    @blocker.group(
+        aliases=["ロール", "役職", "r"], headding={
+            "ja": "文字ブロックで削除対象とするロールの設定リストを表示します。",
+            "en": "Displays the configuration list of roles to be deleted in the character block."
+        }
+    )
+    @setting.Setting("guild", "Emoji Blocker 1", HELP)
     async def role(self, ctx: commands.Context):
         """!lang ja
         --------
@@ -204,7 +213,8 @@ class Blocker(commands.Cog, DataManager):
 
     @role.command(aliases=["追加", "a"])
     @commands.cooldown(1, 8, commands.BucketType.guild)
-    @commands.has_permissions(manage_messages=True)
+    @commands.has_guild_permissions(manage_messages=True)
+    @setting.Setting("guild", "Emoji Blocker 2", HELP)
     async def add(
         self, ctx: commands.Context, mode: DataManager.Mode, *, role: Role
     ):
@@ -246,7 +256,8 @@ class Blocker(commands.Cog, DataManager):
 
     @role.command(aliases=["削除", "rm"])
     @commands.cooldown(1, 8, commands.BucketType.guild)
-    @commands.has_permissions(manage_messages=True)
+    @commands.has_guild_permissions(manage_messages=True)
+    @setting.Setting("guild", "Emoji Blocker 3", HELP)
     async def remove(
         self, ctx: commands.Context, mode: DataManager.Mode, *, role: Role
     ):

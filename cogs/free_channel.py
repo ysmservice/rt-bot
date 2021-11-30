@@ -1,7 +1,11 @@
 # RT - Free Channel
 
+from typing import Literal
+
 from discord.ext import commands
 import discord
+
+from rtlib import RT, setting
 
 from asyncio import sleep
 
@@ -17,7 +21,7 @@ async def freechannel(ctx: commands.Context) -> bool:
 
 
 class FreeChannel(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: RT):
         self.bot = bot
         self.cooldown = {
             "make": {},
@@ -53,7 +57,9 @@ class FreeChannel(commands.Cog):
 
     @freechannel_.command(aliases=["add", "rg"])
     @commands.cooldown(1, 300, commands.BucketType.user)
-    async def register(self, ctx, max_channel: int = 4, lang="ja"):
+    @commands.has_permissions(manage_channels=True)
+    @setting.Setting("guild", "Free Channel 0 Register", channel=discord.TextChannel)
+    async def register(self, ctx, max_channel: int = 4, lang: Literal["ja", "en"] = "ja"):
         """!lang ja
         --------
         実行したチャンネルをフリーチャンネル作成専用のチャンネルにします。  
@@ -108,8 +114,8 @@ class FreeChannel(commands.Cog):
         if (ctx.channel.topic and "RTフリーチャンネル" in ctx.channel.topic
                 and "作成者" not in ctx.channel.topic):
             await ctx.send(
-                {"ja": f"{ctx.author.mention}, 既にフリーチャンネル作成用チャンネルとなっています。",
-                 "en": f"{ctx.author.mention}, It is already a channel for creating free channels."},
+                {"ja": f"既にフリーチャンネル作成用チャンネルとなっています。",
+                 "en": f"It is already a channel for creating free channels."},
                 delete_after=5, target=ctx.author.id
             )
             return
@@ -164,6 +170,11 @@ The name of the created voice channel will include the ID of the person who crea
 
     @freechannel_.command(name="remove")
     @commands.cooldown(1, 300, commands.BucketType.user)
+    @commands.has_permissions(manage_channels=True)
+    @setting.Setting(
+        "guild", "Free Channel 1 Remove", ("ServerPanel", "freechannel"),
+        channel=discord.TextChannel
+    )
     async def remove_(self, ctx):
         if (ctx.channel.topic and "RTフリーチャンネル" in ctx.channel.topic
                 and "作成者" not in ctx.channel.topic):
