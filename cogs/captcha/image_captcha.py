@@ -77,6 +77,7 @@ class ImageCaptcha(ImageCaptcha):
                             {"ja": f"{message.author.mention}, 認証に成功しました。",
                              "en": f"{message.author.mention}, Success!"}
                         )
+                        del self.queue[name]
                         self.cog.remove_cache(message.author)
                 else:
                     await message.channel.send(
