@@ -52,6 +52,9 @@ class WebCaptcha:
                         "Success!"
                     )
                     self.cog.remove_cache(member)
+                    n = f"{member.guild.id}-{member.id}"
+                    if n in self.queue:
+                        del self.queue[n]
             else:
                 result = (
                     "役職が見つからないので役職を付与できませんでした。"
