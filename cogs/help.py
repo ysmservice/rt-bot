@@ -125,7 +125,7 @@ class Help(commands.Cog):
                     label=cmd, value=cmd,
                     description=self.help[category][cmd][lang][0]
                 ) for cmd in self.help[category]
-                if len(self.help[category][cmd][lang]) >= 2
+                if len(self.help[category][cmd][lang]) >= 2 and cmd
             ]
             placeholder = "コマンド選択" if lang == "ja" else "Command"
         return [
@@ -137,6 +137,7 @@ class Help(commands.Cog):
                             if lang == "ja" else category
                         ), value=category
                     ) for category in self.help
+                    if category
                 ],
                 "placeholder": "カテゴリー選択" if lang == "ja" else "Category"
             }),
