@@ -9,8 +9,8 @@ from collections import defaultdict
 from aiomysql import Pool, Cursor
 from ujson import loads, dumps
 
-from rtutil import DatabaseManager, setting
-from rtlib import RT
+from rtutil import DatabaseManager
+from rtlib import RT, setting
 
 from .automod.modutils import emoji_count
 
