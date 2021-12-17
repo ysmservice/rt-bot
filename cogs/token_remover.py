@@ -32,7 +32,7 @@ class TokenRemover(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if not message.guild or message.author.id == self.bot.user.id or message.guild.id != 718641964672876614:
+        if not message.guild or message.author.id == self.bot.user.id:
             return
 
         if self.check_token(message.content):

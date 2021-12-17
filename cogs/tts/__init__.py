@@ -576,7 +576,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         await ctx.reply("Ok")
 
     @executor_function
-    async def get_durations(self, path: str) -> float:
+    def get_durations(self, path: str) -> float:
         return AudioSegment.from_file(path, path[path.rfind(".") + 1:]).duration_seconds
 
     @routine.command(
