@@ -214,7 +214,7 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
 
     @executor_function
     def get_user_id(self, username: str) -> str:
-        "ユーザー名からユーザーのIDを取得します。※これは子ルーチン関数です。"
+        "ユーザー名からユーザーのIDを取得するコルーチン関数です。"
         return self.api.get_user(screen_name=username).id_str
 
     async def start_stream(self, disconnect: bool = False) -> None:
@@ -231,12 +231,17 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
                     follow.append(await self.get_user_id(username))
                 except NotFound:
                     channel = self.bot.get_channel(self.users[username])
-                    await self.delete(channel, username)
-                    del self.users[username]
-                    await channel.send(
-                        "Twitter通知をしようとしましたがエラーが発生しました。\n" \
-                        + f"{username.replace('@', '＠')}のユーザーが見つかりませんでした。"
-                    )
+                    if channel:
+                        await self.delete(channel, username)
+                        del self.users[username]
+                        await channel.send(
+                            "Twitter通知をしようとしましたがエラーが発生しました。\n" \
+                            + f"{username.replace('@', '＠')}のユーザーが見つかりませんでした。"
+                        )
+                    else:
+                        if getattr(self, "debug", False):
+                            print("Debug")
+                        await self.delete(discord.Object(self.users[username]))
             self.filter(follow=follow)
 
     def cog_unload(self):
