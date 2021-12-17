@@ -1,11 +1,14 @@
 # RT - Ticket
 
-from typing import TYPE_CHECKING, Union, Optional, Dict
+from typing import TYPE_CHECKING, Union, Optional, Dict, List
 
 from discord.ext import commands, tasks
 import discord
 
+from rtutil.converters import Roles
 from rtlib import componesy
+
+from ujson import loads, dumps
 from time import time
 
 if TYPE_CHECKING:
@@ -28,7 +31,7 @@ class RealNewInteraction:
 TITLE = "[Ticket]"
 CUSTOM_ID = "rt_ticket"
 COOLDOWN = 150
-TABLE = "TicketMessage"
+TABLES = ("TicketMessage", "TicketRoles")
 VIEW = componesy.View("TicketView")
 VIEW.add_item(
     discord.ui.Button, None, label="Ticket",
@@ -46,10 +49,16 @@ class DataManager:
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cursor:
                 await cursor.execute(
-                    f"""CREATE TABLE IF NOT EXISTS {TABLE} (
+                    f"""CREATE TABLE IF NOT EXISTS {TABLES[0]} (
                         GuildID BIGINT PRIMARY KEY NOT NULL,
                         ChannelID BIGINT, Content TEXT
                     );"""
+                )
+                await cursor.execute(
+                    f"""CREATE TABLE IF NOT EXISTS {TABLES[1]} (
+                        ChannelID BIGINT PRIMARY KEY NOT NULL,
+                        Roles JSON
+                    )"""
                 )
 
     async def set_message(self, channel: discord.TextChannel, content: str) -> None:
@@ -57,7 +66,7 @@ class DataManager:
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cursor:
                 await cursor.execute(
-                    f"""INSERT INTO {TABLE}
+                    f"""INSERT INTO {TABLES[0]}
                     VALUES (%s, %s, %s)
                     ON DUPLICATE KEY UPDATE
                         ChannelID = %s, Content = %s;""",
@@ -70,12 +79,12 @@ class DataManager:
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cursor:
                 await cursor.execute(
-                    f"SELECT GuildID FROM {TABLE} WHERE GuildID = %s;",
+                    f"SELECT GuildID FROM {TABLES[0]} WHERE GuildID = %s;",
                     (guild_id,)
                 )
                 assert await cursor.fetchone(), "見つかりませんでした。"
                 await cursor.execute(
-                    f"DELETE FROM {TABLE} WHERE GuildID = %s;",
+                    f"DELETE FROM {TABLES[0]} WHERE GuildID = %s;",
                     (guild_id,)
                 )
 
@@ -84,11 +93,33 @@ class DataManager:
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cursor:
                 await cursor.execute(
-                    f"SELECT Content FROM {TABLE} WHERE GuildID = %s;",
+                    f"SELECT Content FROM {TABLES[0]} WHERE GuildID = %s;",
                     (guild_id,)
                 )
                 if (row := await cursor.fetchone()):
                     return row[0]
+
+    async def write_roles(self, channel_id: int, roles: List[int]) -> None:
+        "役職設定を保存します。"
+        async with self.pool.acquire() as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute(
+                    f"""INSERT INTO {TABLES[1]} VALUES (%s, %s)
+                        ON DUPLICATE KEY UPDATE Roles = %s;""",
+                    (channel_id, dumped:=dumps(roles), dumped)
+                )
+
+    async def read_roles(self, channel_id: int) -> List[int]:
+        "役職設定を読み込みます。"
+        async with self.pool.acquire() as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute(
+                    f"SELECT Roles FROM {TABLES[1]} WHERE ChannelID = %s;",
+                    (channel_id,)
+                )
+                if (row := await cursor.fetchone()):
+                    return loads(row[0])
+                return []
 
 
 class Ticket(commands.Cog, DataManager):
@@ -123,7 +154,7 @@ class Ticket(commands.Cog, DataManager):
         }
     )
     @commands.has_permissions(manage_channels=True)
-    async def ticket(self, ctx, title, description, *, role: discord.Role = None):
+    async def ticket(self, ctx, title, description, *, roles: Roles = []):
         """!lang ja
         --------
         チケットチャンネル作成用のパネルを作成します。
@@ -135,9 +166,10 @@ class Ticket(commands.Cog, DataManager):
         description : str
             チケットパネルの説明欄に入れる文章です。  
             改行や空白を含めたい場合は`"`で文章を囲んでください。
-        role : 役職名または役職のメンション, optional
+        roles : 役職名または役職のメンション, optional
             作成されるチケットチャンネルを見ることのできる役職です。  
-            指定しない場合は管理者権限を持っている人とチケットチャンネル作成者本人のみが見れます。
+            指定しない場合は管理者権限を持っている人とチケットチャンネル作成者本人のみが見れます。  
+            複数指定可能で`, `(半角のカンマと空白)で分けることでできます。
 
         Notes
         -----
@@ -164,9 +196,10 @@ class Ticket(commands.Cog, DataManager):
         description : str
             The text to put in the description field of the ticket panel.  
             If you want to include line breaks or spaces, enclose the text with `"`.
-        role : name of the role or a mention of the role, optional
+        roles : name of the role or a mention of the role, optional
             The role that can see the ticket channel being created.  
-            If not specified, only the administrator and the creator of the ticket channel will be able to see it.
+            If not specified, only the administrator and the creator of the ticket channel will be able to see it.  
+            It is possible to specify more than one, and they can be separated by `, ` (half-width commas and spaces).
 
         Notes
         -----
@@ -181,6 +214,8 @@ class Ticket(commands.Cog, DataManager):
         --------
         `rt!ticket query moderator`"""
         if ctx.guild and ctx.channel.category and str(ctx.channel.type) == "text":
+            if roles:
+                await self.write_roles(ctx.channel.id, [role.id for role in roles])
             embed = discord.Embed(
                 title=title,
                 description=description,
@@ -188,8 +223,8 @@ class Ticket(commands.Cog, DataManager):
             )
             await ctx.webhook_send(
                 username=ctx.author.name, avatar_url=ctx.author.avatar.url,
-                content=f"RTチケットパネル, {getattr(role, 'id', '...')}",
-                embed=embed, wait=True, replace_language=False, view=VIEW
+                content=f"RTチケットパネル, 2", embed=embed, wait=True,
+                replace_language=False, view=VIEW
             )
         else:
             await ctx.reply(
@@ -259,11 +294,14 @@ class Ticket(commands.Cog, DataManager):
                 self.cooldown[payload.member.id] = now
 
                 # チケットチャンネルの作成に必要な情報を集める。
-                role = (
+                roles = map(
+                    payload.message.guild.get_role,
+                    await self.read_roles(payload.channel_id)
+                ) if payload.message.content.endswith(", 2") else [
                     payload.message.guild.get_role(
                         int(payload.message.content[11:])
                     ) if len(payload.message.content) > 15 else None
-                )
+                ]
                 # overwritesを作る。
                 perms = {
                     payload.message.guild.default_role: \
@@ -271,9 +309,12 @@ class Ticket(commands.Cog, DataManager):
                     payload.member: \
                         discord.PermissionOverwrite(read_messages=True)
                 }
-                if role:
+                if roles:
                     # もしroleが指定されているならroleもoverwritesに追加する。
-                    perms[role] = discord.PermissionOverwrite(read_messages=True)
+                    for role in roles:
+                        perms[role] = discord.PermissionOverwrite(
+                            read_messages=True
+                        )
                 # チケットチャンネルを作成する。
                 channel = await payload.message.channel.category.create_text_channel(
                     channel_name, overwrites=perms
