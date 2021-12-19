@@ -1,6 +1,6 @@
 # RT - Force Pinned Message
 
-from typing import Tuple, Dict, List
+from typing import Optional, Tuple, Dict, List
 
 from discord.ext import commands, tasks
 import discord
@@ -176,7 +176,14 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         ## フィールド名
         フィールド内容
         ```
-        また、送信頻度を一時間に一回などのしたい場合は`rt!pinit <何分>`のようにすれば良いです。
+        また、送信頻度を一時間に一回などのしたい場合は`rt!pinit <何分>`のようにすれば良いです。  
+        もし、強制ピン留めのメッセージの送信者のアイコンをRTにしたいまたは名前をカスタムしたいと言う場合は、チャンネルトピックを以下のように設定すれば良いです。
+        ```
+        # もし送信者の名前をカスタムしたい場合 #
+        rt>fpm 名前
+        # もし送信者のアイコンをRTにしたい場合 #
+        rt>fpm 名前 --rt-icon
+        ```
 
         Warnings
         --------
@@ -317,10 +324,16 @@ class ForcePinnedMessage(commands.Cog, DataManager):
                 kwargs = {"content": content}
 
             # メッセージの送信を行う。
+            name = self.get_custom_name(message.channel, member) \
+                or (
+                    f"{getattr(member, 'display_name', member.name)} RT-ForcePinnedMessage",
+                    False
+                )
             try:
                 new_message = await message.channel.webhook_send(
-                    username=f"{getattr(member, 'display_name', member.name)} RT-ForcePinnedMessage",
-                    avatar_url=member.avatar.url, wait=True, **kwargs
+                    username=name[0],
+                    avatar_url=self.bot.user.avatar.url if name[1] else member.avatar.url,
+                    wait=True, **kwargs
                 )
             except Exception as e:
                 if not isinstance(e, (discord.Forbidden, discord.HTTPException)):
@@ -336,6 +349,24 @@ class ForcePinnedMessage(commands.Cog, DataManager):
             else:
                 # もしチャンネルが見つからないなどの理由でメッセージ送信に失敗したなら設定を削除する。
                 await self.delete(channel_id)
+
+    def get_custom_name(
+        self, channel: discord.TextChannel, member: discord.Member
+    ) -> Optional[Tuple[str, bool]]:
+        "カスタム名とアイコンをどうするかを取得する。"
+        if "rt>fpm " in (channel.topic or "..."):
+            custom = channel.topic[channel.topic.find("rt>fpm"):]
+            end = custom.find("\n")
+            custom = custom[7:] if end == -1 else custom[7:end]
+            del end
+            if "--rt-icon" in custom:
+                custom = custom.replace("--rt-icon", "")
+                custom += "1"
+            else:
+                custom += "0"
+            return custom[:-1].replace(
+                "!name!", getattr(member, "display_name", member.name)
+            ), custom[-1] == "1"
 
 
 def setup(bot):
