@@ -42,7 +42,10 @@ class MusicPlayer:
 
     def remove_queue(self, index: Union[int, MusicData]) -> None:
         if isinstance(index, int):
-            del self.queues[index]
+            try:
+                del self.queues[index]
+            except IndexError:
+                pass
         else:
             self.queues.remove(index)
         self.length -= 1
