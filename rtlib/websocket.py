@@ -234,7 +234,7 @@ class WebSocket:
 
                 self.print(f"Finished websocket connection ({self.running})")
 
-                if (not self.cog.bot.is_closed() and self._reconnect
+                if ((not self.cog.bot.is_closed() or self._reconnect)
                         and self.running != "unload"):
                     await self.close()
                     self.print("I will try to reconnect.")
