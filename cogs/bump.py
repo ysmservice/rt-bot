@@ -347,14 +347,17 @@ class Bump(commands.Cog, DataManager):
                     await self.save_ranking(user_id, data["mode"], count + 1)
 
                 # 通知の設定をしたとメッセージを送る。
-                await message.channel.send(
-                    embed=discord.Embed(
-                        title="通知設定",
-                        description=f"{data['mode']}の通知を設定しました。\n" \
-                            + f"<t:{int(new['notification'])}:R>に通知します。",
-                        color=self.bot.colors["normal"]
+                try:
+                    await message.channel.send(
+                        embed=discord.Embed(
+                            title="通知設定",
+                            description=f"{data['mode']}の通知を設定しました。\n" \
+                                + f"<t:{int(new['notification'])}:R>に通知します。",
+                            color=self.bot.colors["normal"]
+                        )
                     )
-                )
+                except discord.Forbidden:
+                    pass
 
 
 def setup(bot):
