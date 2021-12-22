@@ -18,7 +18,22 @@ class WordCaptcha:
                 and message.content == self.cog.queue[message.guild.id] \
             [message.author.id][2].extras["data"]["word"]):
             await message.delete()
-            await message.channel.send(f"{message.author.mention}, 認証に成功しました。")
-            await self.cog.remove_queue(message.guild.id, message.author.id)
+            role = message.guild.get_role(
+                self.cog.queue[message.guild.id][message.author.id][2].role_id
+            )
+            if role:
+                try:
+                    await message.author.add_roles(role)
+                except discord.Forbidden:
+                    await message.channel.send(
+                        f"{message.author.mention}, 役職を権限がないため付与できませんでした。"
+                    )
+                else:
+                    await message.channel.send(f"{message.author.mention}, 認証に成功しました。")
+                    await self.cog.remove_queue(message.guild.id, message.author.id)
+            else:
+                await message.channel.send(
+                    f"{message.author.mention}, 付与する役職が見つかりませんでした。"
+                )
         else:
             await message.reply("合言葉が違います。")

@@ -20,7 +20,7 @@ class WebCaptchaView(discord.ui.View):
         self.add_item(discord.ui.Button(
             emoji="<:hCaptcha:923086020570927114>", url="".join(
                 self.captcha.cog.bot.get_website_url(),
-                "/captcha.html?code=", encrypt(
+                "/captcha?session=", encrypt(
                     self.characters, self.captcha.cog.bot.secret["secret"]
                 )
             )

@@ -167,7 +167,7 @@ class ClickCaptchaView(discord.ui.View):
                     pass
 
 
-class Captcha(commands.Cog, DataManager, TimeoutDataManager):
+class OldCaptcha(commands.Cog, DataManager, TimeoutDataManager):
     def __init__(self, bot: RT):
         self.bot = bot
         self.view = ClickCaptchaView(self.bot.user.id)
@@ -199,87 +199,28 @@ class Captcha(commands.Cog, DataManager, TimeoutDataManager):
         return 60
 
     @commands.command(
-        aliases=["ca", "認証", "きゃぷちゃ", "auth", "cpic"],
         extras={
             "headding": {
-                "ja": "画像認証, 合言葉認証, ウェブ認証をサーバーに設定します。",
-                "en": "Image captcha, Password captcha, Web Captcha (hCaptcha)"
+                "ja": "RTの古い認証機能です。",
+                "en": "RT's old captcha feature."
             },
-            "parent": "ServerSafety"
+            "parent": "Other"
         }
     )
     @commands.has_permissions(administrator=True)
     @commands.cooldown(1, 10, commands.BucketType.guild)
-    async def captcha(self, ctx, mode, *, role: discord.Role = None):
+    async def old_captcha(self, ctx, mode, *, role: discord.Role = None):
         """!lang ja
         --------
-        認証を設定します。  
-        認証を設定することでサーバーに参加した人がセルフBot(自動で動くユーザー)じゃないなら喋れるようにするといったことができます。  
-        ※自動で動くユーザーの大半が荒らし目的で動いています。  
-        またこの機能の合言葉認証を使うことで合言葉を知っている人のみがサーバーで喋ることができるなどのこともできます。  
-        認証をするチャンネルはこのコマンドを実行したチャンネルに設定されるので、このコマンドはウェルカムメッセージが送信されるチャンネルで実行しましょう。
-
-        Parameters
-        ----------
-        mode : image, web, click, 左の三つ以外の場合は合言葉
-            設定する認証の種類です。  
-            `image`が画像認証で実行したチャンネルに送信される画像にある数字を正しく入力するという認証です。  
-            `web`がhCaptchaを利用したウェブでの本格認証です。  
-            `click`がボタンを押したらロールを付与するというボタンのメッセージを作ります。  
-            `click`の場合強度は手軽ですがそこまで高くないです。  
-            上記二つ以外を入力した場合はその入力した言葉を使った合言葉認証で設定されます。  
-            もし設定をオフにするなら`off`にして役職(role)を指定しないでください。
-        role : 役職名または役職のメンション, optional
-            認証成功時に付与する役職の名前またはメンションです。  
-            もし設定を解除する場合はこれを指定しないでください。
-
-        Examples
-        --------
-        設定する際
-        `rt!captcha web @認証済み`  
-        ウェブ認証で認証成功時には`認証済み`という役職を付与する用に設定します。
-
-        解除する際
-        `rt!captcha off`
-        認証を有効にしているチャンネルで実行すると、設定を解除できます。
-
-        Notes
-        -----
-        認証をするチャンネルは認証済みの人から見えないようにするのを推奨します。  
-        そうすれば荒らしをする自動で動くユーザーが来た際に荒らしの影響を認証済みユーザーは受けません。  
-        このコマンドを実行することができるのは管理者権限を持っている人のみです。  
-        また、認証にタイムアウトを設定したい場合は`rt!ct 何分 キックをするかどうか(on/off)`のようにしましょう。(デフォルトは一時間でタイムアウトでキックはしません。)  
-        (ワンクリック認証はタイムアウトを設定できないので`requiresend`などを使用しましょう。)
+        古い認証機能です。  
+        新しい`rt!captcha`を使用してください。  
+        もしこの機能を使っていて無効にしたい場合は`rt!old_captcha off`と実行してください。
 
         !lang en
         --------
-        Set up authentication.  
-        By setting up authentication, you can allow people who join the server to speak if they are not self-bots (users who run automatically).  
-        The majority of auto-automated users are working for the purpose of trolling.  
-        You can also use the password authentication feature to allow only those who know the password to speak on the server by this function.  
-        The channel for authentication will be set to the channel where this command is executed, so this command should be executed on the channel where the welcome message will be sent.
-
-        Parameters
-        ----------
-        mode : image, web, or password if other than the two on the left
-            The type of authentication to set.  
-            `image` is image authentication, which means that you must correctly enter the numbers in the image sent to the channel you are running on.  
-            The `web` is full-fledged authentication on the web using hCaptcha.  
-            If you enter something other than two above, mode will be set `Password(You had entered word in this command.) Mode`.  
-        role : Name of the role or mention of the role
-            The name of the role to be assigned upon successful authentication.
-
-        Examples
-        --------
-        `rt!captcha web @authenticated`.  
-        Set web authentication to give the role `authenticated` on successful authentication.
-
-        Notes
-        -----
-        It is recommended to make the authenticating channel invisible to authenticated users and set slowmode.  
-        This way, if an automated vandal comes along, the authenticated users will not be affected by the vandalism.  
-        This command can only be executed by someone with administrative privileges.
-        Also, if you want to set a timeout for authentication, use something like `rt!ct <how many minutes to timeout> <kick (on/off)>`. (Default is `rt!ct 60 off`)"""
+        This is an old authentication feature.  
+        Please use the newer `rt!captcha`.  
+        If you are using this feature and want to disable it, use `rt!old_captcha off`."""
         if role is None:
             await self.delete(ctx.channel)
         elif mode == "click":
@@ -365,4 +306,4 @@ class Captcha(commands.Cog, DataManager, TimeoutDataManager):
 
 
 def setup(bot):
-    bot.add_cog(Captcha(bot))
+    bot.add_cog(OldCaptcha(bot))

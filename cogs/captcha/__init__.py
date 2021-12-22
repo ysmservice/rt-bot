@@ -58,7 +58,7 @@ class QueueData:
 class DataManager(DatabaseManager):
     "セーブデータを管理するためのクラスです。"
 
-    TABLES = ("captcha",)
+    TABLES = ("captchaData",)
 
     def __init__(self, cog: "Captcha"):
         self.cog, self.pool = cog, cog.bot.mysql.pool
@@ -156,31 +156,50 @@ class Captcha(commands.Cog, DataManager):
             int, Dict[int, Tuple[float, bool, QueueDataT]]
         ] = defaultdict(dict)
         self.queue_remover.start()
-        self.view = View(timeout=None)
-        self.cog.bot.add_view(self.view)
+        self.view = View(self, timeout=None)
+        self.bot.add_view(self.view)
         self.captchas = Captchas(
             ImageCaptcha(self), WordCaptcha(self),
             WebCaptcha(self), ClickCaptcha(self)
         )
         super(commands.Cog, self).__init__(self)
 
-    @property
     def session(self):
         "`aiohttp.ClientSession`を手に入れるためのものです。"
-        return ClientSession(json_serialize=dumps)
+        return ClientSession(loop=self.bot.loop, json_serialize=dumps)
 
     def print(self, *args, **kwargs) -> None:
         return self.bot.print("[Captcha]", *args, **kwargs)
 
-    @commands.command(aliases=["auth", "cta", "認証"])
+    @commands.group(aliases=["auth", "cta", "認証"])
     async def captcha(self, ctx: commands.Context):
         if not ctx.invoked_subcommand:
             await ctx.reply(
                 {"ja": "使用方法が違います。", "en": "It is wrong way to use this command."}
             )
 
+    async def send_panel(
+        self, channel: Union[discord.TextChannel, commands.Context], **kwargs
+    ) -> discord.Message:
+        "認証ボタンのパネルを送信するための関数です。"
+        return await channel.send(
+            embed=discord.Embed(
+                **kwargs, color=self.bot.Colors.normal
+            ), view=self.view
+        )
+
+    BELLOW = {
+        "ja": "以下のボタンを押すことで認証を開始することができます。",
+        "en": "Press the button bellow to start image captcha."
+    }
+
     @captcha.command(aliases=["画像", "img"])
     async def image(self, ctx: commands.Context, *, role: discord.Role):
+        await self.send_panel(
+            ctx, title={
+                "ja": "画像認証", "en": "Image Captcha"
+            }, description=self.BELLOW
+        )
         await self.write(ctx.guild.id, "image", role.id, {})
         await ctx.reply("Ok")
 
@@ -195,17 +214,30 @@ class Captcha(commands.Cog, DataManager):
 
     @captcha.command(aliases=["ウェブ", "wb"])
     async def web(self, ctx: commands.Context, *, role: discord.Role):
+        await self.send_panel(
+            ctx, title={
+                "ja": "ウェブ認証", "en": "Web Captcha"
+            }, description=self.BELLOW
+        )
         await self.write(ctx.guild.id, "web", role.id, {})
         await ctx.reply("Ok")
 
     @captcha.command(aliases=["ボタン", "クリック", "c"])
     async def click(self, ctx: commands.Context, *, role: discord.Role):
+        await self.send_panel(
+            ctx, title={
+                "ja": "ワンクリック認証", "en": "One Click Captcha"
+            }, description={
+                "ja": "役職を手に入れるには以下のボタンを押してください。",
+                "en": "To get the roll, press the button below."
+            }
+        )
         await self.write(ctx.guild.id, "click", role.id, {})
         await ctx.reply("Ok")
 
     @captcha.command("timeout", aliases=["タイムアウト", "t"])
     async def timeout_(self, ctx: commands.Context, timeout: float, kick: bool):
-        if 60 <= timeout <= 1080:
+        if 0 <= timeout <= 1080:
             try:
                 await self.timeout(ctx.guild.id, timeout, kick)
             except AssertionError:
@@ -288,4 +320,4 @@ class Captcha(commands.Cog, DataManager):
 
 
 def setup(bot):
-    bot.add_cog()
+    bot.add_cog(Captcha(bot))

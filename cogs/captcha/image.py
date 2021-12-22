@@ -13,6 +13,7 @@ from random import randint
 if TYPE_CHECKING:
     from .__init__ import Captcha, Mode
     from .web import WebCaptchaView
+    from .click import ClickCaptcha
 
 
 class QueueData:
@@ -20,6 +21,25 @@ class QueueData:
     role_id: int
     characters: str
     path: str
+
+
+async def add_roles(
+    captcha: Union["ImageCaptcha", "ClickCaptcha"], interaction: discord.Interaction
+):
+    if (role := interaction.guild.get_role(
+        captcha.cog.queue[interaction.guild_id][interaction.user.id][2].role_id
+    )):
+        try:
+            await interaction.user.add_roles(role)
+        except discord.Forbidden:
+            await interaction.response.edit_message("権限がないため役職の付与に失敗しました。")
+        else:
+            await interaction.resopnse.edit_message("認証に成功しました。")
+            return await captcha.cog.remove_queue(
+                interaction.guild_id, interaction.user.id
+            )
+    else:
+        await interaction.response.edit_message("役職が見つからないため役職の付与ができませんでした。")
 
 
 def make_random_string(length: int):
@@ -52,21 +72,7 @@ class Select(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         if self.values[0] == self.view.characters:
-            if (role := interaction.guild.get_role(
-                self.view.captcha.cog.queue \
-                    [interaction.guild_id][interaction.user.id][2].role_id
-            )):
-                try:
-                    await interaction.user.add_roles(role)
-                except discord.Forbidden:
-                    await interaction.response.edit_message("権限がないため役職の付与に失敗しました。")
-                else:
-                    await interaction.resopnse.edit_message("認証に成功しました。")
-                    return await self.view.captcha.cog.remove_queue(
-                        interaction.guild_id, interaction.user.id
-                    )
-            else:
-                await interaction.response.edit_message("役職が見つからないため役職の付与ができませんでした。")
+            await add_roles(self.view.captcha, interaction)
         else:
             await interaction.response.edit_message("画像にある文字列と違います。")
         if self.view.mode == "image":
@@ -91,8 +97,10 @@ class SelectView(discord.ui.View):
 class ImageCaptcha(ImageGenerator):
     "画像認証の関数をまとめるためのクラスです。"
 
+    BASE_PATH = "data/captcha/"
+
     def __init__(
-        self, cog: "Captcha", font_path: str = "data/captcha/SourceHanSans-Normal.otf",
+        self, cog: "Captcha", font_path: str = f"{BASE_PATH}SourceHanSans-Normal.otf",
         password_length: int = 5
     ):
         self.cog, self.password_length = cog, password_length
@@ -108,10 +116,11 @@ class ImageCaptcha(ImageGenerator):
         )
         return characters
 
-    BASE_PATH = "data/captcha/"
+    def make_filename(self, guild_id: int, user_id: int) -> str:
+        return f"{guild_id}-{user_id}.png"
 
     def make_path(self, guild_id: int, user_id: int) -> str:
-        return f"{self.BASE_PATH}{guild_id}-{user_id}.png"
+        return f"{self.BASE_PATH}{self.make_filename(guild_id, user_id)}"
 
     async def update_image(self, guild_id: int, member_id: int) -> Tuple[str, str]:
         "認証用の画像を更新します。まだない場合は新規作成します。"
@@ -121,7 +130,7 @@ class ImageCaptcha(ImageGenerator):
         self.cog.queue[guild_id][member_id][2].characters = characters = \
             await self.create_image(path)
         # 画像をウェブサーバーに送信する。
-        async with self.cog.session as session:
+        async with self.cog.session() as session:
             async with aioopen(path, "rb") as f:
                 await session.post(
                     f"{self.cog.bot.get_url()}{self.cog.BASE}image/post",
@@ -137,7 +146,7 @@ class ImageCaptcha(ImageGenerator):
 
     async def remove_image(self, guild_id: int, member_id: int) -> None:
         "ウェブサーバーから認証用の画像を削除します。"
-        async with self.cog.session as session:
+        async with self.cog.session() as session:
             await session.post(
                 f"{self.cog.bot.get_url()}{self.cog.BASE}image/delete",
                 data=self.make_path(guild_id, member_id)
@@ -157,7 +166,11 @@ class ImageCaptcha(ImageGenerator):
                 },
                 color=self.cog.bot.Colors.normal
             ).set_image(
-                url=f"{self.cog.bot.get_website_url()}/data/captcha/image"
+                url="".join(
+                    self.cog.bot.get_website_url(),
+                    "/data/captcha/image/",
+                    self.make_filename(interaction.guild_id, interaction.user.id)
+                )
             ), view=SelectView(
                 self, (
                     self.cog.queue[interaction.guild_id] \
