@@ -1,5 +1,6 @@
 # RT - Captcha
 
+from re import A
 from typing import TypedDict, Literal, Union, Optional, Any, Tuple, DefaultDict, Dict
 
 from discord.ext import commands, tasks
@@ -86,10 +87,7 @@ class DataManager(DatabaseManager):
             )
         )
 
-    async def read(
-        self, guild_id: int, cursor: Cursor = None
-    ) -> Optional[Tuple[Mode, int, Extras]]:
-        "認証設定を読み込みます。"
+    async def _read(self, cursor, guild_id):
         await cursor.execute(
             f"""SELECT Mode, RoleID, Extras FROM {self.TABLES[0]}
                 WHERE GuildID = %s;""",
@@ -98,11 +96,25 @@ class DataManager(DatabaseManager):
         if (row := await cursor.fetchone()):
             return list(row[:-1]) + [loads(row[-1])]
 
+    async def read(
+        self, guild_id: int, cursor: Cursor = None
+    ) -> Optional[Tuple[Mode, int, Extras]]:
+        "認証設定を読み込みます。"
+        return await self._read(cursor, guild_id)
+
+    async def delete(self, guild_id: int, cursor: Cursor = None) -> None:
+        "認証の設定を削除します。"
+        assert await self._read(cursor, guild_id), "設定されていません。"
+        await cursor.execute(
+            f"DELETE FROM {self.TABLES[0]} WHERE GuildID = %s;",
+            (guild_id,)
+        )
+
     async def timeout(
         self, guild_id: int, time_: float, kick: bool, cursor: Cursor = None
     ) -> None:
         "認証設定にタイムアウトを設定します。"
-        assert (row := await self.read(guild_id, cursor=cursor)), "設定がありません。"
+        assert (row := await self._read(cursor, guild_id)), "設定がありません。"
         data = row[-1]
         data["timeout"] = {"time": time_, "kick": kick}
         await cursor.execute(
@@ -178,15 +190,21 @@ class Captcha(commands.Cog, DataManager):
                 {"ja": "使用方法が違います。", "en": "It is wrong way to use this command."}
             )
 
-    async def send_panel(
-        self, channel: Union[discord.TextChannel, commands.Context], **kwargs
+    async def setting(
+        self, ctx: commands.Context, mode: Mode, role_id: int,
+        extras: Extras, panel: bool = True, **kwargs
     ) -> discord.Message:
-        "認証ボタンのパネルを送信するための関数です。"
-        return await channel.send(
-            embed=discord.Embed(
-                **kwargs, color=self.bot.Colors.normal
-            ), view=self.view
-        )
+        "認証を設定しオプションでパネルを送信するための関数です。"
+        await ctx.trigger_typing()
+        await self.write(ctx.guild.id, mode, role_id, extras)
+        if panel:
+            return await ctx.send(
+                embed=discord.Embed(
+                    **kwargs, color=self.bot.Colors.normal
+                ), view=self.view
+            )
+        else:
+            return await ctx.reply("Ok")
 
     BELLOW = {
         "ja": "以下のボタンを押すことで認証を開始することができます。",
@@ -195,45 +213,50 @@ class Captcha(commands.Cog, DataManager):
 
     @captcha.command(aliases=["画像", "img"])
     async def image(self, ctx: commands.Context, *, role: discord.Role):
-        await self.send_panel(
-            ctx, title={
+        await self.setting(
+            ctx, "image", role.id, {}, title={
                 "ja": "画像認証", "en": "Image Captcha"
             }, description=self.BELLOW
         )
-        await self.write(ctx.guild.id, "image", role.id, {})
-        await ctx.reply("Ok")
 
     @captcha.command(aliases=["合言葉", "wd"])
     async def word(self, ctx: commands.Context, word: str, *, role: discord.Role):
-        await self.write(
-            ctx.guild.id, "word", role.id, {
+        await self.setting(
+            ctx, "word", role.id, {
                 "data": {"word": word, "channel_id": ctx.channel.id}
             }
         )
-        await ctx.reply("Ok")
 
     @captcha.command(aliases=["ウェブ", "wb"])
     async def web(self, ctx: commands.Context, *, role: discord.Role):
-        await self.send_panel(
-            ctx, title={
+        await self.setting(
+            ctx, "web", role.id, {}, title={
                 "ja": "ウェブ認証", "en": "Web Captcha"
             }, description=self.BELLOW
         )
-        await self.write(ctx.guild.id, "web", role.id, {})
-        await ctx.reply("Ok")
 
     @captcha.command(aliases=["ボタン", "クリック", "c"])
     async def click(self, ctx: commands.Context, *, role: discord.Role):
-        await self.send_panel(
-            ctx, title={
+        await self.setting(
+            ctx, "click", role.id, {}, title={
                 "ja": "ワンクリック認証", "en": "One Click Captcha"
             }, description={
                 "ja": "役職を手に入れるには以下のボタンを押してください。",
                 "en": "To get the roll, press the button below."
             }
         )
-        await self.write(ctx.guild.id, "click", role.id, {})
-        await ctx.reply("Ok")
+
+    @captcha.command(aliases=["o", "オフ", "無効"])
+    async def off(self, ctx: commands.Context):
+        try:
+            await self.delete(ctx.guild.id)
+        except AssertionError:
+            await ctx.reply(
+                {"ja": "既に認証設定はオフになっています。",
+                 "en": "The authentication setting is already turned off."}
+            )
+        else:
+            await ctx.reply("Ok")
 
     @captcha.command("timeout", aliases=["タイムアウト", "t"])
     async def timeout_(self, ctx: commands.Context, timeout: float, kick: bool):
@@ -254,7 +277,7 @@ class Captcha(commands.Cog, DataManager):
             )
 
     def get_captchas(self) -> map:
-        return map(lambda x: getattr(self.captchas, x), self.captchas)
+        return map(lambda x: getattr(self.captchas, x), dir(self.captchas))
 
     async def dispatch(self, captcha: object, name: str, *args, **kwargs) -> Optional[Any]:
         # 各Captchaクラスにある関数をあれば実行します。
@@ -271,7 +294,7 @@ class Captcha(commands.Cog, DataManager):
         "Queueを削除します。"
         if data is None:
             data = self.queue[guild_id][member_id][2]
-        for captcha in self.get_captchas:
+        for captcha in self.get_captchas():
             await self.dispatch(captcha, "on_queue_remove", guild_id, member_id, data)
         del self.queue[guild_id][member_id]
 
@@ -285,13 +308,10 @@ class Captcha(commands.Cog, DataManager):
         for guild_id, members in list(self.queue.items()):
             for member_id, (time_, kick, data) in list(members.items()):
                 if now >= time_:
-                    # タイムアウトしたキューを消す。
-                    del self.members[member_id]
                     # もしキック設定がされている場合はキックを行う。
-                    if kick and (guild := self.bot.get_guild(guild_id)):
-                        await guild.kick(
-                            discord.Object(member_id), reason="[Captcha] Timeout"
-                        )
+                    if (kick and (guild := self.bot.get_guild(guild_id))
+                            and (member := guild.get_member(member_id))):
+                        await member.kick(reason="[Captcha] Timeout")
                     # キューの削除を行う。
                     self.bot.loop.create_task(self.remove_queue(guild_id, member_id, data))
 
@@ -301,10 +321,10 @@ class Captcha(commands.Cog, DataManager):
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         if (member.id not in self.queue.get(member.guild.id, {})
-                and (row := await self.read(member.gulid.id))):
+                and (row := await self.read(member.guild.id))):
             # もし認証が設定されているサーバーの場合はqueueにタイムアウト情報を追加しておく。
             self.queue[member.guild.id][member.guild.id] = (
-                time() + row[2].get("timeout", {}).get("time", 360),
+                time() + row[2].get("timeout", {}).get("time", 360) * 60,
                 row[2].get("timeout", {}).get("kick", False),
                 QueueData(row[0], row[1], row[2])
             )
@@ -314,7 +334,8 @@ class Captcha(commands.Cog, DataManager):
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         # 合言葉認証に必要なのでon_messageを呼び出しておく。
-        if self.queued(message.guild.id, message.author.id):
+        if (message.guild and message.author
+                and self.queued(message.guild.id, message.author.id)):
             for captcha in self.captchas:
                 await self.dispatch(captcha, "on_message", message)
 

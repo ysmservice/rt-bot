@@ -140,7 +140,7 @@ class ImageCaptcha(ImageGenerator):
         self.bot.loop.create_task(aioremove(path))
         return characters
 
-    async def on_queue_remove(self, guild_id: int, member_id: int) -> None:
+    async def on_queue_remove(self, guild_id: int, member_id: int, _) -> None:
         # キューの削除時にはウェブサーバーに認証用の画像を消すように指示する。
         await self.remove_image(guild_id, member_id)
 
