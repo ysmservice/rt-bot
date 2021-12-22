@@ -37,3 +37,6 @@ class RT(commands.AutoShardedBot):
         self.dispatch("close", self.loop)
         await super().close()
         self.print("Bye")
+
+    def get_website_url(self) -> str:
+        return "http://localhost/" if self.test else "https://rt-bot.com/"

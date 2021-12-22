@@ -1,6 +1,6 @@
 # RT Captcha - Image
 
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, Union, Optional, Tuple
 
 import discord
 
@@ -12,6 +12,7 @@ from random import randint
 
 if TYPE_CHECKING:
     from .__init__ import Captcha, Mode
+    from .web import WebCaptchaView
 
 
 class QueueData:
@@ -30,7 +31,7 @@ class Select(discord.ui.Select):
     "画像認証の画像にある文字を選択するセレクターのクラスです。"
 
     if TYPE_CHECKING:
-        view: "SelectView"
+        view: Union["SelectView", "WebCaptchaView"]
 
     def __init__(self, *args, **kwargs):
         # 答えの言葉以外の言葉を選択肢に追加する。
@@ -42,6 +43,7 @@ class Select(discord.ui.Select):
                 ...
         for word in words:
             self.add_option(label=word, value=word)
+        self.add_option(label=self.view.characters, value=self.view.characters)
         del words
         # その他設定をする。
         kwargs["custom_id"] = "captcha-image-selector"
@@ -67,17 +69,22 @@ class Select(discord.ui.Select):
                 await interaction.response.edit_message("役職が見つからないため役職の付与ができませんでした。")
         else:
             await interaction.response.edit_message("画像にある文字列と違います。")
-        # 認証失敗時には認証用の画像を作り直す。
-        await self.view.captcha.update_image(interaction.guild_id, interaction.user.id)
+        if self.view.mode == "image":
+            # 認証失敗時には認証用の画像を作り直す。
+            await self.view.on_failed(
+                interaction.guild_id, interaction.user.id
+            )
 
 
 class SelectView(discord.ui.View):
     "画像認証の数字の文字列のセレクターのViewです。"
 
     def __init__(
-        self, captcha: "ImageCaptcha", characters: str, path: str, *args, **kwargs
+        self, captcha: "ImageCaptcha", characters: str, *args, **kwargs
     ):
-        self.captcha, self.characters, self.path = captcha, characters, path
+        self.captcha, self.characters = captcha, characters
+        self.on_failed, self.on_success = \
+            self.captcha.update_image, self.captcha.remove_captcha
         super().__init__(*args, **kwargs)
 
 
@@ -117,12 +124,12 @@ class ImageCaptcha(ImageGenerator):
         async with self.cog.session as session:
             async with aioopen(path, "rb") as f:
                 await session.post(
-                    f"{self.cog.bot.get_url()}/captcha/image/post",
+                    f"{self.cog.bot.get_url()}{self.cog.BASE}image/post",
                     data=f.read()
                 )
             self.cog.print("[Image.Upload]", path)
         self.bot.loop.create_task(aioremove(path))
-        return path, characters
+        return characters
 
     async def on_queue_remove(self, guild_id: int, member_id: int) -> None:
         # キューの削除時にはウェブサーバーに認証用の画像を消すように指示する。
@@ -132,21 +139,13 @@ class ImageCaptcha(ImageGenerator):
         "ウェブサーバーから認証用の画像を削除します。"
         async with self.cog.session as session:
             await session.post(
-                f"{self.cog.bot.get_url()}/captcha/image/delete",
+                f"{self.cog.bot.get_url()}{self.cog.BASE}image/delete",
                 data=self.make_path(guild_id, member_id)
             )
 
     async def on_captcha(self, interaction: discord.Interaction):
-        if (interaction.guild_id in self.cog.queue
-                and interaction.user.id in self.cog.queue[interaction.guild_id]):
-            # もし既に認証用の画像を作っていたならその画像を使う。
-            path, characters = self.cog.queue \
-                [interaction.guild_id][interaction.user.id][2].path
-        else:
-            path, characters = await self.update_image(
-                interaction.guild_id, interaction.user.id
-            )
-        # 返信をする。
+        # 認証開始ボタンを押した人に対して返信をする。
+        # もし既に画像がある場合はそれを使う。
         await interaction.response.send_message(
             embed=discord.Embed(
                 title={
@@ -157,5 +156,16 @@ class ImageCaptcha(ImageGenerator):
                     "en": "Please select the number from the menu that matches the number in the image below."
                 },
                 color=self.cog.bot.Colors.normal
-            ), view=SelectView(self, characters, path), ephemeral=True
+            ).set_image(
+                url=f"{self.cog.bot.get_website_url()}/data/captcha/image"
+            ), view=SelectView(
+                self, (
+                    self.cog.queue[interaction.guild_id] \
+                        [interaction.user.id][2].characters
+                    if self.cog.queued(interaction.guild_id, interaction.user.id)
+                    else await self.update_image(
+                        interaction.guild_id, interaction.user.id
+                    )
+                ), self.update_image, self.remove_image, timeout=120
+            ), ephemeral=True
         )

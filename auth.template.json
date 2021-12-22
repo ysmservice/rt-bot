@@ -4,6 +4,7 @@
         "production": "本番環境用のTOKEN",
     	"sub": "りつたんのTOKEN"
     },
+    "secret": "シークレットキー, テスト時ならなんだっていい。本番の場合は長い方が良い。",
     "topgg": "TopGGのTOKENです。テスト用Botのみ入力省略可です。",
     "mysql": {
         "user": "データベースのユーザー名", "password": "⇦のパスワード", "db": "データベース名",

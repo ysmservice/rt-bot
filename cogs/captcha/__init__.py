@@ -17,22 +17,20 @@ from ujson import loads, dumps
 from time import time
 
 from .image import ImageCaptcha, QueueData as ImageQueue
-# from .web import WebCaptcha
-# from .word import WordCaptcha
-# from .click import ClickCaptcha
+from .web import WebCaptcha
+from .word import WordCaptcha
+from .click import ClickCaptcha
 
 
 Mode = Literal["image", "web", "word"]
 
 
-class QueueData:
-    def __init__(self, mode: Mode, role_id: int):
-        self.mode, self.role_id = mode, role_id
-
-
 @dataclass
 class Captchas:
     image: ImageCaptcha
+    word: WordCaptcha
+    web: WebCaptcha
+    click: ClickCaptcha
 
 
 class Timeout(TypedDict):
@@ -48,6 +46,13 @@ class WordData(TypedDict):
 class Extras(TypedDict, total=False):
     timeout: Timeout
     data: Union[WordData, Any]
+
+
+@dataclass
+class QueueData:
+    mode: Mode
+    role_id: int
+    extras: Extras
 
 
 class DataManager(DatabaseManager):
@@ -117,19 +122,24 @@ class View(discord.ui.View):
 
     @discord.ui.button(label="Start Captcha", custom_id="captcha", emoji="🔎")
     async def start_captcha(self, _, interaction: discord.Interaction):
-        if (row := await self.cog.read(interaction.guild_id)):
-            # もし認証の設定がされているサーバーなら認証を開始する。
-            if hasattr(captcha := self.cog.get_captcha(row[0]), "on_captcha"):
-                await captcha.on_captcha(interaction)
+        if self.cog.queued(interaction.guild_id, interaction.user.id):
+            if (row := await self.cog.read(interaction.guild_id)):
+                # もし認証の設定がされているサーバーなら認証を開始する。
+                if hasattr(captcha := self.cog.get_captcha(row[0]), "on_captcha"):
+                    await captcha.on_captcha(interaction)
+                else:
+                    await interaction.response.send_message(
+                        "このサーバーで設定されている認証の種類がこのボタンを押す方式とあっていません。",
+                        ephemeral=True
+                    )
             else:
                 await interaction.response.send_message(
-                    "このサーバーで設定されている認証の種類がこのボタンを押す方式とあっていません。",
+                    "このサーバーで認証の設定がされていないので認証を開始することができません。",
                     ephemeral=True
                 )
         else:
             await interaction.response.send_message(
-                "このサーバーで認証の設定がされていないので認証を開始することができません。",
-                ephemeral=True
+                "あなたは認証対象ではありません。", ephemeral=True
             )
 
 
@@ -137,6 +147,9 @@ QueueDataT = Union[QueueData, ImageQueue]
 
 
 class Captcha(commands.Cog, DataManager):
+
+    BASE = "/api/captcha/"
+
     def __init__(self, bot: RT):
         self.bot = bot
         self.queue: DefaultDict[
@@ -145,7 +158,10 @@ class Captcha(commands.Cog, DataManager):
         self.queue_remover.start()
         self.view = View(timeout=None)
         self.cog.bot.add_view(self.view)
-        self.captchas = Captchas(ImageCaptcha(self))
+        self.captchas = Captchas(
+            ImageCaptcha(self), WordCaptcha(self),
+            WebCaptcha(self), ClickCaptcha(self)
+        )
         super(commands.Cog, self).__init__(self)
 
     @property
@@ -205,8 +221,17 @@ class Captcha(commands.Cog, DataManager):
                  "en": "Timeout must be set from one minute to three hours."}
             )
 
-    def cog_unload(self):
-        self.queue_remover.cancel()
+    def get_captchas(self) -> map:
+        return map(lambda x: getattr(self.captchas, x), self.captchas)
+
+    async def dispatch(self, captcha: object, name: str, *args, **kwargs) -> Optional[Any]:
+        # 各Captchaクラスにある関数をあれば実行します。
+        if hasattr(captcha, name):
+            return await getattr(captcha, name)(*args, **kwargs)
+
+    def queued(self, guild_id: int, member_id: int) -> bool:
+        # 渡されたIDがqueueとしてキャッシュされているかを確認します。
+        return guild_id in self.queue and member_id in self.queue[guild_id]
 
     async def remove_queue(
         self, guild_id: int, member_id: int, data: Optional[QueueDataT] = None
@@ -214,10 +239,12 @@ class Captcha(commands.Cog, DataManager):
         "Queueを削除します。"
         if data is None:
             data = self.queue[guild_id][member_id][2]
-        for captcha in self.captchas:
-            if hasattr(captcha, "on_queue_remove"):
-                await captcha.on_queue_remove(guild_id, member_id, data)
+        for captcha in self.get_captchas:
+            await self.dispatch(captcha, "on_queue_remove", guild_id, member_id, data)
         del self.queue[guild_id][member_id]
+
+    def cog_unload(self):
+        self.queue_remover.cancel()
 
     @tasks.loop(seconds=10)
     async def queue_remover(self):
@@ -247,11 +274,17 @@ class Captcha(commands.Cog, DataManager):
             self.queue[member.guild.id][member.guild.id] = (
                 time() + row[2].get("timeout", {}).get("time", 360),
                 row[2].get("timeout", {}).get("kick", False),
-                QueueData(row[0], row[1])
+                QueueData(row[0], row[1], row[2])
             )
-            # もしCpatchaクラスにon_member_joinがあるならNullDataclassに値を設定できるようにそれを呼び出す。
-            if hasattr(captcha := self.get_captcha(row[0]), "on_member_join"):
-                await captcha.on_member_join(member)
+            # もしCpatchaクラスにon_member_joinがあるならQueueDataに値を設定できるようにそれを呼び出す。
+            await self.dispatch(self.get_captcha(row[0]), "on_member_join", member)
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        # 合言葉認証に必要なのでon_messageを呼び出しておく。
+        if self.queued(message.guild.id, message.author.id):
+            for captcha in self.captchas:
+                await self.dispatch(captcha, "on_message", message)
 
 
 def setup(bot):

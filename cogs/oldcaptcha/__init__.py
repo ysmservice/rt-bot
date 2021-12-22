@@ -343,7 +343,7 @@ class Captcha(commands.Cog, DataManager, TimeoutDataManager):
     def remove_cache(self, member: discord.Member) -> None:
         del self.cache[f"{member.guild.id}-{member.id}"]
 
-    @websocket.websocket("/api/captcha", auto_connect=True, reconnect=True)
+    @websocket.websocket("/api/captcha")
     async def websocket_(self, ws: websocket.WebSocket, _):
         self.websocket_.ws.print("I'm ready to captcha")
         await ws.send("on_ready")
