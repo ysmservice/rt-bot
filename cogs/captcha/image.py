@@ -5,15 +5,17 @@ from typing import TYPE_CHECKING, Union, Optional, Tuple
 import discord
 
 from captcha.image import ImageCaptcha as ImageGenerator
-from jishaku.functools import executor_function
 from aiofiles.os import remove as aioremove
 from aiofiles import open as aioopen
+from aiohttp import FormData
+from io import BytesIO
+
+from jishaku.functools import executor_function
 from random import randint
 
 if TYPE_CHECKING:
     from .__init__ import Captcha, Mode
     from .web import WebCaptchaView
-    from .click import ClickCaptcha
 
 
 class QueueData:
@@ -23,23 +25,32 @@ class QueueData:
     path: str
 
 
+async def response(interaction: discord.Interaction, content: str) -> None:
+    "返信をして埋め込みとViewを消す関数です。"
+    return await interaction.response.edit_message(
+        content=content, embed=None, view=None
+    )
+
+
 async def add_roles(
-    captcha: Union["ImageCaptcha", "ClickCaptcha"], interaction: discord.Interaction
+    view: Union["SelectView", "WebCaptchaView"], interaction: discord.Interaction
 ):
+    "役職を付与してinteractionの返信をする関数です。"
     if (role := interaction.guild.get_role(
-        captcha.cog.queue[interaction.guild_id][interaction.user.id][2].role_id
+        view.captcha.cog.queue[interaction.guild_id][interaction.user.id][2].role_id
     )):
         try:
             await interaction.user.add_roles(role)
         except discord.Forbidden:
-            await interaction.response.edit_message("権限がないため役職の付与に失敗しました。")
+            await response(interaction, "権限がないため役職の付与に失敗しました。")
         else:
-            await interaction.resopnse.edit_message("認証に成功しました。")
-            return await captcha.cog.remove_queue(
+            await response(interaction, "認証に成功しました。")
+            return await view.on_success(
                 interaction.guild_id, interaction.user.id
             )
     else:
-        await interaction.response.edit_message("役職が見つからないため役職の付与ができませんでした。")
+        await response(interaction, "役職が見つからないため役職の付与ができませんでした。")
+    await view.on_failed(interaction.gulid_id, interaction.user.id)
 
 
 def make_random_string(length: int):
@@ -53,45 +64,48 @@ class Select(discord.ui.Select):
     if TYPE_CHECKING:
         view: Union["SelectView", "WebCaptchaView"]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, view, *args, **kwargs):
+        if "placeholder" not in kwargs:
+            kwargs["placeholder"] = "The number in the image | 画像にあった数字"
+        super().__init__(*args, **kwargs)
         # 答えの言葉以外の言葉を選択肢に追加する。
         words = []
         for _ in range(9):
             while (
-                word := make_random_string(self.view.captcha.password_length)
-            ) not in words and word != self.view.characters:
+                word := make_random_string(view.captcha.password_length)
+            ) in words or word == view.characters:
                 ...
+            words.append(word)
+        words.insert(randint(0, len(words)), view.characters)
         for word in words:
             self.add_option(label=word, value=word)
-        self.add_option(label=self.view.characters, value=self.view.characters)
         del words
-        # その他設定をする。
-        kwargs["custom_id"] = "captcha-image-selector"
-        kwargs["placeholder"] = "The string in the image"
-        super().__init__(*args, **kwargs)
 
     async def callback(self, interaction: discord.Interaction):
         if self.values[0] == self.view.characters:
-            await add_roles(self.view.captcha, interaction)
+            return await add_roles(self.view, interaction)
         else:
-            await interaction.response.edit_message("画像にある文字列と違います。")
-        if self.view.mode == "image":
-            # 認証失敗時には認証用の画像を作り直す。
-            await self.view.on_failed(
-                interaction.guild_id, interaction.user.id
+            await interaction.response.edit_message(
+                content="画像にある文字列と違います。", embed=None, view=None
             )
+        # 認証失敗時には認証用の画像を作り直す。
+        await self.view.on_failed(
+            interaction.guild_id, interaction.user.id
+        )
 
 
 class SelectView(discord.ui.View):
     "画像認証の数字の文字列のセレクターのViewです。"
 
     def __init__(
-        self, captcha: "ImageCaptcha", characters: str, *args, **kwargs
+        self, captcha: "ImageCaptcha", characters: str, url: str, *args, **kwargs
     ):
         self.captcha, self.characters = captcha, characters
         self.on_failed, self.on_success = \
-            self.captcha.update_image, self.captcha.remove_captcha
+            self.captcha.update_image, self.captcha.cog.remove_queue
         super().__init__(*args, **kwargs)
+        self.add_item(Select(self))
+        self.add_item(discord.ui.Button(label="Let's see picture | 画像を見る", url=url))
 
 
 class ImageCaptcha(ImageGenerator):
@@ -134,10 +148,11 @@ class ImageCaptcha(ImageGenerator):
             async with aioopen(path, "rb") as f:
                 await session.post(
                     f"{self.cog.bot.get_url()}{self.cog.BASE}image/post",
-                    data=f.read()
+                    data=FormData({"file": BytesIO(await f.read())}),
+                    params={"path": self.make_path(guild_id, member_id)}
                 )
             self.cog.print("[Image.Upload]", path)
-        self.bot.loop.create_task(aioremove(path))
+        self.cog.bot.loop.create_task(aioremove(path))
         return characters
 
     async def on_queue_remove(self, guild_id: int, member_id: int, _) -> None:
@@ -161,24 +176,27 @@ class ImageCaptcha(ImageGenerator):
                     "ja": "画像認証", "en": "Image Captcha"
                 },
                 description={
-                    "ja": "以下の画像にある数字とあてはまるものをメニューから選んでください。",
-                    "en": "Please select the number from the menu that matches the number in the image below."
+                    "ja": "以下のボタンからみれる画像にある数字とあてはまる数字をメニューから選んでください。",
+                    "en": "Select a number from the menu that matches the number in the image you can see from the button below."
                 },
                 color=self.cog.bot.Colors.normal
-            ).set_image(
-                url="".join(
-                    self.cog.bot.get_website_url(),
-                    "/data/captcha/image/",
-                    self.make_filename(interaction.guild_id, interaction.user.id)
-                )
             ), view=SelectView(
                 self, (
                     self.cog.queue[interaction.guild_id] \
                         [interaction.user.id][2].characters
-                    if self.cog.queued(interaction.guild_id, interaction.user.id)
+                    if (
+                        self.cog.queued(interaction.guild_id, interaction.user.id)
+                        and hasattr(
+                            self.cog.queue[interaction.guild_id] \
+                                [interaction.user.id][2], "characters"
+                        )
+                    )
                     else await self.update_image(
                         interaction.guild_id, interaction.user.id
                     )
-                ), self.update_image, self.remove_image, timeout=120
+                ), "".join((
+                    self.cog.bot.get_website_url(), self.BASE_PATH,
+                    self.make_filename(interaction.guild_id, interaction.user.id)
+                )), timeout=120
             ), ephemeral=True
         )

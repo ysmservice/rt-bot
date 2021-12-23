@@ -1,10 +1,10 @@
 # RT Captcha - Web Captcha
 
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING
 
 import discord
 
-from reprypt import encrypt, decrypt
+from reprypt import encrypt
 
 from .image import Select, make_random_string
 
@@ -25,9 +25,11 @@ class WebCaptchaView(discord.ui.View):
                 )
             )
         ))
-        self.add_item(Select())
-        self.on_success = self.on_failed
+        self.on_success = captcha.cog.remove_queue
         super().__init__(*args, **kwargs)
+        self.add_item(Select(
+            self, placeholder="The code in the webpage | ウェブページにあったコード"
+        ))
 
     async def on_failed(self, guild_id: int, user_id: int):
         ...

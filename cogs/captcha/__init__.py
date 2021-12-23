@@ -1,6 +1,5 @@
 # RT - Captcha
 
-from re import A
 from typing import TypedDict, Literal, Union, Optional, Any, Tuple, DefaultDict, Dict
 
 from discord.ext import commands, tasks
@@ -224,7 +223,7 @@ class Captcha(commands.Cog, DataManager):
         await self.setting(
             ctx, "word", role.id, {
                 "data": {"word": word, "channel_id": ctx.channel.id}
-            }
+            }, False
         )
 
     @captcha.command(aliases=["ウェブ", "wb"])
@@ -297,6 +296,8 @@ class Captcha(commands.Cog, DataManager):
         for captcha in self.get_captchas():
             await self.dispatch(captcha, "on_queue_remove", guild_id, member_id, data)
         del self.queue[guild_id][member_id]
+        if not self.queue[guild_id]:
+            del self.queue[guild_id]
 
     def cog_unload(self):
         self.queue_remover.cancel()
@@ -315,7 +316,9 @@ class Captcha(commands.Cog, DataManager):
                     # キューの削除を行う。
                     self.bot.loop.create_task(self.remove_queue(guild_id, member_id, data))
 
-    def get_captcha(self, mode: Mode) -> Union[ImageCaptcha, None]:
+    def get_captcha(self, mode: Mode) -> Union[
+        ImageCaptcha, WordCaptcha, WebCaptcha, ClickCaptcha
+    ]:
         return getattr(self.captchas, mode)
 
     @commands.Cog.listener()
@@ -323,7 +326,7 @@ class Captcha(commands.Cog, DataManager):
         if (member.id not in self.queue.get(member.guild.id, {})
                 and (row := await self.read(member.guild.id))):
             # もし認証が設定されているサーバーの場合はqueueにタイムアウト情報を追加しておく。
-            self.queue[member.guild.id][member.guild.id] = (
+            self.queue[member.guild.id][member.id] = (
                 time() + row[2].get("timeout", {}).get("time", 360) * 60,
                 row[2].get("timeout", {}).get("kick", False),
                 QueueData(row[0], row[1], row[2])
@@ -336,8 +339,10 @@ class Captcha(commands.Cog, DataManager):
         # 合言葉認証に必要なのでon_messageを呼び出しておく。
         if (message.guild and message.author
                 and self.queued(message.guild.id, message.author.id)):
-            for captcha in self.captchas:
-                await self.dispatch(captcha, "on_message", message)
+            await self.dispatch(
+                self.get_captcha(self.queue[message.guild.id][message.author.id][0]),
+                "on_message", message
+            )
 
 
 def setup(bot):
