@@ -180,7 +180,7 @@ class Enjoy(commands.Cog):
         "ps4": ((653, 838), "1")
     }
     GAME_BASE_PATH = "data/images/game_maker/"
-    GAME_SUPPORT_EXTS = ("png", "jpg", "PNG", "JPG")
+    GAME_SUPPORT_EXTS = ("png", "jpg", "PNG", "JPG", "GIF", "gif")
     GAME_SUPPORT_MODES = ("switch", "ps4")
 
     @executor_function
