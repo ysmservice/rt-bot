@@ -90,7 +90,6 @@ class Debug(commands.Cog):
     @require_admin
     async def reload(self, ctx):
         async with ctx.typing():
-            self.bot.cogs["SettingManager"].reset()
             for coro in (
                 self.bot.cogs["DocHelp"].on_full_ready(),
                 self.bot.cogs["Translator"].on_command_added(),
