@@ -39,6 +39,7 @@ INFO_INVITE = "https://discord.com/api/oauth2/authorize?client_id=71649640721258
 INFO_SS, INFO_URL = "https://discord.gg/ugMGw5w", "https://rt-bot.com"
 INFO_GITHUB = """* [RT-Team](https://github.com/RT-Team)
 * [RT-Backend](https://github.com/RT-Team/rt-backend)
+* [RT-Bot](https://github.com/RT-Team/rt-bot)
 * [RT-Frontend](https://github.com/RT-Team/rt-frontend)"""
 
 CREDIT_ITEMS = (("DEV", {"ja": "開発者", "en": "main developer"}),
@@ -58,8 +59,11 @@ CREDIT_LANGUAGE = {
     "en": "using language:Python, using library:Pycord"
 }
 CREDIT_SERVER = {
-    "ja": "サーバーOS：Arch Linux\nSnavyさんが貸してくれています。感謝感激です！",
-    "en": "server os:Arch Linux\nSnavy is lend server to me. Thank you to Snavy "
+    "ja": cleandoc(
+        """ウェブサーバーOS：Arch Linux (Snavyさんが貸してくれています。感謝感激です！)
+        BotのサーバーOS:Ubuntu Server"""
+    ),
+    "en": "webserver os:Arch Linux\nSnavy is lend server to me. Thank you to Snavy "
 }
 CREDIT_ETC = {
     "ja": "* Githubのコントリビューター達\n* 翻訳協力者\nありがとうございます。",
