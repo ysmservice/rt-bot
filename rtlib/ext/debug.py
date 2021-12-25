@@ -93,7 +93,6 @@ class Debug(commands.Cog):
             self.bot.cogs["SettingManager"].reset()
             for coro in (
                 self.bot.cogs["DocHelp"].on_full_ready(),
-                self.bot.cogs["SettingManager"].update(),
                 self.bot.cogs["Translator"].on_command_added(),
                 self.bot.cogs["ChannelPluginGeneral"].on_command_added()
             ):
