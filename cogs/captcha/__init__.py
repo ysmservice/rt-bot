@@ -340,8 +340,9 @@ class Captcha(commands.Cog, DataManager):
         if (message.guild and message.author
                 and self.queued(message.guild.id, message.author.id)):
             await self.dispatch(
-                self.get_captcha(self.queue[message.guild.id][message.author.id][0]),
-                "on_message", message
+                self.get_captcha(
+                    self.queue[message.guild.id][message.author.id][2].mode
+                ), "on_message", message
             )
 
 
