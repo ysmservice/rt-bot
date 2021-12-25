@@ -83,7 +83,8 @@ class Welcome(commands.Cog, DataManager):
         mode : str
             参加時に送信するメッセージを設定する場合は`join`を、退出時に送信するメッセージを設定するなら`remove`を入力します。
         content : str
-            ウェルカムメッセージの内容です。
+            ウェルカムメッセージの内容です。  
+            オフにする場合はこれを`off`にしてください。
 
         Notes
         -----
@@ -117,7 +118,8 @@ class Welcome(commands.Cog, DataManager):
         mode : str
             Enter `join` to set a message to be sent when you join, or `remove` to set a message to be sent when you leave.
         content : str
-            The content of the welcome message.
+            The content of the welcome message.  
+            If you want to turn it off, set it to `off`.
 
         Notes
         -----
