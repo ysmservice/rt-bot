@@ -182,8 +182,21 @@ class Captcha(commands.Cog, DataManager):
     def print(self, *args, **kwargs) -> None:
         return self.bot.print("[Captcha]", *args, **kwargs)
 
-    @commands.group(aliases=["auth", "cta", "認証"])
+    @commands.group(
+        aliases=["auth", "cta", "認証"], headding={
+            "ja": "認証機能", "en": "Captcha"
+        }, parent="ServerSafety"
+    )
     async def captcha(self, ctx: commands.Context):
+        """!lang ja
+        --------
+        認証機能です。  
+        [セルフBot](https://rt-team.github.io/notes/what_is_self_bot)による荒らし対策に有効です。
+
+        !lang en
+        --------
+        Captcha function.  
+        This is effective in preventing vandalism by self-bots spamming."""
         if not ctx.invoked_subcommand:
             await ctx.reply(
                 {"ja": "使用方法が違います。", "en": "It is wrong way to use this command."}
@@ -212,6 +225,19 @@ class Captcha(commands.Cog, DataManager):
 
     @captcha.command(aliases=["画像", "img"])
     async def image(self, ctx: commands.Context, *, role: discord.Role):
+        """!lang ja
+        --------
+        画像認証を設定します。  
+        画像認証は画像にある読みづらい数字を選択して人間かどうかをチェックするものです。
+
+        <ja-ext>
+
+        !lang en
+        --------
+        Setting Image Captcha  
+        Image captcha checks whether a person is human by selecting an illegible number on an image.
+
+        <en-ext>"""
         await self.setting(
             ctx, "image", role.id, {}, title={
                 "ja": "画像認証", "en": "Image Captcha"
@@ -220,6 +246,29 @@ class Captcha(commands.Cog, DataManager):
 
     @captcha.command(aliases=["合言葉", "wd"])
     async def word(self, ctx: commands.Context, word: str, *, role: discord.Role):
+        """!lang ja
+        --------
+        合言葉認証を設定します。  
+        合言葉認証はこの設定コマンドを実行したチャンネルにサーバーの参加者は設定した合言葉を送信しないといけないもので、人間かどうかをチェックするというより普通にプライベートなサーバーに設定する機能です。
+
+        Parameters
+        ----------
+        word : 合言葉
+            言わないといけない言葉です。
+        role : 役職のメンションか名前またはID
+            認証成功時に付与する役職です。
+
+        !lang en
+        --------
+        Configure password captcha.  
+        The password captcha requires the server participants to send the configured password to the channel where this configuration command is executed, and it is not a function to check whether the participants are human or not, but rather a function to set up a private server.
+
+        Parameters
+        ----------
+        word : password
+            A word that must be said.
+        role : Mention, name or ID of the role
+            The role to be assigned upon successful captcha."""
         await self.setting(
             ctx, "word", role.id, {
                 "data": {"word": word, "channel_id": ctx.channel.id}
@@ -228,6 +277,19 @@ class Captcha(commands.Cog, DataManager):
 
     @captcha.command(aliases=["ウェブ", "wb"])
     async def web(self, ctx: commands.Context, *, role: discord.Role):
+        """!lang ja
+        --------
+        ウェブ認証を設定します。  
+        これは画像認証と違ってウェブサイトでhCaptchaを使用して人間チェックを行うとても本格的な認証です。
+
+        <ja-ext>
+
+        !lang en
+        --------
+        Configure web captcha.  
+        Unlike image captcha, this is a very serious form of captcha that uses hCaptcha to perform human checks on websites.
+
+        <en-ext>"""
         await self.setting(
             ctx, "web", role.id, {}, title={
                 "ja": "ウェブ認証", "en": "Web Captcha"
@@ -236,6 +298,19 @@ class Captcha(commands.Cog, DataManager):
 
     @captcha.command(aliases=["ボタン", "クリック", "c"])
     async def click(self, ctx: commands.Context, *, role: discord.Role):
+        """!lang ja
+        --------
+        ワンクリック認証でボタンをクリックするだけの認証方法です。  
+        強度は弱いです。
+
+        <ja-ext>
+
+        !lang en
+        --------
+        One-click captcha is an authentication method that requires only the click of a button.  
+        The strength is weak.
+
+        <en-ext>"""
         await self.setting(
             ctx, "click", role.id, {}, title={
                 "ja": "ワンクリック認証", "en": "One Click Captcha"
@@ -247,6 +322,13 @@ class Captcha(commands.Cog, DataManager):
 
     @captcha.command(aliases=["o", "オフ", "無効"])
     async def off(self, ctx: commands.Context):
+        """!lang ja
+        --------
+        設定した認証をオフにします。
+
+        !lang en
+        --------
+        Turn off the captcha you have set up."""
         try:
             await self.delete(ctx.guild.id)
         except AssertionError:
@@ -259,7 +341,38 @@ class Captcha(commands.Cog, DataManager):
 
     @captcha.command("timeout", aliases=["タイムアウト", "t"])
     async def timeout_(self, ctx: commands.Context, timeout: float, kick: bool):
-        if 0 <= timeout <= 1080:
+        """!lang ja
+        --------
+        認証のタイムアウトをカスタムします。  
+        そしてオプションでタイムアウト時にキックするかどうかを設定します。
+
+        Notes
+        -----
+        これのデフォルトは一時間で認証ができなくなりキックはされません。
+
+        Parameters
+        ----------
+        timeout : float
+            何分たったらタイムアウトするかです。
+        kick : bool
+            キックをするかどうかです。
+
+        !lang en
+        --------
+        Set a custom captcha timeout.  
+        And optionally set whether or not to kick on timeout.
+
+        Notes
+        -----
+        The default for this is that captcha will fail after one hour and no kick will be performed.
+
+        Parameters
+        ----------
+        timeout : float
+            The number of minutes to timeout.
+        kick : bool
+            Whether to kick or not."""
+        if 1 <= timeout <= 180:
             try:
                 await self.timeout(ctx.guild.id, timeout, kick)
             except AssertionError:
@@ -327,7 +440,7 @@ class Captcha(commands.Cog, DataManager):
                 and (row := await self.read(member.guild.id))):
             # もし認証が設定されているサーバーの場合はqueueにタイムアウト情報を追加しておく。
             self.queue[member.guild.id][member.id] = (
-                time() + row[2].get("timeout", {}).get("time", 360) * 60,
+                time() + row[2].get("timeout", {}).get("time", 60) * 60,
                 row[2].get("timeout", {}).get("kick", False),
                 QueueData(row[0], row[1], row[2])
             )
@@ -344,6 +457,37 @@ class Captcha(commands.Cog, DataManager):
                     self.queue[message.guild.id][message.author.id][2].mode
                 ), "on_message", message
             )
+
+
+# ヘルプに認証ボタンについての追記をする。
+for fname in ("image", "web", "click"):
+    function = getattr(Captcha, fname)
+    function._callback.__doc__ = function._callback.__doc__.replace(
+        "<ja-ext>", """Parameters
+        ----------
+        role : 役職の名前かメンションまたはID
+            認証成功時に付与する役職です。  
+            この役職を手に入れないと通常のチャンネルを見れないようにすればいいです。
+
+        Notes
+        -----
+        この認証を設定すると認証開始ボタンのついたメッセージが実行したチャンネルに送信されます。  
+        サーバーに参加した人はそのボタンを押して認証を開始します。  
+        ですので認証チャンネルにはメッセージが送信されないようにしましょう。""", 1
+    ).replace(
+        "<en-ext>", """Parameters
+        ----------
+        role : Name, Mention or ID of the role.
+            This is the role that will be given upon successful captcha.  
+            If you don't get this role, you can't view the normal channel.
+
+        Notes
+        -----
+        When this captcha is set up, a message with a button to start captcha will be sent to the channel where it was executed.  
+        People who join the server will press that button to start captcha.  
+        So, make sure that no message is sent to the captcha channel.""", 1
+    )
+del function, fname
 
 
 def setup(bot):

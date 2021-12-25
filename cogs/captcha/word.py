@@ -37,3 +37,10 @@ class WordCaptcha:
                     )
             else:
                 await message.reply("合言葉が違います。")
+
+    async def on_member_join(self, member: discord.Member):
+        if (channel := member.guild.get_channel(
+            self.cog.queue[member.guild.id][member.id][2]
+                .extras["data"]["channel_id"]
+        )):
+            await channel.send(f"{member.mention}, 合言葉を送信してください。")

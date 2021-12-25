@@ -230,7 +230,7 @@ class Level(commands.Cog, DataManager):
         -------
         notf, nof, 通知
 
-        !lang ja
+        !lang en
         -------
         This is the command to set whether or not to add a level-up notification reaction to the message when you level up.
 

@@ -41,6 +41,7 @@ class Setting:
         ...
 
     def __new__(cls, mode, name=None, help_command=None, **kwargs):
+        return lambda func: func
         self = super().__new__(cls)
         self.mode, self.name, self.kwargs = mode, name, kwargs
         self.help_command = help_command
@@ -277,4 +278,5 @@ class SettingManager(commands.Cog):
 
 
 def setup(bot):
+    return
     bot.add_cog(SettingManager(bot))
