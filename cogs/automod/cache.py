@@ -1,6 +1,6 @@
 # RT AutoMod - Cache
 
-from typing import TYPE_CHECKING, Union, Optional, Any, Dict, List
+from typing import TYPE_CHECKING, Optional, Any, Dict, List
 
 import discord
 
@@ -17,9 +17,12 @@ class Cache:
 
     # アノテーションをクラスにつけているものはUserDataです。
     warn: float = 0.0
+    last_update: float
 
+    # キャッシュのタイムアウト
     TIMEOUT = 180
-    MAX_SUSPICIOUS = 3
+    # あやしいレベルのマックスで`suspicious`がこれになると1警告数が上がる。
+    MAX_SUSPICIOUS = 150
 
     def __init__(self, cog: "AutoMod", member: discord.Member, data: dict):
         self.guild, self.member, self.cog = member.guild, member, cog
@@ -31,7 +34,16 @@ class Cache:
         # 以下以降スパムチェックに使うキャッシュの部分です。
         self.before: Optional[discord.Message] = None
         self.before_content: Optional[discord.Message] = None
+        self.before_join: Optional[float] = None
         self.suspicious = 0
+
+    def process_suspicious(self) -> bool:
+        "怪しさがMAXかどうかをチェックします。もしMAXならリセットします。"
+        if self.suspicious >= self.MAX_SUSPICIOUS:
+            self.suspicious = 0
+            self.warn += 1
+            return True
+        return False
 
     def update_cache(self, message: discord.Message):
         "キャッシュをアップデートします。"
@@ -67,4 +79,7 @@ class Cache:
         if key in self.__annotations__:
             # もしセーブデータが書き換えられたのなら更新が必要とする。
             self.require_save = True
+            # 最終更新日も更新をする。
+            if key != "last_update":
+                self.last_update = time()
         return super().__setattr__(key, value)

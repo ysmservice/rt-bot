@@ -1,6 +1,8 @@
 # RT - AutoMod
 
-from typing import Callable, Coroutine, Literal, Union, Any, DefaultDict, Tuple, Dict
+from typing import (
+    Callable, Coroutine, Literal, Union, Any, DefaultDict, Dict, Tuple, List
+)
 
 from discord.ext import commands
 import discord
@@ -9,6 +11,7 @@ from collections import defaultdict
 
 from rtlib import RT
 
+from .modutils import process_check_message, trial_new_member, trial_invite
 from .data_manager import GuildData, DataManager, require_cache
 from .cache import Cache
 
@@ -31,6 +34,7 @@ class AutoMod(commands.Cog, DataManager):
         self.bot = bot
         self.caches: DefaultDict[int, Tuple[GuildData, Dict[int, Cache]]] = \
             defaultdict(dict)
+        self.enabled: List[int] = []
         super(commands.Cog, self).__init__(self)
 
     def cog_unload(self):
@@ -57,8 +61,21 @@ class AutoMod(commands.Cog, DataManager):
     @commands.has_permissions(administrator=True)
     @require_cache
     async def automod(self, ctx: commands.Context):
-        if not ctx.invoked_subcommand:
-            await ctx.reply("使用方法が違います。")
+        if ctx.invoked_subcommand:
+            # もしまだAutoModを有効にしていない状態でこのコマンドのサブコマンドを実行したならエラーを起こす。
+            assert ctx.guild.id in self.enabled
+        else:
+            await self.toggle_automod(ctx.guild.id)
+            await ctx.reply(OK)
+
+    @automod.error
+    async def on_automod_error(
+        self, ctx: commands.Context, exception: Union[AssertionError, Any]
+    ):
+        if isinstance(exception, AssertionError):
+            await ctx.reply("このサーバーではAutoModが有効になっていません。\n`rt!automod`を実行してください。")
+        else:
+            raise exception
 
     async def nothing(self, _, *args, **kwargs):
         "settingで何もしたくない時のためのものです。"
@@ -164,6 +181,34 @@ class AutoMod(commands.Cog, DataManager):
     @warn.command()
     async def emoji(self, ctx: commands.Context, count: Union[bool, int]):
         await self.setting(self.toggle, ctx, "emoji", count, OK)
+
+    async def prepare_cache(self, guild: discord.Guild, member: discord.Member):
+        await self.prepare_cache_guild(guild)
+        await self.prepare_cache_member(member)
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if message.guild and message.guild.id in self.enabled:
+            await self.prepare_cache(message.guild, message.author)
+            process_check_message(
+                self.caches[message.guild.id][1][message.author.id],
+                self.caches[message.guild.id][0], message
+            )
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member: discord.Member):
+        if member.guild.id in self.enabled:
+            await self.prepare_cache(member.guild, member)
+            await trial_new_member(
+                self.caches[member.guild.id][1][member.id],
+                self.caches[member.guild.id][0]
+            )
+
+    @commands.Cog.listener()
+    async def on_invite_create(self, invite: discord.Invite):
+        if invite.guild.id in self.enabled:
+            await self.prepare_cache_guild(invite.guild)
+            await trial_invite(self.caches[invite.guild.id][0], invite)
 
 
 def setup(bot):
