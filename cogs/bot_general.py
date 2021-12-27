@@ -368,11 +368,12 @@ class BotGeneral(commands.Cog):
             description = description[4096 - length + 1:]
         if "400" in title:
             # 引数がおかしい場合はヘルプボタンを表示する。
-            kwargs["view"] = componesy.View("BAView")
-            kwargs["view"].add_item(
-                "link_button", label="ヘルプを見る", emoji="❔",
-                url=self.get_command_url(ctx.command)
-            )
+            if (url := self.get_command_url(ctx.command)):
+                kwargs["view"] = componesy.View("BAView")
+                kwargs["view"].add_item(
+                    "link_button", label="ヘルプを見る", emoji="❔",
+                    url=url
+                )
 
         kwargs["embed"] = discord.Embed(
             title=title, description=description, color=color
