@@ -323,21 +323,21 @@ class ForcePinnedMessage(commands.Cog, DataManager):
             else:
                 kwargs = {"content": content}
 
-            # メッセージの送信を行う。
-            name = self.get_custom_name(message.channel, member) \
-                or (
+            if member is not None:
+                # メッセージの送信を行う。
+                name = self.get_custom_name(message.channel, member) or (
                     f"{getattr(member, 'display_name', member.name)} RT-ForcePinnedMessage",
                     False
                 )
-            try:
-                new_message = await message.channel.webhook_send(
-                    username=name[0],
-                    avatar_url=self.bot.user.avatar.url if name[1] else member.avatar.url,
-                    wait=True, **kwargs
-                )
-            except Exception as e:
-                if not isinstance(e, (discord.Forbidden, discord.HTTPException)):
-                    print("(ignore) Error on ForcePinnedMessage:", e)
+                try:
+                    new_message = await message.channel.webhook_send(
+                        username=name[0],
+                        avatar_url=self.bot.user.avatar.url if name[1] else member.avatar.url,
+                        wait=True, **kwargs
+                    )
+                except Exception as e:
+                    if not isinstance(e, (discord.Forbidden, discord.HTTPException)):
+                        print("(ignore) Error on ForcePinnedMessage:", e)
 
             # 送信したメッセージを次消せるように記録しておく。
             if message.guild and message.channel and member:
