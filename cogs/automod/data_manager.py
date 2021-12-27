@@ -22,18 +22,14 @@ if TYPE_CHECKING:
     from .__init__ import AutoMod
 
 
-class Mute(TypedDict):
-    warn: float
-    role_id: int
-
-
+Warn = NewType("Warn", float)
 class GuildData(TypedDict, total=False):
-    ban: float
-    mute: Mute
+    ban: Warn
+    mute: Warn
     invites: NewType("Invites", List[int])
     bolt: float
-    invite_remover: NewType("InviteRemover", List[str])
-    emoji: bool
+    invite_deleter: NewType("InviteDeleter", List[str])
+    emoji: int
 
 
 class HashableGuild(dict):
@@ -62,6 +58,9 @@ class DataManager(DatabaseManager):
     "セーブデータ管理用クラス"
 
     TABLES = ("AutoModData",)
+    DEFAULTS = {
+        "ban": 10, "mute": 8, "bolt": 60, "emoji": 15
+    }
 
     def __init__(self, cog: "AutoMod"):
         self.cog, self.pool = cog, cog.bot.mysql.pool

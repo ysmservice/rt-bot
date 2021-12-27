@@ -1,8 +1,6 @@
 # RT - AutoMod
 
-from typing import (
-    Callable, Coroutine, Literal, Union, Optional, Any, DefaultDict, Tuple, Dict
-)
+from typing import Callable, Coroutine, Literal, Union, Any, DefaultDict, Tuple, Dict
 
 from discord.ext import commands
 import discord
@@ -73,7 +71,8 @@ class AutoMod(commands.Cog, DataManager):
         if value is False:
             del self.caches[channel.guild.id][0][mode]
         else:
-            self.caches[channel.guild.id][0][mode] = value
+            self.caches[channel.guild.id][0][mode] = \
+                self.DEFAULTS.get(mode) if value is True else value
         return args, kwargs
 
     @automod.group()
@@ -83,20 +82,9 @@ class AutoMod(commands.Cog, DataManager):
     @warn.command()
     async def level(
         self, ctx: commands.Context, mode: Literal["ban", "mute"],
-        toggle: bool, warn: float, *, role: Optional[discord.Role] = None
+        warn: Union[bool, float]
     ):
-        if mode == "ban":
-            await self.setting(self.toggle, ctx, "ban", not toggle or warn, OK)
-        elif mode == "mute":
-            if role:
-                self.caches[ctx.guild.id][0]["mute"] = {
-                    "role_id": role.id, "warn": warn
-                }
-                await self.setting(self.nothing, ctx, OK)
-            else:
-                await self.setting(self.toggle, ctx, "mute", False, OK)
-        else:
-            await self.reply(ctx, "ミュートにする場合はミュートの際につける役職を設定する必要があります。")
+        await self.setting(self.toggle, ctx, mode, warn, OK)
 
     @warn.command()
     @require_cache
@@ -115,14 +103,6 @@ class AutoMod(commands.Cog, DataManager):
                 "en": f"{member.display_name}'s current warn is {self.caches[ctx.guild.id][1][member.id].warn}."
             }
         )
-
-    @warn.group()
-    async def invites(self, ctx: commands.Context):
-        await self.automod(ctx)
-
-    @invites.group("ignore")
-    async def invites_ignore(self, ctx: commands.Context):
-        await self.automod(ctx)
 
     async def ignore_setting(
         self, channel: Sendable, mode: Literal["add", "remove", "toggle"],
@@ -147,12 +127,43 @@ class AutoMod(commands.Cog, DataManager):
         else:
             return args, kwargs
 
-    @invites_ignore.command("add")
-    async def add_invites_ignore(
-        self, ctx: commands.Context,
+    @warn.group()
+    async def invites(self, ctx: commands.Context):
+        if not ctx.invoked_subcommand:
+            await self.setting(
+                self.ignore_setting, ctx, "toggle", "invites", None, OK
+            )
+
+    @invites.command("ignore")
+    async def invites_ignore(
+        self, ctx: commands.Context, mode: Literal["add", "remove"],
         obj: Union[discord.Role, discord.TextChannel, discord.Object]
     ):
-        await self.setting(self.ignore_setting, ctx, OK)
+        await self.setting(self.ignore_setting, ctx, mode, "invites", obj, OK)
+
+    @warn.group()
+    async def deleter(self, ctx: commands.Context):
+        if not ctx.invoked_subcommand:
+            await self.setting(
+                self.ignore_setting, ctx, "toggle", "invite_deleter", None, OK
+            )
+
+    @deleter.group("ignore")
+    async def deleter_ignore(
+        self, ctx: commands.Context, mode: Literal["add", "remove"],
+        obj: Union[discord.Role, discord.TextChannel, discord.Object]
+    ):
+        await self.setting(
+            self.ignore_setting, ctx, mode, "invite_deleter", obj, OK
+        )
+
+    @warn.command()
+    async def bolt(self, ctx: commands.Context, seconds: Union[bool, float]):
+        await self.setting(self.toggle, ctx, "bolt", seconds, OK)
+
+    @warn.command()
+    async def emoji(self, ctx: commands.Context, count: Union[bool, int]):
+        await self.setting(self.toggle, ctx, "emoji", count, OK)
 
 
 def setup(bot):
