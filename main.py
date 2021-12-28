@@ -73,7 +73,8 @@ async def on_ready():
     setup(bot)
     bot.load_extension("jishaku")
     bot.load_extension("cogs._oldrole")
-    for name in listdir("cogs"):
+    # for name in listdir("cogs"):
+    for name in ():
         if not name.startswith("_"):
             try:
                 bot.load_extension(
