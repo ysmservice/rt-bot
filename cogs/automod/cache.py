@@ -24,13 +24,17 @@ class Cache:
     # あやしいレベルのマックスで`suspicious`がこれになると1警告数が上がる。
     MAX_SUSPICIOUS = 150
 
-    def __init__(self, cog: "AutoMod", member: discord.Member, data: dict):
-        self.guild, self.member, self.cog = member.guild, member, cog
+    def __init__(
+        self, cog: "AutoMod", member: discord.Member,
+        guild: discord.Guild, data: dict
+    ):
+        self.guild, self.member, self.cog = guild, member, cog
         self.require_save = False
-        self.update_time()
+        self.update_timeout()
         # 初期状態のデータを書き込む。アノテーションがついている変数に書き込まれるべきです。
         for key in data:
             setattr(self, key, data[key])
+        self.last_update = time()
         # 以下以降スパムチェックに使うキャッシュの部分です。
         self.before: Optional[discord.Message] = None
         self.before_content: Optional[discord.Message] = None
@@ -42,6 +46,7 @@ class Cache:
         if self.suspicious >= self.MAX_SUSPICIOUS:
             self.suspicious = 0
             self.warn += 1
+            self.cog.print("[warn.up]", self)
             return True
         return False
 
@@ -49,7 +54,7 @@ class Cache:
         "キャッシュをアップデートします。"
         self.update_timeout()
         before = self.before
-        self.before_content = join(self.before)
+        self.before_content = join(self.before or message)
         self.before = message
         return before
 
@@ -77,9 +82,12 @@ class Cache:
 
     def __setattr__(self, key, value):
         if key in self.__annotations__:
-            # もしセーブデータが書き換えられたのなら更新が必要とする。
-            self.require_save = True
-            # 最終更新日も更新をする。
+            # もしセーブデータが書き換えられたのなら更新が必要とする。最終更新日も更新をする。
             if key != "last_update":
+                self.require_save = True
                 self.last_update = time()
         return super().__setattr__(key, value)
+
+    def __str__(self):
+        return f"<AutoModCache member={self.member} UserData={self.items()} " \
+            f"suspicious={self.suspicious} require_save={self.require_save}>"

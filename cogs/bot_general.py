@@ -340,6 +340,9 @@ class BotGeneral(commands.Cog):
             title = "403 Forbidden"
             description = {"ja": "あなたはこのコマンドを実行することができません。",
                            "en": "You can't do this command."}
+        elif isinstance(error, AssertionError):
+            title = "400 Bad Request"
+            description = error.args[0]
         elif isinstance(error, commands.CommandInvokeError):
             return await self.on_command_error(ctx, error.original)
         else:

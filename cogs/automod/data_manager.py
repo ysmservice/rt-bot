@@ -1,17 +1,12 @@
 # RT AutoMod - Data Manager
 
-from typing import (
-    TYPE_CHECKING, TypeVar, NewType, TypedDict, Literal,
-    Union, Optional, Dict, Tuple, List
-)
+from typing import TYPE_CHECKING, NewType, TypedDict, Literal, Union, Dict, Tuple, List
 
-from discord.ext import commands, tasks
+from discord.ext import tasks
 import discord
 
 from ujson import loads, dumps
 from aiomysql import Cursor
-
-from functools import wraps
 from time import time
 
 from rtutil import DatabaseManager
@@ -29,6 +24,7 @@ class GuildData(TypedDict, total=False):
     ban: Warn
     mute: Warn
     invites: NewType("Invites", List[int])
+    ignore: List[int]
     bolt: float
     invite_deleter: NewType("InviteDeleter", List[str])
     emoji: int
@@ -49,11 +45,15 @@ class HashableGuild(dict):
 
     def __setitem__(self, key, value):
         self.require_save = True
-        return super().__setitem__(key, value)
+        return super(HashableGuild, self).__setitem__(key, value)
+
+    def __delitem__(self, key):
+        self.require_save = True
+        return super(HashableGuild, self).__delitem__(key)
 
 
 UserData = Dict[int, Cache]
-SaveData = Tuple[Union[GuildData, HashableGuild], UserData]
+SaveData = Tuple[Union[GuildData, HashableGuild], Dict[int, UserData]]
 Guild = Union[int, discord.Guild]
 
 
@@ -62,7 +62,7 @@ class DataManager(DatabaseManager):
 
     TABLES = ("AutoModData",)
     DEFAULTS = {
-        "ban": 10, "mute": 8, "bolt": 60, "emoji": 15
+        "ban": 5, "mute": 3, "bolt": 60, "emoji": 15
     }
     WARN_RESET_TIMEOUT = 86400
 
@@ -82,23 +82,22 @@ class DataManager(DatabaseManager):
             if row:
                 self.cog.enabled.append(row[0])
 
-    @tasks.loop(minutes=10)
+    @tasks.loop(seconds=10)
+    # @tasks.loop(seconds=30)
     async def _update_database(self):
         # 古いキャッシュの削除とセーブをするループです。
         now = time()
         for guild_id in list(self.cog.caches.keys()):
             if self.cog.caches[guild_id][0].require_save:
                 # もしGuildDataがセーブを必要としているならセーブする。
-                self.cog.bot.loop.create_task(
-                    self.save_guild_data(guild_id, self.cog.caches[guild_id][0])
-                )
-                self.cog.caches[guild_id][0].reqiure_save = False
+                self.cog.print("[save.GuildData]", guild_id)
+                await self.save_guild_data(guild_id, self.cog.caches[guild_id][0])
+                self.cog.caches[guild_id][0].require_save = False
             for member_id in list(self.cog.caches[guild_id][1].keys()):
                 if self.cog.caches[guild_id][1][member_id].require_save:
                     # UserDataがセーブを必要としているならセーブをする。
-                    self.cog.bot.loop.create_task(
-                        self.save_user_data(self.cog.caches[guild_id][1][member_id])
-                    )
+                    self.cog.print("[save.UserData]", member_id)
+                    await self.save_user_data(self.cog.caches[guild_id][1][member_id])
                     self.cog.caches[guild_id][1][member_id].require_save = False
                 if self.cog.caches[guild_id][1][member_id].timeout <= now:
                     # もしタイムアウト(放置されている)キャッシュがあるなら消す。
@@ -117,15 +116,22 @@ class DataManager(DatabaseManager):
         "一日以上アップデートされていない警告数をリセットする。"
         await cursor.execute(f"SELECT * FROM {self.TABLES[0]};")
         for row in await cursor.fetchall():
-            for data in map(lambda x: x[1], self.get_classed(*row)):
-                if hasattr(data, "last_update"):
-                    if (now - data.last_update >= self.WARN_RESET_TIMEOUT
-                            and data.warn > 0):
-                        await self._save_user_data(cursor, data)
-                        # もしキャッシュされているUserDataがあればそれを削除する。
-                        if (row[0] in self.cog.caches
-                                and data.member.id in self.cog.caches[row[0]][1]):
-                            del self.cog.caches[row[0]][1][data.member.id]
+            if not row:
+                continue
+            for data in self.get_classed(
+                row[0], *map(loads, row[1:])
+            )[1].values():
+                if not hasattr(data, "last_update"):
+                    continue
+                if (now - data.last_update >= self.WARN_RESET_TIMEOUT
+                        and data.warn > 0):
+                    self.cog.print("[warn.reset]", data.member.id)
+                    data.warn = 0
+                    await self._save_user_data(cursor, data)
+                    # もしキャッシュされているUserDataがあればそれを削除する。
+                    if (row[0] in self.cog.caches
+                            and data.member.id in self.cog.caches[row[0]][1]):
+                        del self.cog.caches[row[0]][1][data.member.id]
 
     async def toggle_automod(self, guild_id: int, cursor: Cursor = None) -> None:
         "AutoModのOnOffを切り替えます。"
@@ -142,55 +148,65 @@ class DataManager(DatabaseManager):
             )
             self.cog.enabled.append(guild_id)
 
+    def if_str_loads(self, data: Union[str, dict]) -> dict:
+        if isinstance(data, str):
+            data = loads(data)
+        return data
+
     def get_classed(
-        self, guild: Guild, guild_data: dict, user_data: dict
-    ) -> Tuple[GuildData, UserData]:
+        self, guild: Guild, guild_data: Union[str, dict], user_data: Union[str, dict]
+    ) -> Tuple[GuildData, Dict[int, Cache]]:
         "渡されたGuildDataとUserDataの辞書をAutoModのプログラムで使える状態にします。"
+        guild_data, user_data = self.if_str_loads(guild_data), \
+            self.if_str_loads(user_data)
         if isinstance(guild, int):
             guild = self.cog.bot.get_guild(guild)
         return HashableGuild(guild.id, guild_data), {
-            key: Cache(self.cog, guild.get_member(key)) for key in user_data
+            key: Cache(self.cog, guild.get_member(int(key)), guild, user_data[key])
+            for key in user_data
         }
 
-    async def _read(self, cursor: Cursor, guild: Guild) -> SaveData:
+    async def _read(self, cursor, guild) -> SaveData:
         # セーブデータを読み込む関数です。
         await cursor.execute(
             f"SELECT GuildData, UserData FROM {self.TABLES[0]} WHERE GuildID = %s;",
             getattr(guild, "id", guild)
         )
-        if (row := list(map(loads, await cursor.fetchone()))):
-            return self.get_classed(guild, *row)
+        if (row := await cursor.fetchone()):
+            return self.get_classed(guild, *map(loads, row))
         else:
             return HashableGuild(guild.id, {}), {}
 
-    async def read(self, guild: Guild, cursor: Cursor = None) -> Optional[SaveData]:
+    async def read(self, guild: Guild, cursor: Cursor = None) -> SaveData:
         "セーブデータを読み込みます。"
         return await self._read(cursor, guild)
 
-    def dump_user_data(self, data: Cache) -> str:
-        "UserDataをdumpsします。"
-        return dumps(data.items())
-
     def dump_user_datas(self, datas: Dict[int, Cache]) -> str:
-        "UserDataの集まりをdumpsします。"
-        return dumps({key: self.dump_user_data(value) for key, value in datas.items()})
+        "複数のUserDataをdumpします。"
+        return dumps({
+            key: value.items() for key, value in datas.items()
+        })
 
-    def _get_save_data_query(self, mode: Literal["Guild", "User"]) -> str:
+    def _get_save_data_query(self, mode: Literal["GuildData", "UserData"]) -> str:
         return f"""INSERT INTO {self.TABLES[0]} VALUES (%s, %s, %s)
         ON DUPLICATE KEY UPDATE {mode} = %s;"""
 
     async def _save_user_data(self, cursor, data):
         # UserDataをセーブします。
-        guild_data, currents = await self._read(cursor, data.guild)
-        currents[data.member.id].update(data)
-        await cursor.execute(
-            self._get_save_data_query("User"),
-            (
-                data.guild.id, dumps(guild_data), (
-                    currents := self.dump_user_datas(currents)
-                ), currents
+        if data.member is not None:
+            guild_data, currents = await self._read(cursor, data.guild)
+            if data.member.id in currents:
+                currents[data.member.id].update(data)
+            else:
+                currents[data.member.id] = data
+            await cursor.execute(
+                self._get_save_data_query("UserData"),
+                (
+                    data.guild.id, dumps(guild_data), (
+                        currents := self.dump_user_datas(currents)
+                    ), currents
+                )
             )
-        )
 
     async def save_user_data(self, data: Cache, cursor: Cursor = None) -> None:
         "UserDataをセーブします。"
@@ -203,35 +219,22 @@ class DataManager(DatabaseManager):
         current, currents = await self._read(cursor, guild)
         current.update(data)
         await cursor.execute(
-            self._get_save_data_query("Guild"),
+            self._get_save_data_query("GuildData"),
             (
-                getattr(guild, "id", guild), dumps(current), (
-                    currents := self.dump_user_datas(currents)
-                ), currents
+                getattr(guild, "id", guild), (current := dumps(current)),
+                self.dump_user_datas(currents), current
             )
         )
 
     async def prepare_cache_guild(self, guild: discord.Guild) -> None:
         "サーバーのキャッシュを用意します。"
-        if guild.id not in self.caches:
-            self.caches[guild.id] = await self.read(guild)
+        if guild.id not in self.cog.caches:
+            self.cog.caches[guild.id] = await self.read(guild)
 
     async def prepare_cache_member(self, member: discord.Member) -> None:
         "メンバーのキャッシュを用意します。"
-        if member.id not in self.caches[member.guild.id][1]:
+        if member.id not in self.cog.caches[member.guild.id][1]:
             _, currents = await self.read(member.guild)
-            self.caches[member.guild.id][1][member.id] = currents.get(
-                member.id, Cache(self, member, {})
+            self.cog.caches[member.guild.id][1][member.id] = currents.get(
+                member.id, Cache(self, member, member.guild, {})
             )
-
-
-ReCaT = TypeVar("ReCaT")
-def require_cache(function: ReCaT) -> ReCaT:
-    "キャッシュがないと困るコマンドにつけるデコレータです。"
-    @wraps(function)
-    async def new(self: "AutoMod", ctx: commands.Context, *args, **kwargs):
-        await DataManager.prepare_cache_guild(self, ctx.guild)
-        if hasattr(ctx, "member"):
-            await DataManager.prepare_cache_member(self, ctx.member)
-        return await function(self, ctx, *args, **kwargs)
-    return new

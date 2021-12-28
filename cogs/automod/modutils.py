@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Union, Any, List
 
 import discord
 
+from difflib import SequenceMatcher
 from emoji import emoji_lis
 from re import findall
 from time import time
@@ -13,15 +14,9 @@ if TYPE_CHECKING:
     from .cache import Cache
 
 
-def similar(before: str, after: str, level: int = 15) -> float:
+def similar(before: str, after: str) -> float:
     "文章が似ているかチェックします。"
-    length = len(after)
-    if length < level:
-        level = length
-    return sum(
-        any(after[i:i+level_child] in before for level_child in range(level))
-        for i in range(level) if i+level <= length
-    ) / length * 100
+    return SequenceMatcher(None, before, after).ratio() * 100
 
 
 def join(message: discord.Message) -> List[str]:
@@ -44,13 +39,19 @@ def emoji_count(text: str) -> int:
 
 
 async def log(
-    cache: Union["Cache", discord.Member, Any], reason: str, subject: str
+    cache: Union["Cache", discord.Member, Any],
+    reason: str, subject: str, error: bool = False
 ) -> discord.Message:
     "ログを流します。"
     for channel in cache.guild.text_channels:
         if channel.topic and "rt>automod" in channel.topic:
             return await channel.send(
-                f"{cache.member.mention}を{reason}のため{subject}しました。"
+                f"<t:{int(time())}>", embed=discord.Embed(
+                    title="AutoMod",
+                    description=f"{cache.member.mention}を{reason}のため{subject}しました。"
+                        + (f"\nですが権限がないので{subject}することができませんでした。" if error else ""),
+                    color=cache.cog.COLORS["error" if error else "warn"]
+                )
             )
 
 
@@ -59,41 +60,72 @@ def get(cache: "Cache", data: "GuildData", key: str) -> Any:
     return data.get(key, cache.cog.DEFAULTS.get(key))
 
 
-async def trial_message(self: "Cache", data: "GuildData") -> None:
+async def trial_message(
+    self: "Cache", data: "GuildData", message: discord.Message
+) -> None:
     "渡されたUserData(Cache)のユーザーとメッセージを調べ、処罰すべきか裁判をし、処罰が必要な場合は相応の罰を下します。"
-    if self.warn >= get(self, data, "ban"):
-        await self.member.ban(reason=f"[AutoMod] スパムのため")
-        await log(self, "スパム", "BAN")
-    elif self.warn >= get(self, data, "mute"):
-        # ToDo: Pycordのスラッシュへの移行作業後にTimeoutをここに実装する。
-        await log(self, "スパム", "タイムアウト(未実装)")
+    try:
+        if (mute := get(self, data, "mute")) <= self.warn <= mute + 1:
+            # ToDo: Pycordのスラッシュへの移行作業後にTimeoutをここに実装する。
+            self.cog.print("[punishment.mute]", self)
+            return await log(self, "スパム", "タイムアウト(未実装)")
+        elif mute - 1 <= self.warn <= mute:
+            await message.reply(
+                {"ja": "これ以上スパムをやめなければタイムアウトします。",
+                 "en": "If you don't stop spamming any more, I will timeout you."}
+            )
+        if (ban := get(self, data, "ban")) <= self.warn <= ban + 1:
+            self.cog.print("[punishment.ban]", self)
+            await self.member.ban(reason=f"[AutoMod] スパムのため")
+            return await log(self, "スパム", "BAN")
+        elif ban - 1 <= self.warn <= ban:
+            await message.reply(
+                {"ja": "スパムをやめなければBANをします。",
+                 "en": "If you don't stop spamming any more, I will ban you."}
+            )
+    except discord.Forbidden:
+        await log(self, "スパム", "処罰しようと", True)
 
 
 def process_check_message(
     self: "Cache", data: "GuildData", message: discord.Message
 ) -> None:
     "渡されたメッセージをスパムかどうかをチェックします。"
-    # もし以前送信したメッセージが不明な場合はチェックしない。
-    if self.update_cache(message) is not None:
-        # もし0.5秒以内に投稿されたメッセージなら問答無用でスパム認定とする。
-        if self.checked <= time() + 0.5:
-            self.suspicious += 50
-        else:
-            # 絵文字カウントをチェックします。
-            if data["emoji"] < emoji_count(message.content):
-                self.suspicious += 50
-            # 以前送られたメッセージと似ているかをチェックし似ている度を怪しさにカウントします。
-            self.suspicious += sum(
-                similar(self.before_content, content) for content in join(message)
+    if (message.author.guild_permissions.administrator
+            or message.channel.id in data.get("ignore", ())):
+        # 管理者ならチェックしない。
+        return
+
+    # もし0.3秒以内に投稿されたメッセージなら問答無用でスパム認定とする。
+    if self.before is not None and time() - self.checked <= 0.3:
+        self.suspicious += 50
+    elif self.update_cache(message) is not None:
+        # スパム判定をする。
+        # 以前送られたメッセージと似ているかをチェックし似ている度を怪しさにカウントします。
+        self.suspicious += sum(
+            similar(*contents) for contents in zip(
+                self.before_content, join(message)
             )
-        if self.process_suspicious():
-            self.cog.bot.loop.create_task(trial_message(self, data))
+        )
+    if self.process_suspicious():
+        self.cog.bot.loop.create_task(trial_message(self, data, message))
+    # 絵文字カウントをチェックします。
+    if get(self, data, "emoji") <= emoji_count(message.content):
+        self.suspicious += 50
+        self.cog.bot.loop.create_task(discord.utils.async_all(
+            (
+                message.author.send(
+                    f"このサーバーでは一度のメッセージに{data['emoji']}個まで絵文字を送信できます。"
+                ), message.delete()
+            )
+        ))
     # もし招待リンク削除が有効かつ招待リンクがあるなら削除を行う。
     if "invite_deleter" in data:
         if findall(
             r"(https?:\/\/)?(www\.)?(discord\.(gg|io|me|li)|discordapp\.com\/invite)\/.+[a-z]",
             message.content
         ) and all(word not in message.content for word in data["invite_deleter"]):
+            self.cog.print("[InviteDeleter]", message.author.name)
             self.cog.bot.loop.create_task(discord.utils.async_all(
                 (
                     message.author.send(
@@ -107,8 +139,10 @@ async def trial_new_member(self: "Cache", data: "GuildData") -> None:
     "渡された新規参加者のメンバーを即抜け等をしていないか調べて必要に応じて処罰をします。"
     if self.before_join is not None and "bolt" in data:
         if time() - self.before_join <= data["bolt"]:
+            self.cog.print("[bolt.ban]", self.member.name)
             await self.member.ban(reason=f"[AutoMod] 即抜けのため")
             await log(self, "即抜け", "BAN")
+    self.before_join = time()
 
 
 async def trial_invite(data: "GuildData", invite: discord.Invite) -> None:
