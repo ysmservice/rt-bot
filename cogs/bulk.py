@@ -125,8 +125,9 @@ class Bulk(commands.Cog):
                         continue
 
                 try:
-                    e = discord.Embed(title="RT - 一括送信メッセージ", description=content)
-                    e.set_footer(text=f"{ctx.author}による実行", icon_url=ctx.author.avatar.url)
+                    e = discord.Embed(description=content)
+                    e.set_author(name=ctx.author, icon_url=ctx.author.avatar.url)
+                    e.set_footer(text="RT一括送信 対象：" + ("全員" if isinstance(role, str) else f"{role.name}を持つ人"))
                     await member.send(embed=e)
                     sent_count += 1
                 except (discord.HTTPException, discord.Forbidden) as e:
@@ -137,7 +138,10 @@ class Bulk(commands.Cog):
                         (member, f"何らかの理由で送れませんでした。`{e}`"))
 
         embed = discord.Embed(
-            title={"ja": f"{sent_count}人へのメッセージ一括送信が完了しました。", "en": f"It has completed to send the message to {sent_count} members collectively."},
+            title={
+                "ja": f"{sent_count}人へのメッセージ一括送信が完了しました。",
+                "en": f"It has completed to send the message to {sent_count} members collectively."
+            },
             color=self.bot.colors["normal"]
         )
         embed = self.add_error_field(embed, failed_members, "送信")
