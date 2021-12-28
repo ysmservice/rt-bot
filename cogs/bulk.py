@@ -42,6 +42,9 @@ class Bulk(commands.Cog):
             "parent": "ServerTool"
         }
     )
+    @commands.cooldown(1, 60, commands.BucketType.guild)
+    @commands.max_concurrency(1, commands.BucketType.guild)
+    @commands.has_guild_permissions(administrator=True)
     async def bulk(self, ctx):
         """!lang ja
         --------
@@ -61,7 +64,6 @@ class Bulk(commands.Cog):
             "ja": "一括でメッセージを送信します。", "en": "Send messages in bulk."
         }
     )
-    @commands.has_guild_permissions(administrator=True)
     @setting.Setting("guild", "Bulk Send", BULK_HELP)
     async def send(self, ctx, target: GuildRole, *, content):
         """!lang ja
@@ -113,6 +115,7 @@ class Bulk(commands.Cog):
         await ctx.trigger_typing()
 
         failed_members = []
+        sent_count = 0
 
         for member in ctx.guild.members:
             if member.id != ctx.author.id and not member.bot:
@@ -122,7 +125,10 @@ class Bulk(commands.Cog):
                         continue
 
                 try:
-                    await member.send(content)
+                    e = discord.Embed(title="RT - 一括送信メッセージ", description=content)
+                    e.set_footer(text=f"{ctx.author}による実行", icon_url=ctx.author.avatar.url)
+                    await member.send(embed=e)
+                    sent_count += 1
                 except (discord.HTTPException, discord.Forbidden) as e:
                     failed_members.append(
                         (member, "権限不足またはメンバーがDMを許可していません。"))
@@ -131,14 +137,13 @@ class Bulk(commands.Cog):
                         (member, f"何らかの理由で送れませんでした。`{e}`"))
 
         embed = discord.Embed(
-            title={"ja": "メッセージ一括送信が完了しました。", "en": "It has completed to send the message to the members collectively."},
+            title={"ja": f"{sent_count}人へのメッセージ一括送信が完了しました。", "en": f"It has completed to send the message to {sent_count} members collectively."},
             color=self.bot.colors["normal"]
         )
         embed = self.add_error_field(embed, failed_members, "送信")
         await ctx.reply(embed=embed)
 
     @bulk.group()
-    @commands.has_guild_permissions(manage_roles=True)
     async def role(self, ctx):
         """!lang ja
         --------
@@ -154,7 +159,6 @@ class Bulk(commands.Cog):
             "en": "Sets or removes all permissions of a role in a batch."
         }
     )
-    @commands.cooldown(1, 15)
     @setting.Setting("guild", "Bulk Role Edit", BULK_HELP)
     async def edit(self, ctx, mode: Mode, *, role: discord.Role):
         """!lang ja
@@ -192,7 +196,6 @@ class Bulk(commands.Cog):
             "en": "Add/remove role in batches."
         }
     )
-    @commands.cooldown(1, 60, commands.BucketType.guild)
     @setting.Setting("guild", "Bulk Role Add/Remove", BULK_HELP)
     async def manage(self, ctx, mode: Mode, target: GuildRole, *, role: discord.Role):
         """!lang ja
