@@ -268,7 +268,7 @@ class ForcePinnedMessage(commands.Cog, DataManager):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if not message.guild or "RT-" in message.author.name or not self.bot.is_ready():
+        if not message.guild or "- RT" in message.author.name or not self.bot.is_ready():
             return
 
         if message.channel.id not in self.remove_queue:
@@ -326,12 +326,12 @@ class ForcePinnedMessage(commands.Cog, DataManager):
             if member is not None:
                 # メッセージの送信を行う。
                 name = self.get_custom_name(message.channel, member) or (
-                    f"{getattr(member, 'display_name', member.name)} RT-ForcePinnedMessage",
+                    getattr(member, 'display_name', member.name),
                     False
                 )
                 try:
                     new_message = await message.channel.webhook_send(
-                        username=name[0],
+                        username=f"{name[0]} - RT",
                         avatar_url=self.bot.user.avatar.url if name[1] else member.avatar.url,
                         wait=True, **kwargs
                     )
