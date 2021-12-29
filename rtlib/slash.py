@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Optional
 from discord.ext import commands
 import discord
 
-from inspect import signature
 from functools import wraps
 from re import sub
 
