@@ -55,9 +55,8 @@ def setup(bot, only: Union[Tuple[str, ...], List[str]] = []):
         if name in only or only == []:
             try:
                 bot.load_extension("rtlib.ext." + name)
-            except commands.errors.ExtensionAlreadyLoaded:
+            except commands.ExtensionAlreadyLoaded:
                 pass
-    bot.load_extension("rtlib.slash")
     bot.load_extension("rtlib.websocket")
     bot.load_extension("rtlib.setting")
 

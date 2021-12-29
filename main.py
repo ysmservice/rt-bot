@@ -54,6 +54,8 @@ bot._load = False
 
 # 起動中だと教えられるようにするためのコグを読み込む。
 bot.load_extension("cogs._first")
+# スラッシュマネージャーを設定する。
+bot.load_extension("rtlib.slash")
 
 
 # Jishakuのためのオーナーかどうか確認する関数を用意しておく。

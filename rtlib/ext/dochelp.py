@@ -174,7 +174,7 @@ class DocHelp(commands.Cog):
         if command.callback.__doc__:
             extras = command.extras if command.extras else {
                 "headding": command.__original_kwargs__.get("headding", {}),
-                "parent": command.__original_kwargs__.get("parent", "Other")
+                "parent": command.__original_kwargs__.get("category", "Other")
             }
             if extras and extras["headding"] and not after and command.parent is None:
                 # ドキュメンテーションをマークダウンにする。

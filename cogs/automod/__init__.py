@@ -68,7 +68,7 @@ class AutoMod(commands.Cog, DataManager):
     @commands.group(
         aliases=["am", "自動モデレーション", "安全"], headding={
             "ja": "自動モデレーション機能", "en": "Auto Moderation"
-        }, parent="ServerSafety"
+        }, category="ServerSafety"
     )
     @commands.has_permissions(administrator=True)
     @commands.cooldown(1, 5, commands.BucketType.guild)
