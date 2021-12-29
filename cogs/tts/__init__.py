@@ -240,6 +240,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                     ) or file_path
                 except Exception as e:
                     print("TTS Error: ", e)
+                    self.final_error = e
                     await self.after_playing(guild, "None", None)
                     try:
                         await message.add_reaction(self.EMOJIS["error"])
