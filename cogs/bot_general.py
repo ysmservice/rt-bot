@@ -55,8 +55,8 @@ CREDIT_DESIGN = """<:yutam:732948166881575022> YUTAM
 <:omochi_nagamochi:733618053631311924> 餅。"""
 CREDIT_ICON = "Made by Takkun `CC BY-SA 4.0`"
 CREDIT_LANGUAGE = {
-    "ja": "使用言語：Python, 使用ライブラリ：Pycord",
-    "en": "using language:Python, using library:Pycord"
+    "ja": "使用言語：Python, APIラッパー：nextcord",
+    "en": "language:Python, wrapper:nextcord"
 }
 CREDIT_SERVER = {
     "ja": cleandoc(

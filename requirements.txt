@@ -1,7 +1,7 @@
 # rtlib
 aiofiles
 ujson
-git+https://github.com/Rapptz/discord.py
+nextcord
 aiomysql
 pytz
 # rtutil
