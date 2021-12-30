@@ -1,12 +1,12 @@
 # RT - Slash, Author: tasuren, Description: このコードだけはパブリックドメインとします。
 
-from typing import TYPE_CHECKING, Optional, Union, Literal, get_origin
+from typing import TYPE_CHECKING, Callable, Optional, Union, Literal, get_origin
 
-from discord.ext.commands.view import StringView
 from discord.ext.commands.bot import BotBase
 from discord.ext import commands
 import discord
 
+from inspect import signature
 from datetime import datetime
 from functools import wraps
 from re import sub
@@ -126,14 +126,15 @@ def make_group_command_monkey(decorator_, group = False):
                         # その別のコマンドはグループコマンドではなく普通のコマンドで引数をひとつ取る。
                         # その引数にその先のコマンドをお手数だが書いてもらう。
                         async def subcommand_dummy(
-                            self, ctx, *, command: str = discord.SlashOption(
-                                "command", "この先のコマンドです。お手数ですがヘルプをご確認ください。"
+                            self, ctx, command: str = discord.SlashOption(
+                                "command", "スラッシュコマンドにない部分をここに入力してください。"
                             )
                         ):
                             # ここは実行されることがない。理由は`on_interaction`を見ればわかる。
                             ...
-                        function._important_callback = wraps(function.callback) \
-                            (subcommand_dummy)
+                        function._important_callback = subcommand_dummy
+                        function._important_callback.__doc__ = function.callback.__doc__
+                        function._important_callback.__name__ = function.callback.__name__
                     function.slash = make_command_instance(
                         function.parent.slash.subcommand, function
                     )
@@ -239,6 +240,23 @@ discord.CommandOption.get_type = new_get_type
 # そのため登録されるようにする。
 del discord.Client.on_connect
 discord.Client.on_full_ready = discord.Client.rollout_global_application_commands
+
+
+# `discord.SlashOption`で引数の説明等の詳細を設定していない状態でのデフォルト値が適用されないのを治すようにする。
+original_from_callback = discord.ApplicationSubcommand._from_callback
+def new_from_callback(
+    self: discord.ApplicationSubcommand, callback: Callable
+) -> discord.ApplicationSubcommand:
+    self = original_from_callback(self, callback)
+    for parameter in signature(callback).parameters.values():
+        if (parameter.default != parameter.empty
+                and not isinstance(parameter.default, discord.SlashOption)):
+            parameter._default = discord.SlashOption(
+                parameter.name, required=False, default=parameter.default
+            )
+            self.options[parameter.name] = discord.CommandOption(parameter)
+    return self
+discord.ApplicationSubcommand._from_callback = new_from_callback
 
 
 #   ここからモンキーパッチではない。
