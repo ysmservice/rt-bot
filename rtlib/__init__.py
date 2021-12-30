@@ -9,7 +9,6 @@ from pymysql.err import OperationalError
 
 from . import mysql_manager as mysql
 from .ext import componesy
-from . import websocket
 from .typed import RT
 
 

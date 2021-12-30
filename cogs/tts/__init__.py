@@ -18,7 +18,6 @@ from functools import wraps
 
 from rtlib.ext import componesy, Embeds
 from rtlib import websocket, RT
-from rtlib.slash import Option
 
 from .voice_manager import VoiceManager, voiceroid
 from .data_manager import DataManager
@@ -444,10 +443,10 @@ class TTS(commands.Cog, VoiceManager, DataManager):
     )
     @commands.has_permissions(administrator=True)
     async def set_dictionary(
-        self, ctx, before: Option(
-            str, "target", "交換対象とする文字列です。"
-        ), *, after: Option(
-            str, "replace", "交換する文字列です。"
+        self, ctx, before: str = discord.SlashOption(
+            "target", "交換対象とする文字列です。"
+        ), *, after: str = discord.SlashOption(
+            "replace", "交換する文字列です。"
         )
     ):
         """!lang ja
@@ -492,8 +491,8 @@ class TTS(commands.Cog, VoiceManager, DataManager):
     )
     @commands.has_permissions(administrator=True)
     async def delete_dictionary(
-        self, ctx, *, word: Option(
-            str, "target", "削除する辞書の交換対象名です。"
+        self, ctx, *, word: str = discord.SlashOption(
+            "target", "削除する辞書の交換対象名です。"
         )
     ):
         """!lang ja
@@ -586,9 +585,8 @@ class TTS(commands.Cog, VoiceManager, DataManager):
     )
     @commands.cooldown(1, 15, commands.BucketType.user)
     async def add_routine(
-        self, ctx, *, aliases: Option(
-            str, "triggers",
-            "ネタ音声の再生のトリガーとなる文字列です。空白で複数選択可能です。 / Aliases."
+        self, ctx, *, aliases: str = discord.SlashOption(
+            "triggers", "ネタ音声の再生のトリガーとなる文字列です。空白で複数選択可能です。 / Aliases."
         )
     ):
         """!lang ja
@@ -677,8 +675,8 @@ class TTS(commands.Cog, VoiceManager, DataManager):
     )
     @commands.cooldown(1, 15, commands.BucketType.user)
     async def remove_routine(
-        self, ctx, *, alias: Option(
-            str, "target", "削除するネタ音声に登録してる言葉です。"
+        self, ctx, *, alias: str = discord.SlashOption(
+            "target", "削除するネタ音声に登録してる言葉です。"
         )
     ):
         """!lang ja

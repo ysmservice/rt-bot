@@ -3,7 +3,7 @@
 from discord.ext import commands, easy
 import discord
 
-from rtlib import mysql, DatabaseManager, slash
+from rtlib import DatabaseManager
 from random import choice
 
 
@@ -103,20 +103,23 @@ class Funp(commands.Cog, DataManager):
         )
         await self.init_table()
 
-    MODE_OPTION = slash.Option(
-        str, "category", "表示するみんなの画像のカテゴリーです。",
-        choices=(
-            ("普通", "normal"), ("問題", "question"), ("癒し", "cute"),
-            ("二次元 (nsfw)", "2d"), ("CG (2.5次元, nsfw)", "cg"),
-            ("三次元 (nsfw)", "3d")
-        )
+    MODE_OPTION = discord.SlashOption(
+        "category", "表示するみんなの画像のカテゴリーです。",
+        choices={
+            "普通": "normal",
+            "問題": "question",
+            "癒し": "cute",
+            "二次元 (nsfw)": "2d",
+            "CG (2.5次元, nsfw)": "cg",
+            "三次元 (nsfw)": "3d"
+        }
     )
 
     @commands.group(
         slash_command=True, extras={
             "headding": {
                 "ja": "みんなの画像を見る。",
-                "en": "???"
+                "en": "Not setting yet"
             }, "parent": "Entertainment"
         }
     )
@@ -158,7 +161,7 @@ class Funp(commands.Cog, DataManager):
         aliases=["see", "sw", "しょう", "見る"],
         description="Funpをランダムで取り出して表示します。"
     )
-    async def show(self, ctx, mode: MODE_OPTION):
+    async def show(self, ctx, mode: str = MODE_OPTION):
         """!lang ja
         --------
         Funpを表示します。  
@@ -208,15 +211,13 @@ class Funp(commands.Cog, DataManager):
                  "en": "The category is not found."}
             )
 
-    NAME_OPTION = slash.Option(
-        str, "name", "画像の名前です。"
-    )
+    NAME_OPTION = discord.SlashOption("name", "画像の名前です。")
 
     @funp.command(
         aliases=["new", "ad", "あどど", "追加"],
         description="Funpを追加します。※スラッシュコマンドでは使えません。"
     )
-    async def add(self, ctx, mode: MODE_OPTION, name: NAME_OPTION):
+    async def add(self, ctx, mode: str = MODE_OPTION, name: str = NAME_OPTION):
         """!lang ja
         --------
         Funpに画像を追加します。  
@@ -264,11 +265,11 @@ class Funp(commands.Cog, DataManager):
         description="Funpを削除します。"
     )
     async def remove(
-        self, ctx, mode: MODE_OPTION, name: NAME_OPTION,
-        user_id: slash.Option(
-            int, "id", "対象のユーザーIDです。(管理者のみ)",
-            required=False
-        ) = None
+        self, ctx, mode: str = MODE_OPTION, name: str = NAME_OPTION,
+        user_id: int = discord.SlashOption(
+            "id", "対象のユーザーIDです。(管理者のみ)", required=False,
+            default=None
+        )
     ):
         """!lang ja
         --------
@@ -305,13 +306,14 @@ class Funp(commands.Cog, DataManager):
     )
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def nekobot(
-            self, ctx, type_: slash.Option(
-                str, "type", "NSFWの種類です。",
-                choices=(
-                    ("hentai", "hentai"), ("nakadashi", "nakadashi"),
-                    ("paizuri", "paizuri"), ("tentacle", "tentacle"),
-                    ("boobs", "boobs")
-                )
+            self, ctx, type_: str = discord.SlashOption(
+                "type", "NSFWの種類です。", choices={
+                    "hentai": "hentai",
+                    "nakadashi": "nakadashi",
+                    "paizuri": "paizuri",
+                    "tentacle": "tentacle",
+                    "boobs": "boobs"
+                }
             )
         ):
         """!lang ja

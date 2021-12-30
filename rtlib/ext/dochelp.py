@@ -173,7 +173,8 @@ class DocHelp(commands.Cog):
     async def on_command_add(self, command, after: bool = False):
         if command.callback.__doc__:
             extras = command.extras if command.extras else {
-                "headding": command.__original_kwargs__.get("headding", {}),
+                "headding": command.__original_kwargs__.get("headding", {})
+                    or ({"ja": command.description} if command.description else {}),
                 "parent": command.__original_kwargs__.get("category", "Other")
             }
             if extras and extras["headding"] and not after and command.parent is None:

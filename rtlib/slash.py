@@ -1,12 +1,17 @@
-# RT - Slash
+# RT - Slash, Author: tasuren, Description: このコードだけはパブリックドメインとします。
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Union, Literal, get_origin
 
+from discord.ext.commands.view import StringView
+from discord.ext.commands.bot import BotBase
 from discord.ext import commands
 import discord
 
+from datetime import datetime
 from functools import wraps
 from re import sub
+
+from pytz import utc
 
 if TYPE_CHECKING:
     from . import RT
@@ -21,19 +26,22 @@ def check(command: commands.Command):
         ) and (
             "headding" in command.__original_kwargs__
             or "headding" in command.extras
+            or command.description != ""
         ) or command.parent)
     ) and "jishaku" not in command.qualified_name
 
 
 def camel2snake(text: str) -> str:
     "キャメルケースをスネークケースにします。"
+    if text == "RT":
+        return "rt"
     return sub(
         "(.[A-Z])", lambda x: f"{x.group(1)[0]}_{x.group(1)[1]}", text
     ).lower()
 
 
-def make_command_instance(decorator, function):
-    "渡されたデコレータで渡された関数をスラッシュコマンドのインスタンスにします。"
+def make_command_instance(decorator, function: commands.Command):
+    "渡されたデコレータで渡されたコマンドをスラッシュコマンドのインスタンスにします。"
     kwargs = {
         name: function.__original_kwargs__[name]
         for name in decorator.__annotations__
@@ -45,7 +53,21 @@ def make_command_instance(decorator, function):
     ).get("ja", None)
     if kwargs["description"] is None:
         del kwargs["description"]
-    return decorator(**kwargs)(function.callback)
+    # `discord.SlashOption`のインスタンスを引数のデフォルトに置くことでスラッシュコマンドの引数の詳細を設定できる。
+    # だが、それだとコマンドフレームワーク内で実行した際に`discord.SlashOption`に設定した`default`が渡されない。
+    # それを修正するようにする。
+    original_function = function.callback
+    @wraps(original_function)
+    async def new_function(*args, **kwargs):
+        for key in list(kwargs.keys()):
+            if isinstance(kwargs[key], discord.SlashOption):
+                if not kwargs[key].required:
+                    kwargs[key] = kwargs[key].default
+        return await original_function(*args, **kwargs)
+    function._callback = new_function
+    return decorator(**kwargs)(
+        getattr(function, "_important_callback", function.callback)
+    )
 
 
 def get_category_name(function: commands.Command) -> Optional[str]:
@@ -57,6 +79,7 @@ def get_category_name(function: commands.Command) -> Optional[str]:
 #   ここからしばらくモンキーパッチ
 # 通常のコマンドのデコレータを拡張する。
 def make_command_monkey(decorator):
+    @wraps(decorator)
     def normal_command(*args, _deco_rator_=decorator, **kwargs):
         decorator = _deco_rator_(*args, **kwargs)
         @wraps(decorator)
@@ -70,6 +93,7 @@ def make_command_monkey(decorator):
                     ...
                 # おかしいことなるので関数の名前をしっかりと設定しておく。
                 fake._callback.__name__ = category_name
+                fake._category_command = True
                 # オリジナルのカテゴリー分けされているコマンドフレームワークのコマンドに新しい属性`slash`を生やす。
                 # カテゴリーの親コマンドの偽関数は`ApplicationCommand`にラップされているはずで、それのサブコマンドデコレータを使いオリジナルの関数を`ApplicationSubcommand`でラップして、それをその`slash`に入れておく。
                 # また、のちのち他の同じカテゴリーに属するコマンドを同じカテゴリーの親コマンドと統合するので、生き残れるカテゴリーの親コマンドは一体のみになる。
@@ -82,22 +106,42 @@ commands.group = make_command_monkey(commands.group)
 
 
 # 通常のグループコマンドのサブコマンドのデコレータを拡張する
-def make_group_command_monkey(decorator):
-    def group_command(*args, _deco_rator_=decorator, **kwargs):
-        decorator = _deco_rator_(*args, **kwargs)
+def make_group_command_monkey(decorator_, group = False):
+    def group_command(*args, **kwargs):
+        decorator = decorator_(*args, **kwargs)
         @wraps(decorator)
         def new_decorator(function):
-            function = decorator(function)
+            function: commands.Command = decorator(function)
             if hasattr(function.parent, "slash") and check(function):
-                # サブコマンドを登録する。
-                function.slash = make_command_instance(
-                    function.parent.slash.subcommand, function
-                )
+                if getattr(function.parent, "_important_callback", False):
+                    # グループコマンドの真相度三つ目移行のコマンドの場合は何もしないで以下を設定しておく。
+                    # 理由は下の`subcommand_dummy`にて説明されている。
+                    function._important_callback = True
+                else:
+                    # サブコマンドを登録する。
+                    if group and not getattr(
+                        function.parent.slash, "_category_command", False
+                    ):
+                        # もし親コマンドがカテゴリーコマンドではないかつ登録したコマンドがグループコマンドの場合(深層度が3以上になるグループコマンドの集団の場合)はDiscordが対応していないので別のコマンドに交換する。
+                        # その別のコマンドはグループコマンドではなく普通のコマンドで引数をひとつ取る。
+                        # その引数にその先のコマンドをお手数だが書いてもらう。
+                        async def subcommand_dummy(
+                            self, ctx, *, command: str = discord.SlashOption(
+                                "command", "この先のコマンドです。お手数ですがヘルプをご確認ください。"
+                            )
+                        ):
+                            # ここは実行されることがない。理由は`on_interaction`を見ればわかる。
+                            ...
+                        function._important_callback = wraps(function.callback) \
+                            (subcommand_dummy)
+                    function.slash = make_command_instance(
+                        function.parent.slash.subcommand, function
+                    )
             return function
         return new_decorator
     return group_command
 commands.GroupMixin.command = make_group_command_monkey(commands.GroupMixin.command)
-commands.GroupMixin.group = make_group_command_monkey(commands.GroupMixin.group)
+commands.GroupMixin.group = make_group_command_monkey(commands.GroupMixin.group, True)
 
 
 # 上で行ったモンキーパッチを適用させるためにCogを拡張する。
@@ -138,6 +182,65 @@ def new_new(cls, *args, **kwargs):
 commands.Cog.__new__ = new_new
 
 
+# 複数のコグに同じカテゴリーを親コマンドとするコマンドがあると同然かぶるのでスラッシュコマンドを登録できない。
+# それを治すために`add_cog`を拡張する。
+# 既に他のコグにてカテゴリーの親コマンドがあるかを調べてあるならそれを親コマンドとなるように変更を加えるように拡張する。
+# また`discord.ClientCog._read_methods`を呼び出すタイミングもずらす。
+original_read_methods = discord.ClientCog._read_methods
+discord.Client._read_methods = lambda _: None
+original_add_cog = BotBase.add_cog
+def new_add_cog(self: BotBase, cog: commands.Cog, *args, **kwargs):
+    # 追加されたコグの中身を取り出していく。
+    for name, value in list(cog.__class__.__dict__.items()):
+        # カテゴリーの親コマンドかどうかを調べる。
+        if name.startswith("_slash_nc_"):
+            # 全てのコグを調べて既にカテゴリーの親コマンドがあるコグがあるか調べる。
+            for other in self.cogs.values():
+                for oname, ovalue in list(other.__class__.__dict__.items()):
+                    if oname == name:
+                        # もしカテゴリーの親コマンドが既に他のコグにて尊くされているのなら親コマンドのすり替え等を行う。
+                        ovalue.children.update(value.children)
+                        for cname, child in list(value.children.items()):
+                            ovalue.children[cname] = child
+                            child.parent_command = ovalue
+                        # 被った元のカテゴリーの親コマンドは子供が移行済みでもういらないので消す。
+                        delattr(cog.__class__, name)
+                        break
+                else:
+                    continue
+                break
+    # 色々処理をした後に本来ならコグのインスタンス化時に実行される`discord.ClientCog._read_methods`を実行する。
+    original_read_methods(cog)
+    return original_add_cog(self, cog, *args, **kwargs)
+BotBase.add_cog = wraps(original_add_cog)(new_add_cog)
+
+
+# スラッシュに対応していないがコマンドフレームワークでは対応しているようなアノテーションをスラッシュに対応させるようにする。
+original_get_type = discord.CommandOption.get_type
+def new_get_type(self, typing: type):
+    if typing in (
+        discord.TextChannel, discord.VoiceChannel,
+        discord.Thread, discord.StageChannel
+    ):
+        # `discord.TextChannel`等にしている場合は`discord.abc.GuildChannel`とする。
+        return discord.CommandOption.option_types[discord.abc.GuildChannel]
+    elif any(get_origin(typing) is type_ for type_ in (Union, Literal)) or hasattr(typing, "converter"):
+        # `typing.Union`や`typing.Literal`をアノテーションに使うことはできないので、これらのオプションを見つけたら文字列の型として返すように設定する。
+        # また、`commands.Converter`か`commands.Converter`を継承したクラスの場合は文字列とする。
+        return discord.CommandOption.option_types[str]
+    else:
+        # 上記以外なら元々の関数を実行する。
+        return original_get_type(self, typing)
+discord.CommandOption.get_type = new_get_type
+
+
+# スラッシュコマンド等を登録するのがイベント`on_connect`が呼ばれた時に設定されている。
+# RTではコグを`on_ready`が呼び出された後に読み込むためスラッシュコマンドがこれだと登録されない。
+# そのため登録されるようにする。
+del discord.Client.on_connect
+discord.Client.on_full_ready = discord.Client.rollout_global_application_commands
+
+
 #   ここからモンキーパッチではない。
 class Context:
     "`discord.Interaction`を使った`commands.Context`少互換のContextクラスです。"
@@ -148,17 +251,23 @@ class Context:
     ):
         self.interaction = interaction
         self.author, self.channel = interaction.user, interaction.channel
-        self.guild, self.message = interaction.guild, interaction.message
+        self.guild, self.send = interaction.guild, self.channel.send
         self.voice_client = getattr(self.guild, "voice_cilent", None)
-        self.fetch_message = self.channel.fetch_message
-        self.send, self.reply = self.channel.send, self.interaction.response.send_message
+        self.fetch_message, self.message = self.channel.fetch_message, self
         self.typing, self.trigger_typing = self.channel.typing, self.channel.trigger_typing
 
         self.invoked_subcommand, self._state = False, bot._connection
         self.bot, self.prefix = bot, "/"
         self.cog, self.command = command.cog, command
         self.content, self.ctx = content, self
+        self.edited_at, self.created_at = None, datetime.now(utc)
 
+    async def reply(self, *args, **kwargs):
+        for key in list(kwargs.keys()):
+            if key not in self.interaction.response.send_message.__annotations__:
+                # `discord.InteractionResponse.send_message`にない引数の値は消しておく。
+                del kwargs[key]
+        await self.interaction.response.send_message(*args, **kwargs)
 
 # スラッシュコマンドのテストと登録とその他を入れるコグ
 class SlashManager(commands.Cog):
@@ -169,6 +278,7 @@ class SlashManager(commands.Cog):
         bot.event(self.on_interaction)
 
     async def on_interaction(self, interaction: discord.Interaction):
+        # ここで親コマンドがカテゴリーのコマンドが実行された際にコマンドフレームワークを介してそのコマンドを実行する。
         if interaction.type == discord.InteractionType.application_command:
             for command in self.bot.commands:
                 if (interaction.data.get("options", ())
@@ -199,14 +309,25 @@ class SlashManager(commands.Cog):
                             # サブコマンド
                             data = data["options"][0]
                             content += f" {data['name']}"
-                    return await self.bot.process_commands(
-                        Context(self.bot, interaction, command, content)
-                    )
+                    # Contextを準備してコマンドフレームワークのコマンドを実行する。
+                    ctx = Context(self.bot, interaction, command, content)
+                    processed_ctx = await self.bot.get_context(ctx)
+                    ctx.view = processed_ctx.view
+                    ctx.args, ctx.kwargs = processed_ctx.args, processed_ctx.kwargs
+                    for name, value in processed_ctx.__dict__.items():
+                        if not name.startswith(
+                            (
+                                "__", "send", "reply", "trigger", "typing",
+                                "created", "channel", "message", "guild"
+                            )
+                        ):
+                            setattr(ctx, name, value)
+                    return await self.bot.invoke(ctx.message)
         # コマンドフレームワークのコマンド実行以外のInteractionなら元々のやつに渡す。
         await self.bot.process_application_commands(interaction)
 
-    @commands.command(description="コマンドを実行します。 | Run command", category="BotGeneral")
-    async def command(self, ctx: Context, *, content):
+    @commands.command(description="コマンドを実行します。 | Run command", category="RT")
+    async def run(self, ctx: Context, *, content):
         """!lang ja
         --------
         RTコマンドを実行します。  
@@ -246,6 +367,10 @@ class SlashManager(commands.Cog):
             ctx.content = content
             await self.bot.process_commands(ctx)
 
+    @commands.Cog.listener()
+    async def on_full_ready(self):
+        ...
+
     # ここから完全なテスト用コマンド
     @discord.slash_command()
     @commands.cooldown(1, 30)
@@ -255,7 +380,7 @@ class SlashManager(commands.Cog):
     @commands.command(
         headding={"ja": "テスト見出し", "en": "..."}, category="SlashTest"
     )
-    async def test(self, ctx):
+    async def test(self, ctx, test: Union[str, int]):
         await ctx.reply("This is the test")
 
     @commands.group(

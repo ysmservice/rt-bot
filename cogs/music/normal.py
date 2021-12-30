@@ -5,9 +5,9 @@ from typing import Dict
 from discord.ext import commands, tasks, easy
 import discord
 
-from rtlib.slash import Option
-from rtlib import componesy
 from functools import wraps
+
+from rtlib import componesy
 
 from .views import (
     QueuesView, PlaylistView, AddToPlaylist, PlaylistSelect
@@ -102,81 +102,8 @@ class MusicNormal(commands.Cog, DataManager):
         ctx.selected = True
         await self.play(ctx, song=select.values[0])
 
-    @commands.command(
-        slash_command=True,
-        description="ボイスチャンネルでYouTube,ニコニコ動画,SoundCloudのどれかを再生します。",
-        extras={
-            "headding": {
-                "ja": "音楽を再生します。",
-                "en": "Play music."
-            }, "parent": "Music"
-        }
-    )
-    async def play(
-        self, ctx, *,
-        song: Option(str, "song", "再生したい曲のURLまたは検索ワードです。"),
-        datas: list = None
-    ):
-        """!lang ja
-        --------
-        音楽を再生します。    
-        YouTube/SoundCloud/ニコニコ動画に対応しています。  
-        読み上げと同時に使用することはできないので、もし読み上げと同時に使用したい人はサブのりつちゃんを入れましょう。  
-        りつちゃんについてはRTのサポートサーバー(`rt!info`から確認が可能)にてお知らせします。
-
-        Notes
-        -----
-        もしURLではないものを入力した場合は検索が行われます。  
-        YouTubeの再生リストからの再生に対応しています。  
-        (SoundCloud/ニコニコ動画上の再生リストからの再生は後日対応予定です。)  
-        そして音楽再生コマンドはスラッシュコマンドに対応しています。  
-        もし再生中に再生しようとした場合はキューに追加され順番が来たら再生されます。  
-        ※キューというのは再生予定の曲のリストのことです。
-
-        Warnings
-        --------
-        YouTubeを再生する機能はご存じの通りGroovyやRythmがGoogleに停止通知を受けてサービス終了をしていることからいつか廃止します。
-
-        Parameters
-        ----------
-        song : str
-            再生したい曲のURLまたは検索ワードです。  
-            YouTubeの再生リストのURLが渡された場合はその再生リストを全て再生します。
-
-        Examples
-        --------
-        `rt!play https://www.youtube.com/watch?v=Th-Z6le3bHA`
-        `rt!play Never Gonna Give You Up`
-        `/play 白日`
-
-        !lang en
-        --------
-        Play music.
-        It supports YouTube/SoundCloud/NicoNico video.
-
-        Notes
-        -----
-        If you enter something that is not a URL, a search is performed.
-        It supports playback from YouTube playlists.
-        (Playing from the playlist on SoundCloud/NicoNico video will be available at a later date.)
-        And the music playback command corresponds to the slash command.
-        If you try to play it during playback, it will be added to the queue and will play back when it is in order.
-
-        Warnings
-        --------
-        As you know, Groovy and Rythm shut down their services after Google notified them of their suspension, so we'll eventually phase them out.
-
-        Parameters
-        ----------
-        song: str
-            URL or search word of the song you want to play.
-            If you're given a URL for a YouTube playlist, play it all.
-
-        Examples
-        --------
-        `rt!play https://www.youtube.com/watch?v=Th-Z6le3bHA`
-        `rt!play Never Gonna Give You Up`
-        `/play We are number one`"""
+    async def _play(self, ctx, song, datas):
+        # playコマンドの中身
         if ctx.guild.id in self.bot.cogs["TTS"].now:
             return await ctx.reply(
                 content={
@@ -296,6 +223,83 @@ class MusicNormal(commands.Cog, DataManager):
                     "en": "💽 Added to queues." + length + ext[1]
                 }
             )
+
+    @commands.command(
+        slash_command=True,
+        description="ボイスチャンネルでYouTube,ニコニコ動画,SoundCloudのどれかを再生します。",
+        extras={
+            "headding": {
+                "ja": "音楽を再生します。",
+                "en": "Play music."
+            }, "parent": "Music"
+        }
+    )
+    async def play(
+        self, ctx, *,
+        song: str = discord.SlashOption("song", "再生したい曲のURLまたは検索ワードです。")
+    ):
+        """!lang ja
+        --------
+        音楽を再生します。    
+        YouTube/SoundCloud/ニコニコ動画に対応しています。  
+        読み上げと同時に使用することはできないので、もし読み上げと同時に使用したい人はサブのりつちゃんを入れましょう。  
+        りつちゃんについてはRTのサポートサーバー(`rt!info`から確認が可能)にてお知らせします。
+
+        Notes
+        -----
+        もしURLではないものを入力した場合は検索が行われます。  
+        YouTubeの再生リストからの再生に対応しています。  
+        (SoundCloud/ニコニコ動画上の再生リストからの再生は後日対応予定です。)  
+        そして音楽再生コマンドはスラッシュコマンドに対応しています。  
+        もし再生中に再生しようとした場合はキューに追加され順番が来たら再生されます。  
+        ※キューというのは再生予定の曲のリストのことです。
+
+        Warnings
+        --------
+        YouTubeを再生する機能はご存じの通りGroovyやRythmがGoogleに停止通知を受けてサービス終了をしていることからいつか廃止します。
+
+        Parameters
+        ----------
+        song : str
+            再生したい曲のURLまたは検索ワードです。  
+            YouTubeの再生リストのURLが渡された場合はその再生リストを全て再生します。
+
+        Examples
+        --------
+        `rt!play https://www.youtube.com/watch?v=Th-Z6le3bHA`
+        `rt!play Never Gonna Give You Up`
+        `/play 白日`
+
+        !lang en
+        --------
+        Play music.
+        It supports YouTube/SoundCloud/NicoNico video.
+
+        Notes
+        -----
+        If you enter something that is not a URL, a search is performed.
+        It supports playback from YouTube playlists.
+        (Playing from the playlist on SoundCloud/NicoNico video will be available at a later date.)
+        And the music playback command corresponds to the slash command.
+        If you try to play it during playback, it will be added to the queue and will play back when it is in order.
+
+        Warnings
+        --------
+        As you know, Groovy and Rythm shut down their services after Google notified them of their suspension, so we'll eventually phase them out.
+
+        Parameters
+        ----------
+        song: str
+            URL or search word of the song you want to play.
+            If you're given a URL for a YouTube playlist, play it all.
+
+        Examples
+        --------
+        `rt!play https://www.youtube.com/watch?v=Th-Z6le3bHA`
+        `rt!play Never Gonna Give You Up`
+        `/play We are number one`"""
+        await self._play(ctx, song)
+
 
     @commands.command(
         slash_command=True, description="音楽再生を終了します。",
@@ -644,7 +648,7 @@ class MusicNormal(commands.Cog, DataManager):
             "c", "make", "っていうやつあるよね", "作成", "つくる", "作る"
         ]
     )
-    async def create(self, ctx, *, name: Option(str, "name", "プレイリストの名前です。")):
+    async def create(self, ctx, *, name: str = discord.SlashOption("name", "プレイリストの名前です。")):
         """!lang ja
         --------
         プレイリストを作成します。
@@ -698,7 +702,7 @@ class MusicNormal(commands.Cog, DataManager):
             "del", "remove", "rm", "削除", "さくじょ"
         ]
     )
-    async def delete(self, ctx, *, name: Option(str, "name", "プレイリストの名前です。")):
+    async def delete(self, ctx, *, name: str = discord.SlashOption("name", "プレイリストの名前です。")):
         """!lang ja
         --------
         プレイリストを削除します。
@@ -753,8 +757,8 @@ class MusicNormal(commands.Cog, DataManager):
         ]
     )
     async def add(
-        self, ctx, *, url: Option(
-            str, "url", "追加する曲のURLです。"
+        self, ctx, *, url: str = discord.SlashOption(
+            "url", "追加する曲のURLです。"
         )
     ):
         """!lang ja
@@ -868,9 +872,8 @@ class MusicNormal(commands.Cog, DataManager):
                     ctx.interaction = interaction
                     ctx.reply = interaction.edit_original_message
                     try:
-                        await self.play(
-                            ctx, song="",
-                            datas=PlaylistSelect.make_music_data_from_playlist(
+                        await self._play(
+                            ctx, "", PlaylistSelect.make_music_data_from_playlist(
                                 (
                                     await self.read_playlists(
                                         interaction.user.id, select.values[0]
@@ -938,8 +941,8 @@ class MusicNormal(commands.Cog, DataManager):
 
     @dj.command("set", description="DJロールを設定します。")
     async def set_dj(
-        self, ctx, *, role: Option(
-            discord.Role, "role", "DJロールとして設定する役職です。"
+        self, ctx, *, role: discord.Role = discord.SlashOption(
+            "role", "DJロールとして設定する役職です。"
         )
     ):
         """!lang ja
@@ -972,8 +975,8 @@ class MusicNormal(commands.Cog, DataManager):
 
     @dj.command("delete", description="DJロールを設定解除します。")
     async def delete_dj(
-        self, ctx, *, role: Option(
-            discord.Role, "role", "DJロールとして設定されている設定解除する役職です。"
+        self, ctx, *, role: discord.Role = discord.SlashOption(
+            "role", "DJロールとして設定されている設定解除する役職です。"
         )
     ):
         """!lang ja

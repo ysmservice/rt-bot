@@ -9,7 +9,6 @@ import discord
 
 from aiohttp import ClientSession
 from ujson import load, dumps
-from uvloop import install
 from os import listdir
 from sys import argv
 
@@ -22,7 +21,6 @@ from data import data, is_admin, Colors
 
 with open("auth.json", "r") as f:
     secret = load(f)
-install()
 
 
 # Botの準備を行う。
@@ -75,8 +73,7 @@ async def on_ready():
     setup(bot)
     bot.load_extension("jishaku")
     bot.load_extension("cogs._oldrole")
-    # for name in listdir("cogs"):
-    for name in ():
+    for name in listdir("cogs"):
         if not name.startswith("_"):
             try:
                 bot.load_extension(

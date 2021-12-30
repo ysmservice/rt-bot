@@ -3,8 +3,6 @@
 from discord.ext import commands
 import discord
 
-from rtlib.slash import Option
-
 
 class YouTubeTogether(commands.Cog):
 
@@ -67,9 +65,10 @@ class YouTubeTogether(commands.Cog):
         }
     )
     async def activity(
-        self, ctx, choice: Option(
-            str, "activity", "作る招待リンクのアクティビティの名前です。",
-            choices=tuple((key, key) for key in APPLICATIONS)
+        self, ctx, choice: str = discord.SlashOption(
+            "activity", "作る招待リンクのアクティビティの名前です。", choices={
+                key: key for key in APPLICATIONS
+            }
         )
     ):
         """!lang ja
