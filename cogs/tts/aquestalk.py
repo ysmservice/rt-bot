@@ -1,7 +1,8 @@
 # RT TTS - AquesTalk
 
-from aiofiles import open as async_open
 import asyncio
+
+from .openjtalk import _synthe
 
 
 SyntheError = type("SyntheError", (Exception,), {})
@@ -22,8 +23,8 @@ def load_libs(paths: dict) -> None:
 
 
 async def synthe(
-        voice: str, file_path: str, text: str, speed: int = 130
-    ) -> None:
+    voice: str, file_path: str, text: str, speed: int = 130
+) -> None:
     """AquesTalkを使用して音声合成を行います。　　
     使用するライブラリは`load_libs`で読み込んだものが使われます。
 
@@ -46,22 +47,10 @@ async def synthe(
         ライブラリが見つからない際に発生します。
     SyntheError
         音声合成が何かしらの理由で失敗した際に発生します。"""
-    aqtk = libs[voice]
-
-    cmd = f"./{aqtk} {speed} > {file_path}"
-    # コマンドを実行する。
-    proc = await asyncio.create_subprocess_shell(
-        cmd, stdin=asyncio.subprocess.PIPE,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
+    # 音声合成をする。
+    return await _synthe(
+        "AquesTalk", (f"./{libs[voice]}", str(speed), ">", file_path), text
     )
-    # 実行結果を取得する。
-    _, stderr = await proc.communicate(
-        bytes(text, encoding='utf-8')
-    )
-    # 実行結果を出力する。
-    if stderr:
-        raise SyntheError(f"音声合成に失敗しました。ERR:{stderr}")
 
 
 if __name__ == "__main__":

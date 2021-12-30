@@ -7,13 +7,14 @@ print("RT Discord Bot (C) 2020 RT-Team\nNow loading...")
 
 import discord
 
-from aiohttp import ClientSession
-from ujson import load, dumps
 from os import listdir
 from sys import argv
 
 from logging import handlers
 import logging
+
+from aiohttp import ClientSession
+from ujson import load, dumps
 
 from rtlib import RT, mysql, setup, websocket
 from data import data, is_admin, Colors
