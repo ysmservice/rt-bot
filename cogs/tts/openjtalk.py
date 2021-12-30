@@ -1,15 +1,33 @@
 # RT TTS - OpenJTalk
 
-import asyncio
+from typing import Coroutine, Sequence
+
+from asyncio import get_event_loop
+
+from jishaku.functools import executor_function
+from subprocess import Popen, TimeoutExpired
 
 
 SyntheError = type("SyntheError", (Exception,), {})
 
 
+@executor_function
+def _synthe(log_name: str, commands: Sequence[str], text: str) -> Coroutine:
+    # 音声合成を実行します。
+    try:
+        stdout, stderr = Popen(commands).communicate(bytes(text, encoding="utf-8"))
+    except TimeoutExpired:
+        raise SyntheError(f"{log_name}: 音声合成に失敗しました。ERR:TimeoutExpired")
+    if stdout:
+        print(f"{log_name}: {stdout}")
+    elif stderr:
+        raise SyntheError(f"{log_name}: 音声合成に失敗しました。ERR:{stderr}")
+
+
 async def synthe(
-        voice: str, dictionary: str, file_path: str,
-        text: str, speed: float = 1.0, open_jtalk = "open_jtalk"
-    ) -> None:
+    voice: str, dictionary: str, file_path: str,
+    text: str, speed: float = 1.0, open_jtalk = "open_jtalk"
+) -> None:
     """OpenJTalkを使い音声合成をします。
 
     Parameters
@@ -26,26 +44,18 @@ async def synthe(
         読み上げるスピードです。です。
     open_jtalk : str, defalt "open_jtalk"
         OpenJTalkのパスです。"""
-    cmd = f"{open_jtalk} -x {dictionary} -m {voice} -r {speed} -ow {file_path}"
     # コマンドを実行する。
-    proc = await asyncio.create_subprocess_shell(
-        cmd, stdin=asyncio.subprocess.PIPE,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
+    return await _synthe(
+        "OpenJTalk", (
+            open_jtalk, "-x", dictionary, "-m", voice,
+            "-r", str(speed), "-ow", file_path
+        ), text
     )
-    # 実行結果を取得する。
-    stdout, stderr = await proc.communicate(
-        bytes(text, encoding='utf-8')
-    )
-    # 実行結果を出力する。
-    if stdout:
-        print("OpenJTalk :", stdout)
-    if stderr:
-        raise SyntheError(f"音声合成に失敗しました。ERR:{stderr}")
 
 
 if __name__ == "__main__":
-    asyncio.run(
+    from asyncio import run
+    run(
         synthe(
             "cogs/tts/lib/OpenJTalk/mei.htsvoice",
             "/var/lib/mecab/dic/open-jtalk/naist-jdic",
