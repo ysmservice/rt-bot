@@ -15,7 +15,7 @@ SyntheError = type("SyntheError", (Exception,), {})
 def _synthe(log_name: str, commands: Sequence[str], text: str) -> Coroutine:
     # 音声合成を実行します。
     try:
-        stdout, stderr = Popen(commands).communicate(bytes(text, encoding="utf-8"))
+        stdout, stderr = Popen(commands).communicate(bytes(text, encoding="utf-8"), 5)
     except TimeoutExpired:
         raise SyntheError(f"{log_name}: 音声合成に失敗しました。ERR:TimeoutExpired")
     if stdout:
