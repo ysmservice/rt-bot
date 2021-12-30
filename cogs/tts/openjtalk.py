@@ -2,10 +2,10 @@
 
 from typing import Coroutine, Sequence
 
-from asyncio import get_event_loop
+from subprocess import Popen, TimeoutExpired
+from sys import stdout
 
 from jishaku.functools import executor_function
-from subprocess import Popen, TimeoutExpired
 
 
 SyntheError = type("SyntheError", (Exception,), {})
@@ -14,14 +14,15 @@ SyntheError = type("SyntheError", (Exception,), {})
 @executor_function
 def _synthe(log_name: str, commands: Sequence[str], text: str) -> Coroutine:
     # 音声合成を実行します。
+    proc = Popen(commands, stdout=stdout)
     try:
-        stdout, stderr = Popen(commands).communicate(bytes(text, encoding="utf-8"))
+        _, stderr = proc.communicate(bytes(text, encoding="utf-8"), 5)
     except TimeoutExpired:
+        proc.kill()
         raise SyntheError(f"{log_name}: 音声合成に失敗しました。ERR:TimeoutExpired")
-    if stdout:
-        print(f"{log_name}: {stdout}")
-    elif stderr:
-        raise SyntheError(f"{log_name}: 音声合成に失敗しました。ERR:{stderr}")
+    else:
+        if stderr:
+            raise SyntheError(f"{log_name}: 音声合成に失敗しました。ERR:{stderr}")
 
 
 async def synthe(
