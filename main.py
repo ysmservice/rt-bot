@@ -9,7 +9,7 @@ import discord
 
 from aiohttp import ClientSession
 from ujson import load, dumps
-from uvloop import install
+# from uvloop import install
 from os import listdir
 from sys import argv
 
@@ -22,7 +22,7 @@ from data import data, is_admin, Colors
 
 with open("auth.json", "r") as f:
     secret = load(f)
-install()
+# install()
 
 
 # Botの準備を行う。
