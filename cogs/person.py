@@ -5,11 +5,14 @@ import discord
 
 from typing import Optional, Tuple, List
 
-from aiohttp import ClientSession
 from datetime import timedelta
-from bs4 import BeautifulSoup
 from random import randint
+from re import findall
 import asyncio
+
+from aiohttp import ClientSession
+from bs4 import BeautifulSoup
+from emoji import emoji_lis
 
 
 class Person(commands.Cog):
@@ -142,19 +145,14 @@ class Person(commands.Cog):
                 if not message:
                     await ctx.trigger_typing()
 
-                errors, pass_count, did = "", 0, 0
-                for emoji in emojis:
-                    did += 1
-                    if pass_count:
-                        pass_count -= 1
-                    elif emoji not in (" ", "　", "\n", ":"):
-                        if emoji == "<":
-                            emoji = emojis[did:emojis.find(">") + 1]
-                            pass_count = len(emoji)
-                        try:
-                            await message.add_reaction(emoji)
-                        except discord.HTTPException:
-                            errors += f"\n{emoji}を付与することができませんでした。"
+                errors = ""
+                for characters in findall("<a?:.+:\d+>|.", emojis):
+                    for emoji in characters.split():
+                        if emoji:
+                            try:
+                                await message.add_reaction(emoji)
+                            except discord.HTTPException:
+                                errors += f"\n{emoji}を付与することができませんでした。"
 
                 if not message:
                     await ctx.reply(f"Ok{errors}")
