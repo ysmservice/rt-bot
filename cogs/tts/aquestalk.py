@@ -49,7 +49,7 @@ async def synthe(
         音声合成が何かしらの理由で失敗した際に発生します。"""
     # 音声合成をする。
     return await _synthe(
-        "AquesTalk", (f"./{libs[voice]}", str(speed), ">", file_path), text
+        "AquesTalk", f"./{libs[voice]} {speed} > {file_path}", text
     )
 
 
