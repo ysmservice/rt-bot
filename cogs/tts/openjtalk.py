@@ -1,9 +1,8 @@
 # RT TTS - OpenJTalk
 
-from typing import Coroutine, Sequence
+from typing import Coroutine
 
-from subprocess import Popen, TimeoutExpired
-from sys import stdout
+from subprocess import Popen, TimeoutExpired, PIPE
 
 from jishaku.functools import executor_function
 
@@ -12,17 +11,17 @@ SyntheError = type("SyntheError", (Exception,), {})
 
 
 @executor_function
-def _synthe(log_name: str, commands: Sequence[str], text: str) -> Coroutine:
+def _synthe(log_name: str, commands: str, text: str) -> Coroutine:
     # 音声合成を実行します。
-    proc = Popen(commands, stdout=stdout)
+    proc = Popen(commands, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
     try:
-        _, stderr = proc.communicate(bytes(text, encoding="utf-8"), 5)
+        _, stderr_ = proc.communicate(bytes(text, encoding="utf-8"), 5)
     except TimeoutExpired:
         proc.kill()
         raise SyntheError(f"{log_name}: 音声合成に失敗しました。ERR:TimeoutExpired")
     else:
-        if stderr:
-            raise SyntheError(f"{log_name}: 音声合成に失敗しました。ERR:{stderr}")
+        if stderr_:
+            raise SyntheError(f"{log_name}: 音声合成に失敗しました。ERR:{stderr_}")
 
 
 async def synthe(
@@ -47,10 +46,7 @@ async def synthe(
         OpenJTalkのパスです。"""
     # コマンドを実行する。
     return await _synthe(
-        "OpenJTalk", (
-            open_jtalk, "-x", dictionary, "-m", voice,
-            "-r", str(speed), "-ow", file_path
-        ), text
+        "OpenJTalk", f"{open_jtalk} -x {dictionary} -m {voice} -r {speed} -ow {file_path}", text
     )
 
 
