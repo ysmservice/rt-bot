@@ -309,12 +309,15 @@ class SlashManager(commands.Cog):
                             break
                         if "value" in data["options"][0]:
                             # 引数
-                            length = len(data)
+                            length = len(data["options"])
                             for count, option in enumerate(data["options"], 1):
                                 if isinstance(option["value"], dict):
                                     # もしユーザーが入れた引数の値が辞書の場合はIDを取る。
                                     # これはこの場合は`discord.Member`等のDiscordオブジェクトのデータのためです。
                                     option["value"] = str(option["value"]["id"])
+                                if not isinstance(option["value"], str):
+                                    # もし文字列ではない状態なら文字列にする。
+                                    option["value"] = str(option["value"])
                                 if count != length and (
                                     " " in option["value"] or "\n" in option["value"]
                                 ):
