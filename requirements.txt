@@ -4,6 +4,7 @@ ujson
 nextcord
 aiomysql
 pytz
+websockets
 # rtutil
 ## OAuth
 reprypt

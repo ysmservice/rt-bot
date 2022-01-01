@@ -298,7 +298,7 @@ class MusicNormal(commands.Cog, DataManager):
         `rt!play https://www.youtube.com/watch?v=Th-Z6le3bHA`
         `rt!play Never Gonna Give You Up`
         `/play We are number one`"""
-        await self._play(ctx, song)
+        await self._play(ctx, song, None)
 
 
     @commands.command(
