@@ -83,4 +83,4 @@ def setup(bot):
     )
     handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
     logger.addHandler(handler)
-    bot.add_cog(SystemLog)
+    bot.add_cog(SystemLog(bot))
