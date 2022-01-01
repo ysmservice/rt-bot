@@ -5,10 +5,8 @@ from typing import Tuple, List
 from discord.ext import commands, tasks
 import discord
 
-from aiohttp.client_exceptions import ClientConnectionError
-
 from rtlib.ext import componesy, Embeds
-from rtlib import RT, slash
+from rtlib import RT
 
 
 class Help(commands.Cog):
@@ -48,8 +46,7 @@ class Help(commands.Cog):
             f"{self.bot.get_url()}/api/help/update",
             json=self.bot.cogs["DocHelp"].data
         ) as r:
-            # self.bot.print("[HelpUpdater]", await r.json())
-            ...
+            self.bot.print("[HelpUpdater]", await r.json())
 
     @tasks.loop(seconds=30)
     async def update_help(self):
@@ -109,10 +106,7 @@ class Help(commands.Cog):
             # 選択されたものを引数としてdhelpのコマンドを実行する。
             ctx.author = user
             ctx.rt = 1
-            await self.dhelp(
-                ctx, word=select.values[0],
-                interaction=interaction
-            )
+            await self._help(ctx, select.values[0], interaction)
 
     def get_view_args(self, lang, category):
         # 作るViewのデータを取得するための関数です。
@@ -153,44 +147,7 @@ class Help(commands.Cog):
             view.add_item("Select", func, **kwargs)
         return view
 
-    @commands.command(
-        name="help", aliases=["h", "Help_me,_ERINNNNNN!!", "たすけて！"],
-        extras={
-              "headding": {"ja": "Helpを表示します。",
-                           "en": "Get help."},
-              "parent": "RT"
-        }, slash_command=True, description="ヘルプを表示します。"
-    )
-    @commands.cooldown(1, 3, commands.BucketType.user)
-    async def dhelp(
-        self, ctx, *, word: slash.Option(
-            str, "word", "コマンド名または検索ワードです。", required=False
-        ) = None, interaction=None
-    ):
-        """!lang ja
-        --------
-        コマンドの使い方が載っているヘルプを表示します。  
-        またコマンドの見方は[ここ](https://rt-team.github.io/notes/help)を見るとよくわかるかもしれません。
-
-        Parameters
-        ----------
-        word : コマンド名/検索ワード, optional
-            表示したいヘルプのコマンド名です。  
-            コマンド名ではない言葉が指定された場合は検索します。
-
-        Aliases
-        -------
-        `h`, `たすけて！`, `Help_me,_ERINNNNNN!!`
-
-        !lang en
-        --------
-        Displays a help page with information on how to use the command.
-
-        Parameters
-        ----------
-        word : command name/search word, optional
-            The command name of the help to be displayed.  
-            If a word that is not a command name is specified, a search will be performed."""
+    async def _help(self, ctx, word, interaction=None):
         self.help = self.bot.cogs["DocHelp"].data
         lang = self.bot.cogs["Language"].get(ctx.author.id)
         edit = hasattr(ctx, "rt")
@@ -273,6 +230,46 @@ class Help(commands.Cog):
                 await ctx.reply(**kwargs)
             else:
                 await ctx.send(interaction.user.mention, **kwargs)
+
+    @commands.command(
+        name="help", aliases=["h", "Help_me,_ERINNNNNN!!", "たすけて！"],
+        extras={
+              "headding": {"ja": "Helpを表示します。",
+                           "en": "Get help."},
+              "parent": "RT"
+        }, slash_command=True, description="ヘルプを表示します。"
+    )
+    @commands.cooldown(1, 3, commands.BucketType.user)
+    async def dhelp(
+        self, ctx, *, word: str = discord.SlashOption(
+            "word", "コマンド名または検索ワードです。", required=False, default=None
+        )
+    ):
+        """!lang ja
+        --------
+        コマンドの使い方が載っているヘルプを表示します。  
+        またコマンドの見方は[ここ](https://rt-team.github.io/notes/help)を見るとよくわかるかもしれません。
+
+        Parameters
+        ----------
+        word : コマンド名/検索ワード, optional
+            表示したいヘルプのコマンド名です。  
+            コマンド名ではない言葉が指定された場合は検索します。
+
+        Aliases
+        -------
+        `h`, `たすけて！`, `Help_me,_ERINNNNNN!!`
+
+        !lang en
+        --------
+        Displays a help page with information on how to use the command.
+
+        Parameters
+        ----------
+        word : command name/search word, optional
+            The command name of the help to be displayed.  
+            If a word that is not a command name is specified, a search will be performed."""
+        await self._help(ctx, word)
 
 
 def setup(bot):

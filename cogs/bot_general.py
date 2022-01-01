@@ -73,8 +73,22 @@ THANKYOU_TEMPLATE = cleandoc(
     """RTの導入ありがとうございます。
     よろしくお願いします。
     もし何かバグや要望があればウェブサイトから公式サポートサーバーにてお伝えください。
+
+    **RT 情報**
     公式ウェブサイト：https://rt-bot.com
-    チュートリアル　：https://rt-team.github.io/notes/tutorial"""
+    サポートサーバー：https://discord.com/invite/ugMGw5w
+    チュートリアル　：https://rt-team.github.io/notes/tutorial
+    プリフィックス　：`rt!`, `Rt!`, `RT!`, `rt.`, `Rt.`, `RT.`, `りつ！`, `りつ.`
+
+    **RT 備考**
+    ほとんどのコマンドは`rt!...`ではなくスラッシュからでも実行が可能です。
+    スラッシュコマンドはヘルプにあるコマンドとは少し違いヘルプのカテゴリーで分けられています。
+    例えば音楽(Music)カテゴリーの音楽再生コマンド`rt!play`はスラッシュの場合`/music play`となります。
+    こうしているのは全てのコマンドをスラッシュに登録するとこれ以上追加できないとDiscordに言われてしまうからです。
+    たまにスラッシュで実行できないものがあるかもしれません。
+    その時はお手数ですが`rt!...`から実行してください。
+    また、`rt!...`からでないと実行できないコマンドも一応スラッシュコマンドから実行が可能です。
+    `rt!...`を`/rt run ...`のようにすれば良いです。"""
 )
 
 
@@ -246,7 +260,7 @@ class BotGeneral(commands.Cog):
     async def on_command_error(self, ctx: commands.Context, error: Exception):
         # エラー時のメッセージ。翻訳はdescriptionのみ。
         kwargs, color = {}, self.bot.colors["error"]
-        if isinstance(error, commands.errors.CommandNotFound):
+        if isinstance(error, commands.CommandNotFound):
             # 実行しようとしたコマンドを考える。
             suggestion = f"`{suggestion}`" if (
                 suggestion := "`, `".join(
@@ -274,7 +288,7 @@ class BotGeneral(commands.Cog):
                 "ja": "RTに権限がないため正常にコマンドを実行できませんでした。",
                 "en": "The command could not be executed successfully because RT does not have permissions."
             }
-        elif isinstance(error, commands.errors.CommandOnCooldown):
+        elif isinstance(error, commands.CommandOnCooldown):
             if (ctx.command.qualified_name in self.cache.get(ctx.author.id, {})
                     and not hasattr(ctx, "__setting_context__")):
                 return
@@ -289,30 +303,30 @@ class BotGeneral(commands.Cog):
                 self.cache[ctx.author.id][ctx.command.qualified_name] = \
                     time() + error.retry_after
                 color = self.bot.colors["unknown"]
-        elif isinstance(error, (commands.errors.MemberNotFound,
-                        commands.errors.UserNotFound)):
+        elif isinstance(error, (commands.MemberNotFound,
+                        commands.UserNotFound)):
             title = "400 Bad Request"
             description = {"ja": "指定されたユーザーが見つかりませんでした。",
                            "en": "I can't found that user."}
-        elif isinstance(error, commands.errors.ChannelNotFound):
+        elif isinstance(error, commands.ChannelNotFound):
             title = "400 Bad Request"
             description = {"ja": "指定されたチャンネルが見つかりませんでした。",
                            "en": "I can't found that channel"}
-        elif isinstance(error, commands.errors.RoleNotFound):
+        elif isinstance(error, commands.RoleNotFound):
             title = "400 Bad Request"
             description = {"ja": "指定されたロールが見つかりませんでした。",
                            "en": "I can't found that role."}
-        elif isinstance(error, commands.errors.BadBoolArgument):
+        elif isinstance(error, commands.BadBoolArgument):
             title = "400 Bad Request"
             description = {"ja": ("指定された真偽値が無効です。\n"
                                   + "有効な真偽値：`on/off`, `true/false`, `True/False`"),
                            "en": ("The specified boolean value is invalid\n"
                                   + "Valid boolean value:`on/off`, `true/false`, `True/False`")}
         elif isinstance(
-            error, (commands.errors.BadArgument,
-                commands.errors.MissingRequiredArgument,
-                commands.errors.ArgumentParsingError,
-                commands.errors.TooManyArguments,
+            error, (commands.BadArgument,
+                commands.MissingRequiredArgument,
+                commands.ArgumentParsingError,
+                commands.TooManyArguments,
                 commands.BadUnionArgument,
                 commands.BadLiteralArgument)
         ):
@@ -321,7 +335,7 @@ class BotGeneral(commands.Cog):
                 "ja": f"コマンドの引数が適切ではありません。\nまたは必要な引数が足りません。\nCode:`{error}`",
                 "en": "It's command's function is bad."
             }
-        elif isinstance(error, commands.errors.MissingPermissions):
+        elif isinstance(error, commands.MissingPermissions):
             title = "403 Forbidden"
             description = {
                 "ja": "あなたの権限ではこのコマンドを実行することができません。\n**実行に必要な権限**\n" \
@@ -332,14 +346,17 @@ class BotGeneral(commands.Cog):
                 "en": "You can't do this command.\n**You need these permissions**\n`" \
                     + "`, `".join(error.missing_permissions) + "`"
             }
-        elif isinstance(error, commands.errors.MissingRole):
+        elif isinstance(error, commands.MissingRole):
             title = "403 Forbidden"
             description = {"ja": "あなたはこのコマンドの実行に必要な役職を持っていないため、このコマンドを実行できません。",
                            "en": "You can't do this command. Because you need permission"}
-        elif isinstance(error, commands.errors.CheckFailure):
+        elif isinstance(error, commands.CheckFailure):
             title = "403 Forbidden"
             description = {"ja": "あなたはこのコマンドを実行することができません。",
                            "en": "You can't do this command."}
+        elif isinstance(error, AssertionError):
+            title = "400 Bad Request"
+            description = error.args[0]
         elif isinstance(error, commands.CommandInvokeError):
             return await self.on_command_error(ctx, error.original)
         else:
@@ -378,7 +395,11 @@ class BotGeneral(commands.Cog):
         kwargs["embed"] = discord.Embed(
             title=title, description=description, color=color
         )
-        await ctx.send(**kwargs)
+        try:
+            await ctx.reply(**kwargs)
+        except Exception as e:
+            kwargs["content"] = str(e)
+            await ctx.send(**kwargs)
 
     def get_help_url(self, category: str, name: str) -> str:
         return f"https://rt-bot.com/help.html?g={category}&c={name}"

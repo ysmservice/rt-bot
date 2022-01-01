@@ -26,12 +26,14 @@ class DatabaseManager:
             try:
                 data = await coro(self, *args, **kwargs)
             except Exception as e:
-                await kwargs["cursor"].close()
+                if "cursor" in kwargs:
+                    await kwargs["cursor"].close()
                 if conn:
                     conn.close()
                 raise e
             finally:
-                await kwargs["cursor"].close()
+                if "cursor" in kwargs:
+                    await kwargs["cursor"].close()
                 if conn:
                     conn.close()
             return data

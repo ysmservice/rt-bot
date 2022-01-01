@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 from discord.ext import commands
 import discord
 
-from rtlib.slash import Option
 from asyncio import sleep
 
 from .constants import MAX_CHANNELS, HELP
@@ -95,8 +94,8 @@ class ThreadManager(commands.Cog, DataManager):
         aliases=["watch", "it", "監視", "inspect"]
     )
     async def monitor(
-        self, ctx, *, channel: Option(
-            discord.TextChannel, "channel", "監視するスレッドのある対象のチャンネルです。"
+        self, ctx, *, channel: discord.TextChannel = discord.SlashOption(
+            "channel", "監視するスレッドのある対象のチャンネルです。"
         )
     ):
         """!lang ja
@@ -135,8 +134,8 @@ class ThreadManager(commands.Cog, DataManager):
         aliases=["unwatch", "unit", "監視解除", "uninspect"]
     )
     async def unmonitor(
-        self, ctx, *, channel: Option(
-            discord.TextChannel, "channel", "監視解除する対象のチャンネルです。"
+        self, ctx, *, channel: discord.TextChannel = discord.SlashOption(
+            "channel", "監視解除する対象のチャンネルです。"
         )
     ):
         """!lang ja
@@ -175,8 +174,8 @@ class ThreadManager(commands.Cog, DataManager):
         aliases=["add", "追加", "a"]
     )
     async def join(
-        self, ctx: commands.Context, *, user: Option(
-            discord.Member, "user", "スレッドに参加させるユーザーです。"
+        self, ctx: commands.Context, *, user: discord.Member = discord.SlashOption(
+            "user", "スレッドに参加させるユーザーです。"
         )
     ):
         """!lang ja
@@ -214,8 +213,8 @@ class ThreadManager(commands.Cog, DataManager):
         aliases=["k", "rm", "remove", "キック", "追放"]
     )
     async def kick(
-        self, ctx: commands.Context, *, user: Option(
-            discord.Member, "user", "スレッドから追い出すユーザーです。"
+        self, ctx: commands.Context, *, user: discord.Member = discord.SlashOption(
+            "user", "スレッドから追い出すユーザーです。"
         )
     ):
         """!lang ja

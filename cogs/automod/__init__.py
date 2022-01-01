@@ -1,21 +1,21 @@
 # RT - AutoMod
 
-from typing import TYPE_CHECKING, Optional, Union, Dict, List
+from typing import Callable, Coroutine, Literal, Union, Any, Dict, Tuple, List
 
-from discord.ext import commands, tasks
+from discord.ext import commands
 import discord
 
-from collections import defaultdict
-from time import time
+from rtlib import RT
 
-from .constants import CACHE_TIMEOUT, DEFAULT_LEVEL, DefaultWarn
-from .modutils import check, assertion_error_handler
-from .dataclass import DataManager
+from .modutils import process_check_message, trial_new_member, trial_invite
+from .data_manager import GuildData, DataManager
+from .cache import Cache
 
-if TYPE_CHECKING:
-    from .types import SpamCacheData as CacheData
-    from .dataclass import Guild
-    from rtlib import Backend
+
+def reply(description: str, color: str = "normal", **kwargs) -> dict:
+    "埋め込み返信用のkwargsを作ります。"
+    return {"title": "AutoMod", "description": description, "color": color, **kwargs}
+OK = "Ok"
 
 
 class AutoMod(commands.Cog, DataManager):
@@ -26,157 +26,206 @@ class AutoMod(commands.Cog, DataManager):
         "error": 0xF288AA
     }
 
-    def __init__(self, bot):
-        self.bot: "Backend" = bot
-        self.cache: Dict[int, Dict[int, "CacheData"]] = defaultdict(
-            lambda : defaultdict(dict))
-        self.guild_cache: List[int] = []
-        self.withdrawal_cache: Dict[int, int] = {}
-
-        self.remove_cache.start()
-        self.reset_warn.start()
-
-        for name in ("message", "invite_create", "member_join"):
-            self.bot.add_listener(self.trial, f"on_{name}")
-
+    def __init__(self, bot: RT):
+        self.bot = bot
+        self.caches: Dict[int, Tuple[GuildData, Dict[int, Cache]]] = {}
+        self.enabled: List[int] = []
         super(commands.Cog, self).__init__(self)
 
+    def cog_unload(self):
+        self.close()
+
+    def print(self, *args, **kwargs) -> None:
+        return self.bot.print("[AutoMod]", *args, **kwargs)
+
+    Sendable = Union[commands.Context, discord.TextChannel]
+    async def setting(
+        self, function: Callable[..., Coroutine], channel: Sendable, *args, **kwargs
+    ) -> discord.Message:
+        "何かを設定するコマンドに便利な関数"
+        self.print(f"[setting.{function.__name__}]", channel.guild.id)
+        args, kwargs = await function(channel, *args, **kwargs)
+        return await self.reply(channel, *args, **kwargs)
+
+    async def reply(self, channel: Sendable, *args, **kwargs) -> discord.Message:
+        if args:
+            args = list(args)
+            if args[0] == OK:
+                args[0] = "設定しました。"
+            else:
+                kwargs["color"] = "error"
+            kwargs["title"] = "AutoMod"
+            kwargs["description"] = args[0]
+            args = ()
+        if kwargs:
+            if "color" not in kwargs:
+                kwargs["color"] = self.COLORS["normal"]
+            elif isinstance(kwargs["color"], str):
+                kwargs["color"] = self.COLORS[kwargs["color"]]
+            kwargs = {"embed": discord.Embed(**kwargs)}
+        return await channel.send(*args, **kwargs)
+
     @commands.group(
-        aliases=["安全", "モデレーション", "am"], extras={
-            "headding": {
-                "ja": "スパム対策などのモデレーション機能",
-                "en": "moderation features such as anti-spam"
-            }, "parent": "ServerSafety"
-        }
+        aliases=["am", "自動モデレーション", "安全"], headding={
+            "ja": "自動モデレーション機能", "en": "Auto Moderation"
+        }, category="ServerSafety"
     )
-    @commands.cooldown(1, 3, commands.BucketType.guild)
-    @commands.guild_only()
-    async def automod(self, ctx):
+    @commands.has_permissions(administrator=True)
+    @commands.cooldown(1, 5, commands.BucketType.guild)
+    async def automod(self, ctx: commands.Context):
         """!lang ja
         --------
-        スパム対策機能や絵文字制限そして招待可能チャンネル規制などの機能がある自動モデレーション機能です。  
-        これから警告数というワードがでますがこれは誰かがスパムをした際などに加算される警告の数です。  
-        この数がいくつになったらBANやミュートをするといった動作を作ることができます。  
-        この機能は`rt!automod setup`を実行すれば使えるようになります。  
-        この機能で実行した処罰のログは`rt>modlog`がチャンネルトピックにあるチャンネルに送信されます。  
-        このログチャンネルは作っておくことを推奨します。
+        自動モデレーション機能です。
 
         Notes
         -----
-        スパム対策機能はデフォルトでは警告数が3になったらミュートで5でBANとなります。  
-        そしてスパム検知レベルはデフォルトでは2で二回スパムしたと検知されると警告数が一つ上がります。  
-        これらは設定で変更が可能です。  
-        なお警告数はしばらくしたら30分以内にリセットされます。  
-        それと管理者は処罰されません。  
-        ミュートはデフォルトではオフですので設定をしましょう。
+        管理者権限を持っている人は処罰対象になりません。
 
         Warnings
         --------
-        NekoBotなどの画像を表示するだけのような娯楽コマンドを何回か送信して、スパムとして検知されるということが起きかねません。  
-        そのためそのようなBotがある場合はそれらのようなBotのためのチャンネルを作り例外設定にそのチャンネルを追加しましょう。  
-        これのやり方の詳細についてはこれからででてくる`rt!automod ignore`コマンドのヘルプを見てください。  
-        **説明をしっかり読まないと痛いめ見ます。**  
-        特に先ほど言った通りミュートはデフォルトでオフです。BANの警告数をミュートのデフォルトに設定するかミュートを設定するかしましょう。  
-        そして先ほど言った通り`rt!automod setup`をしないと機能しません。
+        しっかりとヘルプを読んで設定をしましょう。  
+        さもないと痛い目にあいます。
 
         Aliases
         -------
-        am, 安全, モデレーション
+        am, 安全, 自動モデレーション
 
         !lang en
         --------
-        Automatic moderation with anti-spam, emoji restrictions, and invite-only channel restrictions.  
-        This is the number of warnings that will be added when someone spams.  
-        You can create a behavior such as banning or muting when the number reaches this number.  
-        This feature is available only when `rt! automod setup`.
+        Auto Moderation
 
         Notes
         -----
-        By default, the anti-spam function mutes the user when the number of warnings reaches 3, and bans the user when the number reaches 5.  
-        The spam detection level is 2 by default, and if you are detected as spamming twice, the warning number goes up by one.  
-        These can be changed in the settings.
+        Administrator will not be punished.
 
         Warnings
         --------
-        You can send a couple of entertainment commands, such as a NekoBot, that just display images, and get spammed.
-        So if you have such Bots, create channels for them and add them to the exception list.
-        More details on how to do this will come later in `rt! automod ignore` command.
-        **If you don't read the explanation carefully, it will hurt.**
+        Make sure you read the help file carefully.  
+        If you don't, you will get hurt.
 
         Aliases
         -------
         am"""
-        if not ctx.invoked_subcommand:
-            await ctx.reply(
-                {"ja": "使用方法が違います。",
-                 "en": "The usage is different."}
-            )
+        if ctx.invoked_subcommand:
+            # もしまだAutoModを有効にしていない状態でこのコマンドのサブコマンドを実行したならエラーを起こす。
+            await ctx.trigger_typing()
+            assert ctx.guild.id in self.enabled, "このサーバーではAutoModが有効になっていません。" \
+                "\n`rt!automod`を実行してください。"
+            await self.prepare_cache_guild(ctx.guild)
+        else:
+            if ctx.message.content.endswith(("automod", "amd", "自動モデレーション")):
+                await self.toggle_automod(ctx.guild.id)
+                await self.reply(ctx, OK)
+            else:
+                await self.reply(ctx, "使用方法が違います。")
 
-    @automod.command("setup", aliases=["設定"])
-    @check
-    @assertion_error_handler(
-        {"ja": "既に設定されています。",
-         "en": "It has already set."}
-    )
-    async def setup_(self, ctx):
+    async def nothing(self, _, *args, **kwargs):
+        "settingで何もしたくない時のためのものです。"
+        return args, kwargs
+
+    async def ignore_setting(
+        self, channel: Sendable, mode: Literal["add", "remove", "toggle"],
+        key: str, obj, *args, **kwargs
+    ):
+        "例外設定のコマンドでのsetting関数の使用ための"
+        id_ = getattr(obj, "id", obj)
+        try:
+            if mode == "add":
+                if id_ not in self.caches[channel.guild.id][0][key]:
+                    assert len(self.caches[channel.guild.id][0][key]) < 15, "これ以上追加できません。"
+                    self.caches[channel.guild.id][0][key].append(id_)
+            elif mode == "remove":
+                self.caches[channel.guild.id][0][key].remove(id_)
+            else:
+                if key in self.caches[channel.guild.id][0]:
+                    del self.caches[channel.guild.id][0][key]
+                else:
+                    self.caches[channel.guild.id][0][key] = []
+        except KeyError:
+            if kwargs.pop("nokeyerror", False):
+                self.caches[channel.guild.id][0][key] = []
+                return await self.ignore_setting(
+                    channel, mode, key, obj, *args, **kwargs
+                )
+            else:
+                return ("この機能は有効になっていません。",), kwargs
+        except ValueError:
+            return ("その例外は設定されていません。",), kwargs
+        else:
+            return args, kwargs
+
+    @automod.command("ignore", aliases=["例外", "i"])
+    async def ignore_spam(
+        self, ctx: commands.Context, mode: Literal["add", "remove", "list"],
+        channel: Union[discord.TextChannel, discord.Object] = None
+    ):
         """!lang ja
-        --------
-        モデレーション機能を有効化します。  
-        これを実行するとスパム対策機能が作動します。  
-        (招待リンク規制や絵文字規制は設定をしないとデフォルトでは有効になりません。)
+        -------
+        スパム検知をしない例外チャンネルを設定します。  
+        このコマンドで登録したスパム検知例外チャンネルではスパムをしてもなにもRTがしないようになります。  
+        スパム検知例外チャンネルはNekoBotなどの画像Botのコマンドを使うようのチャンネル等に設定しましょう。  
+        また、設定した際はそのチャンネルにスローモードをつけるなどをするのを推奨します。
+
+        Parameters
+        ----------
+        mode : add または remove または list
+            `add`にした場合は指定されたチャンネルをスパム検知をしないチャンネルリストに追加します。  
+            `remove`にした場合は指定されたチャンネルをスパム検知をしないチャンネルリストから削除します。  
+            `list`にした場合はスパム検知をしないチャンネルリストを表示します。
+        channel : テキストチャンネルの名前かメンションまたはID, optional
+            追加/削除するチャンネルです。  
+            これは`mode`引数を`list`にした場合は省略できます。
 
         Aliases
         -------
-        設定
+        i, 例外
 
         !lang en
         --------
-        Activate the moderation function.  
-        Doing so will activate the anti-spam feature.  
-        (Invitation link restrictions and emoji restrictions will not be enabled by default unless you set them up.)  """
-        await self.setup(ctx.guild.id)
-        if ctx.guild.id not in self.guild_cache:
-            self.guild_cache.append(ctx.guild.id)
-        await ctx.reply(
-            embed=self.make_embed(
-                {"ja": "AutoModを有効にしました。\n",
-                 "en": "I enabled AutoMod."}
-            )
-        )
+        Sets an exception channel for spam detection.  
+        In the spam detection exception channel registered with this command, no RT will be sent even if spam is sent.  
+        The spam detection exception channel should be set for channels that use image bot commands such as NekoBot.  
+        It is also recommended to add a slow mode to the channel when setting it.
 
-    @automod.command("setdown", aliases=["終了"])
-    @check
-    @assertion_error_handler(
-        {"ja": "設定が見つかりませんでした。",
-         "en": "Could not find the setting."}
-    )
-    async def setdown_(self, ctx):
-        """!lang ja
-        --------
-        モデレーションを機能を無効にします。
+        Parameters
+        ----------
+        mode : add or remove or list
+            If `add` is set, the specified channel will be added to the list of channels not to be detected by spam.  
+            If `remove` is set, the specified channel is removed from the list of channels not to be spammed.  
+            If `list` is set, the list of channels without spam detection will be displayed.
+        channel : text channel name/mention/id, optional
+            The channel to add/remove.  
+            This can be omitted if the `mode` argument is set to `list`.
 
         Aliases
         -------
-        終了
-
-        !lang en
-        --------
-        Disables the moderation feature."""
-        await self.setdown(ctx.guild.id)
-        if ctx.guild.id in self.guild_cache:
-            self.guild_cache.remove(ctx.guild.id)
-        await ctx.reply(
-            embed=self.make_embed(
-                {"ja": "AutoModを無効にしました。",
-                 "en": "I disabled AutoMod."}
+        i"""
+        if mode == "list":
+            await self.reply(ctx, "\n".join(
+                f"・<#{id_}>" for id_ in self.caches[ctx.guild.id][0].get("ignore", ())
+            ))
+        elif channel is not None:
+            await self.setting(
+                self.ignore_setting, ctx, mode, "ignore", channel, OK,
+                nokeyerror=True
             )
-        )
+        else:
+            await self.reply(ctx, "使用方法が違います。", color="error")
 
     @automod.group(aliases=["w", "警告"])
-    async def warn(self, ctx):
+    async def warn(self, ctx: commands.Context):
         """!lang ja
-        --------
-        警告数を管理するためのコマンドです。
+        -------
+        警告数の設定をします。  
+        警告数というのは要するに処罰されるかもしれない度です。  
+        スパムをすると警告数が徐々に上がります。  
+        そして最終的に設定されている警告数まで達した際にタイムアウトまたはBANをくらいます。
+
+        Notes
+        -----
+        警告数は一日放置されるとリセットされます。  
+        またスパムをしている人にはRTが怪しいと思います。  
+        なのでもしRTに「これ以上スパムしたら...」とか言われた場合は、三分待機して嵐がすぎるを待ちましょう。
 
         Aliases
         -------
@@ -184,63 +233,98 @@ class AutoMod(commands.Cog, DataManager):
 
         !lang en
         --------
-        This command is used to manage the number of warnings.
+        Set the number of warnings.  
+        The number of warnings is, in essence, the degree to which you may be punished.  
+        When you spam, the number of warnings will gradually increase.  
+        Finally, when the number of warnings reaches the set number, you will be timed out or banned.
+
+        Notes
+        -----
+        The number of warnings will be reset after a day of inactivity.  
+        Also, if you are spamming, RT is suspicious.  
+        So if RT says "If you don't stop spamming any more..." then wait for three minutes and wait for the storm to pass.
 
         Aliases
         -------
         w"""
-        if not ctx.invoked_subcommand:
-            await self.automod(ctx)
+        await self.automod(ctx)
 
-    def make_embed(self, description: Union[str, Dict[str, str]], **kwargs) -> discord.Embed:
-        # AutoModの返信用の埋め込みを作る関数です。
-        if "color" not in kwargs:
-            kwargs["color"] = self.COLORS["normal"]
-        return discord.Embed(
-            title=self.__cog_name__,
-            description=description, **kwargs
-        )
-
-    PLZ = {
-        "ja": "このサーバーはオートモデレーションが有効になっていません。\n" \
-            "`rt!automod setup`を実行してください。",
-        "en": "Auto-moderation is not enabled on this server.\n" \
-            "Please, run `rt!automod setup`."
-    }
-
-    async def update_setting(self, ctx, description, attr, *args, **kwargs):
-        # 設定コマンド用の関数です。
-        try:
-            guild = await self.get_guild(ctx.guild.id)
-        except AssertionError:
-            await ctx.reply(self.PLZ)
+    async def toggle(
+        self, channel: Sendable, mode: str, value: Union[bool, Any], *args, **kwargs
+    ):
+        "onoffするだけの設定を更新する関数です。"
+        if value is False:
+            del self.caches[channel.guild.id][0][mode]
         else:
-            await getattr(guild, attr)(*args, **kwargs)
-            await ctx.reply(embed=self.make_embed(description))
-            return guild
+            if value is True:
+                value = 1
+            self.caches[channel.guild.id][0][mode] = \
+                self.DEFAULTS.get(mode) if value is True else value
+        return args, kwargs
 
-    WARN_ERROR = {
-        "ja": "警告数は0以上100以下である必要があります。",
-        "en": "The number of warnings to ban must be between 0 and 100."
-    }
-
-    @warn.command("set", aliases=["設定", "s"])
-    @check
-    @assertion_error_handler(WARN_ERROR)
-    async def set_(self, ctx, warn: float, *, target: discord.Member):
+    @warn.command(aliases=["l", "レベル"])
+    async def level(
+        self, ctx: commands.Context,
+        mode: Literal["ban", "timeout", "mute"],
+        warn: float
+    ):
         """!lang ja
         --------
-        指定したメンバーの警告数を設定します。  
-        設定した場合はその人の警告数がチェックされるため、BANまたはミュートする警告数に設定した警告数が達している場合は処罰が実行されます。  
-        警告数は0以上100以下である必要があります。
+        警告数処罰レベルを設定します。  
+        このコマンドを使うことでどれくらい警告数が上がったらBAN/タイムアウトをするかを設定することができます。
+
+        Parameters
+        ----------
+        mode : ban または timeout
+            `ban`にした場合はBANで`timeout`にした場合はタイムアウトとして設定します。
+        warn : float
+            どれだけ警告数が上がったら`mode`引数の処罰を執行するかです。
+
+        Notes
+        -----
+        デフォルトでは警告数が4になった際にタイムアウトで5になった際にBANが発生します。  
+        もしあなたがスパムするやつがいたらタイムアウトではなくメッセージも消したいという場合は、設定でBANを4にしてタイムアウトを5等にしましょう。
+
+        Aliases
+        -------
+        l, レベル
+
+        !lang en
+        --------
+        Sets the warning number punishment level.  
+        This command can be used to set the level of banning/timeout when the warning count rises.
+
+        Parameters
+        ----------
+        mode : ban or timeout
+            If set to `ban`, it will be a ban, if set to `timeout`, it will be a timeout.
+        warn : float
+            The number of warnings to enforce for the `mode` argument.
+
+        Notes
+        -----
+        The default is a timeout when the warning count reaches 4, and a ban when it reaches 5.  
+        If you want to erase the message as well as the timeout if someone spams you, set the ban to 4 and the timeout to 5 etc.
+
+        Aliases
+        -------
+        l"""
+        if mode == "timeout":
+            mode = "mute"
+        await self.setting(self.toggle, ctx, mode, warn, OK)
+
+    @warn.command(aliaess=["s", "設定"])
+    async def set(self, ctx: commands.Context, warn: float, *, member: discord.Member):
+        """!lang ja
+        -------
+        特定のメンバーの警告数を特定の数に設定します。
 
         Parameters
         ----------
         warn : float
-            設定する警告数です。  
-            小数点を含むじょのにできます。
-        target : メンバーのメンションまたは名前
-            警告数を設定する対象のメンバーです。
+            設定する警告数です。
+        member : メンバーの名前かメンションまたはID
+            設定するメンバーです。
 
         Aliases
         -------
@@ -248,222 +332,246 @@ class AutoMod(commands.Cog, DataManager):
 
         !lang en
         --------
-        Set the number of warnings for the specified member.  
-        If set, the number of warnings for that person will be checked, and if the number of warnings set reaches the number of warnings to be banned or muted, the punishment will be executed.  
-        The number of warnings must be between 0 and 100.
+        Sets the number of warnings for a specific member to a specific number.
 
         Parameters
         ----------
         warn : float
-            The number of warnings to set.  
-            The number of warnings to set, including decimal points.
-        target : member mention or name
-            The target member for which to set the number of warnings.
+            The number of warnings to set.
+        member : member's name, mention or ID
+            The member to set.
 
         Aliases
         -------
         s"""
-        if warn >= 0:
-            guild = await self.update_setting(
-                ctx, {
-                    "ja": f"{target.mention}の警告を`{warn}`に設定しました。",
-                    "en": f"Set the warning for {target.mention} to `{warn}`."
-                }, "set_warn", target.id, warn
+        await self.prepare_cache_member(member)
+        self.caches[ctx.guild.id][1][member.id].warn = warn
+        await self.reply(ctx, OK)
+
+    @warn.command(aliases=["c", "チェック", "確認"])
+    async def check(self, ctx: commands.Context, *, member: discord.Member):
+        """!lang ja
+        --------
+        指定されたメンバーの警告数を確認します。
+
+        Parameters
+        ----------
+        member : メンバーの名前かメンションまたはID
+            警告数を確認したい対象のメンバーです。
+
+        Aliases
+        -------
+        c, チェック, 確認
+
+        !lang en
+        --------
+        Check the number of warnings for the specified member.
+
+        Parameters
+        ----------
+        member : member's name, mention, or ID
+            This is the member for which you want to check the number of warnings.
+
+        Aliases
+        -------
+        c"""
+        await self.prepare_cache_member(member)
+        await self.reply(
+            ctx, {
+                "ja": f"{member.display_name}の現在の警告数は`{self.caches[ctx.guild.id][1][member.id].warn}`です。",
+                "en": f"{member.display_name}'s current warn is {self.caches[ctx.guild.id][1][member.id].warn}."
+            }
+        )
+
+    @automod.group(aliases=["iv", "招待リンク規制"])
+    async def invites(self, ctx: commands.Context):
+        """!lang ja
+        --------
+        招待リンク規制機能です。  
+        この機能を有効にすると招待リンクを作れないようにすることができます。  
+        この機能を有効にするには`rt!automod invites`と実行してください。
+
+        Aliases
+        -------
+        iv, 招待リンク規制
+
+        !lang en
+        --------
+        This is an invitation link restriction function.  
+        If you enable this feature, you can prevent people from creating invitation links.  
+        To enable this feature, run `rt!automod invites`.
+
+        Aliases
+        -------
+        iv"""
+        if not ctx.invoked_subcommand:
+            await self.setting(
+                self.ignore_setting, ctx, "toggle", "invites", None, OK
             )
-            await guild.trial_user(target)
+
+    @invites.command("ignore", aliases=["i", "例外"])
+    async def invites_ignore(
+        self, ctx: commands.Context, mode: Literal["add", "remove", "list"],
+        obj: Union[
+            discord.Role, discord.Member, discord.TextChannel, discord.Object
+        ] = None
+    ):
+        """!lang ja
+        -------
+        招待リンク規制の例外ロール,メンバー,チャンネルを設定するコマンドです。
+
+        Parameters
+        ----------
+        mode : add または remove または list
+            例外を追加するか削除するか例外リストを表示するのどれかです。
+        obj : ロール/メンバー/テキストチャンネルのメンションか名前またはID, optional
+            例外として追加するロール,メンバー,テキストチャンネルです。  
+            もし`mode`引数を`list`とした場合はこれは省略可能です。
+
+        Aliases
+        -------
+        i, 例外
+
+        !lang en
+        --------
+        This command is used to set the exception roles, members, and channels for the invitation link restriction.
+
+        Parameters
+        ----------
+        mode : add or remove or list
+            Add or remove exceptions, or display exception list.
+        obj : Mention or name or ID of the role/member/text channel, optional
+            The role, member, or text channel to add as an exception.  
+            If the `mode` argument is set to `list`, this is optional.
+
+        Aliases
+        -------
+        i"""
+        if mode == "list":
+            await self.reply(ctx, "\n".join(
+                "".join((
+                    "・", getattr(
+                        ctx.guild.get_member(id_) or ctx.guild.get_role(id_)
+                        or ctx.guild.get_channel(id_), "mention", id_
+                    )
+                )) for id_ in self.caches[ctx.guild.id][0].get("invites", ())
+            ))
         else:
-            await ctx.reply("警告数はゼロ以上である必要があります。")
+            assert obj is not None, "使用方法が違います。"
+            await self.setting(self.ignore_setting, ctx, mode, "invites", obj, OK)
 
-    @warn.command(aliases=["ミュート", "m"])
-    @check
-    @assertion_error_handler(WARN_ERROR)
-    async def mute(self, ctx, warn: float, *, role: discord.Role):
+    @automod.group(aliases=["d", "削除"])
+    async def deleter(self, ctx: commands.Context):
         """!lang ja
         --------
-        いくつの警告数になったら何のロールを付与してミュートにするかを設定します。
+        招待リンク削除機能です。  
+        これを有効にするとメッセージに招待リンクが含まれていた際にそのメッセージを消すようにすることができます。  
+        この機能を有効にする場合は`rt!automod deleter`と実行してください。
+
+        !lang en
+        --------
+        This is the Remove Invitation Link function.  
+        If you enable this feature, you can delete a message when it contains an invitation link.  
+        To enable this feature, run `rt!automod deleter`."""
+        if not ctx.invoked_subcommand:
+            await self.setting(
+                self.ignore_setting, ctx, "toggle", "invite_deleter", None, OK
+            )
+
+    @deleter.command("ignore", aliases=["i", "例外"])
+    async def deleter_ignore(
+        self, ctx: commands.Context, mode: Literal["add", "remove", "list"],
+        obj: str = None
+    ):
+        """!lang ja
+        --------
+        招待リンク削除機能に例外を設定します。  
+        このコマンドを使えば削除しない招待リンクを登録することができます。
 
         Parameters
         ----------
-        warn : float
-            いくつの警告数になったらミュートにするかです。
-        role : ロールのメンションまたは名前
-            ミュートする際に付与するロールです。
-
-        Warnings
-        --------
-        警告数を低く設定しすぎるとたまたまスパムとして誤検出されただけでミュートなどになりかねません。  
-        これには注意してください。  
-        そしてこれはデフォルトでは無効となっています。  
-        理由は仕組みはロール付与によるミュートだからです。  
-        なので設定をしないとスパムする人がいてもミュートはしません。  
-        (ですがご安心を、その人がスパムし続ける場合はBANされます。)
-
-        Notes
-        -----
-        デフォルトでは3となっています。  
-        また、ロールを付与ではなく剥奪もしたいという場合は`linker`という機能を使ってみましょう。  
-        `rt!help linker`からヘルプを表示できます。
+        mode : add または remove または list
+            例外の追加か削除かそのリストの表示です。
+        obj : str, optional
+            例外として追加する招待コードです。  
+            もしリストを表示する場合はこの引数は省略可能です。
 
         Aliases
         -------
-        m, ミュート
+        i, 例外
 
         !lang en
         --------
-        Set the number of warnings to be granted and muted.
+        Sets an exception to the Delete Invite Link function.  
+        You can use this command to register invitation links that will not be deleted.
 
         Parameters
         ----------
-        warn : float
-            How many warnings are there before you mute them?
-        role : The name or mention of the role
-            The role to grant when muting.
-
-        Warnings
-        --------
-        If you set the number of warnings too low, you may end up muting the spam just by chance.
-        Be careful with this.
-        This is disabled by default.
-        The reason is that the mechanism is mute by roll.
-        So if you don't set it up, it won't mute people who spam you.
-        (But don't worry, if they keep spamming, they'll be BAN.)
-
-        Notes
-        -----
-        The default is 3.
-        If you also want to revoke a role rather than grant it, you can use `linker`.
-        `rt!help linker`."""
-        await self.update_setting(
-            ctx, {
-                "ja": f"ミュートにする警告数を`{warn}`にしました。",
-                "en": f"The number of warnings to mute has been set to `{warn}`." 
-            }, "mute", warn, role.id
-        )
-
-    @warn.command(aliases=["バン", "禁止"])
-    @check
-    @assertion_error_handler(WARN_ERROR)
-    async def ban(self, ctx, warn: float):
-        """!lang ja
-        --------
-        いくつの警告数になったらBANをするかを設定します。
-
-        Parameters
-        ----------
-        warn : float
-            いくつの警告数にするかです。
-
-        Notes
-        -----
-        デフォルトは5です。
-
-        Warnings
-        --------
-        低く設定した場合誤検出のスパムでBANされかねないので低く設定するのは非推奨です。
+        mode : add or remove or list
+            Add or remove exceptions, or display a list of them.
+        obj : str, optional
+            Invitation code to add as an exception.  
+            If you want to display the list, this argument can be omitted.
 
         Aliases
         -------
-        バン, 禁止
+        i"""
+        if mode == "list":
+            await self.reply(ctx, "\n".join(
+                f"・{word}" for word in self.caches[ctx.guild.id][0]
+                    .get("invite_deleter", ())
+            ))
+        else:
+            assert obj is not None, "使用方法が違います。"
+            await self.setting(
+                self.ignore_setting, ctx, mode, "invite_deleter", obj, OK
+            )
 
-        !lang en
-        --------
-        Set the number of warnings to BAN.
-
-        Parameters
-        ----------
-        warn : float
-            How many warnings?
-
-        Notes
-        -----
-        The default is 5.
-
-        Warnings
-        --------
-        Setting it low is not recommended, as it can result in BAN for false positive spam."""
-        await self.update_setting(
-            ctx, {
-                "ja": f"BANをする警告数を`{warn}`にしました。",
-                "en": f"The number of warnings to ban has been set to `{warn}`."
-            }, "ban", warn
-        )
-
-    @automod.command(aliases=["l", "レベル"])
-    @check
-    @assertion_error_handler(
-        {"ja": "レベルは1以上100以下である必要があります。",
-         "en": "The level must be between 1 and 100, inclusive."}
-    )
-    async def level(self, ctx, level: int):
+    @automod.command(aliases=["b", "即抜け"])
+    async def bolt(self, ctx: commands.Context, seconds: Union[bool, float]):
         """!lang ja
-        --------
-        スパム検知レベルを設定するコマンドです。  
-        設定したレベルの数だけスパムとして認識したら警告数を一つ上げます。  
-        デフォルトは2で二回スパムとして認識されたら警告数を一つあげるということになります。
+        -------
+        即抜けBAN機能です。  
+        この機能を有効にすると新規参加者がサーバーを退出して指定した時間以内に再入室した際にBANをするようにできます。
 
         Parameters
         ----------
-        level : int
-            設定するスパム検知レベルです。
+        seconds : 何秒かoff
+            何秒かoffでoffにした場合はこの機能を無効にします。
 
-        Notes
-        -----
-        1以上100以下である必要があります。
-
-        Warnings
-        --------
-        そレベルを100などの高い数にするとスパムが検知されても処罰がされるまでとっても時間がかかります。  
-        なので普通は変えるとしても1~4までのどこかにするのを推奨します。
+        Aliases
+        -------
+        b, 即抜け
 
         !lang en
         --------
-        This command sets the spam detection level.
-        Raise the number of warnings by one if the number of levels you set is recognized as spam.
-        The default is 2, which means that if it is seen twice as spam, it will raise one warning.
+        This is an instant exit ban feature.  
+        By enabling this feature, new participants will be banned when they leave the server and re-enter within the specified time.
 
         Parameters
         ----------
-        level: int
-            The spam detection level to set.
+        seconds : off or some seconds
+            Disables this feature if you turn it off with seconds off.
 
-        Notes
-        -----
-        Must be between 1 and 100, inclusive.
-
-        Warnings
-        --------
-        A low number such as 1 will be a big problem.
-        And if you set the level to a high number such as 100, it will take a very long time for spam to be detected and punished.
-        So I usually recommend to change it to somewhere up to 2 ~ 6."""
-        await self.update_setting(
-            ctx, {
-                "ja": f"スパム検知レベルを`{level}`に設定しました。",
-                "en": f"Spam detection level set to `{level}`."
-            }, "level", level
-        )
+        Aliases
+        -------
+        b"""
+        assert seconds in (True, False) or 0 <= seconds <= 900, "それより設定することはできません。"
+        await self.setting(self.toggle, ctx, "bolt", seconds, OK)
 
     @automod.command(aliases=["e", "絵文字"])
-    @check
-    @assertion_error_handler(
-        {"ja": "絵文字数規制の絵文字数は0以上4000以下である必要があります。",
-         "en": "The number of pictograms in the pictogram count restriction must be between 0 and 4000."}
-    )
-    async def emoji(self, ctx, count: int):
+    async def emoji(self, ctx: commands.Context, count: Union[bool, int]):
         """!lang ja
         --------
-        送信しても良い絵文字の数を設定します。  
-        この送信可能絵文字数を超えた数の絵文字を送信した場合は警告数が`0.5`上がります。
+        絵文字規制機能です。  
+        この機能を使えば指定した数以上絵文字を含んだメッセージを消すことができます。  
+        またその絵文字大量送信を繰り返した場合は警告数を加算します。
 
         Parameters
         ----------
-        count : int
-            送信しても良い絵文字の数です。  
-            0以上4000以下である必要があります。
-
-        Notes
-        -----
-        これはデフォルトでオフです。  
-        もしこれを設定する場合ルールの記載するなどした方が親切です。
+        count : offまたは個数
+            何個送ったらダメかです。  
+            `off`にした場合はこの機能を無効にします。
 
         Aliases
         -------
@@ -471,454 +579,50 @@ class AutoMod(commands.Cog, DataManager):
 
         !lang en
         --------
-        You can set the number of pictographs that can be sent.
-        If you send more emoji than this number, the number of warnings increases by `0.5`.
+        This is a pictogram restriction function.  
+        With this function, you can delete messages that contain more than the specified number of pictograms.  
+        If the number of pictograms is too high, a warning will be added.
 
         Parameters
         ----------
-        count : int
-            The number of pictographs that can be sent.
-            Must be greater than or equal to 0 and less than or equal to 4000.
-
-        Notes
-        -----
-        This is off by default.
-        If you set this up, it would be helpful to write down the rules.
+        count : off or number
+            The number of pictograms that should not be sent.  
+            If set to `off`, this feature will be disabled.
 
         Aliases
         -------
         e"""
-        await self.update_setting(
-            ctx, {
-                "ja": f"メッセージで有効な絵文字の数を`{count}`で設定しました。",
-                "en": f"The number of valid emoji in a message is now set by `{count}`."
-            }, "emoji", count
-        )
+        assert count in (True, False) or 0 <= count <= 4000, "その数で設定することはできません。"
+        await self.setting(self.toggle, ctx, "emoji", count, OK)
 
-    @automod.group(aliases=["例外", "無視", "igs"])
-    async def ignore(self, ctx):
-        """!lang ja
-        --------
-        スパムとしてチェックを行わない例外のチャンネルまたはロールを設定できます。
+    async def prepare_cache(self, guild: discord.Guild, member: discord.Member):
+        await self.prepare_cache_guild(guild)
+        await self.prepare_cache_member(member)
 
-        Aliases
-        -------
-        igs, 例外, 無視
-
-        !lang en
-        --------
-        You can configure channels or roles for exceptions that are not checked as spam.
-
-        Aliases
-        -------
-        igs"""
-        if not ctx.invoked_subcommand:
-            await self.ignore_list(ctx)
-
-    @ignore.command("add", aliases=["追加"])
-    @check
-    @assertion_error_handler(
-        {"ja": "その例外は既に追加されています。",
-         "en": "The exception is already added."}
-    )
-    async def add_ignore(self, ctx, *, obj: Union[discord.TextChannel, discord.Role]):
-        """!lang ja
-        -------
-        スパムを検知しないチャンネルまたは持っていたらスパム検知をしないロールを設定します。。
-
-        Parameters
-        ----------
-        channelOrRole : テキストチャンネルかロールのメンションまたはロール
-            例外に設定するチャンネルかロールです。
-
-        Notes
-        -----
-        Nekobotなどの画像表示などのコマンドを実行するチャンネルなどに設定すると良いです。
-
-        Warnings
-        --------
-        例外チャンネルということはそのチャンネルではスパムをしても何も処罰はされないということです。  
-        ですのでクールダウンを設定するなどをすることを推奨します。  
-        Tips:RTの`cooldown`コマンドで`3`秒などにクールダウンを設定できます。
-
-        Aliases
-        -------
-        追加
-
-        !lang en
-        --------
-        Set a channel that will not detect spam or a role that will not detect spam if you have it.
-
-        Parameters
-        ----------
-        channelOrRole : a mention or role of a text channel or role
-            The channel or role to set as an exception.
-
-        Notes
-        -----
-        It is good to set it to a channel to execute commands such as displaying images such as Nekobot.
-
-        Warnings
-        --------
-        An exception channel means that spamming on that channel won't get you punished.
-        So I recommend you to set cooldown.
-        Tips: You can set the cooldown to `3` seconds using the RT `cooldown` command."""
-        await self.update_setting(
-            ctx, {
-                "ja": f"例外リストに`{obj.name}`を追加しました。",
-                "en": f"I added `{obj.name}` to ignore list."
-            }, "add_ignore", obj.id
-        )
-
-    @ignore.command("remove", aliases=["削除", "rm", "del", "delete"])
-    @check
-    @assertion_error_handler(
-        {"ja": "その例外が見つかりませんでした。",
-         "en": "The exception is not found."}
-    )
-    async def remove_ignore(self, ctx, *, obj: Union[discord.TextChannel, discord.Role]):
-        """!lang ja
-        --------
-        例外設定を削除します。
-
-        Parameters
-        ----------
-        channelOrRole : テキストチャンネルかロールのメンションまたはロール
-            例外に設定したチャンネルかロールです。
-
-        Aliases
-        -------
-        rm, del, delete, 削除
-
-        !lang en
-        --------
-        Remove the exception configuration.
-
-        Parameters
-        ----------
-        channelOrRole : a mention or role of a text channel or role
-            The channel or role to set as an exception.
-
-        Aliases
-        -------
-        rm, del, delete"""
-        await self.update_setting(
-            ctx, {
-                "ja": f"例外リストから{obj.mention}を削除しました。",
-                "en": f"I removed {obj.mention} from exception list."
-            }, "remove_ignore", obj.id
-        )
-
-    @ignore.command("list", aliases=["一覧", "l"])
-    async def ignore_list(self, ctx):
-        """!lang ja
-        --------
-        設定されている例外のリストです。
-
-        Aliases
-        -------
-        l, 一覧
-
-        !lang en
-        --------
-        Display the exception configuration.
-
-        Aliases
-        -------
-        l"""
-        data = (await self.get_guild(ctx.guild.id)).data
-        if "ignores" in data:
-            await ctx.reply(
-                embed=self.make_embed(
-                    ", ".join(
-                        getattr(
-                            ctx.guild.get_channel(sid) or ctx.guild.get_role(sid),
-                            "mention", "*見つかりませんでした。*"
-                        ) for sid in data["ignores"]
-                    )
-                )
-            )
-        else:
-            await ctx.reply(
-                {"ja": "例外リストは空です。",
-                 "en": "Exception list is nothing."}
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if (message.guild and not message.author.bot
+                and message.guild.id in self.enabled):
+            await self.prepare_cache(message.guild, message.author)
+            process_check_message(
+                self.caches[message.guild.id][1][message.author.id],
+                self.caches[message.guild.id][0], message
             )
 
-    @automod.group(aliases=["ie", "招待"])
-    async def invites(self, ctx):
-        """!lang ja
-        --------
-        招待を規制します。  
-        この機能を有効にすると指定されたチャンネル以外で作成した招待リンクは自動で削除されます。  
-        ※管理者権限を持っている人は作っても削除されません。
-
-        Aliases
-        -------
-        ie, 招待
-
-        !lang en
-        --------
-        Restrict invitations.  
-        When this function is enabled, invitation links created outside the specified channel are automatically deleted.  
-        *People with administrative rights are not deleted when they are created.
-
-        Aliases
-        -------
-        ie"""
-        if not ctx.invoked_subcommand:
-            await self.invites_list(ctx)
-
-    @invites.command()
-    @check
-    @assertion_error_handler(PLZ)
-    async def onoff(self, ctx):
-        """!lang ja
-        --------
-        招待リンク規制の有効または無効を切り替えします。
-
-        !lang en
-        --------
-        Enable or disable invitation link restrictions."""
-        onoff = "ON" if await (
-            await self.get_guild(ctx.guild.id)
-        ).trigger_invite() else "OFF"
-        await ctx.reply(
-            embed=self.make_embed(
-                {
-                    "ja": f"招待リンク規制を{onoff}にしました。",
-                    "en": f"I set Invitation link restriction {onoff}."
-                }
+    @commands.Cog.listener()
+    async def on_member_join(self, member: discord.Member):
+        if member.guild.id in self.enabled:
+            await self.prepare_cache(member.guild, member)
+            await trial_new_member(
+                self.caches[member.guild.id][1][member.id],
+                self.caches[member.guild.id][0]
             )
-        )
 
-    @invites.command("list", aliases=["一覧", "l"])
-    @assertion_error_handler(PLZ)
-    async def invites_list(self, ctx):
-        """!lang ja
-        --------
-        招待リンクの作成が可能なチャンネルのリストを表示します。
-
-        Aliases
-        -------
-        l, 一覧
-
-        !lang en
-        --------
-        Displays a list of channels for which you can create invitation links.
-
-        Aliases
-        -------
-        l"""
-        await ctx.reply(
-            "**招待リンク規制例外チャンネル一覧**\n" \
-            ", ".join(
-                f"<#{cid}>" for cid in (
-                    await self.get_guild(ctx.guild.id)
-                ).invites
-            )
-        )
-
-    @invites.command(aliases=["追加", "a"])
-    @check
-    @assertion_error_handler(
-        {"ja": "これ以上追加できません。",
-         "en": "No more can be added."}
-    )
-    async def add(self, ctx):
-        """!lang ja
-        --------
-        招待リンク作成可能チャンネルリストにこのコマンドを実行したチャンネルを追加します。  
-        `rt!automod invites onoff on`で招待リンク規制を有効にしていないと追加しても無効です。
-
-        Aliases
-        -------
-        a, 追加
-
-        !lang en
-        --------
-        Adds the channel on which you run this command to the Invite Links Available Channels list.  
-        `rt!automod invites onoff on`, and you do not enable the invite link restriction.
-
-        Aliases
-        -------
-        a"""
-        await self.update_setting(
-            ctx, {
-                "ja": "このチャンネルを招待有効チャンネルとして設定しました。\n" \
-                    "注意：`rt!automod invites onoff`で招待リンク規制を有効にしていない場合何も起きません。",
-                "en": "I set here as everyone can make invite."
-            }, "add_invite_channel", ctx.channel.id
-        )
-
-    @invites.command(aliases=["削除", "rm", "del", "delete"])
-    @check
-    async def remove(self, ctx):
-        """!lang ja
-        --------
-        招待リンク作成可能チャンネルリストからこのコマンドを実行したチャンネルを削除します。
-
-        Aliases
-        -------
-        rm, del, delete, 削除
-
-        !lang en
-        --------
-        Removes the channel on which you run this command from the Invite Link Creatable Channels list.
-
-        Aliases
-        -------
-        rm, del, delete"""
-        await self.update_setting(
-            ctx, {
-                "ja": "このチャンネルを招待有効チャンネルではなくしました。",
-                "en": "This channel is no longer an invitation enabled channel."
-            }, "remove_invite_channel", ctx.channel.id
-        )
-
-    @automod.command(aliases=["即抜けBAN", "wd"])
-    @check
-    @assertion_error_handler(
-        {"ja": "秒数は10以上300以下である必要があります。",
-         "en": "Seconds must be 10 to 300 inclusive."}
-    )
-    async def withdrawal(self, ctx, seconds: int):
-        """!lang ja
-        --------
-        即抜け後にすぐ参加した人をBANする設定です。  
-        サーバー参加後に指定した秒数以内に退出そして参加をした場合にそのユーザーをBANするという設定です。
-
-        Parameters
-        ----------
-        seconds : int
-            何秒以内に退出して参加をしたらBANをするかです。
-
-        Aliases
-        -------
-        wd, 即抜けBAN
-
-        !lang en
-        --------
-        This is the setting to BAN the person who joined immediately after the instant exit.
-        BAN the user if the user exits and joins within the specified number of seconds after joining the server.
-
-        Parameters
-        ----------
-        seconds: int
-            Within how many seconds you have to leave to participate in BAN.
-
-        Aliases
-        -------
-        wd"""
-        await self.update_setting(
-            ctx, {
-                "ja": f"即抜けBANを`{seconds}`秒で設定しました。",
-                "en": f"We set it to BAN when a member joins the server and leaves within `{seconds}` seconds."
-            }, "set_withdrawal", seconds
-        )
-
-    @automod.group(aliases=["ir", "招待リンク削除"])
-    @check
-    async def inviteremover(self, ctx):
-        """!lang ja
-        --------
-        招待リンクが送信された際にそのメッセージを消すようにします。  
-        このコマンドを実行することで有効/無効を切り替えることができます。
-
-        Aliases
-        -------
-        ir, 招待リンク削除
-
-        !lang en
-        --------
-        Make that message disappear when the invitation link is sent.  
-        You can enable/disable it by executing this command.
-
-        Aliases
-        -------
-        ir"""
-        await self.update_setting(
-            ctx, "Ok", "invite_remover_toggle"
-        )
-
-    @inviteremover.command()
-    async def add(self, ctx, channel: Optional[discord.TextChannel]):
-        """!lang ja
-        --------
-        実行したチャンネルを招待リンク削除の例外として設定します。
-
-        !lang en
-        --------
-        Set the executed channel as an exception to delete the invitation link."""
-        channel = channel or ctx.channel
-        await self.update_setting(
-            ctx, "Ok", "add_invite_remover_ignore", channel.id
-        )
-
-    @inviteremover.command()
-    @assertion_error_handler(
-        {"ja": "そのチャンネルは登録されていません。",
-         "en": "The channel is not registered."}
-    )
-    async def remove(self, ctx, channel: Optional[Union[discord.TextChannel, discord.Object]]):
-        """!lang ja
-        --------
-        実行したチャンネルの招待リンク削除設定の例外を削除します。
-
-        !lang en
-        --------
-        Removes exceptions to the delete invitation link setting for the executed channel."""
-        channel = channel or ctx.channel
-        await self.update_setting(
-            ctx, "Ok", "remove_invite_remover_ignore", channel.id
-        )
-
-    def cog_unload(self):
-        self.remove_cache.cancel()
-        self.reset_warn.cancel()
-
-    @tasks.loop(seconds=30)
-    async def remove_cache(self):
-        # スパム検知に使う前回送信されたメッセージのキャッシュの削除を行うループです。
-        now, removed = time(), []
-        for cid in list(self.cache.keys()):
-            for uid in list(self.cache[cid].keys()):
-                if now - self.cache[cid][uid]["time"] >= CACHE_TIMEOUT:
-                    del self.cache[cid][uid]
-                    removed.append(cid)
-            if not self.cache[cid]:
-                del self.cache[cid]
-        # 即抜けBANのキャッシュを削除する。
-        for mid, next_ in list(self.withdrawal_cache.items()):
-            if now >= next_:
-                del self.withdrawal_cache[mid]
-
-    async def _get_guild(
-        self, guild_id: int, if_not_exists_remove: bool = True
-    ) -> Optional["Guild"]:
-        # Gulid(automod.)クラスのインスタンスを取得する関数です。
-        # もしguild_cacheにあるのに見つからなかったら、guild_cacheからそのサーバーを除去します。
-        try:
-            guild = await self.get_guild(guild_id)
-        except AssertionError:
-            if if_not_exists_remove and guild_id in self.guild_cache:
-                self.guild_cache.remove(guild_id)
-        else:
-            return guild
-
-    @tasks.loop(minutes=15)
-    async def reset_warn(self):
-        # 警告数をリセットするループです。
-        for guild_id in self.guild_cache:
-            if (guild := await self._get_guild(guild_id)):
-                for user_id in list(guild.data.get("warn", {}).keys()):
-                    if guild.data["warn"][user_id]:
-                        await guild.set_warn(user_id, 0.0)
-
-    async def trial(self, obj: Union[discord.Message, discord.Invite, discord.Member]):
-        # 罰するかしないかをチェックするべきイベントで呼ばれる関数でモデレーションを実行します。
-        if obj.guild and obj.guild.id in self.guild_cache:
-            if (guild := await self._get_guild(obj.guild.id)):
-                await getattr(guild, f"trial_{obj.__class__.__name__.lower()}")(obj)
+    @commands.Cog.listener()
+    async def on_invite_create(self, invite: discord.Invite):
+        if invite.guild.id in self.enabled:
+            await self.prepare_cache_guild(invite.guild)
+            await trial_invite(self.caches[invite.guild.id][0], invite)
 
 
 def setup(bot):

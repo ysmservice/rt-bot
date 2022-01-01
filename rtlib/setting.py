@@ -17,7 +17,6 @@ from time import time
 from pytz import utc
 
 from . import websocket
-from .slash import Option
 
 if TYPE_CHECKING:
     from .typed import RT
@@ -157,7 +156,7 @@ class SettingManager(commands.Cog):
 
     def get_parsed_args(self, annotation: object) -> Union[str, List[str]]:
         "渡されたオブジェクトから設定項目の型の名前を判定し返します。"
-        if isinstance(annotation, Option):
+        if isinstance(annotation, discord.SlashOption):
             annotation = annotation.annotation
         if annotation in self.SUPPORTED_ANNOTATIONS:
             return annotation.__name__
