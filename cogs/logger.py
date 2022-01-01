@@ -5,6 +5,7 @@ from discord.ext import commands, tasks
 import collections
 import logging
 
+
 class SystemLog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -12,6 +13,10 @@ class SystemLog(commands.Cog):
         self.zero_parents = []
         self.authors = []
         self.guilds = []
+        self.logging_loop.start()
+
+    def cog_unload(self):
+        self.logging_loop.cancel()
 
     @tasks.loop(seconds=60)
     async def logging_loop(self):
@@ -27,9 +32,10 @@ class SystemLog(commands.Cog):
         e.add_field(name="最も多くのコマンドが実行されたサーバー", value=f"{self.bot.get_guild(guild[0]).name}({guild[0]})：{guild[1]}回")
         await self.bot.get_channel(926731137903104000).send(embed=e)
 
-    @commands.command()
+    @commands.group()
     @commands.is_owner()
     async def command_logs(self, ctx):
+        if ctx.invoked_subcommand is not None:return
         if len(names) == 0:return
         name = collections.Counter(self.names).most_common()[0]
         zero_parent = collections.Counter(self.zero_parents).most_common()[0]
@@ -41,10 +47,24 @@ class SystemLog(commands.Cog):
         e.add_field(name="最も多くのコマンドを実行したユーザー", value=f"{self.bot.get_user(author[0])}({author[0]})：{author[1]}回")
         e.add_field(name="最も多くのコマンドが実行されたサーバー", value=f"{self.bot.get_guild(guild[0]).name}({guild[0]})：{guild[1]}回")
         await ctx.reply(embed=e)
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        self.logging_loop.start()
+    
+    @command_logs.command()
+    async def start(self, ctx):
+        if not self.logging_loop.is_running():
+            self.logging_loop.start()
+            await ctx.message.add_reaction("✅")
+    
+    @command_logs.command()
+    async def stop(self, ctx):
+        if self.logging_loop.is_running():
+            self.logging_loop.cancel()
+            await ctx.message.add_reaction("✅")
+    
+    @command_logs.command()
+    async def restart(self, ctx):
+        if self.logging_loop.is_running():
+            self.logging_loop.restart()
+            await ctx.message.add_reaction("✅")
 
     @commands.Cog.listener()
     async def on_command(self, ctx):
@@ -63,4 +83,4 @@ def setup(bot):
     )
     handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
     logger.addHandler(handler)
-    bot.add_cog()
+    bot.add_cog(SystemLog)
