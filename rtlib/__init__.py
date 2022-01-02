@@ -60,6 +60,7 @@ def setup(bot, only: Union[Tuple[str, ...], List[str]] = []):
     bot.load_extension("rtlib.slash")
     bot.load_extension("rtlib.websocket")
     bot.load_extension("rtlib.setting")
+    bot.load_extension("rtlib.rtc")
 
 
 # discord.ext.tasksのタスクがデータベースの操作失敗によって止まることがないようにする。
