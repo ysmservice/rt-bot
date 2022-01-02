@@ -88,7 +88,7 @@ def setup(bot: RT):
 
         @bot.listen()
         async def on_close(_):
-            if not self.ws.closed:
+            if self.ws is not None and not self.ws.closed:
                 await self.ws.close(reason="Bot終了のため。")
 
         async def communicate():

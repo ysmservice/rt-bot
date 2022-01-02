@@ -20,7 +20,7 @@ class SystemLog(commands.Cog):
 
     @tasks.loop(seconds=60)
     async def logging_loop(self):
-        if len(names) == 0:return
+        if len(self.names) == 0:return
         name = collections.Counter(self.names).most_common()[0]
         zero_parent = collections.Counter(self.zero_parents).most_common()[0]
         author = collections.Counter(self.authors).most_common()[0]
@@ -36,7 +36,7 @@ class SystemLog(commands.Cog):
     @commands.is_owner()
     async def command_logs(self, ctx):
         if ctx.invoked_subcommand is not None:return
-        if len(names) == 0:return
+        if len(self.names) == 0:return
         name = collections.Counter(self.names).most_common()[0]
         zero_parent = collections.Counter(self.zero_parents).most_common()[0]
         author = collections.Counter(self.authors).most_common()[0]
