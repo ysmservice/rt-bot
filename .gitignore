@@ -21,3 +21,4 @@ auth.json
 .DS_Store
 \#*\#
 !cogs/tts/lib/AquesTalk/aquestalk.c
+rt_module
