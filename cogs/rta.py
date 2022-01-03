@@ -4,7 +4,7 @@ from time import time
 
 class Database:
     def __init__(self, bot):
-        self.db = bot.db
+        self.db = bot.mysql
         self.bot = bot
         
     async def get_channel(self, guildid:int):
@@ -12,6 +12,10 @@ class Database:
             data = await c.get_data("rta", {"guild": guildid})
         if data is not None:
             return self.bot.get_channel(int(data[1]))
+        
+    async def first_setup(self):
+        async def self.db.get_cursor() as c:
+            await c.create_table("rta", {"guild": "BIGINT", "channel": "BIGINT"})
     
     async def set_rta(self, guildid:int, channelid:int):
         async with self.db.get_cursor() as c:
@@ -26,6 +30,10 @@ class RTA(commands.Cog):
     async def rta(self, ctx):
         if ctx.invoked_subcommand is None:
             await ctx.send("間違っています")
+            
+    @commands.Cog.listener()
+    async def on_full_ready(self):
+        await self.db.first_setup()
             
     @rta.command()
     async def setup(self, ctx, channel:discord.TextChannel):
