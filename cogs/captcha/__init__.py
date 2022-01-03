@@ -425,7 +425,10 @@ class Captcha(commands.Cog, DataManager):
                     # もしキック設定がされている場合はキックを行う。
                     if (kick and (guild := self.bot.get_guild(guild_id))
                             and (member := guild.get_member(member_id))):
-                        await member.kick(reason="[Captcha] Timeout")
+                        try:
+                            await member.kick(reason="[Captcha] Timeout")
+                        except Exception:
+                            ...
                     # キューの削除を行う。
                     self.bot.loop.create_task(self.remove_queue(guild_id, member_id, data))
 
