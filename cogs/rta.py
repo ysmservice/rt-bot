@@ -50,7 +50,7 @@ class RTA(commands.Cog):
             if time() - self.users[member.id] < 11:
                 channel = await self.db.get_channel()
                 if channel is not None:
-                    embed = discord.Embed(title = "即抜けRTA", description = f"{round(time() - self.users[member.id], 6)秒で抜けちゃった。。。"
+                    embed = discord.Embed(title = "即抜けRTA", description = f"{round(time() - self.users[member.id], 6)}秒で抜けちゃった。。。"
                     await channel.send(embed = embed)
                         
             
