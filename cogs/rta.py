@@ -14,7 +14,7 @@ class Database:
             return self.bot.get_channel(int(data[1]))
 
     async def first_setup(self):
-        async def self.db.get_cursor() as c:
+        async with self.db.get_cursor() as c:
             await c.create_table("rta", {"guild": "BIGINT", "channel": "BIGINT"})
 
     async def set_rta(self, guildid:int, channelid:int):
@@ -101,9 +101,9 @@ class RTA(commands.Cog):
             if time() - self.users[member.id] < 11:
                 channel = await self.db.get_channel()
                 if channel is not None:
-                    embed = discord.Embed(title = "即抜けRTA", description = f"{member}が{round(time() - self.users[member.id], 6)}秒で抜けちゃった。。。")
+                    embed = discord.Embed(title = "即抜けRTA", description = f"{member}が{round(time() - self.users[str(member.id)], 6)}秒で抜けちゃった。。。")
                     await channel.send(embed = embed)
-            member.id
+            self.users.remove(str(member.id))
 
 
 def setup(bot):
