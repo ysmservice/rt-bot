@@ -1,7 +1,7 @@
 from discord.ext import commands
 import discord
-from time import time
-from random import randint
+from datetime import datetime, timezone
+from typing import Optional
 
 class Database:
     def __init__(self, bot):
@@ -67,7 +67,7 @@ class RTA(commands.Cog):
         "ja":"即抜けRTA通知の設定",
         "en":"Set recording RTA channel"
     })
-    async def setup(self, ctx, channel:discord.TextChannel=None):
+    async def setup(self, ctx, channel:Optional[discord.TextChannel]=None):
         """!lang ja
         -------
         即抜けRTAを設定します。
@@ -93,22 +93,13 @@ class RTA(commands.Cog):
         await ctx.reply(embed=discord.Embed(title="成功", description=f"rta通知チャンネルを{channel.mention}にしました。", color=0x00ff00))
 
     @commands.Cog.listener()
-    async def on_member_join(self, member):
-        self.users[str(member.id)] = time()
-
-    @commands.Cog.listener()
     async def on_member_leave(self, member):
-        if str(member.id) in self.users:
-            if (time() - self.users[str(member.id)]) < 11:
-                channel = await self.db.get_channel(member.guild.id)
-                if channel is not None:
-                    e = discord.Embed(title = "即抜けRTA", description = f"{member}が{round(time() - self.users[str(member.id)], 6)}秒で抜けちゃった。。。")
-                    await channel.send(embed=e)
-            self.users.pop(str(member.id))
-        if randint(0, 3) == 2:
-            for m in self.users.keys():
-                if (time() - self.users[m]) < 11:
-                    self.users.pop(m)
+        joined_after = datetime.now(timezone.utc) - member.joind_at
+        if joined_after.days == 0 and joined_after.seconds < 11:
+            channel = await self.db.get_channel(member.guild.id)
+            if channel is not None:
+                e = discord.Embed(title = "即抜けRTA", description = f"{member}が{round(joined_after.seconds, 6)}秒で抜けちゃった。。。")
+                await channel.send(embed=e)
 
 
 def setup(bot):
