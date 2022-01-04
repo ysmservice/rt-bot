@@ -103,7 +103,7 @@ class RTA(commands.Cog):
                 if channel is not None:
                     embed = discord.Embed(title = "即抜けRTA", description = f"{member}が{round(time() - self.users[str(member.id)], 6)}秒で抜けちゃった。。。")
                     await channel.send(embed = embed)
-            self.users.remove(str(member.id))
+            self.users.pop(str(member.id))
 
 
 def setup(bot):
