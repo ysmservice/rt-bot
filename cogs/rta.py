@@ -1,6 +1,7 @@
 from discord.ext import commands
 import discord
 from time import time
+from random import randint
 
 class Database:
     def __init__(self, bot):
@@ -11,7 +12,7 @@ class Database:
         async with self.db.get_cursor() as c:
             data = await c.get_data("rta", {"guild": guildid})
         if data is not None:
-            return self.bot.get_channel(int(data[1]))
+            return self.bot.get_channel(data[1])
 
     async def first_setup(self):
         async with self.db.get_cursor() as c:
@@ -98,12 +99,16 @@ class RTA(commands.Cog):
     @commands.Cog.listener()
     async def on_member_leave(self, member):
         if str(member.id) in self.users:
-            if time() - self.users[member.id] < 11:
-                channel = await self.db.get_channel()
+            if (time() - self.users[str(member.id)]) < 11:
+                channel = await self.db.get_channel(member.guild.id)
                 if channel is not None:
-                    embed = discord.Embed(title = "即抜けRTA", description = f"{member}が{round(time() - self.users[str(member.id)], 6)}秒で抜けちゃった。。。")
-                    await channel.send(embed = embed)
+                    e = discord.Embed(title = "即抜けRTA", description = f"{member}が{round(time() - self.users[str(member.id)], 6)}秒で抜けちゃった。。。")
+                    await channel.send(embed=e)
             self.users.pop(str(member.id))
+        if randint(0, 3) == 2:
+            for m in self.users.keys():
+                if (time() - self.users[m]) < 11:
+                    self.users.pop(m)
 
 
 def setup(bot):
