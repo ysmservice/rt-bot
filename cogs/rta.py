@@ -24,7 +24,6 @@ class Database:
 
 class RTA(commands.Cog):
     def __init__(self, bot):
-        self.users = {}
         self.db = Database(bot)
 
     @commands.group(
