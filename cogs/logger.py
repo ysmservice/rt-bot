@@ -31,6 +31,10 @@ class SystemLog(commands.Cog):
         e.add_field(name="最も多くのコマンドを実行したユーザー", value=f"{self.bot.get_user(author[0])}({author[0]})：{author[1]}回")
         e.add_field(name="最も多くのコマンドが実行されたサーバー", value=f"{self.bot.get_guild(guild[0]).name}({guild[0]})：{guild[1]}回")
         await self.bot.get_channel(926731137903104000).send(embed=e)
+        self.names = []
+        self.zero_parents = []
+        self.authors = []
+        self.guilds = []
 
     @commands.group()
     @commands.is_owner()
