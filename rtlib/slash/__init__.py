@@ -48,7 +48,7 @@ class SlashCommand(commands.Cog):
                     data, latter_data, ignore, defaults
                 ):
                     break
-                elif is_list and isinstance(latter_dat, dict) and self.check_list_same(
+                elif is_list and isinstance(latter_data, dict) and self.check_list_same(
                     data, latter_data, ignore, defaults
                 ):
                     break
@@ -167,6 +167,7 @@ class SlashCommand(commands.Cog):
     async def _update_commands(
             self, commands: List[Type[commands.Command]]
         ) -> None:
+        return # もう使わないので
         # コマンドのデータを作りアップデートが必要ならスラッシュコマンドが更新する。
         change_command = False
 

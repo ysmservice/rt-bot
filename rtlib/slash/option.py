@@ -3,6 +3,7 @@
 from .types import get_option_type, ApplicationCommandOption
 from typing import Union, Optional, Any, List, Tuple
 
+from discord.ext.commands import converter as converter_
 from discord.ext import commands
 import inspect
 
@@ -59,10 +60,8 @@ class Option(commands.Converter):
             return self.annotation(*args, **kwargs)
         else:
             try:
-                func = getattr(
-                    commands.converter, f"{self.annotation.__name__}Converter"
-                )
-            except AttributeError:
+                converter = converter_.CONVERTER_MAPPING[self.annotation]
+            except KeyError:
                 if hasattr(self.annotation, "convert"):
                     await self.annotation.convert(
                         None, ctx, *args, **kwargs
@@ -74,4 +73,4 @@ class Option(commands.Converter):
                     else:
                         return coro
             else:
-                return await func().convert(ctx, *args, **kwargs)
+                return await converter().convert(ctx, *args, **kwargs)
