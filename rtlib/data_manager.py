@@ -2,18 +2,20 @@
 
 from __future__ import annotations
 
-from typing import TypeVar, Literal, Union, Optional, NoReturn, Any, get_args
+from typing import (
+    TYPE_CHECKING, TypeVar, Literal, Union, Optional, NoReturn, Any, get_args
+)
 
 from collections import defaultdict
 from asyncio import Event
 
 from discord.ext import commands, tasks
-import discord
 
 from ujson import loads, dumps
 from aiomysql import Cursor
 
-from rtlib import RT
+if TYPE_CHECKING:
+    from rtlib import RT
 
 
 Allocation = Union[Literal["Guild", "User", "Member", "Channel"], str]
