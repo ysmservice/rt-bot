@@ -76,7 +76,7 @@ class OldRolePanel(commands.Cog):
             for emoji in emojis:
                 await message.add_reaction(emoji)
         else:
-            raise commands.errors.CommandError(
+            raise commands.CommandError(
                 {"ja": "何も役職を指定されていないため役職パネルを作れません。",
                  "en": "I can't make the role panel because nothing role."}
             )
@@ -154,7 +154,7 @@ class OldRolePanel(commands.Cog):
                 if not_mention:
                     role = discord.utils.get(guild.roles, name=result[emojis[-1]])
                     if role is None:
-                        raise commands.errors.RoleNotFound(
+                        raise commands.RoleNotFound(
                             f"{result[emojis[-1]]}という役職が見つかりませんでした。"
                         )
                     else:
