@@ -22,7 +22,6 @@ from data import data, is_admin, Colors
 
 with open("auth.json", "r") as f:
     secret = load(f)
-# install()
 
 
 # Botの準備を行う。
@@ -43,7 +42,7 @@ bot.admins = data["admins"]
 bot.secret = secret
 bot.mysql = bot.data["mysql"] = mysql.MySQLManager(
     loop=bot.loop, **secret["mysql"], pool=True,
-    minsize=1, maxsize=50 if bot.test else 50000, autocommit=True
+    minsize=1, maxsize=50 if bot.test else 1000000, autocommit=True
 )
 bot.pool = bot.mysql.pool
 bot.is_admin = is_admin
