@@ -166,15 +166,18 @@ class DataManager(commands.Cog):
     ) -> None:
         # 更新を行う。
         self.print("[sync.update]", f"{table}.{key}: {data}")
-        if data._new:
-            await cursor.execute(
-                f"INSERT INTO {table} VALUES (%s, %s);", (key, dumps(data))
-            )
-            data._new = False
-        else:
+        await cursor.execute(
+            f"SELECT * FROM {table} WHERE {self.allocations[table]} = %s;",
+            (key,)
+        )
+        if await cursor.fetchone():
             await cursor.execute(
                 f"UPDATE {table} SET Data = %s WHERE {self.allocations[table]} = %s;",
                 (dumps(data), key)
+            )
+        else:
+            await cursor.execute(
+                f"INSERT INTO {table} VALUES (%s, %s);", (key, dumps(data))
             )
 
     async def _sync(self, table: str, datas: DataDict[Key, ChangedDict]) -> None:
