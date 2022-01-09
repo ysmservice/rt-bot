@@ -189,9 +189,8 @@ class DataManager(commands.Cog):
                     await self._remove(cursor, table, removed_key)
                 # 変更されたものをアップデートする。
                 for key, data in list(datas.items()):
-                    if data.changed:
-                        await self._update(cursor, table, key, data)
-                        data.changed = False
+                    await self._update(cursor, table, key, data)
+                    data.changed = False
 
     def sync(self):
         "同期を行います。注意：キャッシュのデータが優先されます。"
