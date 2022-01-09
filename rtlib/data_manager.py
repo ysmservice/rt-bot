@@ -76,7 +76,7 @@ class Table:
 
     def __getattr__(self: TableSelfT, key: str) -> Any:
         if self.__key__:
-            if key in ("pop", "get", "items", "values", "keys"):
+            if key in ("pop", "update", "get", "items", "values", "keys"):
                 return getattr(self.cog.data[self.name][self.__key__], key)
             elif key in self.__annotations__:
                 return self.cog.data[self.name][self.__key__][key]
@@ -192,10 +192,12 @@ class DataManager(commands.Cog):
 
     def sync(self):
         "同期を行います。注意：キャッシュのデータが優先されます。"
-        for table, datas in list(self.data.items()):
-            self.bot.loop.create_task(
-                self._sync(table, datas), name=f"[{self.__cog_name__}] Sync: {table}"
-            )
+        if self.data:
+            self.print("Now syncing...")
+            for table, datas in list(self.data.items()):
+                self.bot.loop.create_task(
+                    self._sync(table, datas), name=f"[{self.__cog_name__}] Sync: {table}"
+                )
 
     # @tasks.loop(seconds=10)
     @tasks.loop(minutes=10)
@@ -204,6 +206,10 @@ class DataManager(commands.Cog):
 
     def cog_unload(self):
         self._auto_save.cancel()
+
+    @commands.Cog.listener()
+    async def on_close(self, _):
+        self.sync()
 
     async def test1(self):
         class DMTest(Table):

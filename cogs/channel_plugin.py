@@ -70,7 +70,7 @@ class RemoveButton(discord.ui.View):
                 {
                     "ja": "あなたはこのメッセージを削除できません。",
                     "en": "You can't delete this message."
-                }
+                }, ephemeral=True
             )
 
 
