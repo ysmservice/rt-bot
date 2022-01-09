@@ -179,7 +179,10 @@ class Ticket(commands.Cog, DataManager):
         ```
         rt!tfm メッセージ内容 (もしオフにしたい場合は`off`)
         ```
-        ※一つのサーバーにつき一つまで設定が可能です。
+        ※一つのサーバーにつき一つまで設定が可能です。  
+        それと`rt!close`でチケットチャンネルを削除することができます。  
+        これは削除ではなくアーカイブするようにすることもできます。  
+        その場合はアーカイブ用のカテゴリーを作りそのカテゴリーの名前の最後に`RTAC`をつけてください。
 
         Examples
         --------
@@ -209,6 +212,9 @@ class Ticket(commands.Cog, DataManager):
         ```
         rt!tfm Message content (or `off` if you want to turn it off)
         ```
+        You can also use `rt!close` to delete a ticket channel.  
+        It can also be archived instead of deleted.  
+        In that case, create a category for archiving and add `RTAC` to the end of the category name.
 
         Examples
         --------
@@ -249,6 +255,25 @@ class Ticket(commands.Cog, DataManager):
             await self.set_message(ctx.channel, content)
         await ctx.reply("Ok")
 
+    @commands.command(description="チケットチャンネルを閉じます。")
+    @commands.cooldown(1, 30, commands.BucketType.user)
+    async def close(self, ctx: commands.Context):
+        if ctx.channel.topic and "RTチケットチャンネル" in ctx.channel.topic:
+            if category := discord.utils.find(
+                lambda c: c.name.endswith("RTAC"), ctx.guild.categories
+            ):
+                await ctx.channel.edit(
+                    category=category, topic=None, overwrites={
+                        ctx.guild.default_role: discord.PermissionOverwrite(
+                            send_messages=False
+                        )
+                    }
+                )
+            else:
+                await ctx.channel.delete()
+        else:
+            await ctx.reply("ここはチケットチャンネルではないので削除できません。")
+
     def make_channel_name(self, name: str) -> str:
         # チケットチャンネル用の名前を作る関数です。
         return (name[:90] if len(name) > 90 else name) + "-rtチケット"
@@ -259,8 +284,6 @@ class Ticket(commands.Cog, DataManager):
             # ボタンによるチケットチャンネル作成もする。
             try:
                 await interaction.response.defer()
-            except:
-                pass
             finally:
                 await self.on_ticket(RealNewInteraction(interaction))
 
@@ -317,11 +340,11 @@ class Ticket(commands.Cog, DataManager):
                         )
                 # チケットチャンネルを作成する。
                 channel = await payload.message.channel.category.create_text_channel(
-                    channel_name, overwrites=perms
+                    channel_name, overwrites=perms, topic=f"RTチケットチャンネル：{payload.member.id}"
                 )
                 await channel.send(
-                    {"ja": f"{payload.member.mention}, ここがあなたのチャンネルです。",
-                     "en": f"{payload.member.mention}, Here is your channel!"},
+                    {"ja": f"{payload.member.mention}, ここがあなたのチャンネルです。\n`rt!close`で閉じれます。",
+                     "en": f"{payload.member.mention}, Here is your channel!\nYou can close this channel by `rt!close`."},
                     target=payload.member.id
                 )
                 if (first := await self.read(payload.guild_id)):
