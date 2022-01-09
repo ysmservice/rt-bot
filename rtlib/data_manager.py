@@ -84,8 +84,8 @@ class Table:
 
     def to_dict(self) -> dict:
         "このデータにある辞書を返します。この関数が返すものに値は書き込まないでください。"
-        self._assert_key()
-        return self.cog.data[self.name][self.__key__]
+        return self.cog.data[self.name] if self.__key__ is None \
+            else self.cog.data[self.name][self.__key__]
 
     def _assert_key(self) -> Optional[NoReturn]:
         assert self.__key__ is not None, "キーが設定されていません。"
