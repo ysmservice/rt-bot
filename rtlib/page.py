@@ -36,7 +36,8 @@ class BasePage(discord.ui.View):
 
 
 class EmbedPage(BasePage):
-    def __init__(self, *args, data: list[discord.Embed], **kwargs):
+    def __init__(self, *args, data: Optional[list[discord.Embed]] = None, **kwargs):
+        assert data is not None, "埋め込みのリストを渡してください。"
         super().__init__(*args, data, **kwargs)
 
     async def on_turn(self, mode: str, interaction: discord.Interaction):
