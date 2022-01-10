@@ -127,7 +127,7 @@ class Level(commands.Cog):
         Parameters
         ----------
         mode : `server`か`global`
-        serverだとローカルレベル、globalだとグローバルレベルのランキングを表示します。
+            serverだとローカルレベル、globalだとグローバルレベルのランキングを表示します。
         
         Aliases
         -------
@@ -169,12 +169,17 @@ class Level(commands.Cog):
     async def reward(self, ctx: commands.Context):
         """!lang ja
         --------
-        レベル報酬の設定をします。
+        レベル報酬関連の設定をします。
         `rt!level reward`で現在の設定を表示できます。
+        ※設定できるのはローカルレベルのみです。
         
         Aliases
         -------
         rw, rd, 報酬
+        
+        !lang en
+        --------
+        ...
         """
         if not ctx.invoked_subcommand:
             data: dict[str, Reward] = self.data.l[ctx.guild.id].get("reward")
@@ -205,6 +210,23 @@ class Level(commands.Cog):
         role: Union[discord.Role, discord.Object], *,
         replace_role: Union[discord.Role, discord.Object] = None
     ):
+        """!lang ja
+        --------
+        レベル報酬を設定します。
+        
+        Parameters
+        ----------
+        level : int
+            報酬を渡すために必要なレベル。
+        role : ロール
+            報酬を与えるレベルに達したときに付与するロールです。
+        replace_role : ロール, Optional
+            もし報酬を渡すときに代わりに剥奪したいロールがあるときにこの引数を使いましょう。
+            
+        !lang en
+        --------
+        ...
+        """
         if "reward" not in self.data.l[ctx.guild.id]:
             self.data.l[ctx.guild.id].reward = {}
         self.data.l[ctx.guild.id].reward[str(level)] = {
@@ -216,6 +238,19 @@ class Level(commands.Cog):
     @manage_role
     @cooldown
     async def delete(self, ctx: commands.Context, level: int):
+        """!lang ja
+        --------
+        レベル報酬を削除します。
+        
+        Parameters
+        ----------
+        level : int
+            削除する報酬のレベル。
+        
+        !lang en
+        --------
+        ...
+        """
         if "reward" in self.data.l[ctx.guild.id]:
             try:
                 del self.data.l[ctx.guild.id].reward[str(level)]
