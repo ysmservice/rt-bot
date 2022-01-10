@@ -60,6 +60,21 @@ class Level(commands.Cog):
         headding={"ja": "レベル, レベル報酬ロール", "en": "Level, Level reward"}
     )
     async def level(self, ctx: commands.Context):
+        """!lang ja
+        --------
+        レベル機能です。RTのいるサーバーで一定数しゃべるとレベルが上がります。
+        グローバルレベルとローカルレベルという2種類のレベリング方式があります。
+        グローバルレベルは共通で、全世界での自分の位置を知ることができます。
+        ローカルレベルはサーバーごとで管理(一定レベルに達したら役職をあげるなど)できます。
+
+        Aliases
+        -------
+        lv, レベル, れべる, れ
+        
+        !lang en
+        --------
+        ...
+        """
         if not ctx.invoked_subcommand:
             await ctx.reply(
                 embed=discord.Embed(
@@ -102,9 +117,26 @@ class Level(commands.Cog):
             embed.add_field(name=name, value=value)
         return embed
 
-    @level.command(description="ランキングを表示します。", aliases=["rank", "r", "ランキング", "ランク"])
+    @level.command(aliases=["rank", "r", "ランキング", "ランク"])
     @cooldown
     async def ranking(self, ctx: commands.Context, mode: Literal["server", "global"]):
+        """!lang ja
+        --------
+        レベルランキングを表示します。
+        
+        Parameters
+        ----------
+        mode : `server`か`global`
+        serverだとローカルレベル、globalだとグローバルレベルのランキングを表示します。
+        
+        Aliases
+        -------
+        rank, r, ランキング, ランク
+        
+        !lang en
+        --------
+        ...
+        """
         if ((mode == "server" and (
                 data := self.data.l[ctx.guild.id].get("data")) is not None
             )
@@ -133,8 +165,17 @@ class Level(commands.Cog):
             return await ctx.reply(embed=embeds[0], view=EmbedPage(data=embeds))
         await ctx.reply("まだありません。")
 
-    @level.group()
+    @level.group(aliases=["rw", "rd", "報酬"])
     async def reward(self, ctx: commands.Context):
+        """!lang ja
+        --------
+        レベル報酬の設定をします。
+        `rt!level reward`で現在の設定を表示できます。
+        
+        Aliases
+        -------
+        rw, rd, 報酬
+        """
         if not ctx.invoked_subcommand:
             data: dict[str, Reward] = self.data.l[ctx.guild.id].get("reward")
             if data is None:
