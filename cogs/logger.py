@@ -25,12 +25,12 @@ class SystemLog(commands.Cog):
         zero_parent = collections.Counter(self.zero_parents).most_common()[0]
         author = collections.Counter(self.authors).most_common()[0]
         guild = collections.Counter(self.guilds).most_common()[0]
-        e = discord.Embed(title="RT command log", description=f"この1分間で{len(self.names)}回のコマンド実行がありました。")
-        e.add_field(name="最も多く実行されたコマンド", value=f"{name[0]}：{name[1]}回")
-        e.add_field(name="最も多く実行されたコマンド(Group)", value=f"{zero_parent[0]}：{zero_parent[1]}回")
-        e.add_field(name="最も多くのコマンドを実行したユーザー", value=f"{self.bot.get_user(author[0])}({author[0]})：{author[1]}回")
-        e.add_field(name="最も多くのコマンドが実行されたサーバー", value=f"{self.bot.get_guild(guild[0]).name}({guild[0]})：{guild[1]}回")
-        await self.bot.get_channel(926731137903104000).send(embed=e)
+        e = discord.Embed(title="RT command log", description=f"1分間で{len(self.names)}回のコマンド実行(以下、実行最多記録)")
+        e.add_field(name="コマンド", value=f"{name[0]}：{name[1]}回")
+        e.add_field(name="コマンド(Group)", value=f"{zero_parent[0]}：{zero_parent[1]}回")
+        e.add_field(name="ユーザー", value=f"{self.bot.get_user(author[0])}({author[0]})：{author[1]}回")
+        e.add_field(name="サーバー", value=f"{self.bot.get_guild(guild[0]).name}({guild[0]})：{guild[1]}回")
+        await self.bot.get_channel(926731137903104000).send(embeds=[e])
         self.names = []
         self.zero_parents = []
         self.authors = []
@@ -45,11 +45,11 @@ class SystemLog(commands.Cog):
         zero_parent = collections.Counter(self.zero_parents).most_common()[0]
         author = collections.Counter(self.authors).most_common()[0]
         guild = collections.Counter(self.guilds).most_common()[0]
-        e = discord.Embed(title="RT command log", description=f"この1分間で{len(self.names)}回のコマンド実行がありました。")
-        e.add_field(name="最も多く実行されたコマンド", value=f"{name[0]}：{name[1]}回")
-        e.add_field(name="最も多く実行されたコマンド(Group)", value=f"{zero_parent[0]}：{zero_parent[1]}回")
-        e.add_field(name="最も多くのコマンドを実行したユーザー", value=f"{self.bot.get_user(author[0])}({author[0]})：{author[1]}回")
-        e.add_field(name="最も多くのコマンドが実行されたサーバー", value=f"{self.bot.get_guild(guild[0]).name}({guild[0]})：{guild[1]}回")
+        e = discord.Embed(title="RT command log", description=f"この1分間で{len(self.names)}回のコマンド実行(以下、実行最多記録)")
+        e.add_field(name="コマンド", value=f"{name[0]}：{name[1]}回")
+        e.add_field(name="コマンド(Group)", value=f"{zero_parent[0]}：{zero_parent[1]}回")
+        e.add_field(name="ユーザー", value=f"{self.bot.get_user(author[0])}({author[0]})：{author[1]}回")
+        e.add_field(name="サーバー", value=f"{self.bot.get_guild(guild[0]).name}({guild[0]})：{guild[1]}回")
         await ctx.reply(embed=e)
     
     @command_logs.command()
