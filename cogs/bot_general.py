@@ -11,6 +11,8 @@ from inspect import cleandoc
 from itertools import chain
 from random import choice
 from time import time
+import subprocess
+from ujson import loads
 
 from .server_tool import PERMISSION_TEXTS
 from rtlib.ext import Embeds, componesy
@@ -203,6 +205,23 @@ class BotGeneral(commands.Cog):
                         value="%.1fms" % round((time() - start) * 1000, 1)
                     )
         await ctx.reply(embed=embed)
+        
+    @commands.command(
+        extras = {"headding": {
+            "ja": "回線速度テストします",
+            "en": "Do a speed test"
+        }, "parent": "RT"}
+        aliases = ["st"]
+    )
+    async def speedtest(self, ctx):
+        embed = discord.Embed(title = "速度回線テスト", description = "測定中です...")
+        await ctx.send(embed = embed)
+        process = subprocess.run(["speedtest-cli", "--json"], capture_output = True)
+        data = loads(process.stdout)
+        embed = discord.Embed(title = "速度回線テスト")
+        embed.add_field(name = "ダウンロード", value = data["download"])
+        embed.add_field(name = "アップロード", value = data["upload"])
+        await ctx.send(embed = embed)
 
     @commands.command(
         extras={"headding": {
