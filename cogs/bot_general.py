@@ -213,6 +213,7 @@ class BotGeneral(commands.Cog):
         }, "parent": "RT"}
         aliases = ["st"]
     )
+    @commands.cooldown(1, 60, commands.BucketType.guild)
     async def speedtest(self, ctx):
         embed = discord.Embed(title = "速度回線テスト", description = "測定中です...")
         await ctx.send(embed = embed)
