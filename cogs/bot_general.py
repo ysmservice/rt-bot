@@ -216,7 +216,7 @@ class BotGeneral(commands.Cog):
     async def speedtest(self, ctx):
         embed = discord.Embed(title = "速度回線テスト", description = "測定中です...")
         await ctx.send(embed = embed)
-        process = subprocess.run(["speedtest-cli", "--json"], capture_output = True)
+        process = self.bot.loop.run_in_executor(None, subprocess.run, ["speedtest-cli", "--json"], capture_output = True)
         data = loads(process.stdout)
         embed = discord.Embed(title = "速度回線テスト")
         embed.add_field(name = "ダウンロード", value = data["download"])
