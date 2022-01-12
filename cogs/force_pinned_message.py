@@ -2,16 +2,17 @@
 
 from typing import Optional, Tuple, Dict, List
 
+from collections import defaultdict
+from time import time
+
 from discord.ext import commands, tasks
 import discord
 
 from rtlib import RT, DatabaseManager as OldDatabaseManager, setting
 from rtutil import DatabaseManager, markord
 
-from collections import defaultdict
 from aiomysql import Pool, Cursor
 from ujson import loads, dumps
-from time import time
 
 
 class DataManager(OldDatabaseManager):
@@ -354,7 +355,7 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         self, channel: discord.TextChannel, member: discord.Member
     ) -> Optional[Tuple[str, bool]]:
         "カスタム名とアイコンをどうするかを取得する。"
-        if "rt>fpm " in (channel.topic or "..."):
+        if hasattr(channel, "topic") and "rt>fpm " in (channel.topic or "..."):
             custom = channel.topic[channel.topic.find("rt>fpm"):]
             end = custom.find("\n")
             custom = custom[7:] if end == -1 else custom[7:end]
