@@ -263,11 +263,7 @@ class Ticket(commands.Cog, DataManager):
                 lambda c: c.name.endswith("RTAC"), ctx.guild.categories
             ):
                 await ctx.channel.edit(
-                    category=category, topic=None, overwrites={
-                        ctx.guild.default_role: discord.PermissionOverwrite(
-                            send_messages=False
-                        )
-                    }
+                    category=category, topic=None, overwrites=category.overwrites
                 )
             else:
                 await ctx.channel.delete()
