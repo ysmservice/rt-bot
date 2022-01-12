@@ -2,17 +2,18 @@
 
 from typing import Dict
 
-from discord.ext import commands, tasks
-import discord
-
 from traceback import TracebackException
 from collections import defaultdict
 from inspect import cleandoc
 from itertools import chain
 from random import choice
 from time import time
-import subprocess
+
+from discord.ext import commands, tasks
+import discord
+
 from ujson import loads
+import subprocess
 
 from .server_tool import PERMISSION_TEXTS
 from rtlib.ext import Embeds, componesy
@@ -207,22 +208,26 @@ class BotGeneral(commands.Cog):
         await ctx.reply(embed=embed)
         
     @commands.command(
-        extras = {"headding": {
+        extras={"headding": {
             "ja": "回線速度テストします",
             "en": "Do a speed test"
-        }, "parent": "RT"}
-        aliases = ["st"]
+        }, "parent": "RT"},
+        aliases=["st"]
     )
     @commands.cooldown(1, 10800, commands.BucketType.guild)
     async def speedtest(self, ctx):
-        embed = discord.Embed(title = "速度回線テスト", description = "測定中です...")
-        await ctx.send(embed = embed)
-        process = self.bot.loop.run_in_executor(None, subprocess.run, ["speedtest-cli", "--json"], capture_output = True)
+        embed = discord.Embed(
+            title="速度回線テスト", description="測定中です...", color=self.bot.Colors.normal
+        )
+        message = await ctx.send(embed=embed)
+        process = self.bot.loop.run_in_executor(
+            None, subprocess.run, ["speedtest-cli", "--json"], capture_output=True
+        )
         data = loads(process.stdout)
-        embed = discord.Embed(title = "速度回線テスト")
-        embed.add_field(name = "ダウンロード", value = data["download"])
-        embed.add_field(name = "アップロード", value = data["upload"])
-        await ctx.send(embed = embed)
+        embed = discord.Embed(title="速度回線テスト")
+        embed.add_field(name="ダウンロード", value=data["download"])
+        embed.add_field(name="アップロード", value=data["upload"])
+        await message.edit(embed=embed)
 
     @commands.command(
         extras={"headding": {
