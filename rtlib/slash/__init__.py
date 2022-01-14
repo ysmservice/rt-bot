@@ -167,7 +167,6 @@ class SlashCommand(commands.Cog):
     async def _update_commands(
             self, commands: List[Type[commands.Command]]
         ) -> None:
-        return # もう使わないので
         # コマンドのデータを作りアップデートが必要ならスラッシュコマンドが更新する。
         change_command = False
 
@@ -189,7 +188,7 @@ class SlashCommand(commands.Cog):
                 update = True
 
             # 更新フラグが立っているならスラッシュコマンドを登録する。
-            if update and False:
+            if update and False: # もう使わないのでFalse
                 print(data)
                 already_command: ApplicationCommandType = await self.request(
                     Route("POST", f"/applications/{self.bot.user.id}/commands"),
