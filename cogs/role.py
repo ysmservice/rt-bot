@@ -1,15 +1,18 @@
 # RT - Role Panel
 
-from typing import TYPE_CHECKING, Callable, Literal, Union, Dict, List
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Callable, Literal, Union
 from types import SimpleNamespace
+
+from collections import defaultdict
+from inspect import cleandoc
 
 from discord.ext import commands
 import discord
 
 from rtutil import get_webhook
 from rtlib import RT
-
-from inspect import cleandoc
 
 if TYPE_CHECKING:
     from ._oldrole import OldRolePanel
@@ -30,7 +33,7 @@ class RoleSelect(discord.ui.Select):
         is_add = self.custom_id.endswith("Add")
         faileds = []
         for role_id in map(int, self.values):
-            if (role := interaction.guild.get_role(int(role_id))):
+            if role := interaction.guild.get_role(int(role_id)):
                 has = bool(interaction.user.get_role(role.id))
                 try:
                     if has and not is_add:
@@ -43,7 +46,7 @@ class RoleSelect(discord.ui.Select):
                     continue
             faileds.append(role_id)
 
-        self.view.cog.release(interaction.user.id)
+        self.view.cog.release(interaction.guild_id, interaction.user.id)
 
         # 付与または削除に失敗した役職があるのならそれのメッセージを作る。
         word = get_ja(is_add)
@@ -68,11 +71,11 @@ class RoleSelect(discord.ui.Select):
 
 class RoleSelectView(discord.ui.View):
     def __init__(
-        self, user_id: int, options: List[discord.SelectOption],
+        self, guild_id: int, user_id: int, options: list[discord.SelectOption],
         max_: Union[int, None], mode: Mode, cog: "RolePanel",
         *args, **kwargs
     ):
-        self.cog, self.user_id = cog, user_id
+        self.cog, self.user_id, self.guild_id = cog, user_id, guild_id
         length = len(options)
         if max_ is None or length < max_:
             max_ = length
@@ -84,13 +87,14 @@ class RoleSelectView(discord.ui.View):
             custom_id=f"{RoleSelect.CUSTOM_ID}{mode}", placeholder=f"Role Selector",
             max_values=max_, options=options
         ))
-        self.cog.acquire(self.user_id)
+        self.cog.acquire(self.guild_id, self.user_id)
 
     async def on_timeout(self):
-        self.cog.release(self.user_id)
+        self.cog.release(self.guild_id, self.user_id)
 
 
 get_max: Callable[[str], int] = lambda text: int(text[:text.find("個")])
+"最大何個までの何個かを取得します。"
 
 
 class RolePanelView(discord.ui.View):
@@ -105,7 +109,7 @@ class RolePanelView(discord.ui.View):
     async def process_member(
         self, interaction: discord.Interaction, mode: Mode
     ) -> None:
-        if self.cog.is_running(interaction.user.id):
+        if self.cog.is_running(interaction.guild_id, interaction.user.id):
             return await interaction.response.send_message(
                 {"ja": "現在別で追加または削除が行われているのでロールの操作ができません。" \
                     "\nもし別の追加または削除を行った際のメッセージを消してしまった場合は一分待ってください。",
@@ -138,7 +142,7 @@ class RolePanelView(discord.ui.View):
                     "ja": f"一分以内に{get_ja(mode)}してほしいロールを選択をしてください。",
                     "en": f"Please select role within a minute."
                 }, view=RoleSelectView(
-                    interaction.user.id, [
+                    interaction.guild_id, interaction.user.id, [
                         discord.SelectOption(
                             label=getattr(
                                 interaction.guild.get_role(int(role_id)),
@@ -206,7 +210,7 @@ class RolePanel(commands.Cog):
         self.view = RolePanelView(self)
         self.old: "OldRolePanel" = self.bot.cogs["OldRolePanel"]
         self.bot.add_view(self.view)
-        self.running: List[int] = []
+        self.running: defaultdict[int, list[int]] = defaultdict(list)
 
     @commands.command(
         aliases=["役職パネル", "役職", "r"], extras={
@@ -370,16 +374,18 @@ class RolePanel(commands.Cog):
                  "en": "No more than 25 pieces can be placed in a single role panel."}
             )
 
-    def acquire(self, user_id: int) -> None:
-        if user_id not in self.running:
-            self.running.append(user_id)
+    def acquire(self, guild_id: int, user_id: int) -> None:
+        if user_id not in self.running[guild_id]:
+            self.running[guild_id].append(user_id)
 
-    def release(self, user_id: int) -> None:
-        if user_id in self.running:
-            self.running.remove(user_id)
+    def release(self, guild_id: int, user_id: int) -> None:
+        if user_id in self.running[guild_id]:
+            self.running[guild_id].remove(user_id)
+            if not self.running[guild_id]:
+                del self.running[guild_id]
 
-    def is_running(self, user_id: int) -> bool:
-        return user_id in self.running
+    def is_running(self, guild_id: int, user_id: int) -> bool:
+        return user_id in self.running[guild_id]
 
 
 def setup(bot):

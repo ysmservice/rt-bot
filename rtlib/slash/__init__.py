@@ -174,6 +174,7 @@ class SlashCommand(commands.Cog):
             data = self._get_data_from_command(command)
             update = False
 
+            already_command = None
             for already_command in self.now_commands:
                 # 既に登録されているコマンドと違うコマンドがあるなら更新フラグを立てる。
                 if already_command["name"] == command.name:
@@ -194,12 +195,13 @@ class SlashCommand(commands.Cog):
                     Route("POST", f"/applications/{self.bot.user.id}/commands"),
                     json=data
                 )
-            # コマンドにSlashCommandのインスタンスをコマンドにくっつける。
-            command.application_command = ApplicationCommand(
-                self.bot, command, already_command
-            )
-            self.commands[command.application_command.name] = command.application_command
-            change_command = True
+            if already_command is not None:
+                # コマンドにSlashCommandのインスタンスをコマンドにくっつける。
+                command.application_command = ApplicationCommand(
+                    self.bot, command, already_command
+                )
+                self.commands[command.application_command.name] = command.application_command
+                change_command = True
         if change_command:
             await self._update_now_commands()
 
