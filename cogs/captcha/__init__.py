@@ -348,7 +348,8 @@ class Captcha(commands.Cog, DataManager):
 
         Notes
         -----
-        これのデフォルトは一時間で認証ができなくなりキックはされません。
+        これのデフォルトは一時間で認証ができなくなりキックはされません。  
+        タイムアウトは認証の設定を変更すると設定がリセットされます。
 
         Parameters
         ----------
@@ -364,7 +365,8 @@ class Captcha(commands.Cog, DataManager):
 
         Notes
         -----
-        The default for this is that captcha will fail after one hour and no kick will be performed.
+        The default for this is that captcha will fail after one hour and no kick will be performed.  
+        The timeout setting will be reset when the authentication setting is changed.
 
         Parameters
         ----------
