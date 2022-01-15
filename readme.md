@@ -1,6 +1,7 @@
 [![Discord Bots](https://top.gg/api/widget/status/716496407212589087.svg)](https://top.gg/bot/716496407212589087) [![Discord Bots](https://top.gg/api/widget/servers/716496407212589087.svg)](https://top.gg/bot/716496407212589087) ![Discord](https://img.shields.io/discord/718641964672876614?label=support&logo=discord)
 # RT Bot
 DiscordのBotのRTのBotです。  
+RTというのはこのBotだけで済むようなBotを目指す多機能で便利なBotです。  
 DiscordのBotアカウントであるRTに接続してRTのサービスを開始します。  
 ウェブ認証などのために`rt-backend`とWebSocketで通信も行います。  
 RTについて知らない人は[ここ](https://rt-bot.com)を見てみましょう。
