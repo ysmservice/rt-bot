@@ -165,7 +165,7 @@ class GlobalBan(commands.Cog, DataManager):
                         )
                     )
 
-        if embeds.embeds:
+        if embeds:
             await ctx.reply(embed=embeds[0], view=EmbedPage(data=embeds))
         else:
             await ctx.reply(
