@@ -36,9 +36,15 @@ class Embed(commands.Cog):
 
     @embed.command(aliases=["u", "リンク", "link"])
     async def url(self, ctx: commands.Context, color: Union[discord.Color, str], *, content):
-        e = embed(
-            f"# {content}", color=ctx.author.color if color == "null" else color
-        )
+        try:
+            e = embed(
+                f"# {content}", color=ctx.author.color if color == "null" else color
+            )
+        except TypeError:
+            await ctx.reply(
+                {"ja": "色の指定がおかしいです。",
+                 "en": "Bad color argument."}
+            )
         data = {"color": str(hex(e.color.value))[2:]}
         if e.title:
             data["title"] = e.title
@@ -46,7 +52,7 @@ class Embed(commands.Cog):
             data["description"] = e.description
         if ctx.message.attachments:
             data["image"] = ctx.message.attachments[0].proxy_url
-        
+
         await ctx.reply(
             f"https://rt-bot.com/embed?{'&'.join(f'{name}={quote(value)}' for name, value in data.items())}"
         )
