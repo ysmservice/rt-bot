@@ -41,7 +41,7 @@ class Embed(commands.Cog):
                 f"# {content}", color=ctx.author.color if color == "null" else color
             )
         except TypeError:
-            await ctx.reply(
+            return await ctx.reply(
                 {"ja": "色の指定がおかしいです。",
                  "en": "Bad color argument."}
             )
