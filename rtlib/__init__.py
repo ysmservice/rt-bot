@@ -54,7 +54,7 @@ discord.ext.easy = componesy
 def setup(bot, only: Union[Tuple[str, ...], List[str]] = []):
     "rtlibにあるエクステンションを全てまたは指定されたものだけ読み込みます。"
     bot.load_extension("rtlib.data_manager")
-    for name in ("on_full_reaction", "dochelp", "debug", "on_cog_add"):
+    for name in ("on_send", "on_full_reaction", "dochelp", "debug", "on_cog_add"):
         if name in only or only == []:
             try:
                 bot.load_extension("rtlib.ext." + name)

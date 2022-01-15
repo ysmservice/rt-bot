@@ -2,15 +2,15 @@
 
 from typing import Union
 
-from discord.ext import commands
-import discord
-
-from rtlib.ext import Embeds
-from rtutil import markord
-
 from datetime import datetime, timedelta
 from asyncio import TimeoutError, sleep
 from random import sample
+
+from discord.ext import commands
+import discord
+
+from rtlib.page import EmbedPage
+from rtutil import markord
 
 
 PERMISSION_TEXTS = {
@@ -787,16 +787,15 @@ class ServerTool(commands.Cog):
                         else:
                             i += 1
 
+            embeds = [
+                discord.Embed(
+                    title="メンバー一覧",
+                    description="・" + "\n・".join(members),
+                    color=self.bot.colors["normal"]
+                ) for members in new
+            ]
             kwargs = dict(
-                embeds=Embeds(
-                    "Members", ctx.author.id, embeds=[
-                        discord.Embed(
-                            title="メンバー一覧",
-                            description="・" + "\n・".join(members),
-                            color=self.bot.colors["normal"]
-                        ) for members in new
-                    ]
-                )
+                embed=embeds[0], view=EmbedPage(data=embeds)
             )
             if i == 0:
                 kwargs["embed"] = kwargs["embeds"].embeds[0]

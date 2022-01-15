@@ -1,14 +1,18 @@
 # RT - Global Ban
 
+from typing import Optional
+
+from random import choice
+
 from discord.ext import commands
 import discord
 
 from rtlib import mysql, DatabaseManager
-from rtlib.ext import componesy, Embeds
-from .bot_general import INFO_SS
-from typing import Optional
-from random import choice
+from rtlib.page import EmbedPage
+from rtlib.ext import componesy
 from data import is_admin
+
+from .bot_general import INFO_SS
 
 
 class DataManager(DatabaseManager):
@@ -147,13 +151,13 @@ class GlobalBan(commands.Cog, DataManager):
         !lang en
         --------
         Show you gban list."""
-        embeds = Embeds("GbanList", target=ctx.author.id)
+        embeds = []
 
         for i, row in enumerate(await self.getall()):
             if row:
                 user = await self.bot.fetch_user(row[0])
                 if user:
-                    embeds.add_embed(
+                    embeds.append(
                         discord.Embed(
                             title=f"{i} {user.name}",
                             description=f"ID:{user.id}\n{row[1]}",
@@ -162,7 +166,7 @@ class GlobalBan(commands.Cog, DataManager):
                     )
 
         if embeds.embeds:
-            await ctx.reply(embeds=embeds)
+            await ctx.reply(embed=embeds[0], view=EmbedPage(data=embeds))
         else:
             await ctx.reply(
                 {"ja": "gbanされた人はいません。らぶあんどぴーす",

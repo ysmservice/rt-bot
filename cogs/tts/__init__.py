@@ -2,21 +2,23 @@
 
 from typing import Optional, Type, Dict, List
 
-from discord.ext import commands, tasks
-import discord
-
 from aiofiles.os import remove as async_remove
 from aiofiles import open as async_open
 from os import listdir, remove
 from os.path import exists
 
-from jishaku.functools import executor_function
 from urllib.parse import unquote
-from base64 import encodebytes
-from pydub import AudioSegment
 from functools import wraps
 
-from rtlib.ext import componesy, Embeds
+from discord.ext import commands, tasks
+import discord
+
+from jishaku.functools import executor_function
+from base64 import encodebytes
+from pydub import AudioSegment
+
+from rtlib.page import EmbedPage
+from rtlib.ext import componesy
 from rtlib import websocket, RT
 from rtlib.slash import Option
 
@@ -403,8 +405,8 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         ..."""
         if not ctx.invoked_subcommand:
             data = await self.read_dictionary(ctx.guild.id)
-            embeds = Embeds("TTSDictionary", target=ctx.author.id)
-            add_embed = lambda description, count: embeds.add_embed(
+            embeds = []
+            add_embed = lambda description, count: embeds.append(
                 discord.Embed(
                     title={
                         "ja": f"辞書 {count}",
@@ -427,7 +429,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                 count += 1
                 add_embed(description, count)
             if count == 1:
-                await ctx.reply(embed=embeds.embeds[0])
+                await ctx.reply(embed=embeds[0], view=EmbedPage(data=embeds))
             else:
                 await ctx.reply(embeds=embeds)
             del embeds
