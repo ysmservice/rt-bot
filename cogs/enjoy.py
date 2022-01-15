@@ -14,7 +14,6 @@ from PIL import Image
 
 from rtlib.page import EmbedPage
 from rtlib import RT, setting
-from rtlib.ext import Embeds
 
 
 class Enjoy(commands.Cog):
