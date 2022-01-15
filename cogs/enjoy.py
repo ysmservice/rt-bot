@@ -1,17 +1,20 @@
 # RT - Enjoy Cog
 
-from typing import List, Dict, Iterator
+from __future__ import annotations
+
+from typing import Iterator
 
 from discord.ext import commands
 import discord
-
-from rtlib import RT, setting
-from rtlib.ext import Embeds
 
 from jishaku.functools import executor_function
 from aiofiles.os import remove
 from bs4 import BeautifulSoup
 from PIL import Image
+
+from rtlib.page import EmbedPage
+from rtlib import RT, setting
+from rtlib.ext import Embeds
 
 
 class Enjoy(commands.Cog):
@@ -109,7 +112,7 @@ class Enjoy(commands.Cog):
         Ah, This command language is supported only japanese."""
         await ctx.trigger_typing()
         data = await self.get_nhk()
-        embeds = Embeds("NHKNews", ctx.author.id)
+        embeds = []
         for item in data["item"]:
             embed = discord.Embed(
                 title=item["title"],
@@ -131,10 +134,10 @@ class Enjoy(commands.Cog):
                 text="NHKニュース",
                 icon_url="https://www3.nhk.or.jp/news/parts16/images/favicon/apple-touch-icon-180x180-precomposed.png"
             )
-            embeds.add_embed(embed)
-        await ctx.reply(embeds=embeds, replace_language=False)
+            embeds.append(embed)
+        await ctx.reply(embed=embeds[0], view=EmbedPage(data=embeds), replace_language=False)
 
-    async def jin(self) -> Iterator[List[Dict[str, str]]]:
+    async def jin(self) -> Iterator[list[dict[str, str]]]:
         async with self.bot.session.get("http://jin115.com") as r:
             soup = BeautifulSoup(await r.text(), "html.parser")
         for article_soup in soup.find_all("div", class_="index_article_body"):
@@ -160,7 +163,7 @@ class Enjoy(commands.Cog):
         --------
         Ah, This command language is supported only japanese."""
         await ctx.trigger_typing()
-        embeds = Embeds("JinNews", ctx.author.id)
+        embeds = []
         async for data in self.jin():
             embed = discord.Embed(
                 title=data["title"],
@@ -172,8 +175,8 @@ class Enjoy(commands.Cog):
                 text="オレ的ゲーム速報＠刃",
                 icon_url="https://cdn.discordapp.com/attachments/706794659183329291/781532922507034664/a3ztm-t6lmd.png"
             )
-            embeds.add_embed(embed)
-        await ctx.reply("**最新のオレ的ゲーム速報＠刃**", embeds=embeds)
+            embeds.append(embed)
+        await ctx.reply("**最新のオレ的ゲーム速報＠刃**", embed=embeds[0], view=EmbedPage(data=embeds))
 
     GAME_PACKAGE_SIZES = {
         "switch": ((370, 600), "L"),
