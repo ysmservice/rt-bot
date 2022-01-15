@@ -48,7 +48,7 @@ class Embed(commands.Cog):
             data["image"] = ctx.message.attachments[0].proxy_url
         
         await ctx.reply(
-            f"{self.bot.get_url()}/embed?{'&'.join(f'{name}={quote(value)}' for name, value in data.items())}"
+            f"https://rt-bot.com/embed?{'&'.join(f'{name}={quote(value)}' for name, value in data.items())}"
         )
 
     @embed.command(aliases=["wh", "ウェブフック"])
