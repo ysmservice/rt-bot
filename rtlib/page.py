@@ -1,4 +1,4 @@
-# RT - Page
+# RT - Page, Notes: これはパブリックドメインとします。
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ class BasePage(discord.ui.View):
         self, mode: Literal["dl", "l", "r", "dr"], interaction: discord.Interaction
     ):
         self.page = self.page + \
-            (-1 if mode.endswith("l") else 1)*(mode.startswith("d")+1)
+            (-1 if mode.endswith("l") else 1)*((mode[0] == "d")+1)
 
     @discord.ui.button(emoji="⏪")
     async def dash_left(self, _, interaction: discord.Interaction):
@@ -48,8 +48,15 @@ class EmbedPage(BasePage):
             embed = self.data[self.page]
         except (AssertionError, IndexError):
             self.page = before
-            await interaction.response.send_message(
-                "これ以上ページを捲ることができません。", ephemeral=True
-            )
-        else:
+            if mode == "dl":
+                self.page = 0
+                embed = self.data[self.page]
+            elif mode == "dr":
+                self.page = len(self.data) - 1
+                embed = self.data[self.page]
+            else:
+                return await interaction.response.send_message(
+                    "これ以上ページを捲ることができません。", ephemeral=True
+                )
+        finally:
             await interaction.response.edit_message(embed=embed)

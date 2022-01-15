@@ -73,14 +73,14 @@ class MusicData:
         # タイトルをマークダウンのURLでカバーした文字列にして取得する関数です。
         return f"[{self.title}]({self.url})"
 
-    def started(self, extras: int = 0) -> None:
+    def started(self, _: int = 0) -> None:
         # 音楽再生時に呼び出すべき関数です。
         self.start = time() + self._stop
 
     def stopped(self) -> None:
         self._stop = time()
 
-    def time_str(self, t: int) -> str:
+    def time_str(self, t: Union[int, float]) -> str:
         # 秒数を`01:39`のような`分：秒数`の形にする。
         return ":".join(
             map(lambda o: (
