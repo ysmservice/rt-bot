@@ -1,15 +1,15 @@
 # RT TTS - Voice Manager
 
+from typing import Optional
+
+from re import findall, sub
+
 from aiofiles import open as async_open
 from emoji import UNICODE_EMOJI_ENGLISH
 from ujson import loads, load, dumps
 from aiohttp import ClientSession
 from bs4 import BeautifulSoup
-from os import listdir, path
-from typing import Optional
-from alkana import get_kana
-from pykakasi import kakasi
-from re import findall, sub
+from pyopenjtalk import g2p
 
 from . import aquestalk
 from . import openjtalk
@@ -21,8 +21,6 @@ with open("cogs/tts/dic/allow_characters.csv") as f:
     ALLOW_CHARACTERS = f.read().split()
 with open("cogs/tts/dic/dictionary.json", "r") as f:
     dic = load(f)
-# pykakasiの準備をする。
-kks = kakasi()
 
 
 class VoiceManager:
@@ -53,9 +51,11 @@ class VoiceManager:
         async with async_open("cogs/tts/dic/dictionary.json", "r") as f:
             dic = loads(await f.read())
 
-    async def synthe(self, voice: str, text: str, file_path: str,
-                     dictionary: str = "cogs/tts/lib/OpenJTalk/dic",
-                     speed: float = 1.0, rtchan: bool = False) -> Optional[None]:
+    async def synthe(
+        self, voice: str, text: str, file_path: str,
+        dictionary: str = "cogs/tts/lib/OpenJTalk/dic",
+        speed: float = 1.0, rtchan: bool = False
+    ) -> Optional[None]:
         """音声合成をします。
 
         Parameters
@@ -87,7 +87,7 @@ class VoiceManager:
         text = text.replace("()", "かっこしっしょう")
         text = text.replace("(笑)", "かっこわらい")
         text = self.delete_disallow(
-            self.convert_kanji(await self.text_parser(text))
+            g2p(await self.text_parser(text), kana=True)
         )
         # 音声合成をする。
         if text:
@@ -127,17 +127,6 @@ class VoiceManager:
             new_text += char
         return "".join(char for char in new_text if char in ALLOW_CHARACTERS)
 
-    def convert_kanji(self, text: str) -> str:
-        """文字列にある漢字をひらがなに置き換えます。
-
-        Parameters
-        ----------
-        text : str
-            対象の文字列です。"""
-        for item in kks.convert(text):
-            text = text.replace(item["orig"], item["hira"])
-        return text
-
     async def text_parser(self, text: str) -> str:
         """文字列にある英語をカタカナ読みにします。
 
@@ -149,12 +138,8 @@ class VoiceManager:
         results = findall("[a-zA-Z]+", text)
 
         for result in results:
-            # alkanaで英単語を交換する。
-            after = get_kana(result)
-
-            if not after:
-                # もしalkanaで交換できないなら辞書から取り出す。
-                after = dic.get(result)
+            # もしalkanaで交換できないなら辞書から取り出す。
+            after = dic.get(result)
 
             if not after:
                 # もしalkanaにも辞書にもないなら読み方を取得する。
