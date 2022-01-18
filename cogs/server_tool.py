@@ -733,8 +733,7 @@ class ServerTool(commands.Cog):
                 embed=embeds[0], view=EmbedPage(data=embeds)
             )
             if i == 0:
-                kwargs["embed"] = kwargs["embeds"].embeds[0]
-                del kwargs["embeds"]
+                del kwargs["view"]
 
             await ctx.reply(**kwargs)
         else:
