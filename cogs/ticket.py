@@ -2,14 +2,15 @@
 
 from typing import TYPE_CHECKING, Union, Optional, Dict, List
 
+from time import time
+
 from discord.ext import commands, tasks
 import discord
 
+from ujson import loads, dumps
+
 from rtutil.converters import Roles
 from rtlib import componesy
-
-from ujson import loads, dumps
-from time import time
 
 if TYPE_CHECKING:
     from aiomysql import Pool
@@ -228,7 +229,7 @@ class Ticket(commands.Cog, DataManager):
                 color=self.bot.colors["normal"]
             )
             await ctx.webhook_send(
-                username=ctx.author.name, avatar_url=ctx.author.avatar.url,
+                username=ctx.author.name, avatar_url=getattr(ctx.author.avatar, "url", ""),
                 content=f"RTチケットパネル, 2", embed=embed, wait=True,
                 replace_language=False, view=VIEW
             )
