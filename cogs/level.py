@@ -56,7 +56,7 @@ class Level(commands.Cog):
         return f"Level:`{data['level']}`, Exp:`{data['exp']}`"
 
     @commands.group(
-        aliases=("lv", "レベル", "れべる", "れ"), parent="ServerUseful",
+        aliases=("lv", "レベル", "れべる", "れ"), category="ServerUseful",
         headding={"ja": "レベル, レベル報酬ロール", "en": "Level, Level reward"}
     )
     async def level(self, ctx: commands.Context):
@@ -70,11 +70,17 @@ class Level(commands.Cog):
         Aliases
         -------
         lv, レベル, れべる, れ
-        
+
         !lang en
         --------
-        ...
-        """
+        This is a leveling feature, where you level up by talking a certain number of times on a server with RTs.
+        There are two types of leveling systems: global level and local level.
+        The global level is common and allows you to know your position in the world.
+        Local level can be managed on a server-by-server basis (e.g., when you reach a certain level, your position will be raised).
+
+        Aliases
+        -------
+        lv"""
         if not ctx.invoked_subcommand:
             await ctx.reply(
                 embed=discord.Embed(
@@ -117,26 +123,38 @@ class Level(commands.Cog):
             embed.add_field(name=name, value=value)
         return embed
 
-    @level.command(aliases=["rank", "r", "ランキング", "ランク"])
+    @level.command(
+        aliases=["rank", "r", "ランキング", "ランク"],
+        description="レベルのランキングを表示します。"
+    )
     @cooldown
     async def ranking(self, ctx: commands.Context, mode: Literal["server", "global"]):
         """!lang ja
         --------
         レベルランキングを表示します。
-        
+
         Parameters
         ----------
         mode : `server`か`global`
             serverだとローカルレベル、globalだとグローバルレベルのランキングを表示します。
-        
+
         Aliases
         -------
         rank, r, ランキング, ランク
-        
+
         !lang en
         --------
-        ...
-        """
+        Displays level ranking.
+
+        Parameters
+        ----------
+        mode : `server`か`global`
+            server: local level
+            global: global level
+
+        Aliases
+        -------
+        rank, r"""
         if ((mode == "server" and (
                 data := self.data.l[ctx.guild.id].get("data")) is not None
             )
@@ -165,22 +183,30 @@ class Level(commands.Cog):
             return await ctx.reply(embed=embeds[0], view=EmbedPage(data=embeds))
         await ctx.reply("まだありません。")
 
-    @level.group(aliases=["rw", "rd", "報酬"])
+    @level.group(
+        aliases=["rw", "rd", "報酬"],
+        description="レベル報酬設定"
+    )
     async def reward(self, ctx: commands.Context):
         """!lang ja
         --------
         レベル報酬関連の設定をします。
         `rt!level reward`で現在の設定を表示できます。
         ※設定できるのはローカルレベルのみです。
-        
+
         Aliases
         -------
         rw, rd, 報酬
-        
+
         !lang en
         --------
-        ...
-        """
+        Configure settings related to level rewards.
+        You can use `rt!level reward` to display the current settings.
+        Only the local level can be set.
+
+        Aliases
+        -------
+        rw, rd"""
         if not ctx.invoked_subcommand:
             data: dict[str, Reward] = self.data.l[ctx.guild.id].get("reward")
             if data is None:
@@ -202,7 +228,9 @@ class Level(commands.Cog):
 
     manage_role = commands.has_guild_permissions(manage_roles=True)
 
-    @reward.command()
+    @reward.command(
+        aliases=("s", "設定"), description="レベル報酬を設定します。"
+    )
     @manage_role
     @cooldown
     async def set(
@@ -213,7 +241,7 @@ class Level(commands.Cog):
         """!lang ja
         --------
         レベル報酬を設定します。
-        
+
         Parameters
         ----------
         level : int
@@ -222,11 +250,27 @@ class Level(commands.Cog):
             報酬を与えるレベルに達したときに付与するロールです。
         replace_role : ロール, Optional
             もし報酬を渡すときに代わりに剥奪したいロールがあるときにこの引数を使いましょう。
-            
+
+        Aliases
+        -------
+        s, 設定
+
         !lang en
         --------
-        ...
-        """
+        Set the level reward.
+
+        Parameters
+        ----------
+        level : int
+            The level required to pass the reward.
+        role : role
+            The role to grant when the level to give the reward is reached.
+        replace_role : role, Optional
+            Use this argument if there is a role you want to strip instead of passing the reward.
+
+        Aliases
+        -------
+        s"""
         if "reward" not in self.data.l[ctx.guild.id]:
             self.data.l[ctx.guild.id].reward = {}
         self.data.l[ctx.guild.id].reward[str(level)] = {
@@ -234,23 +278,37 @@ class Level(commands.Cog):
         }
         await ctx.reply("Ok")
 
-    @reward.command()
+    @reward.command(
+        aliases=("d", "削除"), description="レベル報酬を削除します。"
+    )
     @manage_role
     @cooldown
     async def delete(self, ctx: commands.Context, level: int):
         """!lang ja
         --------
         レベル報酬を削除します。
-        
+
         Parameters
         ----------
         level : int
             削除する報酬のレベル。
-        
+
+        Aliases
+        -------
+        d, 削除
+
         !lang en
         --------
-        ...
-        """
+        Delete level rewards.
+
+        Parameters
+        ----------
+        level : int
+            Level that you wants to delete.
+
+        Aliases
+        -------
+        d"""
         if "reward" in self.data.l[ctx.guild.id]:
             try:
                 del self.data.l[ctx.guild.id].reward[str(level)]
