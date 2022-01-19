@@ -5,11 +5,9 @@ from typing import Tuple, List
 from discord.ext import commands, tasks
 import discord
 
-from aiohttp.client_exceptions import ClientConnectionError
-
 from rtlib.page import EmbedPage
 from rtlib.ext import componesy
-from rtlib import RT, slash
+from rtlib import RT
 
 
 class Help(commands.Cog):

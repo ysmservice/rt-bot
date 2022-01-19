@@ -164,7 +164,8 @@ class MusicSelect(discord.ui.Select):
 class QueueSelectForDelete(MusicSelect):
     """キューが選択された際にそのキュー削除するということをするセレクトのクラスです。"""
     async def callback(self, interaction: discord.Interaction):
-        if check_dj(interaction.user):
+        interaction.author = interaction.user
+        if check_dj(interaction.user, interaction):
             for value in self.values:
                 self.cog.now[interaction.message.guild.id].remove_queue(
                     self.queues[int(value)]
