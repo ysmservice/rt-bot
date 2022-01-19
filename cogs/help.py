@@ -143,12 +143,12 @@ class Help(commands.Cog):
             })
         ]
 
-    def make_view(self, user, lang, category=None):
+    def make_view(self, user, lang, category=None) -> discord.ui.View:
         # Viewを作るための関数です。
         view = componesy.View("HelpView", timeout=60)
         for _, func, kwargs in self.get_view_args(lang, category):
             view.add_item("Select", func, **kwargs)
-        return view
+        return view.get_view()
 
     async def _help(self, ctx, word, interaction=None):
         self.help = self.bot.cogs["DocHelp"].data
