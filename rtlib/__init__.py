@@ -8,6 +8,7 @@ import discord
 from pymysql.err import OperationalError
 
 from . import mysql_manager as mysql
+from .data_manager import Table
 from .ext import componesy
 from .typed import RT
 
@@ -16,7 +17,8 @@ DatabaseManager = mysql.DatabaseManager
 
 
 async def webhook_send(
-        channel, *args, webhook_name: str = "RT-Tool", **kwargs):
+    channel, *args, webhook_name: str = "RT-Tool", **kwargs
+):
     """`channel.send`感覚でウェブフック送信をするための関数です。  
     `channel.webhook_send`のように使えます。  
     
@@ -50,7 +52,8 @@ discord.ext.easy = componesy
 
 def setup(bot, only: Union[Tuple[str, ...], List[str]] = []):
     "rtlibにあるエクステンションを全てまたは指定されたものだけ読み込みます。"
-    for name in ("embeds", "on_full_reaction", "dochelp", "debug", "on_cog_add"):
+    bot.load_extension("rtlib.data_manager")
+    for name in ("on_send", "on_full_reaction", "dochelp", "debug", "on_cog_add"):
         if name in only or only == []:
             try:
                 bot.load_extension("rtlib.ext." + name)
@@ -58,6 +61,7 @@ def setup(bot, only: Union[Tuple[str, ...], List[str]] = []):
                 pass
     bot.load_extension("rtlib.websocket")
     bot.load_extension("rtlib.setting")
+    bot.load_extension("rtlib.rtc")
 
 
 # discord.ext.tasksのタスクがデータベースの操作失敗によって止まることがないようにする。

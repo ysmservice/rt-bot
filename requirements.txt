@@ -15,8 +15,7 @@ emoji
 youtube_dl
 niconico_dl
 bs4
-git+https://github.com/cod-sushi/alkana.py
-pykakasi
+pyopenjtalk
 pydub
 psutil
 PyNacl
@@ -24,3 +23,4 @@ captcha
 deep-translator
 topggpy
 tweepy
+speedtest-cli

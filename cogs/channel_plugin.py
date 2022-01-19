@@ -51,6 +51,27 @@ HELPS = {
         )
     }
 }
+class RemoveButton(discord.ui.View):
+    def __init__(self, user_id: int):
+        self.user_id = user_id
+        super().__init__()
+
+    @discord.ui.button(label="削除ボタン", style=discord.ButtonStyle.danger, emoji="🗑")
+    async def remove_button(self, _, interaction: discord.Interaction):
+        if self.user_id == interaction.user.id:
+            await interaction.response.send_message(
+                {
+                    "ja": "削除します。", "en": "I'll delete this message."
+                }, ephemeral=True
+            )
+            await interaction.message.delete(delay=2.35)
+        else:
+            await interaction.response.send_message(
+                {
+                    "ja": "あなたはこのメッセージを削除できません。",
+                    "en": "You can't delete this message."
+                }, ephemeral=True
+            )
 
 
 class ChannelPluginGeneral(commands.Cog):
@@ -93,6 +114,7 @@ class ChannelPluginGeneral(commands.Cog):
                     for url in findall(self.URL_PATTERN, content):
                         content = content.replace(url, f"||{url}||", 1)
                     # もしスポイラーワードが設定されているならそれもスポイラーにする。
+                    view = None
                     for word in cmd.split()[1:]:
                         content = content.replace(word, f"||{word}||")
                     # Embedに画像が設定されているなら外してスポイラーを付けた画像URLをフィールドに入れて追加する。
@@ -116,6 +138,7 @@ class ChannelPluginGeneral(commands.Cog):
                             content, files=new, embeds=message.embeds,
                             username=message.author.display_name + " RT's Auto Spoiler",
                             avatar_url=message.author.avatar.url,
+                            view=RemoveButton(message.author.id)
                         )
                         try:
                             await message.delete()

@@ -1,18 +1,61 @@
 # RT - Poll (Vote)
 
+from typing import Callable, Tuple, List, Dict
+
+from asyncio import create_task
+
 from discord.ext import commands, tasks
 import discord
 
-from typing import Callable, Tuple, List, Dict
 from emoji import UNICODE_EMOJI_ENGLISH
-from asyncio import create_task
+
+from rtlib import RT
+
+
+class CloseButton(discord.ui.View):
+    def __init__(self, *args, **kwargs):
+        self._color = kwargs.pop("color", 0)
+        kwargs["timeout"] = None
+        super().__init__(*args, **kwargs)
+
+    @discord.ui.button(label="締め切る", custom_id="poll.close", emoji="💾")
+    async def close(self, _, interaction: discord.Interaction):
+        if str(interaction.user.id) == interaction.message.embeds[0].author.name[3:]:
+            emojis = []
+            for line in interaction.message.embeds[0].description.splitlines():
+                splited = line.split()
+                emojis.append(
+                    (
+                        int(splited[0][1:-1]), splited[1],
+                        line.replace(" ".join(splited[:2]), "")
+                    )
+                )
+            embed = discord.Embed(
+                title="投票結果", description="投票数順です。",
+                color=self._color
+            )
+            for count, emoji, subject in sorted(
+                emojis, key=lambda x: x[0], reverse=True
+            ):
+                embed.add_field(
+                    name=f"{emoji} {subject}", value=str(count), inline=False
+                )
+            await interaction.response.edit_message(
+                content=None, view=None, embed=embed
+            )
+        else:
+            await interaction.response.send_message(
+                "投票をした人でないと締め切ることはできません。", ephemeral=True
+            )
 
 
 class Poll(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: RT):
         self.bot, self.rt = bot, bot.data
         self.emojis = [chr(0x1f1e6 + i) for i in range(26)]
         self.queue: Dict[str, discord.RawReactionActionEvent] = {}
+        self.view = CloseButton(color=self.bot.Colors.normal)
+        self.bot.add_view(self.view)
         self.panel_updater.start()
 
     @commands.command(
@@ -95,11 +138,12 @@ class Poll(commands.Cog):
         )
         embed.set_footer(
             text={"ja": "※連打防止のため結果の反映は数秒遅れます。",
-                  "en": "..."}
+                  "en": "The results will be delayed for a few seconds to prevent repeated hits."}
         )
+        embed.set_author(name=f"ID:{ctx.author.id}")
         mes = await ctx.webhook_send(
             "".join(("RT投票パネル", " (一人一票)" if only_one else "", "\n📊 [...]")),
-            wait=True, embed=embed, username=ctx.author.display_name,
+            wait=True, view=self.view, embed=embed, username=ctx.author.display_name,
             avatar_url=getattr(ctx.author.avatar, "url", ""),
         )
         for emoji in emojis:

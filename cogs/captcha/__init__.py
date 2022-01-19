@@ -193,10 +193,24 @@ class Captcha(commands.Cog, DataManager):
         認証機能です。  
         [セルフBot](https://rt-team.github.io/notes/what_is_self_bot)による荒らし対策に有効です。
 
+        Warnings
+        --------
+        このコマンドを設定する前から参加している人は認証対象とならないので、手動で役職を付与してください。  
+        そしてデフォルトではサーバー参加後に一時間放置すると認証対象から外されます。  
+        もし認証対象から外されるまでの時間や外された際にキックをするかどうかの設定をする場合は`timeout`を設定してください。  
+        (下の方にヘルプがあります。)
+
         !lang en
         --------
         Captcha function.  
-        This is effective in preventing vandalism by self-bots spamming."""
+        This is effective in preventing vandalism by self-bots spamming.
+
+        Warnings
+        --------
+        People who have joined before you set this command will not be authenticated, so you will have to manually grant them a position.  
+        By default, if you leave the server for an hour after joining, you will be deauthenticated.  
+        If you want to specify how long it takes to be deauthorized, or if you want to kick people when they are deauthorized, set the `timeout`.  
+        (Help is available at the bottom of this page.)"""
         if not ctx.invoked_subcommand:
             await ctx.reply(
                 {"ja": "使用方法が違います。", "en": "It is wrong way to use this command."}
@@ -348,7 +362,8 @@ class Captcha(commands.Cog, DataManager):
 
         Notes
         -----
-        これのデフォルトは一時間で認証ができなくなりキックはされません。
+        これのデフォルトは一時間で認証ができなくなりキックはされません。  
+        タイムアウトは認証の設定を変更すると設定がリセットされます。
 
         Parameters
         ----------
@@ -364,7 +379,8 @@ class Captcha(commands.Cog, DataManager):
 
         Notes
         -----
-        The default for this is that captcha will fail after one hour and no kick will be performed.
+        The default for this is that captcha will fail after one hour and no kick will be performed.  
+        The timeout setting will be reset when the authentication setting is changed.
 
         Parameters
         ----------
@@ -421,11 +437,16 @@ class Captcha(commands.Cog, DataManager):
         now = time()
         for guild_id, members in list(self.queue.items()):
             for member_id, (time_, kick, data) in list(members.items()):
+                data: QueueDataT
                 if now >= time_:
                     # もしキック設定がされている場合はキックを行う。
                     if (kick and (guild := self.bot.get_guild(guild_id))
                             and (member := guild.get_member(member_id))):
-                        await member.kick(reason="[Captcha] Timeout")
+                        if not member.get_role(data.role_id):
+                            try:
+                                await member.kick(reason="[Captcha] Timeout")
+                            except Exception:
+                                ...
                     # キューの削除を行う。
                     self.bot.loop.create_task(self.remove_queue(guild_id, member_id, data))
 

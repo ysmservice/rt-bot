@@ -2,19 +2,25 @@
 
 from typing import Dict
 
-from discord.ext import commands, tasks
-import discord
-
 from traceback import TracebackException
 from collections import defaultdict
 from inspect import cleandoc
 from itertools import chain
 from random import choice
 from time import time
+import subprocess
+
+from discord.ext import commands, tasks
+import discord
+
+from jishaku.functools import executor_function
+from ujson import loads
+
+from rtlib.page import EmbedPage
+from rtlib.ext import componesy
+from rtlib import RT
 
 from .server_tool import PERMISSION_TEXTS
-from rtlib.ext import Embeds, componesy
-from rtlib import RT
 
 
 ERROR_CHANNEL = 842744343911596062
@@ -34,41 +40,16 @@ Come on, let's put this Bot in and kick the other Bots."""
 INFO_ITEMS = (("INVITE", {"ja": "招待リンク", "en": "invite link"}),
               ("SS", {"ja": "サポートサーバー", "en": "support server"}),
               ("URL", {"ja": "RTのウェブサイト", "en": "RT offical website"}),
-              ("GITHUB", {"ja": "Github", "en": "Github"}))
+              ("GITHUB", {"ja": "GitHub", "en": "GitHub"}),
+              ("CREDIT", {"ja": "クレジット", "en": "Credit"}))
 INFO_INVITE = "https://discord.com/api/oauth2/authorize?client_id=716496407212589087&permissions=8&redirect_uri=https%3A%2F%2Frt-bot.com&response_type=code&scope=bot%20applications.commands"
 INFO_SS, INFO_URL = "https://discord.gg/ugMGw5w", "https://rt-bot.com"
 INFO_GITHUB = """* [RT-Team](https://github.com/RT-Team)
-* [RT-Backend](https://github.com/RT-Team/rt-backend)
 * [RT-Bot](https://github.com/RT-Team/rt-bot)
+* [RT-Backend](https://github.com/RT-Team/rt-backend)
 * [RT-Frontend](https://github.com/RT-Team/rt-frontend)"""
+INFO_CREDIT = "[ここをご覧ください。](https://rt-bot.com/credit)"
 
-CREDIT_ITEMS = (("DEV", {"ja": "開発者", "en": "main developer"}),
-                ("DESIGN", {"ja": "デザイン", "en": "designer"}),
-                ("ICON", {"ja": "RTのアイコン", "en": "RT's icon"}),
-                ("LANGUAGE", {"ja": "プログラミング言語", "en": "programing language"}),
-                ("SERVER", {"ja": "サーバーについて", "en": "about server"}),
-                ("ETC", {"ja": "その他", "en": "etc"}))
-CREDIT_DEV = """<:tasren:731263470636498954> tasuren [WEBSITE](http://tasuren.f5.si)
-<:takkun:731263181586169857> Takkun [SERVER](https://discord.gg/VX7ceJw)
-<:Snavy:788377881092161577> Snavy [SERVER](https://discord.gg/t8fsvk3)"""
-CREDIT_DESIGN = """<:yutam:732948166881575022> YUTAM
-<:omochi_nagamochi:733618053631311924> 餅。"""
-CREDIT_ICON = "Made by Takkun `CC BY-SA 4.0`"
-CREDIT_LANGUAGE = {
-    "ja": "使用言語：Python, APIラッパー：nextcord",
-    "en": "language:Python, wrapper:nextcord"
-}
-CREDIT_SERVER = {
-    "ja": cleandoc(
-        """ウェブサーバーOS：Arch Linux (Snavyさんが貸してくれています。感謝感激です！)
-        BotのサーバーOS:Ubuntu Server"""
-    ),
-    "en": "webserver os:Arch Linux\nSnavy is lend server to me. Thank you to Snavy "
-}
-CREDIT_ETC = {
-    "ja": "* Githubのコントリビューター達\n* 翻訳協力者\nありがとうございます。",
-    "en": "* Github's sontributors\n* translators \nThank you."
-}
 THANKYOU_TEMPLATE = cleandoc(
     """RTの導入ありがとうございます。
     よろしくお願いします。
@@ -108,42 +89,6 @@ class BotGeneral(commands.Cog):
         self.make_embed_template()
 
     def make_embed_template(self):
-        # RT情報Embedsを作る。
-        embeds = self.info_embeds = []
-        # RTの情報のEmbedを作る。
-        embed = discord.Embed(
-            title="RT 情報",
-            description=INFO_DESC,
-            color=self.bot.colors["normal"]
-        )
-        for item_variable_name, item_name in INFO_ITEMS:
-            embed.add_field(
-                name=item_name, value=eval("INFO_" + item_variable_name),
-                inline=False
-            )
-        embeds.append(embed)
-        # クレジットのEmbedを作る。
-        embed = discord.Embed(
-            title="RT クレジット",
-            color=self.bot.colors["normal"]
-        )
-        for item_variable_name, item_name in CREDIT_ITEMS:
-            embed.add_field(
-                name=item_name, value=eval("CREDIT_" + item_variable_name),
-                inline=False
-            )
-        embeds.append(embed)
-        # 使用しているライブラリ
-        with open("requirements.txt") as f:
-            libs = f.read()
-        embed = discord.Embed(
-            title="使用しているライブラリ",
-            description=f"```md\n{libs}\n```",
-            color=self.bot.colors["normal"]
-        )
-        embeds.append(embed)
-        del embed, libs
-
         self._now_status_index = 0
         self._start_time = time()
         self.status_updater.start()
@@ -218,6 +163,29 @@ class BotGeneral(commands.Cog):
                     )
         await ctx.reply(embed=embed)
 
+    @executor_function
+    def _speedtest(self):
+        return subprocess.run(["speedtest-cli", "--json"], capture_output=True)
+
+    @commands.command(
+        extras={"headding": {
+            "ja": "回線速度テストします",
+            "en": "Do a speed test"
+        }, "parent": "RT"},
+        aliases=["st"]
+    )
+    @commands.cooldown(1, 10800, commands.BucketType.guild)
+    async def speedtest(self, ctx):
+        embed = discord.Embed(
+            title="速度回線テスト", description="測定中です...", color=self.bot.Colors.normal
+        )
+        message = await ctx.send(embed=embed)
+        data = loads((await self._speedtest()).stdout)
+        embed = discord.Embed(title="速度回線テスト")
+        embed.add_field(name="ダウンロード", value=data["download"])
+        embed.add_field(name="アップロード", value=data["upload"])
+        await message.edit(embed=embed)
+
     @commands.command(
         extras={"headding": {
             "ja": "RTの招待リンクを含めた情報を表示します。",
@@ -225,27 +193,30 @@ class BotGeneral(commands.Cog):
         }, "parent": "RT"},
         aliases=["credit", "invite", "about", "情報", "じょうほう"]
     )
-    @commands.cooldown(1, 180, commands.BucketType.user)
-    async def info(self, ctx, secret_arg = None):
+    async def info(self, ctx):
         """!lang ja
         --------
         RTの情報を表示します。  
         RTの基本情報(招待リンク,ウェブサイトURL)やクレジットなどを確認することができます。  
-        このコマンドは三分に一度実行可能です。
         
         !lang en
         --------
         Show you RT's information.  
         It inclued invite link."""
-        if secret_arg is None:
-            await ctx.reply(
-                content=f"Servers:{len(self.bot.guilds)}, Users:{len(self.bot.users)}",
-                embeds=Embeds(
-                    "RtInfo", ctx.author, 180, self.info_embeds
-                )
+        embed = discord.Embed(
+            title="RT 情報",
+            description=INFO_DESC,
+            color=self.bot.colors["normal"]
+        )
+        for item_variable_name, item_name in INFO_ITEMS:
+            embed.add_field(
+                name=item_name, value=eval("INFO_" + item_variable_name),
+                inline=False
             )
-        else:
-            await ctx.reply(f"{secret_arg}...、あなた何奴！？")
+        await ctx.reply(
+            content=f"Servers:{len(self.bot.guilds)}, Users:{len(self.bot.users)}",
+            embed=embed
+        )
 
     @tasks.loop(seconds=5)
     async def remove_cache(self):

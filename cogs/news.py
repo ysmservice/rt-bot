@@ -1,15 +1,13 @@
 # RT - News
 
-from discord.ext import commands
-import discord
-
-from sanic.response import json
 from datetime import datetime
 from time import time
 
-from data import is_admin
+from discord.ext import commands
+import discord
+
 from rtlib import DatabaseManager
-from rtlib.ext import Embeds
+from rtlib.page import EmbedPage
 
 
 class DataManager(DatabaseManager):
@@ -60,23 +58,6 @@ class News(commands.Cog, DataManager):
     async def get_rows(self) -> list:
         return reversed(await self.get_news_all())
 
-    async def news_api(self, request, number=None) -> None:
-        rows = await self.get_rows()
-        if number:
-            rows = list(rows)
-            row = rows[int(number)]
-            data = {
-                "content": row[2], "date": row[1],
-                "status": "ok", "title": row[2][:row[2].find("\n") + 1]
-            }
-        else:
-            data = {
-                str(i): [row[2][:row[2].find("\n") + 1], row[1]]
-                for i, row in enumerate(rows)
-            }
-            data["status"] = "ok"
-        return json(data, headers=get_headers(self.bot, request))
-
     def convert_embed(self, doc: str) -> discord.Embed:
         # マークダウンをEmbedにする。
         i = doc.find("\n")
@@ -114,7 +95,7 @@ class News(commands.Cog, DataManager):
         --------
         Show RT's news."""
         if not ctx.invoked_subcommand:
-            embeds, i = Embeds("News", ctx.author.id), 0
+            embeds, i = [], 0
             for row in await self.get_news_all():
                 i += 1
                 embed = self.convert_embed(row[2])
@@ -122,13 +103,15 @@ class News(commands.Cog, DataManager):
                 embed.set_footer(text=f"{row[1]} | ID:{row[0]}")
                 if row[3] != "None":
                     embed.set_image(url=row[3])
-                embeds.add_embed(embed)
+                embeds.append(embed)
                 if i == 10:
                     break
-            if embeds.embeds == []:
-                await ctx.reply("Newsは現在空です。")
+            if embeds:
+                await ctx.reply(
+                    "**最新のRTニュース**", embed=embeds[0], view=EmbedPage(data=embeds)
+                )
             else:
-                await ctx.reply(content="**最新のRTニュース**", embeds=embeds)
+                await ctx.reply("Newsは現在空です。")
 
     @news.command()
     async def add(self, ctx, *, content):

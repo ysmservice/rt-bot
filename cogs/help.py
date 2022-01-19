@@ -5,8 +5,11 @@ from typing import Tuple, List
 from discord.ext import commands, tasks
 import discord
 
-from rtlib.ext import componesy, Embeds
-from rtlib import RT
+from aiohttp.client_exceptions import ClientConnectionError
+
+from rtlib.page import EmbedPage
+from rtlib.ext import componesy
+from rtlib import RT, slash
 
 
 class Help(commands.Cog):
@@ -191,23 +194,28 @@ class Help(commands.Cog):
             elif perfect:
                 # もしコマンド名が一致したなら。
                 user = getattr(interaction, "user", None) or ctx.author
-                embeds = Embeds(
-                    "HelpCommandDetails", target=user.id,
-                    embeds=self.bot.cogs["DocHelp"].convert_embed(
-                        word, perfect,
-                        color=self.bot.colors["normal"]
-                    )
-                )
+                embeds = EmbedPage(data=self.bot.cogs["DocHelp"].convert_embed(
+                    word, perfect, color=self.bot.colors["normal"]
+                ))
                 edit, reply = False, not bool(interaction)
                 if not reply:
                     await ctx.message.delete()
-                if len(embeds.embeds) == 1:
-                    kwargs = {"embed": embeds.embeds[0], "view": self.make_view(user, lang, c),
+                if len(embeds.data) == 1:
+                    kwargs = {"embed": embeds.data[0], "view": self.make_view(user, lang, c),
                               "target": user.id}
                     del embeds
                 else:
-                    embeds.items = embeds.items + self.get_view_args(lang, c)
-                    kwargs = {"embeds": embeds, "target": user.id}
+                    for _, callback, kwargs in self.get_view_args(lang, c):
+                        async def new(self, interaction):
+                            return await callback(self, interaction)
+                        embeds.add_item(
+                            type(
+                                f"HelpSelector", (discord.ui.Select,),
+                                {"callback": new}
+                            )(**kwargs)
+                        )
+                        del new
+                    kwargs = {"embed": embeds.data[0], "view": embeds, "target": user.id}
             else:
                 # もし何も一致しないなら検索結果を表示する。
                 embed = discord.Embed(

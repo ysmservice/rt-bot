@@ -2,15 +2,15 @@
 
 from typing import Union
 
-from discord.ext import commands
-import discord
-
-from rtlib.ext import Embeds
-from rtutil import markord
-
 from datetime import datetime, timedelta
 from asyncio import TimeoutError, sleep
 from random import sample
+
+from discord.ext import commands
+import discord
+
+from rtlib.page import EmbedPage
+from rtutil import markord
 
 
 PERMISSION_TEXTS = {
@@ -311,71 +311,6 @@ class ServerTool(commands.Cog):
 
         return e
 
-    @commands.command(
-        aliases=["埋め込み"], extras={
-            "headding": {
-                "ja": "埋め込みメッセージを作成します。",
-                "en": "Make embed message."
-            }, "parent": "ServerUseful"
-        }
-    )
-    @commands.cooldown(1, 10, commands.BucketType.channel)
-    async def embed(
-        self, ctx: commands.Context, color: Union[discord.Color, str], *, content
-    ):
-        """!lang ja
-        -------
-        [こちらをご覧ください。](https://rt-team.github.io/notes/embed)
-
-        !lang en
-        --------
-        Let's see [here](https://rt-team.github.io/notes/embed)."""
-        rt = False
-        if "--rticon" in content:
-            content = content.replace(
-                " --rticon ", ""
-            ).replace(
-                " --rticon", ""
-            ).replace("--rticon", "")
-            rt = True
-
-        try:
-            kwargs = {
-                "username": ctx.author.display_name,
-                "avatar_url": getattr(ctx.author.avatar, "url", ""),
-                "embed": markord.embed(
-                    "# " + content,
-                    color=ctx.author.color if color == "null" else color
-                )
-            }
-        except TypeError:
-            await ctx.reply(
-                {"ja": "色の指定がおかしいです。",
-                 "en": "Bad color argument."}
-            )
-        else:
-            if ctx.message.reference:
-                message = await ctx.channel.fetch_message(
-                    ctx.message.reference.message_id
-                )
-                kwargs = {"embed": kwargs["embed"]}
-                if message.author.id == self.bot.user.id:
-                    send = message.edit
-                else:
-                    wb = discord.utils.get(
-                        await message.channel.webhooks(),
-                        name="R2-Tool" if self.bot.test else "RT-Tool"
-                    )
-                    return await wb.edit_message(
-                        message.id, **kwargs
-                    )
-            else:
-                send = ctx.channel.webhook_send
-                if rt:
-                    kwargs = {"embed": kwargs["embed"]}
-                    send = ctx.send
-
-            await send(**kwargs)
 
     @commands.command(
         aliases=["抽選", "choice", "lot"], extras={
@@ -787,20 +722,18 @@ class ServerTool(commands.Cog):
                         else:
                             i += 1
 
+            embeds = [
+                discord.Embed(
+                    title="メンバー一覧",
+                    description="・" + "\n・".join(members),
+                    color=self.bot.colors["normal"]
+                ) for members in new
+            ]
             kwargs = dict(
-                embeds=Embeds(
-                    "Members", ctx.author.id, embeds=[
-                        discord.Embed(
-                            title="メンバー一覧",
-                            description="・" + "\n・".join(members),
-                            color=self.bot.colors["normal"]
-                        ) for members in new
-                    ]
-                )
+                embed=embeds[0], view=EmbedPage(data=embeds)
             )
             if i == 0:
-                kwargs["embed"] = kwargs["embeds"].embeds[0]
-                del kwargs["embeds"]
+                del kwargs["view"]
 
             await ctx.reply(**kwargs)
         else:

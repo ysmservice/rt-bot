@@ -1,11 +1,12 @@
 # RT - Stamp
 
+from typing import Optional
+
 from discord.ext import commands
 import discord
 
 from rtlib import DatabaseManager
-from rtlib.ext import Embeds
-from typing import Optional
+from rtlib.page import EmbedPage
 
 
 class DataManager(DatabaseManager):
@@ -102,7 +103,7 @@ class Stamp(commands.Cog, DataManager):
         -------
         sp"""
         if not ctx.invoked_subcommand:
-            embeds = Embeds("StampList")
+            embeds = []
 
             p, i, description = 0, 0, ""
             for char in ", ".join(
@@ -112,7 +113,7 @@ class Stamp(commands.Cog, DataManager):
                 description += char
                 i += 1
                 if i == 2000:
-                    embeds.add_embed(
+                    embeds.append(
                         discord.Embed(
                             title=f"Stamp List {(p := p + 1)}",
                             description=description,
@@ -122,7 +123,7 @@ class Stamp(commands.Cog, DataManager):
                     i, description = 0, ""
             else:
                 if description:
-                    embeds.add_embed(
+                    embeds.append(
                         discord.Embed(
                             title=f"Stamp List {(p := p + 1)}",
                             description=description,
@@ -130,9 +131,10 @@ class Stamp(commands.Cog, DataManager):
                         )
                     )
 
-            if embeds.embeds:
-                kwargs = {"embeds": embeds, "embed": embeds.embeds[0]}
-                del kwargs["embeds" if p == 1 else "embed"]
+            if embeds:
+                kwargs = {"view": EmbedPage(data=embeds), "embed": embeds.embeds[0]}
+                if p == 1:
+                    del kwargs["view"]
             else:
                 kwargs = {"content": {
                     "ja": "スタンプはまだ登録されていません。", 
