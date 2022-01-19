@@ -256,13 +256,13 @@ class RoleLinker(commands.Cog, DataManager):
     async def on_member_update(self, before, after):
         if self.bot.is_ready():
             for role in before.roles:
-                if not after.get_role(role.id):
+                if not after.get_role(role.id) and role.name != "@everyone":
                     # もしロールが削除されたなら。
                     self.bot.dispatch("role_remove", role, after)
                     if after.id not in self.running[after.guild.id]:
                         await self.role_update("remove", role, after)
             for role in after.roles:
-                if not before.get_role(role.id):
+                if not before.get_role(role.id) and role.name != "@everyone":
                     # もしロールが追加されたなら。
                     self.bot.dispatch("role_add", role, after)
                     if after.id not in self.running[after.guild.id]:
