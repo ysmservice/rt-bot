@@ -345,22 +345,23 @@ class BotGeneral(commands.Cog):
                        + f"```python\n{error_message}\n```"),
             }
 
-            view = componesy.View("InternalServerErrorView", timeout=60)
-            view.add_item(
-                "link_button", style=discord.ButtonStyle.link,
-                label="サポートサーバー / SupportServer", url=INFO_SS
+            kwargs["view"] = discord.ui.View()
+            kwargs["view"].add_item(
+                discord.ui.Button(
+                    label="サポートサーバー / SupportServer", url=INFO_SS
+                )
             )
-            kwargs["view"] = view
 
         if (length := len(description)) > 4096:
             description = description[4096 - length + 1:]
         if "400" in title:
             # 引数がおかしい場合はヘルプボタンを表示する。
             if (url := self.get_command_url(ctx.command)):
-                kwargs["view"] = componesy.View("BAView")
+                kwargs["view"] = discord.ui.View()
                 kwargs["view"].add_item(
-                    "link_button", label="ヘルプを見る", emoji="❔",
-                    url=url
+                    discord.ui.Button(
+                        label="ヘルプを見る", emoji="❔", url=url
+                    )
                 )
 
         kwargs["embed"] = discord.Embed(
