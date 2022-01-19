@@ -1,15 +1,15 @@
-# RT - Slash, Author: tasuren, Description: このコードだけはパブリックドメインとします。
+# RT - Slash, Author: tasuren, Description: このコードはパブリックドメインとします。
 
 from typing import TYPE_CHECKING, Callable, Optional, Union, Literal, get_origin
-
-from discord.ext.commands.bot import BotBase
-from discord.ext import commands
-import discord
 
 from inspect import signature
 from datetime import datetime
 from functools import wraps
 from re import sub
+
+from discord.ext.commands.bot import BotBase
+from discord.ext import commands
+import discord
 
 from pytz import utc
 
@@ -218,14 +218,17 @@ BotBase.add_cog = wraps(original_add_cog)(new_add_cog)
 
 # スラッシュに対応していないがコマンドフレームワークでは対応しているようなアノテーションをスラッシュに対応させるようにする。
 original_get_type = discord.CommandOption.get_type
-def new_get_type(self, typing: type):
+def new_get_type(self, typing: object):
     if typing in (
         discord.TextChannel, discord.VoiceChannel,
         discord.Thread, discord.StageChannel
     ):
         # `discord.TextChannel`等にしている場合は`discord.abc.GuildChannel`とする。
         return discord.CommandOption.option_types[discord.abc.GuildChannel]
-    elif any(get_origin(typing) is type_ for type_ in (Union, Literal)) or hasattr(typing, "converter"):
+    elif any(
+        get_origin(typing) is type_ or isinstance(typing, str)
+        for type_ in (Union, Literal)
+    ) or hasattr(typing, "converter"):
         # `typing.Union`や`typing.Literal`をアノテーションに使うことはできないので、これらのオプションを見つけたら文字列の型として返すように設定する。
         # また、`commands.Converter`か`commands.Converter`を継承したクラスの場合は文字列とする。
         return discord.CommandOption.option_types[str]
@@ -239,7 +242,7 @@ discord.CommandOption.get_type = new_get_type
 # RTではコグを`on_ready`が呼び出された後に読み込むためスラッシュコマンドがこれだと登録されない。
 # そのため登録されるようにする。
 del discord.Client.on_connect
-discord.Client.on_full_ready = discord.Client.rollout_global_application_commands
+discord.Client.on_full_ready = discord.Client.rollout_application_commands
 
 
 # `discord.SlashOption`で引数の説明等の詳細を設定していない状態でのデフォルト値が適用されないのを治すようにする。

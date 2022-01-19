@@ -58,5 +58,4 @@ class EmbedPage(BasePage):
                 return await interaction.response.send_message(
                     "これ以上ページを捲ることができません。", ephemeral=True
                 )
-        finally:
-            await interaction.response.edit_message(embed=embed)
+        await interaction.response.edit_message(embed=embed)
