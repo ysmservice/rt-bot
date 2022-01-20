@@ -66,9 +66,11 @@ class AutoMod(commands.Cog, DataManager):
         return await channel.send(*args, **kwargs)
 
     @commands.group(
-        aliases=["am", "自動モデレーション", "安全"], headding={
-            "ja": "自動モデレーション機能", "en": "Auto Moderation"
-        }, category="ServerSafety"
+        aliases=["am", "自動モデレーション", "安全"], extras={
+            "headding": {
+                "ja": "自動モデレーション機能", "en": "Auto Moderation"
+            }, "parent": "ServerSafety"
+        }
     )
     @commands.has_permissions(administrator=True)
     @commands.cooldown(1, 5, commands.BucketType.guild)
