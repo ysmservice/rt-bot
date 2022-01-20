@@ -57,8 +57,13 @@ class Level(commands.Cog):
         return f"Level:`{data['level']}`, Exp:`{data['exp']}`"
 
     @commands.group(
-        aliases=("lv", "レベル", "れべる", "れ"), category="ServerUseful",
-        headding={"ja": "レベル, レベル報酬ロール", "en": "Level, Level reward"}
+        aliases=("lv", "レベル", "れべる", "れ"), extras={
+            "parent": "ServerUseful",
+            "headding": {
+                "ja": "レベル, レベル報酬ロール",
+                "en": "Level, Level reward"
+            }
+        }
     )
     async def level(self, ctx: commands.Context):
         """!lang ja
