@@ -14,6 +14,7 @@ from rtlib import RT, Table
 
 
 Exp, Level = NewType("Exp", int), NewType("Level", int)
+UserMode = Literal["server", "global"]
 class LevelData(TypedDict):
     exp: Exp
     level: Level
@@ -128,7 +129,7 @@ class Level(commands.Cog):
         description="レベルのランキングを表示します。"
     )
     @cooldown
-    async def ranking(self, ctx: commands.Context, mode: Literal["server", "global"]):
+    async def ranking(self, ctx: commands.Context, mode: UserMode):
         """!lang ja
         --------
         レベルランキングを表示します。
@@ -321,6 +322,55 @@ class Level(commands.Cog):
         await ctx.reply("まだ設定されていません。")
 
     del manage_role
+
+    @level.group(aliases=("nof", "通知"))
+    async def notification(self, ctx: commands.Context):
+        """!lang ja
+        --------
+        リアクションによるレベルアップの通知設定をします。
+        デフォルトでOFFです。
+
+        Parameters
+        ----------
+        mode : global / server
+            `global`にした場合は自分の通知設定を設定します。
+            `server`にした場合はサーバーでの通知設定をします。
+        onoff : bool
+            通知をするかどうかです。
+
+        Aliases
+        -------
+        nof, 通知
+
+        !lang en
+        --------
+        Sets the notification settings for level-up by reaction.
+        Default is off.
+
+        Parameters
+        ----------
+        mode : global / server
+            If set to `global`, set your own notification settings.
+            If set to `server`, set the notification settings for the server.
+        onoff : bool
+            Whether to be notified or not.
+
+        Aliases
+        -------
+        nof"""
+        if ctx.invoked_subcommand is None:
+            await ctx.reply("使用方法が違います。")
+        else:
+            await ctx.reply("Ok")
+
+    @notification.command("global", aliases=("g", "グローバル"))
+    async def nof_global(self, ctx: commands.Context, onoff: bool):
+        self.data.l[ctx.guild.id].nof = onoff
+
+    @notification.command("server", aliases=("l", "local", "サーバー"))
+    @commands.has_guild_permissions(administrator=True)
+    async def nof_local(self, ctx: commands.Context, onoff: bool):
+        self.data.g[ctx.guild.id].nof = onoff
 
     def calc(self, exp: int, level: int) -> bool:
         "レベルの計算を行います。"
