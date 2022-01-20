@@ -183,8 +183,12 @@ class Level(commands.Cog):
                         break
             if fields:
                 embeds.append(self.make_ranking_embed(rank, fields))
-            return await ctx.reply(embed=embeds[0], view=EmbedPage(data=embeds))
-        await ctx.reply("まだありません。")
+            if len(embeds) == 1:
+                await ctx.reply(embed=embeds[0])
+            else:
+                await ctx.reply(embed=embeds[0], view=EmbedPage(data=embeds))
+        else:
+            await ctx.reply("まだありません。")
 
     @level.group(
         aliases=["rw", "rd", "報酬"],
