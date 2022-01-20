@@ -155,21 +155,20 @@ class Level(commands.Cog):
         Aliases
         -------
         rank, r"""
-        if ((mode == "server" and (
-                data := self.data.l[ctx.guild.id].get("data")) is not None
-            )
-                or (data := {
-                    key: value["level"]
-                    for key, value in self.data.g.to_dict().items()
-                })):
+        if (mode == "server" and (
+                data := self.data.l[ctx.guild.id].get("data")
+            ) is not None) or (data := {
+                key: value["level"]
+                for key, value in self.data.g.to_dict().items()
+            }):
             fields, embeds = [], []
             for rank, (user_id, data) in enumerate(
-                sorted(data.items(), key=lambda x: x[1]), 1
+                reversed(sorted(data.items(), key=lambda x: x[1]["level"])), 1
             ):
                 fields.append(
                     (
                         f"{self.EMOJIS.get(rank, f'{rank}位')}",
-                        "{}：`{}` Level".format(
+                        "{}：`{}`".format(
                             getattr(self.bot.get_user(int(user_id)), 'name', '？？？'),
                             data['level']
                         )
@@ -178,6 +177,9 @@ class Level(commands.Cog):
                 if rank % 10 == 0:
                     embeds.append(self.make_ranking_embed(rank, fields))
                     fields = []
+                    if mode == "global":
+                        # グローバルの場合はメモリが大きくなるので終了する。
+                        break
             if fields:
                 embeds.append(self.make_ranking_embed(rank, fields))
             return await ctx.reply(embed=embeds[0], view=EmbedPage(data=embeds))

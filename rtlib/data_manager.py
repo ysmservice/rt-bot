@@ -155,19 +155,24 @@ class DataManager(commands.Cog):
     def print(self, *args, **kwargs):
         return self.bot.print(f"[{self.__cog_name__}]", *args, **kwargs)
 
-    async def _remove(self, cursor: Cursor, table: str, key: Key) -> None:
+    async def _remove(
+        self, cursor: Cursor, table: str, key: Key, print_: bool = False
+    ) -> None:
         # 削除を行う。
-        self.print("[sync.remove]", f"{table}.{key}")
+        if print_:
+            self.print("[sync.remove]", f"{table}.{key}")
         await cursor.execute(
             f"DELETE FROM {table} WHERE {self.allocations[table]} = %s;",
             (key,)
         )
 
     async def _update(
-        self, cursor: Cursor, table: str, key: Key, data: ChangedDict
+        self, cursor: Cursor, table: str, key: Key,
+        data: ChangedDict, print_: bool = False
     ) -> None:
         # 更新を行う。
-        self.print("[sync.update]", f"{table}.{key}: {data}")
+        if print_:
+            self.print("[sync.update]", f"{table}.{key}: {data}")
         await cursor.execute(
             f"SELECT * FROM {table} WHERE {self.allocations[table]} = %s;",
             (key,)
@@ -184,6 +189,7 @@ class DataManager(commands.Cog):
 
     async def _sync(self, table: str, datas: DataDict[Key, ChangedDict]) -> None:
         # 指定されたテーブルのデータの同期を行います。
+        self.print("[sync]", table)
         async with self.bot.mysql.pool.acquire() as conn:
             async with conn.cursor() as cursor:
                 # 削除されたものを消す。
