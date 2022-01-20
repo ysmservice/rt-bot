@@ -326,6 +326,8 @@ class Level(commands.Cog):
 
     def process_level(self, now: LevelData) -> bool:
         "レベルの処理を行う。"
+        if "exp" not in now:
+            now = FIRST_LEVEL.copy()
         now["exp"] += 1
         if self.calc(**now):
             now["level"] += 1

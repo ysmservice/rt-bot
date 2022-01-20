@@ -1,13 +1,16 @@
-# RT落ちの情報収集ためのロガー
+# RT - Logger
 
-import discord
-from discord.ext import commands, tasks
 import collections
 import logging
 
+from discord.ext import commands, tasks
+import discord
+
+from rtlib import RT
+
 
 class SystemLog(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: RT):
         self.bot = bot
         self.names = []
         self.zero_parents = []
@@ -18,62 +21,56 @@ class SystemLog(commands.Cog):
     def cog_unload(self):
         self.logging_loop.cancel()
 
+    def _make_embed(self):
+        name = collections.Counter(self.names).most_common()[0]
+        zero_parent = collections.Counter(self.zero_parents).most_common()[0]
+        author = collections.Counter(self.authors).most_common()[0]
+        guild = collections.Counter(self.guilds).most_common()[0]
+        e = discord.Embed(
+            title="RT command log",
+            description=f"1分間で{len(self.names)}回のコマンド実行(以下、実行最多記録)",
+            color=self.bot.Colors.unknown
+        )
+        e.add_field(name="コマンド", value=f"{name[0]}：{name[1]}回")
+        e.add_field(name="コマンド(Group)", value=f"{zero_parent[0]}：{zero_parent[1]}回")
+        e.add_field(
+            name="ユーザー",
+            value=f"{self.bot.get_user(author[0])}({author[0]})：{author[1]}回"
+        )
+        e.add_field(
+            name="サーバー",
+            value=f"{self.bot.get_guild(guild[0])}({guild[0]})：{guild[1]}回"
+        )
+        return e
+
     @tasks.loop(seconds=60)
     async def logging_loop(self):
-        if len(self.names) == 0:return
-        name = collections.Counter(self.names).most_common()[0]
-        zero_parent = collections.Counter(self.zero_parents).most_common()[0]
-        author = collections.Counter(self.authors).most_common()[0]
-        guild = collections.Counter(self.guilds).most_common()[0]
-        e = discord.Embed(title="RT command log", description=f"1分間で{len(self.names)}回のコマンド実行(以下、実行最多記録)")
-        e.add_field(name="コマンド", value=f"{name[0]}：{name[1]}回")
-        e.add_field(name="コマンド(Group)", value=f"{zero_parent[0]}：{zero_parent[1]}回")
-        e.add_field(name="ユーザー", value=f"{self.bot.get_user(author[0])}({author[0]})：{author[1]}回")
-        e.add_field(name="サーバー", value=f"{self.bot.get_guild(guild[0]).name}({guild[0]})：{guild[1]}回")
-        await self.bot.get_channel(926731137903104000).send(embeds=[e])
-        self.names = []
-        self.zero_parents = []
-        self.authors = []
-        self.guilds = []
+        if len(self.names) != 0:
+            await self.bot.get_channel(926731137903104000) \
+                .send(embed=self._make_embed())
+            self.names = []
+            self.zero_parents = []
+            self.authors = []
+            self.guilds = []
 
-    @commands.group()
+    @commands.command()
     @commands.is_owner()
-    async def command_logs(self, ctx):
-        if ctx.invoked_subcommand is not None:return
-        if len(self.names) == 0:return
-        name = collections.Counter(self.names).most_common()[0]
-        zero_parent = collections.Counter(self.zero_parents).most_common()[0]
-        author = collections.Counter(self.authors).most_common()[0]
-        guild = collections.Counter(self.guilds).most_common()[0]
-        e = discord.Embed(title="RT command log", description=f"この1分間で{len(self.names)}回のコマンド実行(以下、実行最多記録)")
-        e.add_field(name="コマンド", value=f"{name[0]}：{name[1]}回")
-        e.add_field(name="コマンド(Group)", value=f"{zero_parent[0]}：{zero_parent[1]}回")
-        e.add_field(name="ユーザー", value=f"{self.bot.get_user(author[0])}({author[0]})：{author[1]}回")
-        e.add_field(name="サーバー", value=f"{self.bot.get_guild(guild[0]).name}({guild[0]})：{guild[1]}回")
-        await ctx.reply(embed=e)
-    
-    @command_logs.command()
-    async def start(self, ctx):
-        if not self.logging_loop.is_running():
-            self.logging_loop.start()
+    async def command_logs(self, ctx, mode=None):
+        if mode:
+            getattr(self.logging_loop, mode)()
             await ctx.message.add_reaction("✅")
-    
-    @command_logs.command()
-    async def stop(self, ctx):
-        if self.logging_loop.is_running():
-            self.logging_loop.cancel()
-            await ctx.message.add_reaction("✅")
-    
-    @command_logs.command()
-    async def restart(self, ctx):
-        if self.logging_loop.is_running():
-            self.logging_loop.restart()
-            await ctx.message.add_reaction("✅")
+        elif len(self.names) != 0:
+            await ctx.reply(embed=self._make_embed())
+        else:
+            await ctx.reply("ログ無し。")
 
     @commands.Cog.listener()
     async def on_command(self, ctx):
         self.names.append(ctx.command.name)
-        self.zero_parents.append(ctx.command.name if len(ctx.command.parents) == 0 else ctx.command.parents[-1].name)
+        self.zero_parents.append(
+            ctx.command.name if len(ctx.command.parents) == 0 \
+                else ctx.command.parents[-1].name
+        )
         self.authors.append(ctx.author.id)
         self.guilds.append(ctx.guild.id)
 

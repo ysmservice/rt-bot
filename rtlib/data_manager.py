@@ -117,8 +117,10 @@ class Table:
             return super().__delattr__(key)
 
     def __contains__(self, key: str) -> bool:
-        self._assert_key()
-        return key in self.cog.data[self.name][self.__key__]
+        if self.__key__ is None:
+            return key in self.cog.data[self.name]
+        else:
+            return key in self.cog.data[self.name][self.__key__]
 
 
 class DataManager(commands.Cog):
