@@ -365,16 +365,20 @@ class ServerTool(commands.Cog):
                 else:
                     target = obj.members
 
-        embed = discord.Embed(
-            title="抽選",
-            description=", ".join(
-                member.mention
-                for member in sample(
-                    set(filter(lambda m: not m.bot, target)), count
-                )
-            ), color=self.bot.colors["normal"]
-        )
-        await ctx.reply(embed=embed)
+        try:
+            embed = discord.Embed(
+                title="抽選",
+                description=", ".join(
+                    member.mention
+                    for member in sample(
+                        set(filter(lambda m: not m.bot, target)), count
+                    )
+                ), color=self.bot.colors["normal"]
+            )
+        except ValueError:
+            await ctx.reply("対象のユーザーの人数が指定された数より少ないです。")
+        else:
+            await ctx.reply(embed=embed)
 
     @commands.command(
         aliases=[
