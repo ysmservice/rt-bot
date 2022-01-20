@@ -1,20 +1,22 @@
 # RT - Captcha
 
-from typing import TypedDict, Literal, Union, Optional, Any, Tuple, DefaultDict, Dict
+from __future__ import annotations
+
+from typing import TypedDict, Literal, Union, Optional, Any
+
+from collections import defaultdict
+from dataclasses import dataclass
+from time import time
 
 from discord.ext import commands, tasks
 import discord
 
-from rtutil import DatabaseManager
-from rtlib import RT
-
 from aiohttp import ClientSession
 from aiomysql import Cursor
 
-from collections import defaultdict
-from dataclasses import dataclass
 from ujson import loads, dumps
-from time import time
+
+from rtlib import RT, Table
 
 from .image import ImageCaptcha, QueueData as ImageQueue
 from .web import WebCaptcha
@@ -55,77 +57,49 @@ class QueueData:
     extras: Extras
 
 
-class DataManager(DatabaseManager):
+class CaptchaSaveData(Table):
+    __allocation__ = "GuildID"
+    mode: Mode
+    role_id: int
+    extras: Extras
+
+
+class DataManager:
     "セーブデータを管理するためのクラスです。"
 
-    TABLES = ("captchaData",)
+    def __init__(self, cog: Captcha):
+        self.cog, self.data = cog, CaptchaSaveData(cog.bot)
 
-    def __init__(self, cog: "Captcha"):
-        self.cog, self.pool = cog, cog.bot.mysql.pool
-        self.cog.bot.loop.create_task(self._prepare_table())
-
-    async def _prepare_table(self, cursor: Cursor = None):
-        await cursor.execute(
-            f"""CREATE TABLE IF NOT EXISTS {self.TABLES[0]} (
-                GuildID BIGINT PRIMARY KEY NOT NULL,
-                Mode TEXT, RoleID BIGINT, Extras JSON
-            );"""
-        )
-
-    async def write(
-        self, guild_id: int, mode: Mode, role_id: int,
-        extras: Extras, cursor: Cursor = None
+    def write(
+        self, guild_id: int, mode: Mode, role_id: int, extras: Extras
     ) -> None:
         "認証設定を保存します。"
-        await cursor.execute(
-            f"""INSERT INTO {self.TABLES[0]} VALUES (%s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE Mode = %s, RoleID = %s, Extras = %s;""",
-            (
-                guild_id, mode, role_id, (extras := dumps(extras)),
-                mode, role_id, extras
-            )
-        )
+        self.data[guild_id].mode = mode
+        self.data[guild_id].role_id = role_id
+        self.data[guild_id].extras = extras
 
-    async def _read(self, cursor, guild_id):
-        await cursor.execute(
-            f"""SELECT Mode, RoleID, Extras FROM {self.TABLES[0]}
-                WHERE GuildID = %s;""",
-            (guild_id,)
-        )
-        if (row := await cursor.fetchone()):
-            return list(row[:-1]) + [loads(row[-1])]
-
-    async def read(
-        self, guild_id: int, cursor: Cursor = None
-    ) -> Optional[Tuple[Mode, int, Extras]]:
+    def read(self, guild_id: int) -> Optional[tuple[Mode, int, Extras]]:
         "認証設定を読み込みます。"
-        return await self._read(cursor, guild_id)
+        if "mode" in self.data[guild_id]:
+            return self.data[guild_id].mode, self.data[guild_id].role_id
 
-    async def delete(self, guild_id: int, cursor: Cursor = None) -> None:
+    def delete(self, guild_id: int) -> None:
         "認証の設定を削除します。"
-        assert await self._read(cursor, guild_id), "設定されていません。"
-        await cursor.execute(
-            f"DELETE FROM {self.TABLES[0]} WHERE GuildID = %s;",
-            (guild_id,)
-        )
+        assert self.read(guild_id), "設定されていません。"
+        del self.daata[guild_id]
 
-    async def timeout(
-        self, guild_id: int, time_: float, kick: bool, cursor: Cursor = None
-    ) -> None:
+    def timeout(self, guild_id: int, time_: float, kick: bool) -> None:
         "認証設定にタイムアウトを設定します。"
-        assert (row := await self._read(cursor, guild_id)), "設定がありません。"
+        assert (row := self.read(guild_id)), "設定がありません。"
         data = row[-1]
         data["timeout"] = {"time": time_, "kick": kick}
-        await cursor.execute(
-            f"UPDATE {self.TABLES[0]} SET Extras = %s;",
-            (dumps(data),)
-        )
+        self.data[guild_id].extras = data
 
 
 class View(discord.ui.View):
     "認証開始ボタンのViewです。"
 
-    def __init__(self, cog: "Captcha", emoji: Optional[str] = None, *args, **kwargs):
+    def __init__(self, cog: Captcha, emoji: Optional[str] = None, *args, **kwargs):
         self.cog = cog
         super().__init__(*args, **kwargs)
         if emoji is not None:
@@ -134,7 +108,7 @@ class View(discord.ui.View):
     @discord.ui.button(label="Start Captcha", custom_id="captcha", emoji="🔎")
     async def start_captcha(self, _, interaction: discord.Interaction):
         if self.cog.queued(interaction.guild_id, interaction.user.id):
-            if (row := await self.cog.read(interaction.guild_id)):
+            if (row := self.cog.read(interaction.guild_id)):
                 # もし認証の設定がされているサーバーなら認証を開始する。
                 if hasattr(captcha := self.cog.get_captcha(row[0]), "on_captcha"):
                     await captcha.on_captcha(interaction)
@@ -163,8 +137,8 @@ class Captcha(commands.Cog, DataManager):
 
     def __init__(self, bot: RT):
         self.bot = bot
-        self.queue: DefaultDict[
-            int, Dict[int, Tuple[float, bool, QueueDataT]]
+        self.queue: defaultdict[
+            int, dict[int, tuple[float, bool, QueueDataT]]
         ] = defaultdict(dict)
         self.queue_remover.start()
         self.view = View(self, timeout=None)
@@ -222,7 +196,7 @@ class Captcha(commands.Cog, DataManager):
     ) -> discord.Message:
         "認証を設定しオプションでパネルを送信するための関数です。"
         await ctx.trigger_typing()
-        await self.write(ctx.guild.id, mode, role_id, extras)
+        self.write(ctx.guild.id, mode, role_id, extras)
         if panel:
             return await ctx.send(
                 embed=discord.Embed(
@@ -344,7 +318,7 @@ class Captcha(commands.Cog, DataManager):
         --------
         Turn off the captcha you have set up."""
         try:
-            await self.delete(ctx.guild.id)
+            self.delete(ctx.guild.id)
         except AssertionError:
             await ctx.reply(
                 {"ja": "既に認証設定はオフになっています。",
@@ -390,7 +364,7 @@ class Captcha(commands.Cog, DataManager):
             Whether to kick or not."""
         if 1 <= timeout <= 180:
             try:
-                await self.timeout(ctx.guild.id, timeout, kick)
+                self.timeout(ctx.guild.id, timeout, kick)
             except AssertionError:
                 await ctx.reply(
                     {"ja": "このサーバーは認証の設定がされていないので、タイムアウトを設定することができません。",
@@ -458,7 +432,7 @@ class Captcha(commands.Cog, DataManager):
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         if (member.id not in self.queue.get(member.guild.id, {})
-                and (row := await self.read(member.guild.id))):
+                and (row := self.read(member.guild.id))):
             # もし認証が設定されているサーバーの場合はqueueにタイムアウト情報を追加しておく。
             self.queue[member.guild.id][member.id] = (
                 time() + row[2].get("timeout", {}).get("time", 60) * 60,

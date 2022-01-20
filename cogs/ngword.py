@@ -1,61 +1,51 @@
 # RT - NG Word
 
-from typing import List
+from __future__ import annotations
 
 from discord.ext import commands
 import discord
 
-from rtlib import DatabaseManager, setting
+from rtlib import RT, Table
+
 from .log import log
 
 
-class DataManager(DatabaseManager):
-    def __init__(self, db):
-        self.db = db
+class NGWords(Table):
+    __allocation__ = "GuildID"
+    words: list[str]
 
-    async def init_table(self, cursor) -> None:
-        await cursor.create_table(
-            "ngword", {"id": "BIGINT", "word": "TEXT"}
-        )
 
-    async def get(self, cursor, guild_id: int) -> List[str]:
-        return [
-            row[-1] async for row in cursor.get_datas(
-            "ngword", {"id": guild_id}) if row
-        ]
+class DataManager:
+    def __init__(self, bot: RT):
+        self.data = NGWords(bot)
 
-    async def exists(self, cursor, guild_id: int) -> bool:
-        return await cursor.exists("ngword", {"id": guild_id})
+    def get(self, guild_id: int) -> list[str]:
+        "NGワードのリストを取得します。"
+        return self.data[guild_id].get("words", [])
 
-    async def add(self, cursor, guild_id: int, word: str) -> None:
-        values = {"word": word, "id": guild_id}
-        if await cursor.exists("ngword", values):
-            raise ValueError("すでに追加されています。")
-        else:
-            await cursor.insert_data("ngword", values)
+    def _prepare(self, guild_id: int) -> None:
+        # セーブデータの準備をします。
+        if "words" not in self.data[guild_id]:
+            self.data[guild_id].words = []
 
-    async def remove(self, cursor, guild_id: int, word: str) -> None:
-        targets = {"id": guild_id, "word": word}
-        if await cursor.exists("ngword", targets):
-            await cursor.delete("ngword", targets)
-        else:
-            raise ValueError("そのNGワードはありません。")
+    def add(self, guild_id: int, word: str) -> None:
+        "NGワードを追加します。"
+        self._prepare(guild_id)
+        assert word not in self.data[guild_id].words, "既に追加されています。"
+        assert len(self.data[guild_id].words) < 50, "追加しすぎです。"
+        self.data[guild_id].words.append(word)
+
+    def remove(self, guild_id: int, word: str) -> None:
+        "NGワードを削除します。"
+        self._prepare(guild_id)
+        assert word in self.data[guild_id].words, "そのNGワードはありません。"
+        self.data[guild_id].words.remove(word)
 
 
 class NgWord(commands.Cog, DataManager):
-    def __init__(self, bot):
+    def __init__(self, bot: RT):
         self.bot = bot
-        self.bot.loop.create_task(self.on_ready())
-
-    async def on_ready(self):
-        super(commands.Cog, self).__init__(self.bot.mysql)
-        await self.init_table()
-
-    async def show_ngwords(self, ctx, item):
-        if ctx.mode == "read":
-            item.text = "\n".join(await self.get(ctx.guild.id))
-            item.multiple_line = True
-            return item
+        super(commands.Cog, self).__init__(self.bot)
 
     HELP = ("ServerSafety", "ngword")
 
@@ -65,7 +55,6 @@ class NgWord(commands.Cog, DataManager):
             "parent": "ServerSafety"
         }
     )
-    @setting.Setting("guild", "NG Word")
     async def ngword(self, ctx):
         """!lang ja
         --------
@@ -77,7 +66,7 @@ class NgWord(commands.Cog, DataManager):
         if not ctx.invoked_subcommand:
             embed = discord.Embed(
                 title={"ja": "NGワードリスト", "en": "NG Words"},
-                description="* ".join(await self.get(ctx.guild.id)),
+                description="* ".join(self.get(ctx.guild.id)),
                 color=self.bot.colors["normal"]
             )
             await ctx.reply(embed=embed)
@@ -88,7 +77,6 @@ class NgWord(commands.Cog, DataManager):
         }
     )
     @commands.has_guild_permissions(manage_messages=True)
-    @setting.Setting("guild", "NG Word Add", HELP)
     async def add_(self, ctx, *, words):
         """!lang ja
         --------
@@ -130,7 +118,7 @@ class NgWord(commands.Cog, DataManager):
         If you have created a log channel for the log output function of the channel plugin, the log will be output there."""
         await ctx.trigger_typing()
         for word in words.splitlines():
-            await self.add(ctx.guild.id, word)
+            self.add(ctx.guild.id, word)
         await ctx.reply("Ok")
 
     @ngword.command(
@@ -139,7 +127,6 @@ class NgWord(commands.Cog, DataManager):
         }
     )
     @commands.has_guild_permissions(manage_messages=True)
-    @setting.Setting("guild", "NG Word Remove", HELP)
     async def remove_(self, ctx, *, words):
         """!lang ja
         --------
@@ -160,7 +147,7 @@ class NgWord(commands.Cog, DataManager):
         `rt!ngword remove Badngword"""
         await ctx.trigger_typing()
         for word in words.splitlines():
-            await self.remove(ctx.guild.id, word)
+            self.remove(ctx.guild.id, word)
         await ctx.reply("Ok")
 
     @commands.Cog.listener()
@@ -172,7 +159,7 @@ class NgWord(commands.Cog, DataManager):
             return
 
         if not message.author.guild_permissions.administrator:
-            for word in await self.get(message.guild.id):
+            for word in self.get(message.guild.id):
                 if word in message.content:
                     await message.delete()
                     embed = discord.Embed(
