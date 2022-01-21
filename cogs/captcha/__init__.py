@@ -12,9 +12,7 @@ from discord.ext import commands, tasks
 import discord
 
 from aiohttp import ClientSession
-from aiomysql import Cursor
-
-from ujson import loads, dumps
+from ujson import dumps
 
 from rtlib import RT, Table
 
@@ -81,7 +79,8 @@ class DataManager:
     def read(self, guild_id: int) -> Optional[tuple[Mode, int, Extras]]:
         "認証設定を読み込みます。"
         if "mode" in self.data[guild_id]:
-            return self.data[guild_id].mode, self.data[guild_id].role_id
+            return self.data[guild_id].mode, self.data[guild_id].role_id, \
+                self.data[guild_id].extras
 
     def delete(self, guild_id: int) -> None:
         "認証の設定を削除します。"
