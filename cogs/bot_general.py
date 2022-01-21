@@ -168,7 +168,7 @@ class BotGeneral(commands.Cog):
         st.get_best_server()
         d = st.download()
         u = st.upload()
-        return {"download": d, "upload": u}
+        return st.results.dict()
 
     @commands.command(
         extras={"headding": {
