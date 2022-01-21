@@ -63,7 +63,10 @@ class AutoMod(commands.Cog, DataManager):
             elif isinstance(kwargs["color"], str):
                 kwargs["color"] = self.COLORS[kwargs["color"]]
             kwargs = {"embed": discord.Embed(**kwargs)}
-        return await channel.send(*args, **kwargs)
+        if hasattr(channel, "reply"):
+            return await channel.reply(*args, **kwargs)
+        else:
+            return await channel.send(*args, **kwargs)
 
     @commands.group(
         aliases=["am", "自動モデレーション", "安全"], extras={
