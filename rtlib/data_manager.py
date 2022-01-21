@@ -136,21 +136,22 @@ class DataManager(commands.Cog):
     @commands.Cog.listener()
     async def on_table_create(self, table: Table):
         if table.name not in self._loaded:
-            # テーブルがないのなら作る。
-            async with self.bot.mysql.pool.acquire() as conn:
-                async with conn.cursor() as cursor:
+        # テーブルがないのなら作る。
+        async with self.bot.mysql.pool.acquire() as conn:
+            async with conn.cursor() as cursor:
+                if table.name not in self._loaded:
                     await cursor.execute(
                         f"""CREATE TABLE IF NOT EXISTS {table.name} (
                             {table.__allocation_name__} {table.__allocation_type__}, Data JSON
                         );"""
                     )
-        # キャッシュを作る。
-        self.allocations[table.name] = table.__allocation_name__
-        await cursor.execute(f"SELECT * FROM {table.name};")
-        for row in await cursor.fetchall():
-            if row:
-                self.data[table.name][row[0]] = ChangedDict(loads(row[1]))
-                self.data[table.name][row[0]].changed = False
+                # キャッシュを作る。
+                self.allocations[table.name] = table.__allocation_name__
+                await cursor.execute(f"SELECT * FROM {table.name};")
+                for row in await cursor.fetchall():
+                    if row:
+                        self.data[table.name][row[0]] = ChangedDict(loads(row[1]))
+                        self.data[table.name][row[0]].changed = False
 
         table.locked.set()
 

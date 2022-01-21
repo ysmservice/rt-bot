@@ -34,7 +34,7 @@ def join(message: discord.Message) -> List[str]:
 
 def emoji_count(text: str) -> int:
     "渡された文字列にある絵文字の数を数えます。"
-    return len(findall("<a?:.+:\d+>", text)) \
+    return len(findall("<a?:.+:\\d+>", text)) \
         + len([char for char in text if emoji_lis(char)])
 
 
