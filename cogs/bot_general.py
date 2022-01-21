@@ -1,6 +1,6 @@
 # RT - Bog General
 
-from typing import Dict
+from __future__ import annotations
 
 from traceback import TracebackException
 from collections import defaultdict
@@ -62,14 +62,9 @@ THANKYOU_TEMPLATE = cleandoc(
     プリフィックス　：`rt!`, `Rt!`, `RT!`, `rt.`, `Rt.`, `RT.`, `りつ！`, `りつ.`
 
     **RT 備考**
-    ほとんどのコマンドは`rt!...`ではなくスラッシュからでも実行が可能です。
-    スラッシュコマンドはヘルプにあるコマンドとは少し違いヘルプのカテゴリーで分けられています。
-    例えば音楽(Music)カテゴリーの音楽再生コマンド`rt!play`はスラッシュの場合`/music play`となります。
-    こうしているのは全てのコマンドをスラッシュに登録するとこれ以上追加できないとDiscordに言われてしまうからです。
-    たまにスラッシュで実行できないものがあるかもしれません。
-    その時はお手数ですが`rt!...`から実行してください。
-    また、`rt!...`からでないと実行できないコマンドも一応スラッシュコマンドから実行が可能です。
-    `rt!...`を`/rt run ...`のようにすれば良いです。"""
+    全てのコマンドをスラッシュから実行することが可能です。
+    詳細は以下を見てください。
+    https://rt-team.github.io/notes/slash_table"""
 )
 
 
@@ -83,7 +78,7 @@ class BotGeneral(commands.Cog):
     def __init__(self, bot: RT):
         self.bot, self.rt = bot, bot.data
         self.wslatency = "..."
-        self.cache: Dict[int, Dict[str, float]] = defaultdict(dict)
+        self.cache: defaultdict[int, dict[str, float]] = defaultdict(dict)
         self.remove_cache.start()
 
         self.make_embed_template()
