@@ -58,11 +58,13 @@ class NgWord(commands.Cog, DataManager):
     async def ngword(self, ctx):
         """!lang ja
         --------
-        NGワード機能です。
+        NGワード機能です。  
+        `rt!ngword`で登録されているNGワードのリストを表示します。
 
         !lang en
         --------
-        NG Word feature."""
+        NG Word feature.
+        Run `rt!ngword` to display ngwords registered."""
         if not ctx.invoked_subcommand:
             embed = discord.Embed(
                 title={"ja": "NGワードリスト", "en": "NG Words"},
