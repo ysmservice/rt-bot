@@ -161,7 +161,8 @@ class Help(commands.Cog):
                 title="Help - カテゴリー選択",
                 description={
                     "ja": f"カテゴリーを選択するとそのカテゴリーにあるコマンドが表示されます。\nまたこちらからも見れます：{url}" \
-                        "\nヘルプの見方は[ここ](https://rt-team.github.io/notes/help)を見るとヘルプをよく理解できるようになれるかもしれません。",
+                        "\nヘルプの見方は[こちら](https://rt-team.github.io/notes/help)を見るとヘルプをよく理解できるようになれるかもしれません。" \
+                        "それとスラッシュコマンドは少し特殊なので[こちら](https://rt-team.github.io/notes/slash_table)を確認してください。。",
                     "en": f"Selecting a category will show you the commands in that category. \nYou can also see them here: {url}"
                 }, color=self.bot.colors["normal"]
             )
