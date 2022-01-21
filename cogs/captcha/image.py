@@ -1,6 +1,11 @@
 # RT Captcha - Image
 
-from typing import TYPE_CHECKING, Union, Optional, Tuple
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Union, Optional
+
+from random import randint
+from io import BytesIO
 
 import discord
 
@@ -8,10 +13,8 @@ from captcha.image import ImageCaptcha as ImageGenerator
 from aiofiles.os import remove as aioremove
 from aiofiles import open as aioopen
 from aiohttp import FormData
-from io import BytesIO
 
 from jishaku.functools import executor_function
-from random import randint
 
 if TYPE_CHECKING:
     from .__init__ import Captcha, Mode
@@ -33,7 +36,7 @@ async def response(interaction: discord.Interaction, content: str) -> None:
 
 
 async def add_roles(
-    view: Union["SelectView", "WebCaptchaView"], interaction: discord.Interaction
+    view: Union[SelectView, WebCaptchaView], interaction: discord.Interaction
 ):
     "役職を付与してinteractionの返信をする関数です。"
     if (role := interaction.guild.get_role(
@@ -61,8 +64,7 @@ def make_random_string(length: int):
 class Select(discord.ui.Select):
     "画像認証の画像にある文字を選択するセレクターのクラスです。"
 
-    if TYPE_CHECKING:
-        view: Union["SelectView", "WebCaptchaView"]
+    view: Union[SelectView, WebCaptchaView]
 
     def __init__(self, view, *args, **kwargs):
         if "placeholder" not in kwargs:
@@ -98,7 +100,7 @@ class SelectView(discord.ui.View):
     "画像認証の数字の文字列のセレクターのViewです。"
 
     def __init__(
-        self, captcha: "ImageCaptcha", characters: str, url: str, *args, **kwargs
+        self, captcha: ImageCaptcha, characters: str, url: str, *args, **kwargs
     ):
         self.captcha, self.characters = captcha, characters
         self.on_failed, self.on_success = \
@@ -114,7 +116,7 @@ class ImageCaptcha(ImageGenerator):
     BASE_PATH = "data/captcha/"
 
     def __init__(
-        self, cog: "Captcha", font_path: str = f"{BASE_PATH}SourceHanSans-Normal.otf",
+        self, cog: Captcha, font_path: str = f"{BASE_PATH}SourceHanSans-Normal.otf",
         password_length: int = 5
     ):
         self.cog, self.password_length = cog, password_length
@@ -136,7 +138,7 @@ class ImageCaptcha(ImageGenerator):
     def make_path(self, guild_id: int, user_id: int) -> str:
         return f"{self.BASE_PATH}{self.make_filename(guild_id, user_id)}"
 
-    async def update_image(self, guild_id: int, member_id: int) -> Tuple[str, str]:
+    async def update_image(self, guild_id: int, member_id: int) -> tuple[str, str]:
         "認証用の画像を更新します。まだない場合は新規作成します。"
         # 認証用の画像を作りキューにその画像にある文字とパスを保存しておく。
         self.cog.queue[guild_id][member_id][2].path = path = \
