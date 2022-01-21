@@ -1,77 +1,66 @@
 # RT - Role Linker
 
-from typing import Optional, Dict, List
+from __future__ import annotations
 
-from discord.ext import commands, tasks
-import discord
+from typing import Optional
 
 from collections import defaultdict
-from rtlib import DatabaseManager
-from time import time
+
+from discord.ext import commands
+import discord
+
+from rtlib import RT, Table
 
 
-class DataManager(DatabaseManager):
+class RoleLinkerData(Table):
+    __allocation__ = "GuildID"
+    data: dict[str, tuple[int, bool]] # OriginalRoleID: (RoleID, Reverse)
+
+
+class DataManager:
 
     DB = "RoleLinker"
 
-    def __init__(self, db):
-        self.db = db
+    def __init__(self, bot: RT):
+        self.data = RoleLinkerData(bot)
 
-    async def init_table(self, cursor) -> None:
-        await cursor.create_table(
-            self.DB, {
-                "GuildID": "BIGINT", "Original": "BIGINT",
-                "Role": "BIGINT", "Reverse": "TINYINT"
-            }
-        )
+    def _prepare(self, guild_id: int) -> None:
+        # セーブデータの準備をする。
+        if "data" not in self.data[guild_id]:
+            self.data[guild_id].data = {}
 
-    async def write(
-        self, cursor, guild_id: int, original_role_id: int,
+    def write(
+        self, guild_id: int, original_role_id: int,
         role_id: int, reverse: bool = False
     ) -> None:
-        target = {
-            "GuildID": guild_id, "Original": original_role_id
-        }
-        change = dict(Role=role_id, Reverse=int(reverse))
-        if await cursor.exists(self.DB, target):
-            await cursor.update_data(self.DB, change, target)
-        else:
-            target.update(change)
-            await cursor.insert_data(self.DB, target)
+        "ロールリンクを設定します。"
+        self.data[guild_id].data[str(original_role_id)] = (role_id, reverse)
 
-    async def delete(self, cursor, guild_id: int, original_role_id: int) -> None:
-        target = {"GuildID": guild_id, "Original": original_role_id}
-        if await cursor.exists(self.DB, target):
-            await cursor.delete(self.DB, target)
+    def delete(self, guild_id: int, original_role_id: int) -> None:
+        "ロールリンクを削除します。"
+        self._prepare(guild_id)
+        if (original_role_id := str(original_role_id)) in self.data[guild_id].data:
+            del self.data[guild_id].data[original_role_id]
         else:
             raise KeyError("そのロールリンクは見つかりませんでした。")
 
-    async def read(self, cursor, guild_id: int, original_role_id: int) -> Optional[int]:
-        target = {"GuildID": guild_id, "Original": original_role_id}
-        if await cursor.exists(self.DB, target):
-            if (row := await cursor.get_data(self.DB, target)):
-                return row[-2], row[-1]
-        return None
+    def read(self, guild_id: int, original_role_id: int) -> Optional[tuple[int, bool]]:
+        "ロールリンクのデータを読み込みます。"
+        self._prepare(guild_id)
+        if (original_role_id := str(original_role_id)) in self.data[guild_id].data:
+            return self.data[guild_id].data[original_role_id]
 
-    async def get_all(self, cursor, guild_id: int) -> list:
-        target = dict(GuildID=guild_id)
-        if await cursor.exists(self.DB, target):
-            return [row async for row in cursor.get_datas(self.DB, target)]
-        else:
-            return []
+    def get_all(self, guild_id: int) -> list[tuple[int, int, int, bool]]:
+        "全てのロールリンクのデータを取得します。"
+        self._prepare(guild_id)
+        return [(guild_id, int(orid))+row for orid, row in self.data[guild_id].data.items()]
 
 
 class RoleLinker(commands.Cog, DataManager):
-    def __init__(self, bot):
+    def __init__(self, bot: RT):
         self.bot = bot
-        self.bot.loop.create_task(self.on_ready())
-        self.running: Dict[int, List[int]] = defaultdict(list)
-
-    async def on_ready(self):
-        super(commands.Cog, self).__init__(
-            self.bot.mysql
-        )
-        await self.init_table()
+        self.running: dict[int, list[int]] = defaultdict(list)
+        super(commands.Cog, self).__init__(self.bot)
 
     @commands.group(
         extras={
@@ -102,9 +91,7 @@ class RoleLinker(commands.Cog, DataManager):
                     },
                     description="\n".join(
                         f"<@&{row[1]}>：<@&{row[2]}>\n　リバース：{'on' if row[3] else 'off'}"
-                        for row in await self.get_all(
-                            ctx.guild.id
-                        )
+                        for row in self.get_all(ctx.guild.id)
                     ),
                     color=self.bot.colors["normal"]
                 )
@@ -161,14 +148,14 @@ class RoleLinker(commands.Cog, DataManager):
         -----
         If reverse is on, you cannot set the target role to a role that is already registered with the role linker.  
         The reason is that if you don't do this, you can create loops and interfere with RT. Thank you for your understanding."""
-        if len(await self.get_all(ctx.guild.id)) == 15:
+        if len(self.get_all(ctx.guild.id)) == 15:
             await ctx.reply(
                 {"ja": "これ以上リンクすることはできません。",
                  "en": "No more links can be made."}
             )
         else:
             try:
-                await self.write(
+                self.write(
                     ctx.guild.id, target.id, link_role.id, reverse
                 )
             except ValueError:
@@ -201,7 +188,7 @@ class RoleLinker(commands.Cog, DataManager):
         target : Mention or name of the position
             The position set in the position link."""
         try:
-            await self.delete(ctx.guild.id, target.id)
+            self.delete(ctx.guild.id, target.id)
         except KeyError:
             await ctx.reply(
                 {"ja": "そのロールリンクが見つかりませんでした。",
@@ -212,16 +199,14 @@ class RoleLinker(commands.Cog, DataManager):
 
     async def role_update(
         self, mode: str, role: discord.Role, member: discord.Member,
-        did: Optional[List[int]] = None
+        did: Optional[list[int]] = None
     ) -> None:
-        # ロールの置き換えをする
+        "ロールの置き換えをする"
         did = did or []
         if member.id not in self.running[member.guild.id]:
             self.running[member.guild.id].append(member.id)
-        row = await self.read(member.guild.id, role.id)
-        if row:
-            link_role = member.guild.get_role(row[0])
-            if link_role:
+        if row := self.read(member.guild.id, role.id):
+            if link_role := member.guild.get_role(row[0]):
                 role, add = member.get_role(row[0]), None
                 if mode == "add":
                     if not row[1] and not role:
