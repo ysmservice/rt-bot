@@ -77,7 +77,8 @@ class AutoMod(commands.Cog, DataManager):
     async def automod(self, ctx: commands.Context):
         """!lang ja
         --------
-        自動モデレーション機能です。
+        自動モデレーション機能です。  
+        `rt!automod`でこの機能を有効にすることができます。
 
         Notes
         -----
@@ -98,7 +99,8 @@ class AutoMod(commands.Cog, DataManager):
 
         Notes
         -----
-        Administrator will not be punished.
+        Administrator will not be punished.  
+        You can enable this feature with `rt!automod`.
 
         Warnings
         --------
