@@ -135,7 +135,6 @@ class DataManager(commands.Cog):
 
     @commands.Cog.listener()
     async def on_table_create(self, table: Table):
-        if table.name not in self._loaded:
         # テーブルがないのなら作る。
         async with self.bot.mysql.pool.acquire() as conn:
             async with conn.cursor() as cursor:
