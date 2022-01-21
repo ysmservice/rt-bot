@@ -64,7 +64,11 @@ THANKYOU_TEMPLATE = cleandoc(
     **RT 備考**
     全てのコマンドをスラッシュから実行することが可能です。
     詳細は以下を見てください。
-    https://rt-team.github.io/notes/slash_table"""
+    https://rt-team.github.io/notes/slash_table
+
+    **RT 利用規約**
+    RTを利用した場合以下の利用規約に同意したことになります。
+    https://rt-bot.com/terms.html"""
 )
 
 
