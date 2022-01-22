@@ -236,81 +236,76 @@ class Person(commands.Cog):
             user = await self.bot.fetch_user(user_id)
             member = ctx.guild.get_member(user_id)
 
-        if user:
-            # ユーザー情報のEmbedを作る。
-            embeds = []
-            bot = (f" **`{'✅' if user.public_flags.verified_bot else ''}BOT`**"
-                   if user.bot else "")
+        assert user is not None, "そのユーザーが見つかりませんでした。"
+        # ユーザー情報のEmbedを作る。
+        embeds = []
+        bot = (f" **`{'✅' if user.public_flags.verified_bot else ''}BOT`**"
+                if user.bot else "")
+        embed = discord.Embed(
+            title=f"{user}{bot}",
+            description="".join(
+                self.EMOJIS.get(str(flag), "")
+                for flag in user.public_flags.all()
+            ) if user.public_flags else "",
+            color=self.bot.colors["normal"]
+        )
+        embed.set_thumbnail(url=getattr(user.avatar, "url", ""))
+        embed.add_field(name="ID", value=f"`{user.id}`")
+        embed.add_field(
+            name={
+                "ja": "Discord登録日時",
+                "en": "Discord registration date and time"
+            },
+            value=(user.created_at + timedelta(hours=9)
+            ).strftime('%Y-%m-%d %H:%M:%S')
+        )
+        embed.add_field(
+            name="Avatar URL",
+            value=embed.thumbnail.url.replace("?size=1024", "") \
+                if embed.thumbnail.url else "ありません。",
+            inline=False
+        )
+        embeds.append(embed)
+
+        # サーバーのユーザー情報のEmbedを作る。
+        if member:
             embed = discord.Embed(
-                title=f"{user}{bot}",
-                description="".join(
-                    self.EMOJIS.get(str(flag), "")
-                    for flag in user.public_flags.all()
-                ) if user.public_flags else "",
-                color=self.bot.colors["normal"]
-            )
-            embed.set_thumbnail(url=getattr(user.avatar, "url", ""))
-            embed.add_field(name="ID", value=f"`{user.id}`")
-            embed.add_field(
-                name={
-                    "ja": "Discord登録日時",
-                    "en": "Discord registration date and time"
+                title={
+                    "ja": "このサーバーでの情報",
+                    "en": "..."
                 },
-                value=(user.created_at + timedelta(hours=9)
+                description=(
+                    "@everyone, "+ ", ".join(
+                    role.mention for role in member.roles
+                    if role.name != "@everyone")
+                ),
+                color=member.color
+            )
+            embed.add_field(
+                name={"ja": "表示名",
+                        "en": "..."},
+                value=member.display_name
+            )
+            embed.add_field(
+                name={"ja": "参加日時",
+                        "en": "..."},
+                value=(member.joined_at + timedelta(hours=9)
                 ).strftime('%Y-%m-%d %H:%M:%S')
             )
-            embed.add_field(
-                name="Avatar URL",
-                value=embed.thumbnail.url.replace("?size=1024", "") \
-                    if embed.thumbnail.url else "ありません。",
-                inline=False
-            )
+            if member.voice:
+                embed.add_field(
+                    name={"ja": "接続中のボイスチャンネル",
+                        "en": "..."},
+                    value=f"<#{member.voice.channel.id}>"
+                )
             embeds.append(embed)
-
-            # サーバーのユーザー情報のEmbedを作る。
-            if member:
-                embed = discord.Embed(
-                    title={
-                        "ja": "このサーバーでの情報",
-                        "en": "..."
-                    },
-                    description=(
-                        "@everyone, "+ ", ".join(
-                        role.mention for role in member.roles
-                        if role.name != "@everyone")
-                    ),
-                    color=member.color
-                )
-                embed.add_field(
-                    name={"ja": "表示名",
-                          "en": "..."},
-                    value=member.display_name
-                )
-                embed.add_field(
-                    name={"ja": "参加日時",
-                          "en": "..."},
-                    value=(member.joined_at + timedelta(hours=9)
-                    ).strftime('%Y-%m-%d %H:%M:%S')
-                )
-                if member.voice:
-                    embed.add_field(
-                        name={"ja": "接続中のボイスチャンネル",
-                            "en": "..."},
-                        value=f"<#{member.voice.channel.id}>"
-                    )
-                embeds.append(embed)
-            # 作ったEmbedを送信する。
-            for embed in embeds:
-                await ctx.send(embed=embed)
-            del embeds, embed
-        else:
-            # 見つからないならエラーを発生させる。
-            raise commands.errors.UserNotFound(
-                "そのユーザーの情報が見つかりませんでした。"
-            )
+        # 作ったEmbedを送信する。
+        for embed in embeds:
+            await ctx.send(embed=embed)
+        del embeds, embed
 
     async def yahoo(self, keyword: str) -> Tuple[str, List[Tuple[str, str]]]:
-        # yahooで検索を行います。
+        "yahooで検索を行います。"
         results = []
         url = 'https://search.yahoo.co.jp/search?p=' + \
             keyword.replace(" ", "+").replace("　", "+")
