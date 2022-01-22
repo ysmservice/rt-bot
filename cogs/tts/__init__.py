@@ -267,6 +267,8 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                     if ext == "ogg":
                         kwargs["options"] += \
                             f" -ss {voiceroid.VOICEROIDS[voice]['zisa'] - 0.8}"
+                else:
+                    kwargs = {}
 
                 # 音声を再生する。
                 source = discord.PCMVolumeTransformer(
