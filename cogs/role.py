@@ -7,6 +7,7 @@ from types import SimpleNamespace
 
 from collections import defaultdict
 from inspect import cleandoc
+from time import time
 
 from discord.ext import commands
 import discord
@@ -210,7 +211,7 @@ class RolePanel(commands.Cog):
         self.view = RolePanelView(self)
         self.old: "OldRolePanel" = self.bot.cogs["OldRolePanel"]
         self.bot.add_view(self.view)
-        self.running: defaultdict[int, list[int]] = defaultdict(list)
+        self.running: dict[int, dict[int, float]] = defaultdict(dict)
 
     @commands.command(
         aliases=["役職パネル", "役職", "r"], extras={
@@ -376,16 +377,21 @@ class RolePanel(commands.Cog):
 
     def acquire(self, guild_id: int, user_id: int) -> None:
         if user_id not in self.running[guild_id]:
-            self.running[guild_id].append(user_id)
+            self.running[guild_id][user_id] = time() + 60
 
     def release(self, guild_id: int, user_id: int) -> None:
         if user_id in self.running[guild_id]:
-            self.running[guild_id].remove(user_id)
+            del self.running[guild_id][user_id]
             if not self.running[guild_id]:
                 del self.running[guild_id]
 
     def is_running(self, guild_id: int, user_id: int) -> bool:
-        return user_id in self.running[guild_id]
+        if user_id in self.running[guild_id]:
+            if time() > self.running[guild_id][user_id]:
+                self.release()
+                return False
+            return True
+        return False
 
 
 def setup(bot):
