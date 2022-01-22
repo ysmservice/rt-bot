@@ -14,6 +14,11 @@ voices = {
         "description": 'Copyright (c) 2003-2012 Nagoya Insitute of Technology Department of Computer Science',
         "mode": "OpenJTalk"
     },
+    "gtts": {
+        "path": "...", "name": "gTTS (For english, 英語用)",
+        "description": "TTS made by gTTS python lib, Copyright © 2014-2021 Pierre Nicolas Durette & Contributors",
+        "mode": "Google"
+    },
     "reimu": {
         "path": "cogs/tts/lib/AquesTalk/f1",
         "name": "ゆっくり霊夢",

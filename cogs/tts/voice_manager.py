@@ -5,7 +5,6 @@ from typing import Optional
 from re import findall, sub
 
 from aiofiles import open as async_open
-from emoji import UNICODE_EMOJI_ENGLISH
 from ujson import loads, load, dumps
 from aiohttp import ClientSession
 from bs4 import BeautifulSoup
@@ -14,6 +13,7 @@ from pyopenjtalk import g2p
 from . import aquestalk
 from . import openjtalk
 from . import voiceroid
+from . import google
 
 
 # 辞書を読み込む。
@@ -48,6 +48,7 @@ class VoiceManager:
 
     async def reload_dictionary(self) -> None:
         """辞書を再読み込みします。"""
+        global dic
         async with async_open("cogs/tts/dic/dictionary.json", "r") as f:
             dic = loads(await f.read())
 
@@ -55,7 +56,7 @@ class VoiceManager:
         self, voice: str, text: str, file_path: str,
         dictionary: str = "cogs/tts/lib/OpenJTalk/dic",
         speed: float = 1.0, rtchan: bool = False
-    ) -> Optional[None]:
+    ):
         """音声合成をします。
 
         Parameters
@@ -101,10 +102,8 @@ class VoiceManager:
                     **({"open_jtalk": "/home/tasuren/opt/bin/open_jtalk"}
                     if rtchan else {})
                 )
-            elif data["mode"] == "VOICEROID":
-                return await voiceroid.get_url(
-                    self.session, data["path"], text, speed=speed or 1.0
-                )
+            elif data["mode"] == "Google":
+                await google.synthe(file_path, text)
         else:
             return "None"
 
