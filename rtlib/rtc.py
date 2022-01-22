@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, Optional, List
+from typing import TYPE_CHECKING, Literal, Optional
 
 from asyncio import sleep
 
@@ -20,6 +20,9 @@ if TYPE_CHECKING:
 class RTCGeneralFeature(commands.Cog):
     def __init__(self, bot: RT):
         self.bot = bot
+        for name, value in self.__dict__:
+            if name.startswith("get"):
+                self.bot.rtc.set_event(value)
 
     async def get_user(self, user_id: int) -> Optional[rft.User]:
         if user := self.bot.get_user(user_id):
@@ -27,6 +30,13 @@ class RTCGeneralFeature(commands.Cog):
                 id=user.id, name=user.name,
                 avatar_url=user.avatar.url, full_name=str(user)
             )
+
+    async def get_guilds(self, user_id: int) -> list[rft.Guild]:
+        return [
+            self._prepare_guild(guild)
+            for guild in self.bot.guilds
+            if guild.get_member(user_id) is not None
+        ]
 
     def _get_guild_child(
         self, guild: rft.Guild, key: str, id_: int
@@ -42,7 +52,7 @@ class RTCGeneralFeature(commands.Cog):
 
     def _get_channel(
         self, guild: discord.Guild, mode: Literal["voice", "text"] = None
-    ) -> List[rft.Channel]:
+    ) -> list[rft.Channel]:
         channels = []
         for channel in guild.channels:
             type_ = "text" \
@@ -57,20 +67,23 @@ class RTCGeneralFeature(commands.Cog):
     async def get_channel(self, guild: rft.Guild, id_: int):
         return self._get_guild_child(guild, "channels", id_)
 
+    def _prepare_guild(self, guild: discord.Guild) -> rft.Guild:
+        text_channels = self._get_channel(guild, "text")
+        voice_channels = self._get_channel(guild, "voice")
+        return rft.Guild(
+            id=guild.id, name=guild.name, avatar_url=guild.avatar.url,
+            members=[
+                rft.Member(
+                    id=member.id, name=member.name, avatar_url=member.avatar.url,
+                    full_name=str(member), guild=None
+                ) for member in guild.members
+            ], text_channels=text_channels, voice_channels=voice_channels,
+            channels=text_channels + voice_channels
+        )
+
     async def get_guild(self, guild_id: int) -> Optional[rft.Guild]:
         if guild := self.bot.get_guild(guild_id):
-            text_channels = self._get_channel(guild, "text")
-            voice_channels = self._get_channel(guild, "voice")
-            return rft.Guild(
-                id=guild.id, name=guild.name, avatar_url=guild.avatar.url,
-                members=[
-                    rft.Member(
-                        id=member.id, name=member.name, avatar_url=member.avatar.url,
-                        full_name=str(member), guild=None
-                    ) for member in guild.members
-                ], text_channels=text_channels, voice_channels=voice_channels,
-                channels=text_channels + voice_channels
-            )
+            return self._prepare_guild(guild)
 
 
 class ExtendedRTC(rtc.RTConnection):
