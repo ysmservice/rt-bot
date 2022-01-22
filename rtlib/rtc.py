@@ -45,10 +45,8 @@ class RTCGeneralFeature(commands.Cog):
         data["guild"] = guild
         return data
 
-    async def get_member(
-        self, guild: rft.Guild, member_id: int
-    )-> Optional[rft.Member]:
-        return self._get_guild_child(guild, "members", member_id)
+    async def get_member(self, data: tuple[rft.Guild, int])-> Optional[rft.Member]:
+        return self._get_guild_child(data[0], "members", data[1])
 
     def _get_channel(
         self, guild: discord.Guild, mode: Literal["voice", "text"] = None
@@ -64,8 +62,8 @@ class RTCGeneralFeature(commands.Cog):
                 ))
         return channels
 
-    async def get_channel(self, guild: rft.Guild, id_: int):
-        return self._get_guild_child(guild, "channels", id_)
+    async def get_channel(self, data: tuple[rft.Guild, int]):
+        return self._get_guild_child(data[0], "channels", data[1])
 
     def _prepare_guild(self, guild: discord.Guild) -> rft.Guild:
         text_channels = self._get_channel(guild, "text")
