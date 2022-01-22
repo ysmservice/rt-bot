@@ -47,7 +47,7 @@ class DataManager(DatabaseManager):
                 "tts", {"type": "voice", "id": user_id, "content": name}
             )
 
-    async def read_voice(self, cursor, user_id: int) -> str:
+    async def read_voice(self, cursor, user_id: int) -> tuple:
         """指定したユーザーIDの声を取得します。
 
         Parameters
@@ -59,11 +59,11 @@ class DataManager(DatabaseManager):
                 "tts", {"type": "voice", "id": user_id}
             )
             if row:
-                return row[-1]
+                return row[-1], False
             else:
-                return "mei"
+                return "mei", True
         else:
-            return "mei"
+            return "mei", True
 
     async def write_dictionary(self, cursor, data: dict, guild_id: int) -> None:
         """辞書を指定したIDと一緒に保存します。

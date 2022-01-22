@@ -5,13 +5,14 @@ README  : ./readme.md
 
 print("RT Discord Bot (C) 2020 RT-Team\nNow loading...")
 
-import discord
-
+from platform import system
 from os import listdir
 from sys import argv
 
 from logging import handlers
 import logging
+
+import discord
 
 from aiohttp import ClientSession
 from ujson import load, dumps

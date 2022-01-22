@@ -9,12 +9,12 @@ from itertools import chain
 from random import choice
 from time import time
 import subprocess
+import speedtest
 
 from discord.ext import commands, tasks
 import discord
 
 from jishaku.functools import executor_function
-from ujson import loads
 
 from rtlib.page import EmbedPage
 from rtlib.ext import componesy
@@ -164,7 +164,11 @@ class BotGeneral(commands.Cog):
 
     @executor_function
     def _speedtest(self):
-        return subprocess.run(["speedtest-cli", "--json"], capture_output=True)
+        st = speedtest.Speedtest()
+        st.get_best_server()
+        d = st.download()
+        u = st.upload()
+        return st.results.dict()
 
     @commands.command(
         extras={"headding": {
@@ -179,7 +183,7 @@ class BotGeneral(commands.Cog):
             title="速度回線テスト", description="測定中です...", color=self.bot.Colors.normal
         )
         message = await ctx.send(embed=embed)
-        data = loads((await self._speedtest()).stdout)
+        data = await self._speedtest()
         embed = discord.Embed(title="速度回線テスト")
         embed.add_field(name="ダウンロード", value=data["download"])
         embed.add_field(name="アップロード", value=data["upload"])

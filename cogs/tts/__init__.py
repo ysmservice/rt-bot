@@ -33,14 +33,14 @@ def require_connected(coro):
         if not ctx.author.voice:
             await ctx.reply(
                 {"ja": "ボイスチャンネルに接続していません。",
-                 "en": "..."}
+                 "en": "I'm not connected to voice channel."}
             )
         elif ctx.guild.id in self.now:
             return await coro(self, ctx, *args, **kwargs)
         else:
             await ctx.reply(
                 {"ja": "ボイスチャンネルに接続していません。\n`rt!tts join`を実行しましょう。",
-                 "en": "..."}
+                 "en": "I'm not connected to voice channel.\nSo let's run `rt!tts join`."}
             )
     return new_coro
 
@@ -73,7 +73,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
     @commands.group(
         extras={
             "headding": {"ja": "ボイスチャンネルで読み上げをします。",
-                         "en": "..."},
+                         "en": "TTS on voice channel"},
             "parent": "Entertainment"
         },
         aliases=["yomi", "yomiage", "読み上げ", "よみあげ"],
@@ -91,11 +91,11 @@ class TTS(commands.Cog, VoiceManager, DataManager):
 
         !lang en
         --------
-        ..."""
+        TTS on voice channel"""
         if not ctx.invoked_subcommand:
             await ctx.reply(
                 {"ja": "使用方法が違います。",
-                 "en": "..."}
+                 "en": "It is used in different ways."}
             )
 
     @tts.command(
@@ -118,17 +118,17 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         if ctx.guild.voice_client:
             data = {
                 "ja": "既に別のチャンネルに接続しています。",
-                "en": "..."
+                "en": "It is already connected to another channel."
             }
         elif not ctx.author.voice:
             data = {
                 "ja": "ボイスチャンネルに接続してください。",
-                "en": "..."
+                "en": "Connect to a voice channel."
             }
         elif ctx.guild.id in self.bot.cogs["MusicNormal"].now:
             data = {
                 "ja": "音楽プレイヤーと同時に使用することはできません。\nサブのRTであるりつたんを使用してください。",
-                "en": "..."
+                "en": "Cannot be used with a music player at the same time.\nWe are currently preparing English support for Ritsu-chan, our sub RT.\nPlease wait for it to be released."
             }
         else:
             if hasattr(ctx, "interaction"):
@@ -138,7 +138,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                 await ctx.trigger_typing()
             data = {
                 "ja": "接続しました。",
-                "en": "..."
+                "en": "Connected!"
             }
 
             self.now[ctx.guild.id] = {
@@ -170,13 +170,17 @@ class TTS(commands.Cog, VoiceManager, DataManager):
 
         !lang en
         --------
-        ..."""
+        Disconnect from a voice channel.
+
+        Aliases
+        -------
+        disconnecte, dis"""
         if ctx.guild.voice_client:
             await ctx.guild.voice_client.disconnect()
         del self.now[ctx.guild.id]
         await ctx.reply(
             {"ja": "切断しました。",
-             "en": "..."}
+             "en": "Bye."}
         )
 
     async def after_playing(
@@ -257,12 +261,14 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                 # もし文字列が存在するなら再生する。
                 if "routine" in url:
                     kwargs = {"options": '-filter:a "volume=1.5"'}
-                else:
+                elif voice != "gtts":
                     vol = 2.2 if voice in ("reimu", "marisa") else 5.5
                     kwargs = {"options": f'-filter:a "volume={vol}"'}
                     if ext == "ogg":
                         kwargs["options"] += \
                             f" -ss {voiceroid.VOICEROIDS[voice]['zisa'] - 0.8}"
+                else:
+                    kwargs = {}
 
                 # 音声を再生する。
                 source = discord.PCMVolumeTransformer(
@@ -312,7 +318,12 @@ class TTS(commands.Cog, VoiceManager, DataManager):
 
         !lang en
         --------
-        ..."""
+        This function manages the channels to be read out.  
+        If you run `rt!tts channel`, a list of channels currently being read out will be displayed.
+
+        Aliases
+        -------
+        ch"""
         if not ctx.invoked_subcommand:
             await ctx.reply(
                 "* " + "\n* ".join(
@@ -337,17 +348,22 @@ class TTS(commands.Cog, VoiceManager, DataManager):
 
         !lang en
         --------
-        ..."""
+        Add a channel to be read out.  
+        Up to five channels can be registered.
+
+        Aliases
+        -------
+        ad"""
         if len(self.now[ctx.guild.id]["channels"]) == 5:
             await ctx.reply(
                 {"ja": "五個まで追加可能です。",
-                 "en": "..."}
+                 "en": "Up to five more can be added."}
             )
         else:
             self.now[ctx.guild.id]["channels"].append(ctx.channel.id)
             await ctx.reply(
                 {"ja": "読み上げ対象チャンネルを追加しました。",
-                 "en": "..."}
+                 "en": "Added channels for reading out."}
             )
 
     @channel.command(
@@ -366,23 +382,23 @@ class TTS(commands.Cog, VoiceManager, DataManager):
 
         !lang en
         --------
-        ..."""
+        Deletes the channel to be read out."""
         if len(self.now[ctx.guild.id]["channels"]) == 1:
             await ctx.reply(
                 {"ja": "読み上げ対象のチャンネルがなくなってしまいます。",
-                 "en": "..."}
+                 "en": "The channel to be read out will be lost."}
             )
         else:
             if ctx.channel.id in self.now[ctx.guild]:
                 self.now[ctx.guild.id]["channels"].remove(ctx.channel.id)
                 await ctx.reply(
                     {"ja": "読み上げ対象チャンネルを削除しました。",
-                     "en": "..."}
+                     "en": "Deleted the channel to be read out."}
                 )
             else:
                 await ctx.reply(
                     {"ja": "このチャンネルは読み上げ対象ではありません。",
-                     "en": "..."}
+                     "en": "This channel is not for reading out loud."}
                 )
 
     @tts.group(
@@ -401,7 +417,12 @@ class TTS(commands.Cog, VoiceManager, DataManager):
 
         !lang en
         --------
-        ..."""
+        This is a dictionary function to set strings to be replaced when reading out loud.  
+        You can see the list of dictionaries set by running `rt!tts dictionary`.
+
+        Aliases
+        -------
+        dic"""
         if not ctx.invoked_subcommand:
             data = await self.read_dictionary(ctx.guild.id)
             embeds = []
@@ -473,12 +494,24 @@ class TTS(commands.Cog, VoiceManager, DataManager):
 
         !lang en
         --------
-        ..."""
+        Sets the dictionary.  
+        Up to 30 dictionaries can be set.
+
+        Parameters
+        ----------
+        before : str
+            The string to be replaced.
+        after : str
+            The string to replace.
+
+        Examples
+        --------
+        `rt!tts dictionary set yaakiyu His name is Yaakiyu, and he is a rarity.`"""
         data = await self.read_dictionary(ctx.guild.id)
         if len(data) == 30:
             await ctx.reply(
                 {"ja": "辞書は30個より多く設定することはできません。",
-                 "en": "..."}
+                 "en": "You cannot set more than 30 dictionaries."}
             )
         else:
             data[before] = after
@@ -512,7 +545,12 @@ class TTS(commands.Cog, VoiceManager, DataManager):
 
         !lang en
         --------
-        ..."""
+        Deletes a dictionary.
+
+        Parameters
+        ----------
+        word : str
+            The string to be replaced."""
         data = await self.read_dictionary(ctx.guild.id)
         if word in data:
             del data[word]
@@ -523,11 +561,11 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         else:
             await ctx.reply(
                 {"ja": "その辞書が見つかりませんでした。",
-                 "en": "..."}
+                 "en": "Not found"}
             )
 
     @tts.group(
-        aliases=["ねた", "ネタ"],
+        aliases=["rt", "ねた", "ネタ"],
         description="読み上げにネタ音声を追加、削除します。 / Add or remove routine voice."
     )
     async def routine(self, ctx):
@@ -543,7 +581,9 @@ class TTS(commands.Cog, VoiceManager, DataManager):
 
         !lang en
         --------
-        ..."""
+        You can choose to use the voice of your choice when reading out loud.  
+        For example: [HEYYEYAAEYAAAEYAEYAA](https://www.youtube.com/watch?v=ZZ5LpwO-An4), [Never Gonna Give You Up](https://www.youtube.com/watch?v=dQw4w9WgXcQ).  
+        **You can't register from Rintan, please add from RT. **."""
         if not ctx.invoked_subcommand:
             data = await self.read_routine(ctx.author.id)
             embed = discord.Embed(
@@ -571,7 +611,11 @@ class TTS(commands.Cog, VoiceManager, DataManager):
         このコマンドはRTのサブであるりつたんを使っている場合のみ使うコマンドです。  
         普通のRTでの実行は意味がありません。  
         このコマンドは実行者のRoutineの登録リストを再読み込みするコマンドです。  
-        もしRTにネタボイスを追加した際にりつたんを使用していた場合は、このコマンドを実行しないとりつたんでネタボイスを使用できません。"""
+        もしRTにネタボイスを追加した際にりつたんを使用していた場合は、このコマンドを実行しないとりつたんでネタボイスを使用できません。
+
+        !lang en
+        --------
+        ..."""
         data = await self.read_routine(ctx.author.id)
         if ctx.author.id in self.cache:
             self.cache[ctx.author.id]["routine"] = data
@@ -626,18 +670,37 @@ class TTS(commands.Cog, VoiceManager, DataManager):
 
         !lang en
         --------
-        ..."""
+        Register a story voice.  
+        Please attach the target voice.  
+
+        Notes
+        -----
+        You can attach up to 3MB of audio and it must be within 7 seconds.  
+        And you can register up to 20 story voices.  
+        Supported formats are `wav` and `ogg`.
+
+        Parameters
+        ----------
+        aliases : str
+            The aliases are strings that will be played when sent, separated by spaces or newlines.  
+            Example: `nv never`.  
+            (If you send any of these, the voice will be played.)
+
+        Examples
+        --------
+        `rt!tts routine add nv never`  
+        (Never Gonna Give You Up)"""
         if ctx.message.attachments and self.bot.user.id != 888635684552863774:
             data = await self.read_routine(ctx.author.id)
             if len(data) == 20:
                 await ctx.reply(
                     {"ja": "既に20個登録されているためこれ以上登録できません。",
-                     "en": "..."}
+                     "en": "You have already registered 20 items, so you cannot register any more."}
                 )
             elif ctx.message.attachments[0].size > 3_145_728:
                 await ctx.reply(
                     {"ja": "アップロードできる音声は約3MBまでです。",
-                     "en": "..."}
+                     "en": "You can upload up to approximately 3MB of audio."}
                 )
             elif ctx.message.attachments[0].url.endswith((".wav", ".ogg")):
                 await ctx.trigger_typing()
@@ -658,17 +721,17 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                 else:
                     await ctx.reply(
                         {"ja": "音声は七秒以内で終わる必要があります。",
-                         "en": "..."}
+                         "en": "The audio should last no more than seven seconds."}
                     )
             else:
                 await ctx.reply(
                     {"ja": "ファイルのフォーマットは`wav`, `ogg`のどれかの必要があります。",
-                     "en": "..."}
+                     "en": "The format of the file should be one of `wav`, `ogg`."}
                 )
         else:
             await ctx.reply(
                 {"ja": "登録する音声を追加してください。\nまたはりつたんに登録することはできません。",
-                 "en": "..."}
+                 "en": "Attach the voice to be registered."}
             )
 
     @routine.command(
@@ -693,7 +756,16 @@ class TTS(commands.Cog, VoiceManager, DataManager):
 
         Aliases
         -------
-        rm, りむーぶ, del, delete"""
+        rm, りむーぶ, del, delete
+
+        !lang en
+        --------
+        Deletes a registered story voice.
+
+        Parameters
+        ----------
+        alias : str
+            One of the strings that trigger the routine voice to be deleted."""
         data = await self.read_routine(ctx.author.id)
         if data and self.bot.user.id != 888635684552863774:
             await ctx.trigger_typing()
@@ -714,13 +786,12 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                 json={"files": [path[path.rfind("/") + 1:] for path in files]}
             ) as r:
                 self.bot.print("[TTS.RoutineDelete]", files)
-                ...
 
             await ctx.reply("Ok")
         else:
             await ctx.reply(
                 {"ja": "まだRoutineは追加されていません。\nまたはりつたんから削除することはできません。",
-                 "en": "..."}
+                 "en": "Routine has not been added yet."}
             )
 
     async def on_member(self, event_type: str, member: discord.Member) -> None:
@@ -728,8 +799,11 @@ class TTS(commands.Cog, VoiceManager, DataManager):
             # メンバーがボイスチャンネルに接続または切断した際に呼び出される関数です。
             # そのメンバーが設定している声のキャッシュを取得または削除をします。
             if event_type == "join":
+                v, d = await self.read_voice(member.id)
+                if d and self.bot.cogs["Language"].get(member.id) != "ja":
+                    d = "gtts"
                 self.cache[member.id] = {
-                    "voice": await self.read_voice(member.id),
+                    "voice": v,
                     "routine": await self.read_routine(member.id)
                 }
             elif member.id in self.voices:
@@ -796,7 +870,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                 ) for voice in VOICES
             ], placeholder="声の種類を選択 / Select Voice"
         )
-        await ctx.reply("下のメニューバーから声を選択してください。", view=view)
+        await ctx.reply("下のメニューバーから声を選択してください。", view=view())
 
     def cog_unload(self):
         # 読み上げを終わらせておく。
@@ -874,7 +948,6 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                 f"{self.bot.get_url()}/api/tts/routine/post", json=data
             ) as r:
                 self.bot.print("[TTS.RoutineUploader]", filename, await r.json())
-                ...
             await ws.send("ok")
         else:
             await ws.send("not_found")
