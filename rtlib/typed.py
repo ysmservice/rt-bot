@@ -9,6 +9,7 @@ from aiomysql import Pool
 
 from .mysql_manager import MySQLManager
 from data import data, Colors, is_admin
+from .rtc import ExtendedRTC
 
 
 class RT(commands.AutoShardedBot):
@@ -22,6 +23,7 @@ class RT(commands.AutoShardedBot):
     is_admin: is_admin
     colors: dict
     Colors: Colors
+    rtc: ExtendedRTC
 
     def print(self, *args, **kwargs) -> None:
         return print(f"[Backend]", *args, **kwargs)
