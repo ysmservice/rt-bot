@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TypedDict, Union, Optional, Literal, overload
 
-from asyncio import Event, wait_for, TimeoutError as AioTimeoutError
+from asyncio import Event, sleep, wait_for, TimeoutError as AioTimeoutError
 from datetime import datetime
 
 from discord.ext import commands
@@ -17,6 +17,13 @@ from ujson import dumps
 
 from rtlib.rt_module.src.setting import CommandData
 from rtlib import RT
+
+
+def Setting(*args, **kwargs):
+    "以前の設定デコレータの偽物"
+    def decorator(func):
+        return func
+    return decorator
 
 
 class CommandRunData(TypedDict, total=False):
@@ -108,19 +115,21 @@ class SettingManager(commands.Cog):
 
     @commands.Cog.listener()
     async def on_full_ready(self):
-        await self.sync()
+        await self.update()
 
-    @property
     def session(self):
         "`aiohttp.ClientSession`の準備をする。"
         return ClientSession(loop=self.bot.loop, json_serialize=dumps)
 
-    async def sync(self):
+    async def update(self):
         "コマンドのデータを用意してバックエンドにコマンドのデータを送信します。"
         # コマンドのデータを用意する。
         for command in self.bot.commands:
             if ("headding" in command.__original_kwargs__
                     or "headding" in command.extras):
+                category = category = command.__original_kwargs__.get(
+                    "category", command.extras.get("parent", "Other")
+                )
                 try:
                     h = self.bot.cogs["DocHelp"].data[category][
                         command.qualified_name[command.qualified_name.find(" "):]
@@ -129,14 +138,13 @@ class SettingManager(commands.Cog):
                 except KeyError:
                     h = {"ja": "ヘルプが見つからなかった...", "en": "No help..."}
                 self.data[command.qualified_name] = CommandData(
-                    headding=command.__original_kwargs__.get(
-                        "headding", command.extras["headding"]
-                    ), category=(category := command.__original_kwargs__.get(
-                        "category", command.extras.get("parent", "Other")
-                    )), help=h
+                    headding=command.__original_kwargs__.get("headding")
+                        or command.extras.get("headding"),
+                    category=category, help=h
                 )
         # バックエンドにコマンドのデータを送信する。
-        self.bot.rtc.request("dashboard.update", self.data)
+        await self.bot.rtc.ready.wait()
+        await self.bot.rtc.request("dashboard.update", self.data)
 
     async def run(self, data: CommandRunData) -> tuple[Literal["Error", "Ok"], str]:
         "コマンドを走らせます。"
