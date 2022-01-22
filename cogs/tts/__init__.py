@@ -261,7 +261,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                 # もし文字列が存在するなら再生する。
                 if "routine" in url:
                     kwargs = {"options": '-filter:a "volume=1.5"'}
-                else:
+                elif voice != "gtts":
                     vol = 2.2 if voice in ("reimu", "marisa") else 5.5
                     kwargs = {"options": f'-filter:a "volume={vol}"'}
                     if ext == "ogg":
