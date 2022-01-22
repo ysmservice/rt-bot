@@ -57,10 +57,12 @@ class Watch(commands.Cog):
         self.timer_processer.start()
 
     @commands.group(
-        aliases=["w", "時計"], headding={
-            "ja": "時計, ストップウォッチ, タイマー",
-            "en": "watch, stopwatch, timer"
-        }, category="Individual"
+        aliases=["w", "時計"], extras={
+            "parent": "Individual", "headding": {
+                "ja": "時計, ストップウォッチ, タイマー",
+                "en": "watch, stopwatch, timer"
+            }
+        }
     )
     async def watch(self, ctx: commands.Context):
         """!lang ja
