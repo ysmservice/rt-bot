@@ -77,19 +77,20 @@ class VoiceManager:
             "https?://[\\w/:%#\\$&\\?\\(\\)~\\.=\\+\\-]+",
             "ゆーあーるえる", text
         )
-        # 二回連続の「っ」などを一つにする。
-        for char in self.NULL_CHARS:
-            text = sub(f"{char}+", char, text)
-        # 連続するwは一つにする。にする。
-        text = sub("w{2,}", "わらわら", text)
-        # 文字列を最適な文字列にする。
-        if len(text) > 40:
-            text = text[:41] + " いかしょうりゃく"
-        text = text.replace("()", "かっこしっしょう")
-        text = text.replace("(笑)", "かっこわらい")
-        text = self.delete_disallow(
-            g2p(await self.text_parser(text), kana=True)
-        )
+        if data["mode"] != "Google":
+            # 二回連続の「っ」などを一つにする。
+            for char in self.NULL_CHARS:
+                text = sub(f"{char}+", char, text)
+            # 連続するwは一つにする。にする。
+            text = sub("w{2,}", "わらわら", text)
+            # 文字列を最適な文字列にする。
+            if len(text) > 40:
+                text = text[:41] + " いかしょうりゃく"
+            text = text.replace("()", "かっこしっしょう")
+            text = text.replace("(笑)", "かっこわらい")
+            text = self.delete_disallow(
+                g2p(await self.text_parser(text), kana=True)
+            )
         # 音声合成をする。
         if text:
             if data["mode"] == "AquesTalk":
