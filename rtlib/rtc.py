@@ -113,10 +113,11 @@ def setup(bot: RT):
                 await bot.wait_until_ready()
                 try:
                     await self.communicate(await connect(f"ws://{bot.get_ip()}/rtc"))
-                except OSError:
+                except OSError as e:
                     ...
                 self.logger("info", "Disconnected from backend")
                 self.logger("info", "Reconnect in three seconds")
+                self.ready.clear()
                 await sleep(3)
 
         bot.loop.create_task(communicate(), name="RTConnection")
