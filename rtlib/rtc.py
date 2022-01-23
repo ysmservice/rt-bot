@@ -49,14 +49,14 @@ class RTCGeneralFeatures(commands.Cog):
         return self._get_guild_child(data[0], "members", data[1])
 
     def _get_channel(
-        self, guild: discord.Guild, mode: Literal["voice", "text"] = None
+        self, guild: discord.Guild, mode: Optional[Literal["voice", "text"]] = None
     ) -> list[rft.Channel]:
         channels = []
         for channel in guild.channels:
             type_ = "text" \
                 if isinstance(channel, (discord.TextChannel, discord.Thread)) \
                 else "voice"
-            if mode is None and type_ == mode:
+            if mode is None or type_ == mode:
                 channels.append(rft.Channel(
                     id=channel.id, name=channel.name, guild=None, type=type_
                 ))

@@ -113,13 +113,13 @@ class SettingManager(commands.Cog):
         self.bot = bot
         self.data: dict[str, CommandData] = {}
 
-    @commands.Cog.listener()
-    async def on_full_ready(self):
-        await self.update()
-
     def session(self):
         "`aiohttp.ClientSession`の準備をする。"
         return ClientSession(loop=self.bot.loop, json_serialize=dumps)
+
+    @commands.Cog.listener()
+    async def on_update_api(self):
+        await self.update()
 
     async def update(self):
         "コマンドのデータを用意してバックエンドにコマンドのデータを送信します。"
