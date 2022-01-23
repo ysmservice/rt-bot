@@ -125,7 +125,7 @@ class GlobalBan(commands.Cog, DataManager):
             await ctx.reply(
                 {"ja": "RTのGBANをするにはサポートサーバーにて申請をする必要があります。",
                  "en": "You can apply user to RT's gban."},
-                view=view
+                view=view()
             )
 
     @gban.command()
