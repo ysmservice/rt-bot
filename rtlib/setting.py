@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TypedDict, Union, Optional, Literal, overload
+from typing import TypedDict, Union, Optional, Literal, overload, get_origin, get_args
 
-from asyncio import Event, sleep, wait_for, TimeoutError as AioTimeoutError
+from asyncio import Event, wait_for, TimeoutError as AioTimeoutError, sleep
 from datetime import datetime
 
 from discord.ext import commands
@@ -112,38 +112,105 @@ class SettingManager(commands.Cog):
     def __init__(self, bot: RT):
         self.bot = bot
         self.data: dict[str, CommandData] = {}
+        self.helps: dict[str, dict[str, str]] = {}
+        self.bot.rtc.set_event(self.get_help)
 
     def session(self):
         "`aiohttp.ClientSession`の準備をする。"
         return ClientSession(loop=self.bot.loop, json_serialize=dumps)
 
-    @commands.Cog.listener()
-    async def on_update_api(self):
-        await self.update()
+    def _get_default(self, default: object) -> object:
+        # 渡されたものがスラッシュのオプションならそれに設定されているデフォルトを返す。
+        return default.default if isinstance(default, discord.SlashOption) else default
 
-    async def update(self):
-        "コマンドのデータを用意してバックエンドにコマンドのデータを送信します。"
+    async def get_help(self, name: str) -> Optional[dict[str, str]]:
+        "ヘルプを取得します。RTCで使うためのものです。"
+        return self.helps.get(name)
+
+    @commands.Cog.listener()
+    async def on_full_ready(self):
+        await sleep(5)
+        await self.update(first=True)
+        self.bot.rtc.set_event(self.update, "on_connect")
+
+    def extract_category(self, command: commands.Command) -> str:
+        "カテゴリーを取り出します。"
+        return command.__original_kwargs__.get(
+            "category", command.extras.get("parent", "Other")
+        )
+
+    def extract_help(self, command: commands.Command, category: str) -> dict[str, str]:
+        "ヘルプを取り出します。"
+        return self.bot.cogs["DocHelp"].data[category].get(
+            command.qualified_name[command.qualified_name.find(" "):]
+            if command.parent else command.name
+        )
+
+    def check_parent(self, command: commands.Commande) -> bool:
+        "親コマンドがダッシュボードに追加しても良いものかどうかをチェックします。"
+        return "headding" in command.__original_kwargs__ or "headding" in command.extras
+
+    @commands.Cog.listener()
+    async def on_command_add(self, command: discord.Command):
         # コマンドのデータを用意する。
-        for command in self.bot.commands:
-            if ("headding" in command.__original_kwargs__
-                    or "headding" in command.extras):
-                category = category = command.__original_kwargs__.get(
-                    "category", command.extras.get("parent", "Other")
-                )
+        if self.check_parent(command) or command.parent is not None:
+            # ヘルプとカテゴリーを取り出す。
+            if command.parent is None:
                 try:
-                    h = self.bot.cogs["DocHelp"].data[category][
-                        command.qualified_name[command.qualified_name.find(" "):]
-                        if command.parent else command.name
-                    ]
+                    self.helps[command.qualified_name] = self.extract_help(
+                        command, category := self.extract_category(command)
+                    )
                 except KeyError:
-                    h = {"ja": "ヘルプが見つからなかった...", "en": "No help..."}
-                self.data[command.qualified_name] = CommandData(
-                    headding=command.__original_kwargs__.get("headding")
-                        or command.extras.get("headding"),
-                    category=category, help=h
-                )
+                    self.helps[command.qualified_name] = {
+                        "ja": "ヘルプが見つからなかった...", "en": "No help..."
+                    }
+            else:
+                tentative = command.parent
+                while tentative.parent is not None:
+                    tentative = tentative.parent
+                if self.check_parent(tentative):
+                    self.helps[command.qualified_name] = self.extract_help(
+                        tentative, self.extract_category(tentative)
+                    )
+                else:
+                    return
+            # kwargsを準備する。
+            kwargs = {}
+            for parameter in command.clean_params.values():
+                kwargs[parameter.name] = {
+                    "type": "str", "default": None
+                        if parameter.default == parameter.empty
+                        else self._get_default(parameter.default),
+                    "extra": None
+                }
+                if parameter.annotation in (
+                    discord.TextChannel, discord.VoiceChannel, discord.Thread,
+                    discord.Role, discord.Member, discord.User, discord.Guild
+                ):
+                    if parameter.annotation.__name__.endswith("Channel"):
+                        kwargs[parameter.name] = "Channel"
+                    elif parameter.annotation.__name__ in ("User", "Member"):
+                        kwargs[parameter.name] = "User"
+                    else:
+                        kwargs[parameter.name] = parameter.annotation.__name__
+                elif get_origin(parameter.annotation) is Literal:
+                    kwargs[parameter.name]["type"] = "Literal"
+                    kwargs[parameter.name]["extra"] = get_args(parameter.annotation)
+            # データに格納する。
+            self.data[command.qualified_name] = CommandData(kwargs=kwargs)
+            if command.parent is None:
+                self.data[command.qualified_name]["headding"] = \
+                    command.__original_kwargs__.get("headding") \
+                    or command.extras.get("headding")
+                self.data[command.qualified_name]["category"] = category
+
+    async def update(self, _=None, first=False):
+        """コマンドのデータを用意してバックエンドにコマンドのデータを送信します。
+        RTC接続時に自動で実行されます。"""
         # バックエンドにコマンドのデータを送信する。
         await self.bot.rtc.ready.wait()
+        if first:
+            await self.bot.cogs["Debug"]._reload()
         await self.bot.rtc.request("dashboard.update", self.data)
 
     async def run(self, data: CommandRunData) -> tuple[Literal["Error", "Ok"], str]:

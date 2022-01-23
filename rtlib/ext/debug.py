@@ -86,19 +86,22 @@ class Debug(commands.Cog):
         ctx.message.content = f"{ctx.prefix}{command}"
         await self.bot.process_commands(ctx.message)
 
+    async def _reload(self):
+        for coro in (
+            self.bot.cogs["DocHelp"].on_full_ready(),
+            self.bot.cogs["Translator"].on_command_added(),
+            self.bot.cogs["ChannelPluginGeneral"].on_command_added()
+        ):
+            self.bot.loop.create_task(coro)
+        self.bot.reload_extension("cogs.server_tool")
+        self.bot.reload_extension("cogs.log")
+        self.bot.dispatch("help_reload")
+
     @debug.command(aliases=["rh", "r"])
     @require_admin
     async def reload(self, ctx):
         async with ctx.typing():
-            for coro in (
-                self.bot.cogs["DocHelp"].on_full_ready(),
-                self.bot.cogs["Translator"].on_command_added(),
-                self.bot.cogs["ChannelPluginGeneral"].on_command_added()
-            ):
-                self.bot.loop.create_task(coro)
-            self.bot.reload_extension("cogs.server_tool")
-            self.bot.reload_extension("cogs.log")
-            self.bot.dispatch("help_reload")
+            await self._reload()
         await ctx.reply("Ok")
 
     @executor_function
