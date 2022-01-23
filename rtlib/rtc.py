@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, Optional
+from typing import TYPE_CHECKING, Literal, Union, Optional
 
 from asyncio import sleep
 
@@ -17,10 +17,10 @@ if TYPE_CHECKING:
     from .typed import RT
 
 
-class RTCGeneralFeature(commands.Cog):
+class RTCGeneralFeatures(commands.Cog):
     def __init__(self, bot: RT):
         self.bot = bot
-        for name, value in self.__dict__:
+        for name, value in map(lambda name: (name, getattr(self, name)), dir(self)):
             if name.startswith("get"):
                 self.bot.rtc.set_event(value)
 
@@ -69,10 +69,12 @@ class RTCGeneralFeature(commands.Cog):
         text_channels = self._get_channel(guild, "text")
         voice_channels = self._get_channel(guild, "voice")
         return rft.Guild(
-            id=guild.id, name=guild.name, avatar_url=guild.avatar.url,
+            id=guild.id, name=guild.name, avatar_url=getattr(guild.icon, "url", ""),
             members=[
                 rft.Member(
-                    id=member.id, name=member.name, avatar_url=member.avatar.url,
+                    id=member.id, name=member.name, avatar_url=getattr(
+                        member.avatar, "url", ""
+                    ),
                     full_name=str(member), guild=None
                 ) for member in guild.members
             ], text_channels=text_channels, voice_channels=voice_channels,
@@ -82,6 +84,9 @@ class RTCGeneralFeature(commands.Cog):
     async def get_guild(self, guild_id: int) -> Optional[rft.Guild]:
         if guild := self.bot.get_guild(guild_id):
             return self._prepare_guild(guild)
+
+    async def get_lang(self, user_id: int) -> Union[Literal["ja", "en"], str]:
+        return self.bot.cogs["Language"].get(user_id)
 
 
 class ExtendedRTC(rtc.RTConnection):
@@ -115,3 +120,4 @@ def setup(bot: RT):
                 await sleep(3)
 
         bot.loop.create_task(communicate(), name="RTConnection")
+    bot.add_cog(RTCGeneralFeatures(bot))
