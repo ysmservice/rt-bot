@@ -230,7 +230,8 @@ class Person(commands.Cog):
         except ValueError:
             for guild in self.bot.guilds:
                 user = discord.utils.get(guild.members, name=user_name_id)
-                break
+                if user:
+                    break
             member = discord.utils.get(ctx.guild.members, name=user_name_id)
         else:
             user = await self.bot.fetch_user(user_id)
