@@ -902,7 +902,7 @@ class MusicNormal(commands.Cog, DataManager):
             await ctx.reply(
                 {"ja": "プレイリストを選択してください。",
                  "en": "Please select a playlist."},
-                view=view
+                view=view()
             )
         else:
             await ctx.reply(self.DONT_HAVE_PLAYLIST)
