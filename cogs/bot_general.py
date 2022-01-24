@@ -166,8 +166,8 @@ class BotGeneral(commands.Cog):
     def _speedtest(self):
         st = speedtest.Speedtest()
         st.get_best_server()
-        d = st.download()
-        u = st.upload()
+        st.download()
+        st.upload()
         return st.results.dict()
 
     @commands.command(
