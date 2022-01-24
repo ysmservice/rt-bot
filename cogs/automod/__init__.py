@@ -75,6 +75,7 @@ class AutoMod(commands.Cog, DataManager):
             }, "parent": "ServerSafety"
         }
     )
+    @commands.guild_only()
     @commands.has_permissions(administrator=True)
     @commands.cooldown(1, 5, commands.BucketType.guild)
     async def automod(self, ctx: commands.Context):
