@@ -43,7 +43,7 @@ class SixChannel(commands.Cog):
     async def sixch(self, ctx):
         """!lang ja
         ---------
-        2ちゃんねるのような掲示板を作れるです。
+        2ちゃんねるのような掲示板を作れる機能です。
 
         !lang en
         --------
