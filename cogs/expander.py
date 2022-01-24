@@ -93,8 +93,8 @@ class Expander(commands.Cog, DataManager):
         """!lang ja
         --------
         メッセージリンクの展開のオンオフの切り替えコマンドです。  
-        このコマンドを使うことで指定したチャンネルではメッセージリンクを展開しないなどもできます。  
-        この機能はデフォルトでOnです。
+        指定したチャンネルではメッセージリンクを展開しないなどの設定もできます。  
+        デフォルトはオンです。
 
         Parameters
         ----------
@@ -107,7 +107,7 @@ class Expander(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!expand off` デフォルトでOnなのでいらない方はこれを実行しましょう。
+        `rt!expand off` デフォルトでOnなのでリンク展開されたくない方はこれを実行しましょう。
 
         !lang en
         --------
