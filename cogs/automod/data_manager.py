@@ -1,6 +1,6 @@
 # RT AutoMod - Data Manager
 
-from typing import TYPE_CHECKING, NewType, TypedDict, Literal, Union, Dict, Tuple, List
+from typing import TYPE_CHECKING, NewType, TypedDict, Literal, Union, Optional, Dict, Tuple, List
 
 from discord.ext import tasks
 import discord
