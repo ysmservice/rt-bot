@@ -106,8 +106,8 @@ class LinkBlocker(commands.Cog, DataManager):
     async def linkblock(self, ctx):
         """!lang ja
         --------
-        もしURLが送信されたらメッセージを削除する機能です。  
-        `rt!linkblock`を実行することでOn/Offを切り替えることができます。
+        URLが送信された時にメッセージを削除する機能です。  
+        `rt!linkblock`を実行することでオン/オフを切り替えることができます。
 
         Aliases
         -------
@@ -140,7 +140,7 @@ class LinkBlocker(commands.Cog, DataManager):
         """!lang ja
         --------
         URLを送ってもメッセージが削除されない例外のチャンネルを追加します。  
-        実行したチャンネルが追加されます。
+        実行したチャンネルが追加されます。25個まで登録できます。
 
         Aliases
         -------
@@ -175,7 +175,7 @@ class LinkBlocker(commands.Cog, DataManager):
     async def remove(self, ctx, channel_id: int = None):
         """!lang ja
         --------
-        URLを送っても削除されない例外のチャンネルを削除します。   
+        URLブロッカーの例外リストからチャンネルを削除します。   
         実行したチャンネルまたは引数に渡されたチャンネルIDが削除されます。
 
         Parameters
@@ -221,7 +221,7 @@ class LinkBlocker(commands.Cog, DataManager):
     async def list_(self, ctx):
         """!lang ja
         --------
-        例外チャンネルのリストを表示します。
+        URLブロッカーの例外に指定されているチャンネルのリストを表示します。
 
         Aliases
         -------
