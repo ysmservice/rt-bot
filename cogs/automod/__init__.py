@@ -82,7 +82,7 @@ class AutoMod(commands.Cog, DataManager):
         """!lang ja
         --------
         自動モデレーション機能です。  
-        `rt!automod`でこの機能を有効にすることができます。
+        `rt!automod`でこの機能を有効または無効にすることができます。
 
         Notes
         -----
