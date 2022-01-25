@@ -54,7 +54,18 @@ class DataManager(DatabaseManager):
         else:
             raise KeyError("そのFunpが見つかりませんでした。")
 
+    async def get_list(self, cursor, user_id:int, mode:str) -> list:
+        if not await cursor.exists(self.DB, {"UserID":user_id, "Mode":mode}):
+            raise KeyError("Funpがありません。")
+        await cursor.cursor.execute(
+            """SELECT * FROM Funp
+                WHERE Mode = %s AND UserID = %s""",
+            (mode, user_id)
+        )
+        return [row for row in await cursor.cursor.fetchall()
+                if row is not None]
 
+    
 async def callback(view, interaction):
     view = easy.View("FunpTwo")
     view.add_item(
@@ -301,6 +312,33 @@ class Funp(commands.Cog, DataManager):
             )
         else:
             await ctx.reply("Ok")
+
+    @funp.command(
+        "list", description="自分の登録したFunpの一覧を見ることができます。"
+    )
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def _list(self, ctx, user_id: int = discord.SlashOption(
+            "id", "対象のユーザーIDです。(管理者のみ)", required=False,
+            default=None
+        )):
+        mode = self.get_mode(mode)
+        if user_id and ctx.author.id not in self.bot.data["admins"]:
+            return await ctx.reply(
+                "Error, ユーザーID指定は管理者のみです。"
+            )
+        user_id = user_id or ctx.author.id
+        try:
+            li = await self.get_list(user_id)
+        except KeyError:
+            return await ctx.reply(
+                {"ja":"まだFunpはありません。",
+                 "en":"There is no Funp."}
+            )
+        else:
+            embed = discord.Embed(
+                title="Funp一覧",
+                desdcription="\n".join([f"[{m[1]}]({m[2]})" for m in li])
+            )
 
     @funp.command(
         aliases=["nb"], description="NekoBot APIを使用してNSFWな画像を表示します。"
