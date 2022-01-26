@@ -85,7 +85,7 @@ class DataManager:
     def delete(self, guild_id: int) -> None:
         "認証の設定を削除します。"
         assert self.read(guild_id), "設定されていません。"
-        del self.daata[guild_id]
+        del self.data[guild_id]
 
     def timeout(self, guild_id: int, time_: float, kick: bool) -> None:
         "認証設定にタイムアウトを設定します。"
