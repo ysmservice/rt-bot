@@ -181,7 +181,7 @@ class Funp(commands.Cog, DataManager):
 
         Parameters
         ----------
-        category : カテゴリー
+        mode : カテゴリー
             閲覧する画像のカテゴリーです。
 
         Warnings
@@ -289,7 +289,7 @@ class Funp(commands.Cog, DataManager):
 
         Parameters
         ----------
-        category : カテゴリー
+        mode : カテゴリー
             Funpの画像のカテゴリーです。
         name : str
             Funpの画像の名前です。
@@ -317,10 +317,25 @@ class Funp(commands.Cog, DataManager):
         "list", description="自分の登録したFunpの一覧を見ることができます。"
     )
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def _list(self, ctx, user_id: int = discord.SlashOption(
+    async def _list(
+        self, ctx, mode: str = MODE_OPTION,
+        user_id: int = discord.SlashOption(
             "id", "対象のユーザーIDです。(管理者のみ)", required=False,
             default=None
-        )):
+        )
+    ):
+        """!lang ja
+        --------
+        自分の登録したFunpのリストをカテゴリ別に見ます。
+        
+        Parameters
+        ----------
+        mode : カテゴリー
+            見たい画像のカテゴリーです。
+        user_id : int, optional
+            そのFunpの登録者です。
+            指定しなかった場合は実行者が登録者として扱われます。
+            管理者のみこの引数を指定できます。"""
         mode = self.get_mode(mode)
         if user_id and ctx.author.id not in self.bot.data["admins"]:
             return await ctx.reply(
