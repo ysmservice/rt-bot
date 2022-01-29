@@ -62,8 +62,13 @@ class RTCGeneralFeatures(commands.Cog):
                 ))
         return channels
 
-    async def get_channel(self, data: tuple[rft.Guild, int]):
+    async def get_channel(self, data: tuple[rft.Guild, int]) -> Optional[rft.Channel]:
         return self._get_guild_child(data[0], "channels", data[1])
+
+    async def get_role(self, data: tuple[rft.Guild, int]) -> Optional[rft.Role]:
+        for id_, name in data["roles"].items():
+            if id_ == data[1]:
+                return rft.Role(id=data[1], name=name)
 
     def _prepare_guild(self, guild: discord.Guild) -> rft.Guild:
         text_channels = self._get_channel(guild, "text")
@@ -78,7 +83,10 @@ class RTCGeneralFeatures(commands.Cog):
                     full_name=str(member), guild=None
                 ) for member in guild.members
             ], text_channels=text_channels, voice_channels=voice_channels,
-            channels=text_channels + voice_channels
+            channels=text_channels + voice_channels, roles=[
+                rft.Role(id=role.id, name=role.name)
+                for role in guild.roles
+            ]
         )
 
     async def get_guild(self, guild_id: int) -> Optional[rft.Guild]:

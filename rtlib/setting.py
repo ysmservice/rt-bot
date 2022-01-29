@@ -15,7 +15,7 @@ from pytz import utc
 from aiohttp import ClientSession
 from ujson import dumps
 
-from rtlib.rt_module.src.setting import CommandData
+from rtlib.rt_module.src.setting import CommandData, CommandRunData
 from rtlib import RT
 
 
@@ -26,11 +26,8 @@ def Setting(*args, **kwargs):
     return decorator
 
 
-class CommandRunData(TypedDict, total=False):
-    name: str
-    kwargs: list[str]
-    channel: int
-    guild: int
+def _replaceln(content: str) -> str:
+    return content.replace("\n", "  ")
 
 
 class Context:
@@ -54,16 +51,8 @@ class Context:
         self.edited_at = None
         self.__setting_context__ = True
 
-        self.channel: Optional[
-            Union[discord.abc.GuildChannel, discord.DMChannel]
-        ] = (
-            self.guild.get_channel(data["kwargs"].pop(
-                "channel_id", data["kwargs"].pop(
-                    "channel", data["kwargs"].pop("Channel", 0)
-                )
-            ))
-            if data["category"].endswith("guild")
-            else self.bot.get_user(data["user_id"])
+        self.channel: Optional[discord.TextChannel] = self.guild.get_channel(
+            int(data["channel_id"])
         )
         self.author: Union[discord.User, discord.Member] = (
             self.guild.get_member(data["user_id"]) if self.guild
@@ -80,7 +69,7 @@ class Context:
             getattr(self.guild, "me", self.bot.user)
         self.message = self
         self.reply = self.send
-        self.replied = Event(loop=self.bot.loop)
+        self.replied = Event()
         self.replied_content: Optional[str] = None
 
     async def trigger_typing(self):
@@ -93,9 +82,21 @@ class Context:
         self.replied_content = self.bot.cogs["Language"].get_text(
             embed if embed else content, self.author.id
         )
-        if isinstance(content, discord.Embed):
-            self.replied_content = content.to_dict()
-        self.bot.print("[SettingManager]", "[Reply]", f"Content: {self.replied_content}")
+        if isinstance(self.replied_content, discord.Embed):
+            embed = "\n"
+            if self.replied_content.title:
+                embed += f"# {self.replied_content.title}"
+            if self.replied_content.description:
+                embed += f"\n{_replaceln(self.replied_content.description)}"
+            for field in self.replied_content.fields:
+                embed += f"\n## {field.name}\n{_replaceln(field.value)}"
+            if self.replied_content.footer:
+                embed += f"\n{self.replied_content.footer.text}"
+            self.replied_content = embed
+        self.bot.print(
+            "[SettingManager]", "[Reply]",
+            f"Command: {self.command}, Author: {self.author}, Guild: {self.guild}, Channel: {self.channel}"
+        )
         self.replied.set()
 
     @overload
@@ -113,7 +114,9 @@ class SettingManager(commands.Cog):
         self.bot = bot
         self.data: dict[str, CommandData] = {}
         self.helps: dict[str, dict[str, str]] = {}
+        self.commands: dict[str, commands.Command] = {}
         self.bot.rtc.set_event(self.get_help)
+        self.bot.rtc.set_event(self.run, "dashboard.run")
 
     def session(self):
         "`aiohttp.ClientSession`の準備をする。"
@@ -188,11 +191,11 @@ class SettingManager(commands.Cog):
                     discord.Role, discord.Member, discord.User, discord.Guild
                 ):
                     if parameter.annotation.__name__.endswith("Channel"):
-                        kwargs[parameter.name] = "Channel"
+                        kwargs[parameter.name]["type"] = "Channel"
                     elif parameter.annotation.__name__ in ("User", "Member"):
-                        kwargs[parameter.name] = "User"
+                        kwargs[parameter.name]["type"] = "User"
                     else:
-                        kwargs[parameter.name] = parameter.annotation.__name__
+                        kwargs[parameter.name]["type"] = parameter.annotation.__name__
                 elif get_origin(parameter.annotation) is Literal:
                     kwargs[parameter.name]["type"] = "Literal"
                     kwargs[parameter.name]["extra"] = get_args(parameter.annotation)
@@ -203,6 +206,8 @@ class SettingManager(commands.Cog):
                     command.__original_kwargs__.get("headding") \
                     or command.extras.get("headding")
                 self.data[command.qualified_name]["category"] = category
+            # コマンドを保存しておく。
+            self.commands[command.qualified_name] = command
 
     async def update(self, _=None, first=False):
         """コマンドのデータを用意してバックエンドにコマンドのデータを送信します。
@@ -210,6 +215,7 @@ class SettingManager(commands.Cog):
         # バックエンドにコマンドのデータを送信する。
         await self.bot.rtc.ready.wait()
         if first:
+            self.data, self.commands, self.helps = {}, {}, {}
             await self.bot.cogs["Debug"]._reload()
         await self.bot.rtc.request("dashboard.update", self.data)
 
@@ -247,7 +253,7 @@ class SettingManager(commands.Cog):
             except AioTimeoutError:
                 return ("Error", "Timeout")
             else:
-                assert self.replied_content is not None
+                assert ctx.replied_content is not None
                 return ("Ok", ctx.replied_content)
         except Exception as e:
             if ctx:
