@@ -43,11 +43,11 @@ class SixChannel(commands.Cog):
     async def sixch(self, ctx):
         """!lang ja
         ---------
-        6ch, 掲示板機能です。
+        2ちゃんねるのような掲示板を作れる機能です。
 
         !lang en
         --------
-        6ch, BBS。"""
+        Make BBS like 4chan."""
         if not ctx.invoked_subcommand:
             if self.data["thread"]:
                 n = "".join(

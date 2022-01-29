@@ -801,7 +801,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
             if event_type == "join":
                 v, d = await self.read_voice(member.id)
                 if d and self.bot.cogs["Language"].get(member.id) != "ja":
-                    d = "gtts"
+                    v = "gtts"
                 self.cache[member.id] = {
                     "voice": v,
                     "routine": await self.read_routine(member.id)

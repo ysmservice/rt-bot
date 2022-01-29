@@ -1,6 +1,6 @@
 # RT AutoMod - Data Manager
 
-from typing import TYPE_CHECKING, NewType, TypedDict, Literal, Union, Dict, Tuple, List
+from typing import TYPE_CHECKING, NewType, TypedDict, Literal, Union, Optional, Dict, Tuple, List
 
 from discord.ext import tasks
 import discord
@@ -118,9 +118,12 @@ class DataManager(DatabaseManager):
         for row in await cursor.fetchall():
             if not row:
                 continue
-            for data in self.get_classed(
+            data = self.get_classed(
                 row[0], *map(loads, row[1:])
-            )[1].values():
+            )
+            if data is None:
+                continue
+            for data in data[1].values():
                 if not hasattr(data, "last_update"):
                     continue
                 if (now - data.last_update >= self.WARN_RESET_TIMEOUT
@@ -155,18 +158,19 @@ class DataManager(DatabaseManager):
 
     def get_classed(
         self, guild: Guild, guild_data: Union[str, dict], user_data: Union[str, dict]
-    ) -> Tuple[GuildData, Dict[int, Cache]]:
+    ) -> Optional[Tuple[GuildData, Dict[int, Cache]]]:
         "渡されたGuildDataとUserDataの辞書をAutoModのプログラムで使える状態にします。"
         guild_data, user_data = self.if_str_loads(guild_data), \
             self.if_str_loads(user_data)
         if isinstance(guild, int):
             guild = self.cog.bot.get_guild(guild)
-        return HashableGuild(guild.id, guild_data), {
-            key: Cache(self.cog, guild.get_member(int(key)), guild, user_data[key])
-            for key in user_data
-        }
+        if guild is not None:
+            return HashableGuild(guild.id, guild_data), {
+                key: Cache(self.cog, guild.get_member(int(key)), guild, user_data[key])
+                for key in user_data
+            }
 
-    async def _read(self, cursor, guild) -> SaveData:
+    async def _read(self, cursor, guild) -> Optional[SaveData]:
         # セーブデータを読み込む関数です。
         await cursor.execute(
             f"SELECT GuildData, UserData FROM {self.TABLES[0]} WHERE GuildID = %s;",
@@ -177,7 +181,7 @@ class DataManager(DatabaseManager):
         else:
             return HashableGuild(guild.id, {}), {}
 
-    async def read(self, guild: Guild, cursor: Cursor = None) -> SaveData:
+    async def read(self, guild: Guild, cursor: Cursor = None) -> Optional[SaveData]:
         "セーブデータを読み込みます。"
         return await self._read(cursor, guild)
 

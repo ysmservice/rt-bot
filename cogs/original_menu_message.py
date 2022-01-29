@@ -130,7 +130,7 @@ class OriginalMenuMessage(commands.Cog, DataManager):
         """!lang ja
         --------
         矢印ボタンで操作可能なメニューメッセージを作ります。  
-        一つのサーバーにつき十個まで作成可能です。  
+        一つのサーバーにつき三十個まで作成可能です。  
         **もし三十一個目を作った場合は一個目が無効になります。**
 
         Parameters
@@ -156,7 +156,7 @@ class OriginalMenuMessage(commands.Cog, DataManager):
         !lang en
         --------
         Creates a menu message that can be operated by arrow buttons.  
-        Up to ten can be created per server.  
+        Up to 30 can be created per server.  
         **If you make 31, the first one will be invalid.**
 
         Parameters

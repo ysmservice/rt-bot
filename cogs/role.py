@@ -388,7 +388,7 @@ class RolePanel(commands.Cog):
     def is_running(self, guild_id: int, user_id: int) -> bool:
         if user_id in self.running[guild_id]:
             if time() > self.running[guild_id][user_id]:
-                self.release()
+                self.release(guild_id, user_id)
                 return False
             return True
         return False
