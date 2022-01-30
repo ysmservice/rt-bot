@@ -130,12 +130,6 @@ class SettingManager(commands.Cog):
         "ヘルプを取得します。RTCで使うためのものです。"
         return self.helps.get(name)
 
-    @commands.Cog.listener()
-    async def on_full_ready(self):
-        await sleep(5)
-        await self.update(first=True)
-        self.bot.rtc.set_event(self.update, "on_connect")
-
     def extract_category(self, command: commands.Command) -> str:
         "カテゴリーを取り出します。"
         return command.__original_kwargs__.get(
@@ -207,14 +201,12 @@ class SettingManager(commands.Cog):
             # コマンドを保存しておく。
             self.commands[command.qualified_name] = command
 
-    async def update(self, _=None, first=False):
-        """コマンドのデータを用意してバックエンドにコマンドのデータを送信します。
-        RTC接続時に自動で実行されます。"""
-        # バックエンドにコマンドのデータを送信する。
-        await self.bot.rtc.ready.wait()
-        if first:
-            self.data, self.commands, self.helps = {}, {}, {}
-            await self.bot.cogs["Debug"]._reload()
+    def reset(self) -> None:
+        "データをリセットします。"
+        self.data, self.commands, self.helps = {}, {}, {}
+
+    @commands.Cog.listener()
+    async def on_update_api(self):
         await self.bot.rtc.request("dashboard.update", self.data)
 
     async def run(self, data: CommandRunData) -> tuple[Literal["Error", "Ok"], str]:

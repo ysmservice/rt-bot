@@ -87,6 +87,7 @@ class Debug(commands.Cog):
         await self.bot.process_commands(ctx.message)
 
     async def _reload(self):
+        self.bot.cogs["SettingManager"].reset()
         for coro in (
             self.bot.cogs["DocHelp"].on_full_ready(),
             self.bot.cogs["Translator"].on_command_added(),
