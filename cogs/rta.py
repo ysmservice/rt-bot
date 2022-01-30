@@ -130,7 +130,7 @@ class RTA(commands.Cog):
         if await self.db.set_rta(ctx.guild.id, (channel := (channel or ctx.channel)).id):
             await ctx.reply(
                 embed=discord.Embed(
-                    title="成功",
+                    title="success",
                     description=f"rta通知チャンネルを{channel.mention}にしました。",
                     color=self.bot.Colors.normal
                 )
