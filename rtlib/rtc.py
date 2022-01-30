@@ -27,8 +27,8 @@ class RTCGeneralFeatures(commands.Cog):
     async def get_user(self, user_id: int) -> Optional[rft.User]:
         if user := self.bot.get_user(user_id):
             return rft.User(
-                id=user.id, name=user.name,
-                avatar_url=user.avatar.url, full_name=str(user)
+                id=user.id, name=user.name, discriminator=user.discriminator,
+                avatar_url=getattr(user.avatar, "url", ""), full_name=str(user)
             )
 
     async def get_guilds(self, user_id: int) -> list[rft.Guild]:
