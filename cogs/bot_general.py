@@ -333,6 +333,12 @@ class BotGeneral(commands.Cog):
             description = error.args[0]
         elif isinstance(error, commands.CommandInvokeError):
             return await self.on_command_error(ctx, error.original)
+        elif isinstance(error, AttributeError) and "VoiceChannel" in str(e):
+            title = "400 Bad Request"
+            description = {
+                "ja": "ボイスチャンネルにメッセージを送信できませんでした。",
+                "en": "I couldn't send to a voice channel."
+            }
         else:
             error_message = "".join(
                 TracebackException.from_exception(error).format()
