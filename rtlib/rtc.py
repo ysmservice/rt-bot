@@ -128,5 +128,5 @@ def setup(bot: RT):
                 self.ready.clear()
                 await sleep(3)
 
-        bot.loop.create_task(communicate(), name="RTConnection")
+        bot.rtc.task = bot.loop.create_task(communicate(), name="RTConnection")
     bot.add_cog(RTCGeneralFeatures(bot))
