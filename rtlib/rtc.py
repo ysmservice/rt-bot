@@ -120,7 +120,7 @@ def setup(bot: RT):
             while not bot.is_closed():
                 await bot.wait_until_ready()
                 try:
-                    await self.communicate(await connect(f"ws://{bot.get_ip()}/rtc"))
+                    await self.communicate(await connect(f"ws://{bot.get_ip()}/api/rtc"))
                 except OSError as e:
                     ...
                 self.logger("info", "Disconnected from backend")
