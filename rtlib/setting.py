@@ -126,7 +126,7 @@ class SettingManager(commands.Cog):
         # 渡されたものがスラッシュのオプションならそれに設定されているデフォルトを返す。
         return default.default if isinstance(default, discord.SlashOption) else default
 
-    async def get_help(self, name: str) -> Optional[dict[str, str]]:
+    async def get_help(self, name: str) -> Optional[str]:
         "ヘルプを取得します。RTCで使うためのものです。"
         return self.helps.get(name)
 
@@ -159,22 +159,19 @@ class SettingManager(commands.Cog):
         if self.check_parent(command) or command.parent is not None:
             # ヘルプとカテゴリーを取り出す。
             if command.parent is None:
+                category = self.extract_category(command)
                 try:
-                    self.helps[command.qualified_name] = self.extract_help(
-                        command, category := self.extract_category(command)
-                    )
+                    self.helps[command.qualified_name] = self.bot.cogs["BotGeneral"] \
+                        .get_command_url(command)
                 except KeyError:
-                    self.helps[command.qualified_name] = {
-                        "ja": "ヘルプが見つからなかった...", "en": "No help..."
-                    }
+                    self.helps[command.qualified_name] = "#"
             else:
                 tentative = command.parent
                 while tentative.parent is not None:
                     tentative = tentative.parent
                 if self.check_parent(tentative):
-                    self.helps[command.qualified_name] = self.extract_help(
-                        tentative, self.extract_category(tentative)
-                    )
+                    self.helps[command.qualified_name] = self.bot.cogs["BotGeneral"] \
+                        .get_command_url(tentative)
                 else:
                     return
             # kwargsを準備する。
@@ -206,6 +203,7 @@ class SettingManager(commands.Cog):
                     command.__original_kwargs__.get("headding") \
                     or command.extras.get("headding")
                 self.data[command.qualified_name]["category"] = category
+            self.data[command.qualified_name]["help"] = self.helps[command.qualified_name]
             # コマンドを保存しておく。
             self.commands[command.qualified_name] = command
 

@@ -925,7 +925,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
     @executor_function
     def aioexists(self, path: str) -> bool:
         return exists(path)
-
+"""
     @websocket.websocket("/api/tts/routine/loader", auto_connect=True, reconnect=True)
     async def tts_routine(self, ws: websocket.WebSocket, _):
         "りつたんからTTSのRoutineをバックエンドを経由して使うためのウェブソケット通信です。"
@@ -950,7 +950,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                 self.bot.print("[TTS.RoutineUploader]", filename, await r.json())
             await ws.send("ok")
         else:
-            await ws.send("not_found")
+            await ws.send("not_found")"""
 
 
 def setup(bot):
