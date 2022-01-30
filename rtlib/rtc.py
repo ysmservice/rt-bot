@@ -96,6 +96,11 @@ class RTCGeneralFeatures(commands.Cog):
     async def get_lang(self, user_id: int) -> Union[Literal["ja", "en"], str]:
         return self.bot.cogs["Language"].get(user_id)
 
+    def on_unload(self):
+        self.bot.rtc.ws.close()
+        self.bot.rtc.task.cancel()
+        del self.bot.rtc
+
 
 class ExtendedRTC(rtc.RTConnection):
 
@@ -121,7 +126,7 @@ def setup(bot: RT):
                 await bot.wait_until_ready()
                 try:
                     await self.communicate(await connect(f"ws://{bot.get_ip()}/api/rtc"))
-                except OSError as e:
+                except OSError:
                     ...
                 self.logger("info", "Disconnected from backend")
                 self.logger("info", "Reconnect in three seconds")
