@@ -99,7 +99,7 @@ class RTCGeneralFeatures(commands.Cog):
     async def get_lang(self, user_id: int) -> Union[Literal["ja", "en"], str]:
         return self.bot.cogs["Language"].get(user_id)
 
-    def on_unload(self):
+    def cog_unload(self):
         self.bot.rtc.ws.close()
         self.bot.rtc.task.cancel()
         del self.bot.rtc
