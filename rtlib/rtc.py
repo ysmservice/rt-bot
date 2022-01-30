@@ -33,7 +33,7 @@ class RTCGeneralFeatures(commands.Cog):
 
     async def get_guilds(self, user_id: int) -> list[rft.Guild]:
         return [
-            self._prepare_guild(guild)
+            self._prepare_guild(guild, full=False)
             for guild in self.bot.guilds
             if guild.get_member(user_id) is not None
         ]
@@ -70,28 +70,31 @@ class RTCGeneralFeatures(commands.Cog):
             if id_ == data[1]:
                 return rft.Role(id=data[1], name=name)
 
-    def _prepare_guild(self, guild: discord.Guild) -> rft.Guild:
+    def _prepare_guild(self, guild: discord.Guild, full: bool) -> rft.Guild:
         text_channels = self._get_channel(guild, "text")
         voice_channels = self._get_channel(guild, "voice")
-        return rft.Guild(
-            id=guild.id, name=guild.name, avatar_url=getattr(guild.icon, "url", ""),
-            members=[
-                rft.Member(
-                    id=member.id, name=member.name, avatar_url=getattr(
-                        member.avatar, "url", ""
-                    ),
-                    full_name=str(member), guild=None
-                ) for member in guild.members
-            ], text_channels=text_channels, voice_channels=voice_channels,
-            channels=text_channels + voice_channels, roles=[
-                rft.Role(id=role.id, name=role.name)
-                for role in guild.roles
-            ]
-        )
+        if full:
+            return rft.Guild(
+                id=guild.id, name=guild.name, avatar_url=getattr(guild.icon, "url", ""),
+                members=[
+                    rft.Member(
+                        id=member.id, name=member.name, avatar_url=getattr(
+                            member.avatar, "url", ""
+                        ),
+                        full_name=str(member), guild=None
+                    ) for member in guild.members
+                ], text_channels=text_channels, voice_channels=voice_channels,
+                channels=text_channels + voice_channels, roles=[
+                    rft.Role(id=role.id, name=role.name)
+                    for role in guild.roles
+                ]
+            )
+        else:
+            return rft.Guild(id=guild.id, name=guild.name)
 
-    async def get_guild(self, guild_id: int) -> Optional[rft.Guild]:
+    async def get_guild(self, guild_id: int, full=True) -> Optional[rft.Guild]:
         if guild := self.bot.get_guild(guild_id):
-            return self._prepare_guild(guild)
+            return self._prepare_guild(guild, full)
 
     async def get_lang(self, user_id: int) -> Union[Literal["ja", "en"], str]:
         return self.bot.cogs["Language"].get(user_id)
