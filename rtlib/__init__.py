@@ -7,6 +7,7 @@ import discord
 
 from pymysql.err import OperationalError
 
+from .slash import Context as SlashContext
 from . import mysql_manager as mysql
 from .data_manager import Table
 from .ext import componesy
@@ -14,6 +15,7 @@ from .typed import RT
 
 
 DatabaseManager = mysql.DatabaseManager
+Context = Union[SlashContext, commands.Context]
 
 
 async def webhook_send(
