@@ -613,7 +613,7 @@ class ServerTool(commands.Cog):
                     payload.message.guild.text_channels
                 )):
                     embeds = []
-                    embed.append(
+                    embeds.append(
                         discord.Embed(
                             title="スターがついたメッセージ",
                             description=payload.message.content,
@@ -630,8 +630,8 @@ class ServerTool(commands.Cog):
                             embeds.append(discord.Embed())
                         finally:
                             embeds[i].set_image(url=attachment.url)
-                    elif payload.message.embeds:
-                        embeds = payload.message.embeds
+                    if payload.message.embeds:
+                        embeds.extends(payload.message.embeds)
                     else:
                         return
 
