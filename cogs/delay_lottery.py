@@ -182,7 +182,10 @@ class DelayLottery(commands.Cog, DataManager):
                 for row in rows:
                     if row[0] < now:
                         if (channel := guild.get_channel(row[1])):
-                            message = await channel.fetch_message(row[2])
+                            try:
+                                message = await channel.fetch_message(row[2])
+                            except discord.NotFound:
+                                continue
                             if message.reactions:
                                 members = (await message.reactions[0].users().flatten())[1:]
                                 await self.bot.cogs["ServerTool"].lottery(
