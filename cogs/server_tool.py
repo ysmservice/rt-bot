@@ -632,12 +632,10 @@ class ServerTool(commands.Cog):
                             embeds[i].set_image(url=attachment.url)
                     if payload.message.embeds:
                         embeds.extends(payload.message.embeds)
-                    else:
-                        return
-
-                    await channel.send(content=payload.message.jump_url, embeds=embeds)
-                    # スターボードにすでにあることを次スターがついた際にわかるようにスターを付けておく。
-                    await payload.message.add_reaction(self.EMOJIS["star"][0])
+                    if embeds:
+                        await channel.send(content=payload.message.jump_url, embeds=embeds)
+                        # スターボードにすでにあることを次スターがついた際にわかるようにスターを付けておく。
+                        await payload.message.add_reaction(self.EMOJIS["star"][0])
 
         if (emoji == self.EMOJIS["trash"] and payload.channel_id not in self.trash_queue
                 and payload.member.guild_permissions.manage_messages):
