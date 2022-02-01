@@ -612,8 +612,9 @@ class ServerTool(commands.Cog):
                     lambda ch: ch.topic and "rt>star" in ch.topic,
                     payload.message.guild.text_channels
                 )):
-                    if payload.message.content or payload.message.attachments:
-                        embed = discord.Embed(
+                    embeds = []
+                    embeds.append(
+                        discord.Embed(
                             title="スターがついたメッセージ",
                             description=payload.message.content,
                             color=0xf2f2b0
@@ -621,18 +622,20 @@ class ServerTool(commands.Cog):
                             name=payload.message.author.display_name,
                             icon_url=payload.message.author.avatar.url
                         )
-                        if payload.message.attachments:
-                            embed.set_image(
-                                url=payload.message.attachments[0].url
-                            )
-                    elif payload.message.embeds:
-                        embed = payload.message.embeds[0]
-                    else:
-                        return
-
-                    await channel.send(content=payload.message.jump_url, embed=embed)
-                    # スターボードにすでにあることを次スターがついた際にわかるようにスターを付けておく。
-                    await payload.message.add_reaction(self.EMOJIS["star"][0])
+                    )
+                    for i, attachment in enumerate(payload.message.attachments):
+                        try:
+                            embeds[i]
+                        except IndexError:
+                            embeds.append(discord.Embed())
+                        finally:
+                            embeds[i].set_image(url=attachment.url)
+                    if payload.message.embeds:
+                        embeds.extends(payload.message.embeds)
+                    if embeds:
+                        await channel.send(content=payload.message.jump_url, embeds=embeds)
+                        # スターボードにすでにあることを次スターがついた際にわかるようにスターを付けておく。
+                        await payload.message.add_reaction(self.EMOJIS["star"][0])
 
         if (emoji == self.EMOJIS["trash"] and payload.channel_id not in self.trash_queue
                 and payload.member.guild_permissions.manage_messages):

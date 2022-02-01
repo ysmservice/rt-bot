@@ -24,7 +24,7 @@ def join(message: discord.Message) -> List[str]:
     contents = [message.content or ""]
     for embed in message.embeds:
         contents.append(
-            "".join(map(lambda x: getattr(embed, x), ("title", "description")))
+            "".join(map(lambda x: getattr(embed, x) or "", ("title", "description")))
             + embed.footer.text
         )
     for attachment in message.attachments:
