@@ -612,8 +612,9 @@ class ServerTool(commands.Cog):
                     lambda ch: ch.topic and "rt>star" in ch.topic,
                     payload.message.guild.text_channels
                 )):
-                    if payload.message.content or payload.message.attachments:
-                        embed = discord.Embed(
+                    embeds = []
+                    embed.append(
+                        discord.Embed(
                             title="スターがついたメッセージ",
                             description=payload.message.content,
                             color=0xf2f2b0
@@ -621,16 +622,20 @@ class ServerTool(commands.Cog):
                             name=payload.message.author.display_name,
                             icon_url=payload.message.author.avatar.url
                         )
-                        if payload.message.attachments:
-                            embed.set_image(
-                                url=payload.message.attachments[0].url
-                            )
+                    )
+                    for i, attachment in enumerate(payload.message.attachments):
+                        try:
+                            embeds[i]
+                        except IndexError:
+                            embeds.append(discord.Embed())
+                        finally:
+                            embeds[i].set_image(url=attachment.url)
                     elif payload.message.embeds:
-                        embed = payload.message.embeds[0]
+                        embeds = payload.message.embeds
                     else:
                         return
 
-                    await channel.send(content=payload.message.jump_url, embed=embed)
+                    await channel.send(content=payload.message.jump_url, embeds=embeds)
                     # スターボードにすでにあることを次スターがついた際にわかるようにスターを付けておく。
                     await payload.message.add_reaction(self.EMOJIS["star"][0])
 
