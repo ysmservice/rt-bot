@@ -92,13 +92,20 @@ rtは現在nextcordで開発されています。さらにいくつかの機能�
 そのためいくつか本家discord.pyとは違う点があるので注意してください。
 
 ### commands.commandの引数
-commands.commandの引数にheaddingやparentをつけることができます。
-headdingの中身は{"ja":"...", "en":"..."}のようにして簡単なコマンドの説明にしてください。
-parentの中身は英語でカテゴリ名にしてください。この情報を使ってRTがhelpを生成します。
+commands.commandの引数にextrasをつけることができます。
+```python
+{
+    "headding":{"ja":"...", "en":"..."},
+    "parent":"ServerPanel"
+}
+```
+extrasの引数はこのようにheaddingとparentで構成されています。
+headdingには日本語と英語でコマンドの簡潔な説明を、parentにはRTのヘルプで出すカテゴリを英語で入れてください。
 
-### Context.sendの多言語拡張
+### Context.sendの多言語拡張(対応済み)
 Context.sendのcontent引数に{"ja":"...", "en":"..."}の形式で辞書を入れると、
 自動で言語を判別してその言語にあった内容が送信されるようになります。
+現時点で全て対応済みですが、新しくsendする場合は作ると良いでしょう。
 
 ### Cog内でのon_readyについて
 Cogはon_readyが呼ばれてからロードされるので、Cog内ではon_readyの代わりとしてinit関数を使うかon_full_readyが使えます。
