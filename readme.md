@@ -13,6 +13,16 @@ RTについて知らない人は[ここ](https://rt-bot.com)を見てみまし�
 `contributing.md`をご覧ください。
 
 ## Installation
+### 依存性
+必要なものです。
+
+* Python3.8以上
+* MySQL
+* `requirements.txt`にあるもの全て。
+  注意：`jishaku`をインストールすると依存しているdiscord.pyがインストールされます。
+  ですがRTはnextcordを使っているので、jishakuをインストールした後にdiscord.pyを消してからnextcordをインストールするのを推奨します。
+* 認証等のバックエンドを必要とする機能を使う場合は`rt-backend`の実行
+### 起動手順
 1. 必要なものを`pip install -r requirements.txt`でインストールをします。
 2. 必要なTOKENなどを`auth.template.json`を参考に`auth.json`に書き込む。
 3. `{}`を書き込んだ`cogs/tts/dic/dictionary.json`を作る。
