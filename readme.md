@@ -17,7 +17,7 @@ RTについて知らない人は[ここ](https://rt-bot.com)を見てみまし�
 必要なものです。
 
 * Python3.8以上
-* MySQL
+* MySQL または MariaDB
 * `requirements.txt`にあるもの全て。
   注意：`jishaku`をインストールすると依存しているdiscord.pyがインストールされます。
   ですがRTはnextcordを使っているので、jishakuをインストールした後にdiscord.pyを消してからnextcordをインストールするのを推奨します。
