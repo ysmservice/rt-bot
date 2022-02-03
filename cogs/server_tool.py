@@ -257,7 +257,7 @@ class ServerTool(commands.Cog):
                     break
                 else:
                     raise OverflowError("さかのぼりすぎた。")
-            except OverflowError:
+            except (OverflowError, discord.HTTPException):
                 await ctx.reply(
                     {"ja": "過去にさかのぼりすぎました。",
                     "en": "I was transported back in time to another dimension."}
