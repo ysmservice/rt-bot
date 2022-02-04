@@ -1,6 +1,10 @@
 # RT - Twitter
 
-from typing import TYPE_CHECKING, Union, Dict, Tuple, List
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Union
+
+from asyncio import Event
 
 from discord.ext import commands
 import discord
@@ -11,7 +15,6 @@ from tweepy.errors import NotFound
 from tweepy.models import Status
 
 from jishaku.functools import executor_function
-from asyncio import Event
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
@@ -82,7 +85,7 @@ class DataManager:
             for channel_id, username in await cursor.fetchall()
         }
 
-    async def update_users(self) -> List[Tuple[int, str]]:
+    async def update_users(self) -> list[tuple[int, str]]:
         "設定のキャッシュを更新します。"
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cursor:
@@ -111,7 +114,7 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
 
     def __init__(self, bot: "Backend"):
         self.bot = bot
-        self.users: Dict[str, int] = {}
+        self.users: dict[str, int] = {}
         self.ready = Event()
 
         if "twitter" in self.bot.secret:
@@ -129,7 +132,7 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
             super(DataManager, self).__init__(**self.bot.secret["twitter"])
 
             self.connected = False
-            self.cache: Dict[str, str] = {}
+            self.cache: dict[str, str] = {}
             self.bot.loop.create_task(self.start_stream())
 
     def filter(self, *args, **kwargs):
@@ -142,7 +145,7 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
         self.connected = False
         super().disconnect(*args, **kwargs)
 
-    def get_url(self, status: Union[Status, Tuple[str, int]]) -> str:
+    def get_url(self, status: Union[Status, tuple[str, int]]) -> str:
         "渡されたStatusからツイートのURLを取得します。"
         return self.BASE_URL.format(
             status.user.screen_name, status.id_str
@@ -241,7 +244,7 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
                     else:
                         if getattr(self, "debug", False):
                             print("Debug")
-                        await self.delete(discord.Object(self.users[username]))
+                        await self.delete(discord.Object(self.users[username], username))
             self.filter(follow=follow)
 
     def cog_unload(self):
