@@ -1,4 +1,4 @@
-0;256;0c# RT Dashboard - Setting
+# RT Dashboard - Setting
 
 from __future__ import annotations
 
