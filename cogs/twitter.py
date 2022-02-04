@@ -246,6 +246,7 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
     def cog_unload(self):
         if self.connected:
             self.disconnect()
+            self.task.cancel()
 
     @commands.group(
         aliases=["ツイッター", "tw"], extras={
