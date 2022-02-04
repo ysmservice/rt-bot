@@ -1,6 +1,8 @@
 # RT AUtoMod - Mod Utils
 
-from typing import TYPE_CHECKING, Union, Any, List
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Union, Any
 
 import discord
 
@@ -19,12 +21,12 @@ def similar(before: str, after: str) -> float:
     return SequenceMatcher(None, before, after).ratio() * 100
 
 
-def join(message: discord.Message) -> List[str]:
+def join(message: discord.Message) -> list[str]:
     "渡されたメッセージにある文字列を全て合体させます。"
     contents = [message.content or ""]
     for embed in message.embeds:
         contents.append(
-            "".join(map(lambda x: getattr(embed, x) or "", ("title", "description")))
+            "".join(map(lambda x: getattr(embed, x, None) or "", ("title", "description")))
             + embed.footer.text
         )
     for attachment in message.attachments:
