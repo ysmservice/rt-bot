@@ -19,6 +19,7 @@ from jishaku.functools import executor_function
 if TYPE_CHECKING:
     from .__init__ import Captcha, Mode
     from .web import WebCaptchaView
+    from .click import ClickCaptcha
 
 
 class QueueData:
@@ -36,7 +37,7 @@ async def response(interaction: discord.Interaction, content: str) -> None:
 
 
 async def add_roles(
-    view: Union[SelectView, WebCaptchaView], interaction: discord.Interaction
+    view: Union[SelectView, WebCaptchaView, ClickCaptcha], interaction: discord.Interaction
 ):
     "役職を付与してinteractionの返信をする関数です。"
     if (role := interaction.guild.get_role(
@@ -53,7 +54,7 @@ async def add_roles(
             )
     else:
         await response(interaction, "役職が見つからないため役職の付与ができませんでした。")
-    await view.on_failed(interaction.gulid_id, interaction.user.id)
+    await view.on_failed(interaction.guild_id, interaction.user.id)
 
 
 def make_random_string(length: int):

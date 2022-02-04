@@ -324,6 +324,8 @@ class Captcha(commands.Cog, DataManager):
                  "en": "The authentication setting is already turned off."}
             )
         else:
+            if ctx.guild.id in self.queue:
+                del self.queue[guild_id]
             await ctx.reply("Ok")
 
     @captcha.command("timeout", aliases=["タイムアウト", "t"])
