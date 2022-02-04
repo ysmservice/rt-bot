@@ -244,7 +244,7 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
                     else:
                         if getattr(self, "debug", False):
                             print("Debug")
-                        await self.delete(discord.Object(self.users[username], username))
+                        await self.delete(discord.Object(self.users[username]), username)
             self.filter(follow=follow)
 
     def cog_unload(self):
