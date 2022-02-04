@@ -133,7 +133,7 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
 
             self.connected = False
             self.cache: dict[str, str] = {}
-            self.bot.loop.create_task(self.start_stream())
+            self.task = self.bot.loop.create_task(self.start_stream())
 
     def filter(self, *args, **kwargs):
         # connectedを使えるようにするためにオーバーライドした関数です。
@@ -371,7 +371,8 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
                 title="Twitter",
                 description="\n".join(
                     f"<#{channel_id}>：{username}"
-                    for username, channel_id in self.users.items()
+                    for username, channel_id in list(self.users.items())
+                    if ctx.guild.get_channel(channel_id) is not None
                 )
             )
         )
