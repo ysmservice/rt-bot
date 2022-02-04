@@ -133,7 +133,7 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
 
             self.connected = False
             self.cache: dict[str, str] = {}
-            self.task = self.bot.loop.create_task(self.start_stream())
+            self.main_task = self.bot.loop.create_task(self.start_stream())
 
     def filter(self, *args, **kwargs):
         # connectedを使えるようにするためにオーバーライドした関数です。
@@ -246,7 +246,7 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
     def cog_unload(self):
         if self.connected:
             self.disconnect()
-            self.task.cancel()
+            self.main_task.cancel()
 
     @commands.group(
         aliases=["ツイッター", "tw"], extras={
