@@ -159,10 +159,14 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
             # 通知対象のユーザーのツイートなら通知を行います。
             if not (channel := self.bot.get_channel(channel_id)):
                 # もし通知するチャンネルが見当たらない場合はその設定を削除する。
-                return await self.delete(
-                    discord.Object(channel_id),
-                    status.user.screen_name
-                )
+                try:
+                    self.users[status.user.screen_name].remove(channel_id)
+                    return await self.delete(
+                        discord.Object(channel_id),
+                        status.user.screen_name
+                    )
+                except AssertionError:
+                    ...
 
             # Tweetに飛ぶリンクボタンを追加しておく。
             view = discord.ui.View(timeout=1)
