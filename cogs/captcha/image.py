@@ -54,7 +54,7 @@ async def add_roles(
             )
     else:
         await response(interaction, "役職が見つからないため役職の付与ができませんでした。")
-    await view.on_failed(interaction.gulid_id, interaction.user.id)
+    await view.on_failed(interaction.guild_id, interaction.user.id)
 
 
 def make_random_string(length: int):
