@@ -29,15 +29,21 @@ class QueueData:
     path: str
 
 
-async def response(interaction: discord.Interaction, content: str) -> None:
-    "返信をして埋め込みとViewを消す関数です。"
-    return await interaction.response.edit_message(
-        content=content, embed=None, view=None
-    )
+async def response(
+    interaction: discord.Interaction, content: str, send: bool = False
+) -> None:
+    "返信をして埋め込みとViewを消す関数です。また、返信のみもできます。"
+    if send:
+        return await interaction.response.send_message(content=content)
+    else:
+        return await interaction.response.edit_message(
+            content=content, embed=None, view=None
+        )
 
 
 async def add_roles(
-    view: Union[SelectView, WebCaptchaView, ClickCaptcha], interaction: discord.Interaction
+    view: Union[SelectView, WebCaptchaView, ClickCaptcha],
+    interaction: discord.Interaction, send: bool = False
 ):
     "役職を付与してinteractionの返信をする関数です。"
     if (role := interaction.guild.get_role(
@@ -46,14 +52,14 @@ async def add_roles(
         try:
             await interaction.user.add_roles(role)
         except discord.Forbidden:
-            await response(interaction, "権限がないため役職の付与に失敗しました。")
+            await response(interaction, "権限がないため役職の付与に失敗しました。", send)
         else:
-            await response(interaction, "認証に成功しました。")
+            await response(interaction, "認証に成功しました。", send)
             return await view.on_success(
                 interaction.guild_id, interaction.user.id
             )
     else:
-        await response(interaction, "役職が見つからないため役職の付与ができませんでした。")
+        await response(interaction, "役職が見つからないため役職の付与ができませんでした。", send)
     await view.on_failed(interaction.guild_id, interaction.user.id)
 
 
