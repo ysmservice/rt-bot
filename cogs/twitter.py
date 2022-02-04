@@ -364,7 +364,7 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
         await ctx.reply(
             embed=discord.Embed(
                 title="Twitter",
-                description="".join(
+                description="\n".join(
                     "\n".join(
                         f"<#{channel_id}>：{username}"
                         for channel_id in channels
