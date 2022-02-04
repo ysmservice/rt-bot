@@ -78,6 +78,7 @@ class DataManager:
                 )
 
     async def _update_users(self, cursor):
+        self.users[username] = []
         await cursor.execute(
             f"SELECT ChannelID, UserName FROM {self.TABLE};"
         )
