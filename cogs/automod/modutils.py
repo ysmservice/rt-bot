@@ -4,12 +4,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Union, Any
 
+from datetime import timedelta
+from re import findall
+from time import time
+
 import discord
 
 from difflib import SequenceMatcher
 from emoji import emoji_lis
-from re import findall
-from time import time
 
 if TYPE_CHECKING:
     from .data_manager import GuildData
@@ -70,7 +72,8 @@ async def trial_message(
         if (mute := get(self, data, "mute")) <= self.warn <= mute + 1:
             # ToDo: Pycordのスラッシュへの移行作業後にTimeoutをここに実装する。
             self.cog.print("[punishment.mute]", self)
-            return await log(self, "スパム", "タイムアウト(未実装)")
+            await self.member.edit(timeout=timedelta(days=1))
+            return await log(self, "スパム", "タイムアウト")
         elif mute - 1 <= self.warn <= mute:
             await message.reply(
                 {"ja": "これ以上スパムをやめなければタイムアウトします。",
