@@ -229,7 +229,7 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
             del self.ready
         if self.users:
             follow = []
-            for username in self.users:
+            for username in list(self.users.keys()):
                 try:
                     follow.append(await self.get_user_id(username))
                 except NotFound:
