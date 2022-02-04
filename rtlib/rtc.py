@@ -100,7 +100,7 @@ class RTCGeneralFeatures(commands.Cog):
         return self.bot.cogs["Language"].get(user_id)
 
     def cog_unload(self):
-        self.bot.rtc.ws.close()
+        self.bot.loop.create_task(self.bot.rtc.ws.close())
         self.bot.rtc.task.cancel()
         del self.bot.rtc
 
