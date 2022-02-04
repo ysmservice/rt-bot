@@ -78,7 +78,7 @@ class DataManager:
                 )
 
     async def _update_users(self, cursor):
-        self.users[username] = []
+        self.users = defaultdict(list)
         await cursor.execute(
             f"SELECT ChannelID, UserName FROM {self.TABLE};"
         )
@@ -111,10 +111,10 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
         "accept-language": "ja,en;q=0.9,en-GB;q=0.8,en-US;q=0.7",
     }
     BASE_URL = "https://twitter.com/{}/status/{}"
+    users: defaultdict[str, list[int]]
 
     def __init__(self, bot: "Backend"):
         self.bot = bot
-        self.users: defaultdict[str, list[int]] = defaultdict(list)
         self.ready = Event()
 
         if "twitter" in self.bot.secret:
