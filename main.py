@@ -18,7 +18,7 @@ from aiohttp import ClientSession
 from ujson import load, dumps
 
 from rtlib import RT, mysql, setup, websocket
-from data import data, is_admin, Colors
+from data import data, Colors
 
 
 with open("auth.json", "r") as f:
@@ -40,13 +40,13 @@ if not bot.test:
     websocket.WEBSOCKET_URI_BASE = "ws://146.59.153.178"
 bot.data = data
 bot.admins = data["admins"]
+bot.owner_ids = data["admins"]
 bot.secret = secret
 bot.mysql = bot.data["mysql"] = mysql.MySQLManager(
     loop=bot.loop, **secret["mysql"], pool=True,
     minsize=1, maxsize=500 if bot.test else 1000000, autocommit=True
 )
 bot.pool = bot.mysql.pool
-bot.is_admin = is_admin
 bot.colors = data["colors"]
 bot.Colors = Colors
 bot._load = False
@@ -56,13 +56,6 @@ bot._load = False
 bot.load_extension("cogs._first")
 # スラッシュマネージャーを設定する。
 bot.load_extension("rtlib.slash")
-
-
-# Jishakuのためのオーナーかどうか確認する関数を用意しておく。
-async def _is_owner(user):
-    return bot.is_admin(user.id)
-bot.is_owner = _is_owner
-del is_admin, _is_owner
 
 
 @bot.listen()
