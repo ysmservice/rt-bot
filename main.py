@@ -41,6 +41,8 @@ if not bot.test:
 bot.data = data
 bot.admins = data["admins"]
 bot.owner_ids = data["admins"]
+# 非推奨だがis_adminを作っておく。
+bot.is_admin = bot.is_owner
 bot.secret = secret
 bot.mysql = bot.data["mysql"] = mysql.MySQLManager(
     loop=bot.loop, **secret["mysql"], pool=True,
