@@ -301,9 +301,7 @@ class Person(commands.Cog):
                 )
             embeds.append(embed)
         # 作ったEmbedを送信する。
-        for embed in embeds:
-            await ctx.send(embed=embed)
-        del embeds, embed
+        await ctx.send(embeds=embeds)
 
     async def yahoo(self, keyword: str) -> Tuple[str, List[Tuple[str, str]]]:
         "yahooで検索を行います。"
