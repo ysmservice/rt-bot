@@ -53,7 +53,7 @@ class DataManager:
     def get_all(self, guild_id: int) -> list[tuple[int, int, int, bool]]:
         "全てのロールリンクのデータを取得します。"
         self._prepare(guild_id)
-        return [(guild_id, int(orid))+row for orid, row in self.data[guild_id].data.items()]
+        return [(guild_id, int(orid))+tuple(row) for orid, row in self.data[guild_id].data.items()]
 
 
 class RoleLinker(commands.Cog, DataManager):
