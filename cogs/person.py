@@ -449,7 +449,10 @@ class Person(commands.Cog):
                 word = message.content[:0 - len(question)]
 
                 if word:
-                    await message.add_reaction(self.EMOJIS["search"])
+                    try:
+                        await message.add_reaction(self.EMOJIS["search"])
+                    except (discord.NotFound, discord.Forbidden):
+                        return
                     try:
                         reaction, user = await self.bot.wait_for(
                             'reaction_add', timeout=5.0,

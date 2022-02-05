@@ -1,6 +1,11 @@
 # RT - Twitter
 
-from typing import TYPE_CHECKING, Union, Dict, Tuple, List
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Union
+
+from collections import defaultdict
+from asyncio import Event
 
 from discord.ext import commands
 import discord
@@ -11,7 +16,6 @@ from tweepy.errors import NotFound
 from tweepy.models import Status
 
 from jishaku.functools import executor_function
-from asyncio import Event
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
@@ -74,15 +78,14 @@ class DataManager:
                 )
 
     async def _update_users(self, cursor):
+        self.users = defaultdict(list)
         await cursor.execute(
             f"SELECT ChannelID, UserName FROM {self.TABLE};"
         )
-        self.users = {
-            username: channel_id
-            for channel_id, username in await cursor.fetchall()
-        }
+        for channel_id, username in await cursor.fetchall():
+            self.users[username].append(channel_id)
 
-    async def update_users(self) -> List[Tuple[int, str]]:
+    async def update_users(self) -> list[tuple[int, str]]:
         "設定のキャッシュを更新します。"
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cursor:
@@ -108,10 +111,10 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
         "accept-language": "ja,en;q=0.9,en-GB;q=0.8,en-US;q=0.7",
     }
     BASE_URL = "https://twitter.com/{}/status/{}"
+    users: defaultdict[str, list[int]]
 
     def __init__(self, bot: "Backend"):
         self.bot = bot
-        self.users: Dict[str, int] = {}
         self.ready = Event()
 
         if "twitter" in self.bot.secret:
@@ -129,8 +132,8 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
             super(DataManager, self).__init__(**self.bot.secret["twitter"])
 
             self.connected = False
-            self.cache: Dict[str, str] = {}
-            self.bot.loop.create_task(self.start_stream())
+            self.cache: dict[str, str] = {}
+            self.main_task = self.bot.loop.create_task(self.start_stream())
 
     def filter(self, *args, **kwargs):
         # connectedを使えるようにするためにオーバーライドした関数です。
@@ -142,7 +145,7 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
         self.connected = False
         super().disconnect(*args, **kwargs)
 
-    def get_url(self, status: Union[Status, Tuple[str, int]]) -> str:
+    def get_url(self, status: Union[Status, tuple[str, int]]) -> str:
         "渡されたStatusからツイートのURLを取得します。"
         return self.BASE_URL.format(
             status.user.screen_name, status.id_str
@@ -150,16 +153,20 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
 
     async def on_status(self, status: "Status"):
         # ツイートを取得した際に呼ばれる関数です。
-        if status.user.screen_name in self.users:
+        if status.user.screen_name not in self.users:
+            return
+        for channel_id in self.users[status.user.screen_name]:
             # 通知対象のユーザーのツイートなら通知を行います。
-
-            if not (channel := self.bot.get_channel(
-                self.users[status.user.screen_name]
-            )):
+            if not (channel := self.bot.get_channel(channel_id)):
                 # もし通知するチャンネルが見当たらない場合はその設定を削除する。
-                return await self.delete(
-                    self.users[status.user.screen_name], status.user.screen_name
-                )
+                try:
+                    self.users[status.user.screen_name].remove(channel_id)
+                    return await self.delete(
+                        discord.Object(channel_id),
+                        status.user.screen_name
+                    )
+                except AssertionError:
+                    ...
 
             # Tweetに飛ぶリンクボタンを追加しておく。
             view = discord.ui.View(timeout=1)
@@ -226,27 +233,24 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
             del self.ready
         if self.users:
             follow = []
-            for username in self.users:
+            for username in list(self.users.keys()):
                 try:
                     follow.append(await self.get_user_id(username))
                 except NotFound:
-                    channel = self.bot.get_channel(self.users[username])
-                    if channel:
-                        await self.delete(channel, username)
-                        del self.users[username]
-                        await channel.send(
-                            "Twitter通知をしようとしましたがエラーが発生しました。\n" \
-                            + f"{username.replace('@', '＠')}のユーザーが見つかりませんでした。"
-                        )
-                    else:
-                        if getattr(self, "debug", False):
-                            print("Debug")
-                        await self.delete(discord.Object(self.users[username]))
+                    for channel_id in self.users[username]:
+                        if channel := self.bot.get_channel(channel_id):
+                            self.users[username].remove(channel_id)
+                            await channel.send(
+                                "Twitter通知をしようとしましたがエラーが発生しました。\n" \
+                                f"{username.replace('@', '＠')}のユーザーが見つかりませんでした。"
+                            )
+                        await self.delete(discord.Object(channel_id), username)
             self.filter(follow=follow)
 
     def cog_unload(self):
         if self.connected:
             self.disconnect()
+            self.main_task.cancel()
 
     @commands.group(
         aliases=["ツイッター", "tw"], extras={
@@ -367,8 +371,11 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
             embed=discord.Embed(
                 title="Twitter",
                 description="\n".join(
-                    f"<#{channel_id}>：{username}"
-                    for username, channel_id in self.users.items()
+                    "\n".join(
+                        f"<#{channel_id}>：{username}"
+                        for channel_id in channels
+                        if ctx.guild.get_channel(channel_id) is not None
+                    ) for username, channels in list(self.users.items())
                 )
             )
         )

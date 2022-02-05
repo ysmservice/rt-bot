@@ -12,7 +12,7 @@ from ujson import loads, dumps
 from rtutil import DatabaseManager
 from rtlib import RT, setting
 
-from .oldautomod.modutils import emoji_count
+from .automod.modutils import emoji_count
 
 
 class DataManager(DatabaseManager):

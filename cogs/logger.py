@@ -72,7 +72,7 @@ class SystemLog(commands.Cog):
                 else ctx.command.parents[-1].name
         )
         self.authors.append(ctx.author.id)
-        self.guilds.append(ctx.guild.id)
+        self.guilds.append(getattr(ctx.guild, "id", 0))
 
 def setup(bot):
     if not hasattr(bot, "logger"):

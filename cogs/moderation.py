@@ -49,7 +49,7 @@ class Moderation(commands.Cog):
         --------
         `rt!ban @tasuren @tasuren-sub`"""
         members = [
-            await commands.converter.UserConverter().convert(ctx, member)
+            await commands.UserConverter().convert(ctx, member)
             for member in members.split(",")
         ]
         excepts = []
