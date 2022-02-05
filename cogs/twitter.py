@@ -346,9 +346,12 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
                  "en": "The user is not found."}
             )
         else:
-            await self.update_users()
-            await self.start_stream(True)
+            self.bot.loop.create_task(self.restart())
             await ctx.reply("Ok")
+
+    async def restart(self):
+        await self.update_users()
+        await self.start_stream(True)
 
     @twitter.command("list", aliases=["l", "一覧"])
     async def list_(self, ctx):
