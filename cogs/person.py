@@ -301,9 +301,7 @@ class Person(commands.Cog):
                 )
             embeds.append(embed)
         # 作ったEmbedを送信する。
-        for embed in embeds:
-            await ctx.send(embed=embed)
-        del embeds, embed
+        await ctx.send(embeds=embeds)
 
     async def yahoo(self, keyword: str) -> Tuple[str, List[Tuple[str, str]]]:
         "yahooで検索を行います。"
@@ -449,7 +447,10 @@ class Person(commands.Cog):
                 word = message.content[:0 - len(question)]
 
                 if word:
-                    await message.add_reaction(self.EMOJIS["search"])
+                    try:
+                        await message.add_reaction(self.EMOJIS["search"])
+                    except (discord.NotFound, discord.Forbidden):
+                        return
                     try:
                         reaction, user = await self.bot.wait_for(
                             'reaction_add', timeout=5.0,

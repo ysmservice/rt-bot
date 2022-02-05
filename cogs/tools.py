@@ -2,13 +2,13 @@
 
 from typing import Literal
 
+from asyncio import sleep
+
 from discord.ext import commands
 import discord
 
 from rtlib.setting import Context, Setting
 from rtlib import RT
-
-from asyncio import sleep
 
 
 class Tools(commands.Cog):
@@ -32,15 +32,17 @@ class Tools(commands.Cog):
             "ja": "IDチェッカー", "en": "ID Checker"
         }
     )
-    @Setting("user")
     async def checker(self, ctx):
-        await ctx.reply(f"あなたのIDは`{ctx.author.id}`です。")
+        await ctx.reply(
+            f"ユーザーID: `{ctx.author.id}`\n"
+            f"サーバーID: `{ctx.guild.id}`\n"
+            f"チャンネルID: `{ctx.channel.id}`"
+        )
 
     @commands.command(
         headding={"ja": "ダッシュボードのローディング表示テスト用のものです。"}
     )
     @commands.cooldown(1, 10, commands.BucketType.guild)
-    @Setting("Tools", "Loading表示")
     async def setting_test_loading(self, ctx: Context, number: Literal[1, 2, 3, 4, 5]):
         await sleep(number)
         await ctx.reply("Loading楽しかった？")
@@ -52,14 +54,30 @@ class Tools(commands.Cog):
         return "".join(char for char in str(word) if char in self.OKCHARS)
 
     @commands.command(
-        headding={
-            "ja": "式を入力して計算を行うことができます。", "en": "Calculation by expression"
+        extras={
+            "headding": {
+                "ja": "式を入力して計算を行うことができます。", "en": "Calculation by expression"
+            }, "parent": "Individual"
         }
     )
-    @Setting("Tools", "簡易電卓")
-    async def calc(
-        self, ctx: Context, *, expression: str
-    ):
+    async def calc(self, ctx: Context, *, expression: str):
+        """!lang ja
+        --------
+        渡された式から計算をします。
+
+        Parameters
+        ----------
+        expression : str
+            式です。
+
+        !lang en
+        --------
+        Calculate from the expression given.
+
+        Parameters
+        ----------
+        expression : str
+            Expression"""
         if len(expression) < 400:
             await ctx.reply(f"計算結果：`{eval(self.safety(expression))}`")
         else:

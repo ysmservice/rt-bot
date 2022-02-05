@@ -47,13 +47,13 @@ RTCHAN_COLORS = {
 
 
 def is_admin(user_id: Optional[int] = None):
-    "管理者かチェックをする関数です。"
-    def check(ctx):
-        if isinstance(user_id, int):
-            return user_id in data["admins"]
-        else:
-            return ctx.author.id in data["admins"]
-    if user_id is None:
-        return commands.check(check)
-    else:
-        return check(user_id)
+     "管理者かチェックをする関数です。"
+     def check(ctx):
+         if isinstance(user_id, int):
+             return user_id in data["admins"]
+         else:
+             return ctx.author.id in data["admins"]
+     if user_id is None:
+         return commands.check(check)
+     else:
+         return check(user_id)

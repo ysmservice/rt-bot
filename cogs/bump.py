@@ -178,12 +178,11 @@ class Bump(commands.Cog, DataManager):
 
     @commands.command(extras=get_extras("up"))
     @commands.has_guild_permissions(administrator=True)
-    @setting.Setting("guild", "Up通知")
     async def up(self, ctx, onoff: bool, *, role: discord.Role = None):
         await self.write("up", ctx.guild.id, onoff, role)
         await ctx.reply("Ok", replace_language=False)
 
-    up.__doc__ = bump.__doc__.replace("bump", "up").replace("Bump", "Up")
+    up._callback.__doc__ = bump.callback.__doc__.replace("bump", "up").replace("Bump", "Up")
 
     async def make_ranking(self, user_id: int, mode: str) -> discord.Embed:
         rows = await self.execute(

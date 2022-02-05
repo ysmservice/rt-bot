@@ -187,6 +187,9 @@ class SettingManager(commands.Cog):
                         kwargs[parameter.name]["type"] = "User"
                     else:
                         kwargs[parameter.name]["type"] = parameter.annotation.__name__
+                elif parameter.annotation == bool:
+                    kwargs[parameter.name]["type"] = "Literal"
+                    kwargs[parameter.name]["extra"] = ("on", "off")
                 elif get_origin(parameter.annotation) is Literal:
                     kwargs[parameter.name]["type"] = "Literal"
                     kwargs[parameter.name]["extra"] = get_args(parameter.annotation)
