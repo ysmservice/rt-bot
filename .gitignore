@@ -22,3 +22,5 @@ auth.json
 \#*\#
 !cogs/tts/lib/AquesTalk/aquestalk.c
 rt_module
+.vscode
+.mypy_cache
