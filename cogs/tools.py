@@ -51,6 +51,7 @@ class Tools(commands.Cog):
     OKCHARS = list(map(str, range(9))) + OKES
 
     def safety(self, word):
+        word = word.replace("**", "*")
         return "".join(char for char in str(word) if char in self.OKCHARS)
 
     @commands.command(
@@ -63,7 +64,8 @@ class Tools(commands.Cog):
     async def calc(self, ctx: Context, *, expression: str):
         """!lang ja
         --------
-        渡された式から計算をします。
+        渡された式から計算をします。  
+        (`+`, `-`, `/`, `*`のみが使用可能です。)
 
         Parameters
         ----------
@@ -78,8 +80,8 @@ class Tools(commands.Cog):
         ----------
         expression : str
             Expression"""
-        if len(expression) < 400:
-            await ctx.reply(f"計算結果：`{eval(self.safety(expression))}`")
+        if len(expression) < 15:
+            await ctx.reply(f"計算結果：`{await self.bot.loop.run_in_executor(None, eval, self.safety(expression))}`")
         else:
             raise commands.BadArgument("計算範囲が大きすぎます！頭壊れます。")
 
