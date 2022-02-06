@@ -81,7 +81,7 @@ class Tools(commands.Cog):
         expression : str
             Expression"""
         if len(expression) < 15:
-            await ctx.reply(f"計算結果：`{eval(self.safety(expression))}`")
+            await ctx.reply(f"計算結果：`{await self.bot.loop.run_in_executor(None, eval, self.safety(expression)))}`")
         else:
             raise commands.BadArgument("計算範囲が大きすぎます！頭壊れます。")
 
