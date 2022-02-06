@@ -1,7 +1,7 @@
 # rtlib
 aiofiles
 ujson
-nextcord
+nextcord[voice,speed]
 aiomysql
 pytz
 websockets
@@ -18,10 +18,13 @@ bs4
 pyopenjtalk
 pydub
 psutil
-PyNacl
 captcha
 deep-translator
 topggpy
 tweepy
 speedtest-cli
 gTTS
+# types
+types-aiofles
+types-ujson
+types-emoji
