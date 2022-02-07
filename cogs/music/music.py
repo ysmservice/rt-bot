@@ -92,6 +92,11 @@ def format_time(time_: Union[int, float]) -> str:
     )
 
 
+def is_url(url: str) -> bool:
+    "URLかどうかをチェックします。ただのエイリアス"
+    return url.startswith(("http://", "https://"))
+
+
 #   メインディッシュ
 class Music:
     "音楽のデータを格納するためのクラスです。"
@@ -109,6 +114,7 @@ class Music:
         self.music_type, self.cog, self.author = music_type, cog, author
 
         self._start = 0.0
+        self.closed = False
 
     def to_dict(self) -> MusicDict:
         "このクラスに格納されているデータをJSONにシリアライズ可能な辞書にします。"
@@ -165,7 +171,7 @@ class Music:
                 )
             else:
                 # YouTube
-                if not url.startswith(("http://", "https://")):
+                if not is_url(url):
                     # 検索の場合はyoutube_dlで検索をするためにytsearchを入れる。
                     url = f"ytsearch15:{url}"
 
@@ -238,6 +244,8 @@ class Music:
     @executor_function
     def stop(self, callback: Callable[..., Any]) -> None:
         "音楽再生終了時に実行すべき関数です。"
+        self.closed = True
+        self.toggle_pause()
         self.on_close()
         callback()
 
@@ -273,3 +281,19 @@ class Music:
 
     def __str__(self):
         return f"<Music title={self.title} elapsed={self.elapsed} author={self.author} url={self.url}>"
+
+    def __del__(self):
+        # もし予期せずにこのクラスのインスタンスが削除された際には終了処理をする。
+        if not self.closed:
+            self.stop()
+
+    def make_embed(self, seek_bar: bool = False) -> discord.Embed:
+        "再生中の音楽を示す埋め込みを作成します。"
+        embed = discord.Embed(title="Now playing", color=self.cog.bot.Colors.normal)
+        if seek_bar:
+            embed.description = self.make_seek_bar()
+        embed.add_field(name="Title", value=self.maked_title)
+        embed.add_field(name="Time", value=self.elapsed)
+        embed.set_thumbnail(url=self.thumbnail)
+        embed.set_author(name=self.author.name, icon_url=getattr(self.author.avatar, "url", ""))
+        return embed

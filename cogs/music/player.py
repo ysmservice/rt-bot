@@ -7,7 +7,7 @@ from asyncio import Event
 
 import discord
 
-from .music import Music
+from .music import Music, is_url
 
 if TYPE_CHECKING:
     from .__init__ import MusicCog
@@ -40,14 +40,21 @@ class Player:
         "キューの長さを取得します。ただのエイリアス"
         return len(self.queues)
 
-    async def add_from_url(self, author: discord.Member, url: str) -> Optional[NotAddedReason]:
+    async def add_from_url(self, author: discord.Member, url: str) -> Optional[
+        Union[NotAddedReason, Exception, list[Music]]
+    ]:
         "キューにURLから音楽を追加します。"
         if isinstance((data := await Music.from_url(
-            self.cog, author, url, self.cog.max(self.guild))
-        ), Exception):
+            self.cog, author, url, self.cog.max(self.guild)
+        )), Exception):
             # 取得に失敗したのならエラーを起こす。
-            raise data
+            return data
         elif isinstance(data, tuple):
+            # もし取得結果が複数あるなら
+            if not is_url(url):
+                # もし検索結果が返ってきたのならそれをそのまま返す。
+                return data[0]
+            # 量制限の確認をする。
             if self.length + (queues_length := len(data[0])) > self.cog.max(author):
                 return NotAddedReason.queue_many
             else:
@@ -56,8 +63,9 @@ class Player:
                 if data[1]:
                     return NotAddedReason.list_very_many
         else:
+            # 通常
             self.print("Adding queue: %s" % music)
-            self.queues.append(data[0])
+            return self.add(data[0])
 
     def add(self, music: Music) -> Optional[NotAddedReason]:
         "渡されたMusicをqueueに追加します。"
