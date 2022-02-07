@@ -38,13 +38,13 @@ def check(
         async def new(self: MusicCog, ctx: commands.Context, *args, **kwargs):
             if not check_state:
                 return await func()
-            
+
             if ctx.message.author.voice is None:
                 await ctx.reply(
                     {"ja": "ボイスチャンネルに接続してください。",
                      "en": "You must be connected to a voice channel."}
                 )
-            elif ctx.guild.voice is None:
+            elif ctx.guild.voice_client is None:
                 return await ctx.reply(
                     {
                         "ja": "自分ボイスチャンネルに参加していないです。音楽再生をしてください。\n"
@@ -85,7 +85,7 @@ class MusicCog(commands.Cog):
     def __init__(self, bot: RT):
         self.bot = bot
         self.client_session = ClientSession(json_serialize=dumps)
-        self.now: dict[discord.Guild, Player] = {}
+        self.now: dict[int, Player] = {}
         self.dj, self.data = DJData(self.bot), UserData(self.bot)
 
     def print(self, *args, **kwargs):
@@ -98,7 +98,10 @@ class MusicCog(commands.Cog):
 
     @commands.command()
     @check({"ja": "音楽再生をします。", "en": "Play music"}, False)
-    async def play(self, ctx: commands.Context):
+    async def play(self, ctx: commands.Context, *, url: str):
+        if ctx.guild.id not in self.now:
+            self.now[ctx.guild.id] = Player(self, ctx.guild)
+        self.now[ctx.guild.id].add_from_url(url)
         ...
 
     def cog_unload(self):
