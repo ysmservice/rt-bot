@@ -1,6 +1,6 @@
 # RT - Slash, Author: tasuren, Description: このコードはパブリックドメインとします。
 
-from typing import TYPE_CHECKING, Callable, Optional, Union, Literal, get_origin
+from typing import TYPE_CHECKING, Callable, Optional, Union, Literal, get_origin, overload
 
 from inspect import signature
 from datetime import datetime
@@ -424,3 +424,18 @@ class SlashManager(commands.Cog):
 
 def setup(bot):
     bot.add_cog(SlashManager(bot))
+
+
+def is_slash_context(ctx: Union[commands.Context, Context]) -> bool:
+    "スラッシュのContextかどうかを調べます。"
+    return hasattr(ctx, "interaction")
+
+
+async def loading(ctx: Union[commands.Context, Context]) -> None:
+    """ローディング表示をします。
+    インタラクションの場合はこれをした後のreplyではcontentをキーワード引数で指定する必要があります。"""
+    if is_slash_context(ctx):
+        setattr(ctx, "reply", ctx.interaction.edit_original_message)
+        return await ctx.interaction.response.defer()
+    else:
+        return await ctx.trigger_typing()
