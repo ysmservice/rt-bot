@@ -1,5 +1,7 @@
 # RT Music - Music Data class
 
+from __future__ import annotations
+
 from typing import (
     TYPE_CHECKING, TypedDict, Type, Callable, Literal, Union, Optional, Any
 )
@@ -11,6 +13,7 @@ from jishaku.functools import executor_function
 
 from niconico import NicoNico, objects as niconico_objects
 from youtube_dl import YoutubeDL
+from requests import get
 
 if __name__ == "__main__":
     from .__init__ import MusicCog
@@ -162,8 +165,7 @@ class Music:
             elif "soundcloud.com" in url or "soundcloud.app.goo.gl" in url:
                 if "goo" in url:
                     # 短縮URLの場合はリダイレクト先が本当の音楽のURLなのでその真のURLを取得する。
-                    async with cog.client_session.get(url) as r:
-                        url = str(r.url)
+                    url = get(url).url
                 data = get_music_by_ytdl(url, "flat")
                 return cls(
                     cog, author, MusicTypes.soundcloud, data["title"], url,
@@ -245,7 +247,8 @@ class Music:
     def stop(self, callback: Callable[..., Any]) -> None:
         "音楽再生終了時に実行すべき関数です。"
         self.closed = True
-        self.toggle_pause()
+        if self._stop != 0.0:
+            self.toggle_pause()
         self.on_close()
         callback()
 

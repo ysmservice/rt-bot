@@ -1,5 +1,7 @@
 # RT Music - Views
 
+from __future__ import annotations
+
 from collections.abc import Coroutine
 from typing import TYPE_CHECKING
 
