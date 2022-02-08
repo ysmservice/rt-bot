@@ -6,8 +6,10 @@ import discord
 class TimeoutView(discord.ui.View):
     "タイムアウト時にコンポーネントを使用不可に編集するようにするViewです。"
 
-    def __init__(self, targets: list[str], message: discord.Message, *args, **kwargs):
-        self.targets, self.message = targets, message
+    message: discord.Message
+
+    def __init__(self, targets: list[str], *args, **kwargs):
+        self.targets = targets
         super().__init__(*args, **kwargs)
 
     async def timeout(self):

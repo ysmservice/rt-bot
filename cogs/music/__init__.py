@@ -138,7 +138,7 @@ class MusicCog(commands.Cog):
             # ここは呼ばれたらおかしい。
             return IM_MACHINE
 
-    async def _play(self, ctx: commands.Context, url: Union[str, Music]):
+    async def _play(self, ctx: Union[commands.Context, discord.Interaction], url: Union[str, Music]):
         status = ""
         if isinstance(url, str):
             if ctx.guild.id not in self.now:
@@ -148,7 +148,17 @@ class MusicCog(commands.Cog):
             if (status := await self.now[ctx.guild.id].add_from_url(url)) is not None:
                 if isinstance(status, list):
                     # リストの場合は検索結果のため選んでもらう。
-                    view = TimeoutView()
+                    view = TimeoutView(
+                        status, lambda select, interaction: self.bot.loop.create_task(
+                            self._play(interaction, status[select.values[0]])
+                        )
+                    )
+                    view.message = await ctx.reply(
+                        {"ja": "検索結果が複数あるので選んでください。",
+                         "en": "There are multiple search results to choose from."},
+                        view=view
+                    )
+                    return
                 else:
                     # もし何かしら発生したのなら警告を入れる。
                     status = self._get_status(status)
@@ -158,7 +168,7 @@ class MusicCog(commands.Cog):
 
         assert (now := self.now[ctx.guild.id].now) is not None, IM_MACHINE
 
-        await ctx.reply(
+        await (ctx.response.send_message if isinstance(ctx, discord.Interaction) else ctx.reply)(
             {"ja": f"{EMOJIS.start} 音楽再生を開始します。",
              "en": f"{EMOJIS.start} Starting music player..."},
             embed=now.make_embed()
