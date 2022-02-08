@@ -7,6 +7,8 @@ import discord
 
 from rtlib import RT
 
+from .music import Music
+
 if TYPE_CHECKING:
     from .__init__ import MusicCog
 
@@ -49,3 +51,23 @@ class Confirmation(discord.ui.View):
             self.children[0].disabled = True
             await self.message.edit(view=self)
             self.stop()
+
+
+class MusicSelect(discord.ui.Select):
+    "曲選択用のセレクトです。"
+
+    def __init__(
+        self, musics: list[Music], *args, callback: Optional[
+            Callable[[MusicSelect, discord.Interaction], Any]
+        ] = None, **kwargs
+    ):
+        super().__init__(*args, **kwargs)
+        self.musics, self.__callback = musics, callback
+        for count, music in enumerate(self.musics):
+            self.add_option(
+                label=music.title, value=str(count), description=music.url
+            )
+
+    async def callback(self, interaction: discord.Interaction):
+        if self.__callback is not None:
+            self.__callback(self, interaction)

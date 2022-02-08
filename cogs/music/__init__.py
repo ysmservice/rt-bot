@@ -10,11 +10,21 @@ import discord
 from aiohttp import ClientSession
 from ujson import dumps
 
+from rtutil.views import TimeoutView
 from rtlib import RT, Table
 
-from .views import Confirmation
+from .views import Confirmation, MusicSelect
+from .player import Player, NotAddedReason
 from .music import MusicDict, Music
-from .player import Player
+
+
+IM_MACHINE = "私は夢見るマシーンです。"
+class EMOJIS:
+    start = "▶️"
+    pause = "⏸"
+    stop = "⏹"
+    skip = "⏭"
+    reversed_skip = "⏮"
 
 
 class DJData(Table):
@@ -96,13 +106,63 @@ class MusicCog(commands.Cog):
         "最大曲数を取得します。"
         return 800
 
+    def get_player(self, guild_id: int) -> Optional[Player]:
+        "指定されたGuildIDの音楽プレイヤーを返します。ただのエイリアス"
+        return self.now.get(guild_id)
+
     @commands.command()
     @check({"ja": "音楽再生をします。", "en": "Play music"}, False)
     async def play(self, ctx: commands.Context, *, url: str):
-        if ctx.guild.id not in self.now:
-            self.now[ctx.guild.id] = Player(self, ctx.guild)
-        self.now[ctx.guild.id].add_from_url(url)
-        ...
+        await ctx.trigger_typing()
+        await self._play(ctx, url)
+
+    def _get_status(self, status: Union[Exception, NotAddedReason]) -> dict[str, str]:
+        # 渡されたステータスから適切な返信を選びます。
+        if isinstance(status, Exception):
+            return {
+                "ja": "楽曲の読み込みに失敗してしまいました。"
+                    + (code := f"\ncode: `{status.__class__.__name__} - {status}`"),
+                "en": f"Failed to load a music.{code}"
+            }
+        elif status == NotAddedReason.list_very_many:
+            return {
+                "ja": "リストが大きすぎたため後半の曲は追加されていません。",
+                "en": "The second half of the song has not been added because the list was too large."
+            }
+        elif status == NotAddedReason.queue_many:
+            return {
+                "ja": "キューが満タンなため恐らくいくつかの曲が追加されていません。",
+                "en": "Some songs have not been added, probably because the queue is full."
+            }
+        else:
+            # ここは呼ばれたらおかしい。
+            return IM_MACHINE
+
+    async def _play(self, ctx: commands.Context, url: Union[str, Music]):
+        status = ""
+        if isinstance(url, str):
+            if ctx.guild.id not in self.now:
+                self.now[ctx.guild.id] = Player(self, ctx.guild)
+
+            # 曲を読み込みむ。
+            if (status := await self.now[ctx.guild.id].add_from_url(url)) is not None:
+                if isinstance(status, list):
+                    # リストの場合は検索結果のため選んでもらう。
+                    view = TimeoutView()
+                else:
+                    # もし何かしら発生したのなら警告を入れる。
+                    status = self._get_status(status)
+        else:
+            # 検索結果から選ばれた曲をキューに追加する。
+            self.now[ctx.guild.id].add(url)
+
+        assert (now := self.now[ctx.guild.id].now) is not None, IM_MACHINE
+
+        await ctx.reply(
+            {"ja": f"{EMOJIS.start} 音楽再生を開始します。",
+             "en": f"{EMOJIS.start} Starting music player..."},
+            embed=now.make_embed()
+        )
 
     def cog_unload(self):
         # コグがアンロードされた際にもし使用されてる音楽プレイヤーがあれば終了する。
