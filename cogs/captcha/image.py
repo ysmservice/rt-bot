@@ -34,7 +34,9 @@ async def response(
 ) -> None:
     "返信をして埋め込みとViewを消す関数です。また、返信のみもできます。"
     if send:
-        return await interaction.response.send_message(content=content)
+        return await interaction.response.send_message(
+            content=content, ephemeral=True
+        )
     else:
         return await interaction.response.edit_message(
             content=content, embed=None, view=None
