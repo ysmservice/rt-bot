@@ -433,7 +433,7 @@ class Captcha(commands.Cog, DataManager):
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         if (member.id not in self.queue.get(member.guild.id, {})
-                and (row := self.read(member.guild.id))):
+                and (row := self.read(member.guild.id)) and not member.bot):
             # もし認証が設定されているサーバーの場合はqueueにタイムアウト情報を追加しておく。
             self.queue[member.guild.id][member.id] = (
                 time() + row[2].get("timeout", {}).get("time", 60) * 60,

@@ -234,13 +234,15 @@ class OriginalCommand(commands.Cog, DataManager):
         if ((data := self.data.get(message.guild.id))
                 and message.author.id != self.bot.user.id
                 and not message.content.startswith(
-                    tuple(self.bot.command_prefix))
-                ):
+                    tuple(self.bot.command_prefix))):
+            count = 0
             for command in data:
                 if ((data[command]["reply"] and command in message.content)
                         or command == message.content):
                     await message.reply(data[command]["content"])
-                    break
+                    count += 1
+                    if count == 3:
+                        break
 
 
 def setup(bot):
