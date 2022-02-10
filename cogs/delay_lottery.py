@@ -209,14 +209,13 @@ class DelayLottery(commands.Cog, DataManager):
             return
 
         if str(payload.emoji) == self.EMOJIS["error"]:
-            if str(payload.member.id) in payload.message.author.name:
-                await self.delete(
-                    payload.guild_id, payload.channel_id, payload.message_id
-                )
-                await payload.message.delete()
-                await payload.message.channel.send(
-                    f"{payload.member.mention}, 抽選をキャンセルしました。 / Canceled!"
-                )
+            await self.delete(
+                payload.guild_id, payload.channel_id, payload.message_id
+            )
+            await payload.message.delete()
+            await payload.message.channel.send(
+                f"{payload.member.mention}, 抽選をキャンセルしました。 / Canceled!"
+            )
 
     def cog_unload(self):
         self.lottery_worker.cancel()
