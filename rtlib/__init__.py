@@ -2,7 +2,7 @@
 
 from typing import Union, Tuple, List
 
-from discord.ext import commands, tasks
+from discord.ext import commands, tasks # type: ignore
 import discord
 
 from pymysql.err import OperationalError
@@ -10,7 +10,7 @@ from pymysql.err import OperationalError
 from . import mysql_manager as mysql
 from .data_manager import Table
 from .ext import componesy
-from .typed import RT
+from .typed import RT, sendableString
 
 
 DatabaseManager = mysql.DatabaseManager
@@ -46,8 +46,8 @@ async def webhook_send(
 
 
 # webhook_sendを新しく定義する。
-discord.abc.Messageable.webhook_send = webhook_send
-discord.ext.easy = componesy
+discord.abc.Messageable.webhook_send = webhook_send # type: ignore
+discord.ext.easy = componesy # type: ignore
 
 
 def setup(bot, only: Union[Tuple[str, ...], List[str]] = []):

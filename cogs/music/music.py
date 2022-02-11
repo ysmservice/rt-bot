@@ -45,6 +45,7 @@ class MusicTypes:
     niconico = 1
     youtube = 2
     soundcloud = 3
+    spotify = 4
 
 
 class MusicDict(TypedDict):
@@ -74,7 +75,7 @@ def make_niconico_music(
 
 def get_music_by_ytdl(url: str, mode: Literal["normal", "flat"]) -> dict:
     "YouTubeのデータを取得する関数です。ただのエイリアス"
-    return YoutubeDL(globals()[mode.upper()]).extract_info(url, download=False)
+    return YoutubeDL(globals()[f"{mode.upper()}_OPTIONS"]).extract_info(url, download=False)
 
 
 def make_youtube_url(data: dict) -> str:
@@ -104,7 +105,7 @@ def is_url(url: str) -> bool:
 class Music:
     "音楽のデータを格納するためのクラスです。"
 
-    on_close: Callable[..., Any] = lambda : None
+    on_close: Callable[..., Any]
     """音楽再生終了後に呼び出すべき関数です。
     ニコニコ動画の音楽を再生した場合は再生終了後にこれを呼び出してください。"""
 
@@ -116,8 +117,11 @@ class Music:
         self.thumbnail, self.duration = thumbnail, duration
         self.music_type, self.cog, self.author = music_type, cog, author
 
-        self._start = 0.0
+        self._start, self._stop = 0.0, 0.0
+        self._made_source = False
         self.closed = False
+
+        self.on_close = lambda : None
 
     def to_dict(self) -> MusicDict:
         "このクラスに格納されているデータをJSONにシリアライズ可能な辞書にします。"
@@ -132,13 +136,21 @@ class Music:
         return cls(cog, author, **data)
 
     @classmethod
-    @executor_function
-    def from_url(
+    async def from_url(
         cls, cog: MusicCog, author: discord.Member, url: str, max_result: int
     ) -> Union[Music, tuple[list[Music], bool], Exception]:
         """音楽を取得します。
         ニコニコ動画のマイリストやYouTubeの再生リストを渡した場合はそのリストと最大取得数でカンストしたかどうかのタプルが返されます。
         取得に失敗した場合はエラーが返されます。"""
+        result = await cls._from_url(cls, cog, author, url, max_result)
+        if isinstance(result, str):
+            # もしプレイリストのURLが返ってきたのならもう一度呼び出す。
+            return await cls._from_url(cls, cog, author, result, max_result)
+        return result
+
+    @staticmethod
+    @executor_function
+    def _from_url(cls, cog, author, url, max_result):
         try:
             if "nicovideo.jp" in url or "nico.ms" in url:
                 # ニコニコ動画
@@ -178,7 +190,7 @@ class Music:
                     url = f"ytsearch15:{url}"
 
                 data = get_music_by_ytdl(url, "flat")
-                if data["entries"]:
+                if data.get("entries"):
                     # 再生リストなら
                     items = []
                     for count, entry in enumerate(data["entries"], 0):
@@ -194,11 +206,15 @@ class Music:
                         )
                     else:
                         return items, False
-                # 通常の動画なら
-                return cls(
-                    cog, author, MusicTypes.youtube, data["title"],
-                    make_youtube_url(data), data["thumbnail"], data["duration"]
-                )
+
+                if "thumbnail" in data:
+                    # 通常の動画なら
+                    return cls(
+                        cog, author, MusicTypes.youtube, data["title"],
+                        make_youtube_url(data), data["thumbnail"], data["duration"]
+                    )
+                else:
+                    return data["url"]
         except Exception as e:
             cog.print("Failed to load music: %s: %s" % (e, url))
             return e
@@ -206,7 +222,7 @@ class Music:
     @executor_function
     def _prepare_source(self) -> str:
         "音楽再生に使う動画の直URLの準備をします。"
-        if self.music_type == (MusicTypes.youtube, MusicTypes.soundcloud):
+        if self.music_type in (MusicTypes.youtube, MusicTypes.soundcloud):
             return get_music_by_ytdl(self.url, "normal")["url"]
         elif self.music_type == MusicTypes.niconico:
             self.video = niconico.video.get_video(self.url)
@@ -219,6 +235,7 @@ class Music:
         discord.PCMVolumeTransformer, discord.FFmpegOpusAudio
     ]:
         "音楽再生のソースのインスタンスを作ります。"
+        self._made_source = True
         if discord.opus.is_loaded():
             # 通常
             return discord.PCMVolumeTransformer(
@@ -227,9 +244,7 @@ class Music:
         else:
             # もしOpusライブラリが読み込まれていないのならFFmpegにOpusの処理をしてもらう。
             # その代わり音量調整はできなくなる。(本番環境ではここは実行されないのでヨシ！)
-            return discord.FFmpegOpusAudio(
-                await self._prepare_source()
-            )
+            return discord.FFmpegOpusAudio(await self._prepare_source())
 
     def start(self) -> None:
         "途中経過の計算用の時間を計測を開始する関数です。"
@@ -240,17 +255,19 @@ class Music:
         if self._stop == 0.0:
             self._stop = time()
         else:
-            self._start += self.stop
+            self._start += self._stop - self._start
             self._stop = 0.0
 
     @executor_function
-    def stop(self, callback: Callable[..., Any]) -> None:
+    def stop(self, callback: Callable[..., Any] = None) -> None:
         "音楽再生終了時に実行すべき関数です。"
-        self.closed = True
-        if self._stop != 0.0:
-            self.toggle_pause()
-        self.on_close()
-        callback()
+        if self._made_source:
+            self.closed = True
+            if self._stop != 0.0:
+                self.toggle_pause()
+            self.on_close()
+            if callback is not None:
+                callback()
 
     @property
     def maked_title(self) -> str:
@@ -268,9 +285,15 @@ class Music:
         return format_time(self.now)
 
     @property
+    def formated_duration(self) -> Optional[str]:
+        "フォーマット済みの動画の時間です。"
+        if self.duration is not None:
+            return format_time(self.duration)
+
+    @property
     def elapsed(self) -> str:
         "何秒経過したかの文字列です。`/`"
-        return f"{self.formated_now}/{self.duration or '??:??'}"
+        return f"{self.formated_now}/{self.formated_duration or '??:??'}"
 
     def make_seek_bar(self, length: int = 15) -> str:
         "どれだけ音楽が再生されたかの絵文字によるシークバーを作る関数です。"
@@ -282,13 +305,18 @@ class Music:
             "⬜", base[now:])
         )
 
+    def _init_start(self):
+        if self._start == 0.0:
+            self.start()
+
     def __str__(self):
-        return f"<Music title={self.title} elapsed={self.elapsed} author={self.author} url={self.url}>"
+        self._init_start()
+        return f"<Music title={self.title} elapsed={self.elapsed} author={self.author}>"
 
     def __del__(self):
         # もし予期せずにこのクラスのインスタンスが削除された際には終了処理をする。
-        if not self.closed:
-            self.stop()
+        if not self.closed and self._made_source:
+            self.cog.bot.loop.create_task(self.stop())
 
     def make_embed(self, seek_bar: bool = False) -> discord.Embed:
         "再生中の音楽を示す埋め込みを作成します。"
@@ -296,6 +324,7 @@ class Music:
         if seek_bar:
             embed.description = self.make_seek_bar()
         embed.add_field(name="Title", value=self.maked_title)
+        self._init_start()
         embed.add_field(name="Time", value=self.elapsed)
         embed.set_thumbnail(url=self.thumbnail)
         embed.set_author(name=self.author.name, icon_url=getattr(self.author.avatar, "url", ""))

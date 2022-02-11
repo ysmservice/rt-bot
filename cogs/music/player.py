@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Union, Optional
 from enum import Enum
 
 from asyncio import Event
 from random import sample
 
 import discord
+
+from rtlib import sendableString
 
 from .music import Music, is_url
 
@@ -34,11 +36,12 @@ class LoopMode(Enum):
 class Player:
     "音楽再生にサーバー毎に使う音楽プレイヤーのクラスです。"
 
-    def __init__(self, cog: MusicCog, guild: discord.Guild):
+    def __init__(self, cog: MusicCog, guild: discord.Guild, voice_client: discord.VoiceClient):
         self.cog, self.guild = cog, guild
         self.queues: list[Music] = []
         self._loop = LoopMode.none
         self.channel: Optional[discord.TextChannel] = None
+        self.vc = voice_client
         self._volume = 1.0
         self._stopped = Event()
         self._stopped.set()
@@ -76,8 +79,8 @@ class Player:
                     return NotAddedReason.list_very_many
         else:
             # 通常
-            self.print("Adding queue: %s" % music)
-            return self.add(data[0])
+            self.print("Adding queue: %s" % data)
+            return self.add(data)
 
     def add(self, music: Music) -> Optional[NotAddedReason]:
         "渡されたMusicをqueueに追加します。"
@@ -91,14 +94,17 @@ class Player:
     def now(self) -> Optional[Music]:
         "あるなら現在再生中のキューのMusicを返します。"
         self._assert_vc()
-        if self.queues and self.guild.voice_client:
+        if self.queues and self.vc:
             return self.queues[0]
 
     def _process_closed_queue(self):
         # 音楽再生終了後のキューの処理をする。
-        if self._loop == LoopMode.all:
-            self.queues.append(self.queues.pop(0))
-        elif self._loop == LoopMode.none:
+        if self.vc.is_connected():
+            if self._loop == LoopMode.all:
+                self.queues.append(self.queues.pop(0))
+            elif self._loop == LoopMode.none:
+                del self.queues[0]
+        else:
             del self.queues[0]
 
     async def _after_play(self, e: Exception):
@@ -114,7 +120,6 @@ class Player:
 
         # 音源のお片付けをしてキューのcloseをしてキューを消す。
         self.print("Cleaning...")
-        self.guild.voice_client.source.cleanup()
         await self.queues[0].stop(self._process_closed_queue)
 
         self._stopped.set()
@@ -125,7 +130,7 @@ class Player:
 
     def _assert_vc(self):
         # VCに接続済みかチェックをします。
-        assert self.guild.voice_client is not None, "接続されていません。"
+        assert self.vc is not None, "接続されていません。"
 
     async def play(self):
         """現在登録されているキューの一番最初にある曲を再生します。
@@ -143,32 +148,32 @@ class Player:
 
         self.print("Playing music...")
         self._stopped.clear()
-        self.guild.voice_client.play(
+        self.vc.play(
             source, after=lambda e: self.cog.bot.loop.create_task(
                 self._after_play(e)
             )
         )
 
     def _assert_playing(self):
-        assert self.guild.voice_client.is_playing(), "現在は何も再生していません。"
+        assert self.vc.is_playing(), "現在は何も再生していません。"
 
     def pause(self) -> bool:
         "再生を一時停止します。二度目は再開します。"
         self._assert_vc()
         if self.now is not None:
             self.now.toggle_pause()
-        if self.guild.voice_client.is_paused():
-            self.guild.voice_client.resume()
+        if self.vc.is_paused():
+            self.vc.resume()
             return True
         else:
             self._assert_vc()
-            self.guild.voice_client.pause()
+            self.vc.pause()
             return False
 
     def skip(self):
         "次のキューにスキップします。"
         self._assert_playing()
-        self.guild.voice_client.stop()
+        self.vc.stop()
 
     @property
     def volume(self) -> float:
@@ -180,9 +185,9 @@ class Player:
     def _volume_set(self, volume: int):
         self._volume = volume / 100
         # もし音楽の再生中なら再生中のものの音量を変更する。
-        if (self.guild.voice_client.is_playing()
-                and not self.guild.voice_client.source.is_opus()):
-            self.guild.voice_client.source.volume = self._volume
+        if (self.vc.is_playing()
+                and not self.vc.source.is_opus()):
+            self.vc.source.volume = self._volume
 
     def shuffle(self):
         "キューをシャッフルします。"
@@ -204,32 +209,30 @@ class Player:
         await self._stopped.wait()
 
     async def disconnect(
-        self, reason: Optional[Union[str, dict[str, str]]] = None, force: bool = False
+        self, reason: Optional[sendableString] = None, force: bool = False
     ):
         "お片付けをして切断をします。"
         self._assert_vc()
         self.print("Disconnecting...")
 
-        if self.queues:
-            # キューがあるならキューを全部消す。
-            if self.guild.voice_client.is_playing():
-                # 再生中の場合は再生中の音楽のキューを残して後始末をしてから後始末終了まで待機する。
-                self.queues = self.queues[:1]
-                self.guild.voice_client.skip()
-                await self.wait_until_stopped()
-            else:
-                self.queues = []
+        # キューが二個以上あるならキューを一個以外全部消す。
+        if len(self.queues) > 1:
+            self.queues = self.queues[:1]
 
         # 再生の停止をする。
-        await self.guild.voice_client.disconnect(force=force)
+        if self.vc.is_connected():
+            await self.vc.disconnect(force=force)
+        await self.wait_until_stopped()
         # もし理由があるなら送信しておく。
-        if self.channel is not None and self.reason is not None:
+        if self.channel is not None and reason is not None:
             await self.channel.send(reason)
+
+        self.cog.bot.loop.calll_soon(self.cog.remove_player, self.guild.id)
 
         self.print("Done")
 
     def __del__(self):
-        if self.guild.voice_client.is_connected():
+        if self.vc is not None and self.vc.is_connected():
             # 予期せずにこのクラスのインスタンスが消されたかつボイスチャンネルに接続してる場合は切断を行う。
             # 念の為のメモリリーク防止用のもの。
             self.cog.bot.loop.create_task(
