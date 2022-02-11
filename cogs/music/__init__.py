@@ -14,8 +14,8 @@ from rtutil.views import TimeoutView
 from rtlib import RT, Table, sendKwargs
 
 from .views import (
-    Confirmation, MusicSelect, Queues, AddMusicPlaylistSelect, ShowPlaylistSelect,
-    PlayPlaylistSelect
+    PLAYLIST_SELECT, Confirmation, MusicSelect, Queues, AddMusicPlaylistSelect,
+    ShowPlaylistSelect, PlayPlaylistSelect, AddMusicPlaylistView
 )
 from .player import Player, NotAddedReason, LoopMode
 from .music import MusicDict, Music
@@ -101,7 +101,7 @@ def check(
     return decorator
 
 
-class MusicCog(commands.Cog):
+class MusicCog(commands.Cog, name="Music"):
 
     EMOJIS = EMOJIS
 
@@ -221,11 +221,12 @@ class MusicCog(commands.Cog):
             )
         else:
             assert (now := self.now[ctx.guild.id].now) is not None, IM_MACHINE
-            await ctx.reply(
+            view = AddMusicPlaylistView(now, self)
+            view.message = await ctx.reply(
                 content={
                     "ja": f"{status.get('ja', '')}{EMOJIS.start} 音楽再生を開始します。",
                     "en": f"{status.get('en', '')}{EMOJIS.start} Starting music player..."
-                }, embed=now.make_embed(), view=None
+                }, embed=now.make_embed(), view=view
             )
             await self.now[ctx.guild.id].play()
 
@@ -295,7 +296,10 @@ class MusicCog(commands.Cog):
     @check({"ja": "現在再生中の曲を表示します。", "en": "Displays the currently playing music."})
     @commands.command(aliases=["現在"])
     async def now(self, ctx: UnionContext):
-        await ctx.reply(embed=self.now[ctx.guild.id].now.make_embed(True))
+        view = AddMusicPlaylistView(self.now[ctx.guild.id], self)
+        view.message = await ctx.reply(
+            embed=self.now[ctx.guild.id].now.make_embed(True), view=view
+        )
 
     @check({"ja": "現在登録されているキューを表示します。", "en": "Displays currently queues registered."})
     @commands.command(aliases=["キュー", "qs"])
@@ -368,12 +372,11 @@ class MusicCog(commands.Cog):
         ))
         select.song = url
         view.message = await ctx.reply(
-            {"ja": "プレイリストを選択してください。",
-             "en": "Select the playlist."},
+            PLAYLIST_SELECT,
             view=view, **sendKwargs(ctx, ephemeral=True)
         )
 
-    async def _run_playlist_command(self, ctx, name, content="プレイリストを選択してください。"):
+    async def _run_playlist_command(self, ctx, name, content=PLAYLIST_SELECT):
         self.assert_playlist(ctx.author.id)
         view = TimeoutView()
         view.add_item(globals()[name](self.data[ctx.author.id].playlists, self))
@@ -383,8 +386,8 @@ class MusicCog(commands.Cog):
     async def show(self, ctx: UnionContext):
         await self._run_playlist_command(ctx, "ShowPlaylistSelect")
 
-    @playlist.command()
-    async def play(self, ctx: UnionContext):
+    @playlist.command("play")
+    async def playlist_play(self, ctx: UnionContext):
         await self._run_playlist_command(ctx, "PlayPlaylistSelect")
 
     def cog_unload(self):

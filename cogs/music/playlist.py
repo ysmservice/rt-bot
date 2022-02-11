@@ -10,6 +10,9 @@ if TYPE_CHECKING:
     from .__init__ import MusicCog
 
 
+def to_musics(data: list[MusicDict], cog: MusicCog, author: discord.Member) -> list[Music]:
+    return [Music.from_dict(cog, author, data) for data in data]
+
 class Playlist:
     "プレイリストのクラスです。"
 
@@ -28,7 +31,7 @@ class Playlist:
 
     def to_musics(self, cog: MusicCog, author: discord.Member) -> list[Music]:
         "全てをMusicにしたリストを返します。"
-        return [Music.from_dict(cog, author, data) for data in self.data]
+        return to_musics(self.data, cog, author)
 
     def add(self, music: Union[Music, MusicDict], length: Optional[int] = None) -> None:
         "プレイリストに音楽を追加します。"
