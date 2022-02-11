@@ -70,3 +70,13 @@ def _init(self, *args, **kwargs):
     default(self, *args, **kwargs)
     self.add_exception_type(OperationalError)
 tasks.Loop.__init__ = _init
+
+
+def sendKwargs(ctx, **kwargs):
+    if isinstance(ctx, commands.Context):
+        for key in list(kwargs.keys()):
+            if (key not in discord.abc.Messageable.send.__annotations__
+                    and key in discord.InteractionResponse
+                        .send_message.__annotations__):
+                del kwargs[key]
+    return kwargs

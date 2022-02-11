@@ -9,6 +9,7 @@ import discord
 
 from rtutil.views import TimeoutView
 from rtlib.page import EmbedPage
+from rtlib.slash import Context
 from rtlib import RT
 
 from .music import Music
@@ -123,18 +124,13 @@ def make_embeds(
     return embeds, musics
 
 
-class Queues(EmbedPage):
-    "キューリストのViewです。"
+class MusicEmbedList(EmbedPage):
+    "音楽リストのViewです。"
 
-    def __init__(self, cog: MusicCog, queues: list[Music]):
+    def __init__(self, cog: MusicCog, musics: list[Music]):
         self.cog = cog
-        embeds, self.musics = make_embeds(self, queues, "Queues")
+        embeds, self.musics = make_embeds(self, musics, "Queues")
         super().__init__(data=embeds)
-        self.add_item(MusicSelect(
-            self.musics[self.page], self.on_selected,
-            placeholder="Queueの削除 ｜ Remove queues",
-            max_values=5
-        ))
 
     def on_page(self):
         assert isinstance(self.children[-1], MusicSelect), "Kaleidoscope pinging!"
@@ -142,11 +138,28 @@ class Queues(EmbedPage):
         self.children[-1].init_options()
         return {"view": self}
 
+
+def delete_music(page: int, values: list[str], list_: list) -> None:
+    "渡された音楽からSelectのvaluesのインデックスのものを消します。"
+    for index in sorted(map(int, values), reverse=True):
+        index = page * 5 + index
+        if index != 0:
+            del list_[index]
+
+
+class Queues(MusicEmbedList):
+    "キューリストのViewです。"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.add_item(MusicSelect(
+            self.musics[self.page], self.on_selected,
+            placeholder="Queueの削除 ｜ Remove queues",
+            max_values=5
+        ))
+
     def on_selected(self, select: MusicSelect, interaction: discord.Interaction):
-        for index in sorted(map(int, select.values), reverse=True):
-            index = self.page * 5 + index
-            if index != 0:
-                del self.cog.now[interaction.guild_id].queues[index]
+        delete_music(self.page, select.values, self.cog.now[interaction.guild_id].queues)
         self.cog.bot.loop.create_task(
             interaction.edit_original_message(
                 content={
@@ -157,5 +170,87 @@ class Queues(EmbedPage):
         )
         self.stop()
 
-    def on_selected_playlist(self, select: MusicSelect, interaction: discord.Interaction):
-        self.stop()
+
+class PlaylistSelect(discord.ui.Select):
+    "プレイリスト選択用のSelect"
+
+    def __init__(self, playlists: list[str], cog: MusicCog, **kwargs):
+        self.cog = cog
+        super().__init__(**kwargs)
+        for name in playlists:
+            self.add_option(label=name, value=name)
+
+
+class AddMusicPlaylistSelect(PlaylistSelect):
+    "プレイリストに曲を追加するのに使うSelect"
+
+    song: str
+
+    async def callback(self, interaction: discord.Interaction):
+        # PlaylistSelectで選択されたプレイリストに音楽を追加する。
+        await interaction.response.edit_message(
+            content="読み込み中...", view=None
+        )
+        data = await Music.from_url(
+            self, interaction.user, self.song, self.cog.max(interaction.user)
+        )
+        playlist = self.cog.get_playlist(interaction.user.id, self.values[0])
+        try:
+            if isinstance(data, Music):
+                playlist.add(data)
+            elif isinstance(data, tuple):
+                playlist.extend(data[0])
+            else:
+                return await interaction.edit_original_message(
+                    content=f"何かしらエラーが発生しました。 / Something went to wrong.\nCode: `{data}`",
+                    view=None
+                )
+        except AssertionError as e:
+            await interaction.edit_original_message(content=e.args[0], view=None)
+        else:
+            await interaction.edit_original_message(content="設定しました。", view=None)
+
+
+class PlaylistMusics(MusicEmbedList):
+    "プレイリストにある音楽のリストを表示するためのView"
+
+    def __init__(self, playlist_name: str, *args, **kwargs):
+        self.playlist_name = playlist_name
+        super().__init__(*args, **kwargs)
+        self.add_item(MusicSelect(
+            self.musics[self.page], self.on_selected,
+            placeholder="曲の削除 ｜ Remove music",
+            max_values=5
+        ))
+
+    def on_selected(self, select: MusicSelect, interaction: discord.Interaction):
+        playlist = self.cog.get_playlist(interaction.user.id, self.playlist_name)
+        delete_music(self.page, select.values, playlist.data)
+        self.cog.data[interaction.user.id].playlists[self.playlist_name] = playlist.data
+        self.cog.bot.loop.create_task(
+            interaction.edit_original_message(content={
+                "ja": "削除しました。", "en": "Removed"
+            }, embed=None, view=None)
+        )
+
+
+class ShowPlaylistSelect(PlaylistSelect):
+    "プレイリストの曲を表示する時のプレイリスト選択に使うSelect"
+
+    async def callback(self, interaction: discord.Interaction):
+        view = PlaylistMusics(self.values[0], self.cog, self.cog.get_playlist(
+            interaction.user.id, self.values[0]
+        ).to_musics(self.cog, interaction.user))
+        await interaction.response.edit_message(content=None, embed=view.data[0], view=view)
+
+
+class PlayPlaylistSelect(PlaylistSelect):
+    "プレイリストの曲を全て再生またはキューに追加する際に使うSelect"
+
+    async def callback(self, interaction: discord.Interaction):
+        await self.cog._play(
+            Context(self.cog.bot, interaction, self.cog.play, "rt!play"),
+            self.cog.get_playlist(interaction.user.id, self.values[0]).to_musics(
+                self.cog, interaction.user
+            )
+        )

@@ -227,7 +227,7 @@ class Player:
         if self.channel is not None and reason is not None:
             await self.channel.send(reason)
 
-        self.cog.bot.loop.calll_soon(self.cog.remove_player, self.guild.id)
+        self.cog.bot.loop.call_soon(self.cog.remove_player, self.guild.id)
 
         self.print("Done")
 

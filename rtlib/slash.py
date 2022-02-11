@@ -297,15 +297,17 @@ class Context:
         self, *args, reply_edit: bool = False,
         reply_noresponse_edit: bool = False, **kwargs
     ):
+        if args:
+            kwargs["content"] = args.pop(0)
         if self.reply_noresponse_edit or reply_noresponse_edit:
             self._remove_invalid_args(kwargs, self.interaction.edit_original_message)
-            await self.interaction.edit_original_message(*args, **kwargs)
+            await self.interaction.edit_original_message(**kwargs)
         elif self.reply_edit or reply_edit:
             self._remove_invalid_args(kwargs, self.interaction.response.edit_message)
-            await self.interaction.response.edit_message(*args, **kwargs)
+            await self.interaction.response.edit_message(**kwargs)
         else:
             self._remove_invalid_args(kwargs, self.interaction.response.send_message)
-            await self.interaction.response.send_message(*args, **kwargs)
+            await self.interaction.response.send_message(**kwargs)
 
 # スラッシュコマンドのテストと登録とその他を入れるコグ
 class SlashManager(commands.Cog):
