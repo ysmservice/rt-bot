@@ -208,7 +208,8 @@ class DelayLottery(commands.Cog, DataManager):
                 or not payload.message.author.bot):
             return
 
-        if str(payload.emoji) == self.EMOJIS["error"]:
+        if (str(payload.emoji) == self.EMOJIS["error"]
+                and str(payload.user_id) in payload.message.author.name):
             await self.delete(
                 payload.guild_id, payload.channel_id, payload.message_id
             )
