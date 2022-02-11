@@ -25,3 +25,10 @@ topggpy
 tweepy
 speedtest-cli
 gTTS
+# types
+types-aiofles
+types-ujson
+types-emoji
+types-requests
+types-PyMySQL
+types-pytz
