@@ -28,3 +28,6 @@ gTTS
 types-aiofles
 types-ujson
 types-emoji
+types-requests
+types-PyMySQL
+types-pytz
