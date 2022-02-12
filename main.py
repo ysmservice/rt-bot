@@ -71,7 +71,7 @@ async def on_ready():
     bot.load_extension("jishaku")
     bot.load_extension("cogs._oldrole")
     for name in listdir("cogs"):
-        if not name.startswith(("_", ".")):
+        if not name.startswith(("_", ".", "tts")):
             try:
                 bot.load_extension(
                     f"cogs.{name[:-3] if name.endswith('.py') else name}"

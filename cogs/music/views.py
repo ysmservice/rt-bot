@@ -1,457 +1,409 @@
-# RT.cogs.music - Views ... 音楽プレイヤーで使うViewのモジュールです。
+# RT Music - Views
 
-from typing import Optional, Union, Type, List, Dict
+from __future__ import annotations
 
-from discord.ext import commands
+from collections.abc import Coroutine, Callable, Iterator
+from typing import TYPE_CHECKING, Literal, Union, Optional, Any
+
+from inspect import iscoroutinefunction
+
 import discord
 
-from functools import wraps
+from rtutil.views import TimeoutView
+from rtlib.page import EmbedPage
+from rtlib.slash import Context, UnionContext
 
-from .cogs.classes import MusicRawDataForJson
-from .music_player import MusicPlayer
-from .cogs.music import MusicData
-from .util import check_dj
+from .playlist import to_musics, Playlist
+from .music import Music
 
-
-def split_list(list_: list, n: int = 10) -> List[list]:
-    # リストを分ける関数です。
-    data = []
-    for idx in range(0, len(list_), n):
-        data.append(list_[idx:idx + n])
-    return data
+if TYPE_CHECKING:
+    from .__init__ import MusicCog
 
 
-class MusicListView(discord.ui.View):
-    """音楽のリストのメニューのViewです。"""
+PLAYLIST_SELECT = {
+    "ja": "プレイリストを選択してください。",
+    "en": "Select the playlist."
+}
 
-    TITLES = {
-        "queues": {
-            "ja": "キュー",
-            "en": "Queue"
-        },
-        "playlist": {
-            "ja": "プレイリスト",
-            "en": "Playlist"
-        }
-    }
 
-    def __init__(
-        self, player: MusicPlayer, target: discord.Member,
-        mode: str, *args, extras: dict = {}, **kwargs
-    ):
-        self.player: MusicPlayer = player
-        self.queues: List[List[MusicData]] = split_list(player.queues)
-        self.now_queues: List[MusicData] = self.queues[0]
-        self.length: int = len(self.queues)
-        self.music_count: int = len(player.queues)
-        self.target: discord.Member = target
-        self.mode: str = mode
-        self.page: int = 0
-        self.extras: dict = extras
+def is_require_dj(self: MusicCog, author: discord.Member) -> tuple[bool, list[discord.Member]]:
+    "DJが必要かどうかをチェックします。"
+    return len(members := [
+        member for member in author.voice.channel.members if not member.bot
+    ]) > 1 \
+        and author.get_role(
+            self.dj[author.guild.id].dj if "dj" in self.dj[author.guild.id] else 0
+        ) is None, members
 
-        super().__init__(*args, **kwargs)
 
-    def make_embed(
-        self, color: Optional[Union[discord.Color, str]] = None
-    ) -> discord.Embed:
-        # 現在のページからキューリストのEmbedを作ります。
-        color = self.bot.colors[color] if isinstance(color, str) else color
-        self.now_queues = self.queues[self.page]
-        embed = discord.Embed(
-            title=self.TITLES[self.mode],
-            description="\n".join(
-                f"{(queue.author.mention + '：') if self.mode == 'queues' else ''}{queue.title_url}"
-                for queue in self.now_queues
-            ),
-            color=discord.Embed.Empty if color is None else color
-        )
-        embed.set_footer(
-            text=f"Pages {self.page + 1}/{self.length} | {self.music_count} songs"
-        )
-        return embed
+class Confirmation(discord.ui.View):
+    """DJ役職を持っていなくてもスキップをするためのボタンのViewです。
+    `message`にこのViewを使ったメッセージオブジェクトを入れている必要があります。"""
 
-    async def on_button(
-        self, mode: str, button: discord.ui.Button,
-        interaction: discord.Interaction
-    ):
-        if interaction.user.id == self.target.id:
-            before = self.page
-            if mode.endswith("skip"):
-                self.page = 0 if mode.startswith("left") else self.length - 1
-            else:
-                self.page = self.page + (1 if mode == "right" else -1)
+    message: Optional[discord.Message] = None
 
+    def __init__(self, coro: Coroutine, members: list[discord.Member], ctx: UnionContext):
+        self.coro, self.number_members, self.members = coro, len(members), members
+        self.confirmed: list[int] = []
+        self.ctx = ctx
+        super().__init__()
+
+    @discord.ui.button(label="Confirm", emoji="✅")
+    async def continue_(self, _, interaction: discord.Interaction):
+        if interaction.user.id not in self.confirmed:
+            self.confirmed.append(interaction.user.id)
+        if (length := len(self.confirmed)) == self.number_members:
+            await self.on_timeout()
+            await interaction.response.send_message(
+                {"ja": "全員納得したようなので実行しました。",
+                 "en": "They all seemed to agree, so I did it."}
+            )
             try:
-                if self.page == -1:
-                    raise IndexError("範囲外")
-                else:
-                    embed = self.make_embed(
-                        self.player.cog.bot.colors["queue"]
-                    )
-            except IndexError as e:
-                self.page = before
-            else:
-                # Viewに登録されているセレクトにある音楽を次のページのものに交換する。
-                for child in self.children:
-                    if hasattr(child, "options"):
-                        child.options = make_options(self.now_queues)
-                        child.queues = self.now_queues
-                        length = len(self.now_queues)
-                        child.max_values = (
-                            child.max_values if length >= child.max_values
-                            else length
-                        )
-
-                await self.on_update()
-
-                await interaction.response.edit_message(
-                    embed=embed, view=self
-                )
-
-    @discord.ui.button(emoji="⏮️")
-    async def left_skip(self, button, interaction):
-        await self.on_button("left_skip", button, interaction)
-
-    @discord.ui.button(emoji="◀️")
-    async def left(self, button, interaction):
-        await self.on_button("left", button, interaction)
-
-    @discord.ui.button(emoji="▶️")
-    async def right(self, button,interaction):
-        await self.on_button("right", button, interaction)
-
-    @discord.ui.button(emoji="⏭️")
-    async def right_skip(self, button,interaction):
-        await self.on_button("right_skip", button, interaction)
-
-    async def on_update(self):
-        ...
-
-
-def parse_length(text: str, max_: int = 100) -> str:
-    return text[:99] if len(text) > max_ else text
-
-
-def make_options(queues: List[MusicData]) -> List[discord.SelectOption]:
-    # 音楽データからdiscord.SelectOptionのリストを作ります。
-    i = -1
-    return [
-        discord.SelectOption(
-            label=parse_length(queue.title), value=str(i),
-            description=parse_length(queue.url)
-        )
-        for queue in queues if (i := i + 1) or True
-    ]
-
-
-class MusicSelect(discord.ui.Select):
-    """音楽を選択するSelectのクラスです。"""
-    def __init__(
-        self, cog: Type[commands.Cog], queues: List[MusicData],
-        max_: int = 10, extras: dict = {}, **kwargs
-    ):
-        self.cog: Type[commands.Cog] = cog
-        self.queues: List[MusicData] = queues
-        self.extras: dict = extras
-
-        length = len(queues)
-        kwargs["options"] = make_options(queues)
-        kwargs["max_values"] = max_ if length >= max_ else length
-
-        super().__init__(**kwargs)
-
-
-class QueueSelectForDelete(MusicSelect):
-    """キューが選択された際にそのキュー削除するということをするセレクトのクラスです。"""
-    async def callback(self, interaction: discord.Interaction):
-        interaction.author = interaction.user
-        if check_dj(interaction.user, interaction):
-            for value in self.values:
-                self.cog.now[interaction.message.guild.id].remove_queue(
-                    self.queues[int(value)]
-                )
-            await interaction.response.edit_message(                    
-                content={
-                    "ja": "キューを削除しました。",
-                    "en": "Removed queue."
-                }, embed=None, view=None
-            )
-        else:
-            await interaction.respone.send_message(
-                content={
-                    "ja": "他の人がいるのでこの操作をするには`DJ`役職が必要です。",
-                    "en": "The `DJ` role is required to perform this operation as others are present."
-                }
-            )
-
-
-class QueueSelectForAddToPlaylist(MusicSelect):
-    """キューにあるものを選択された際にプレイリストに追加するセレクトのクラスです。"""
-    async def callback(self, interaction: discord.Interaction):
-        playlists = await self.cog.get_playlists(interaction.user.id)
-        if playlists:
-            await interaction.response.send_message(
-                content={
-                    "ja": "どのプレイリストに追加するか選択してください。",
-                    "en": "Please select the playlist."
-                }, ephemeral=True, view=AddToPlaylist(
-                    self.cog, self.view.now_queues, playlists
-                )
-            )
+                await self.coro
+            except Exception as e:
+                self.ctx.bot.dispatch("on_command_error", self.ctx, e)
         else:
             await interaction.response.send_message(
-                content="プレイリストをあなたは作っていません。",
+                f"Ok, Confirmed: {length}/{self.number_members}",
                 ephemeral=True
             )
 
+    async def on_timeout(self):
+        # タイムアウトした場合は締め切る。
+        if not self.is_finished():
+            self.children[0].label = "Closed"
+            self.children[0].disabled = True
+            if self.message is not None:
+                await self.message.edit(view=self)
+            self.stop()
 
-class QueuesView(MusicListView):
-    """キューのリストのメニューを作るViewです。"""
+
+async def do_confirmation(
+    coro: Coroutine, members: list[discord.Member], reply: Callable[..., Coroutine],
+    ctx: UnionContext, **kwargs
+):
+    "DJがいない時のための募集ボタンを作ります。"
+    if "content" not in kwargs:
+        kwargs["content"] = {
+        "ja": "他の人が音楽を聞いている場合はDJ役職がなければこれを実行することができません。\n"
+            "または、以下のボタンをボイスチャンネルにいる人全員が押せば実行することができます。",
+        "en": "If other people are also listening to the music, you will not be able to execute without a DJ role.\n"
+            "Or, it can be done by having everyone in the voice channel press the following button."
+    }
+    view = Confirmation(coro, members, ctx)
+    view.message = await reply(
+        view=view, **kwargs
+    )
+
+
+def adjust_length(text: str, length: int = 100) -> str:
+    return f"{text[:length-3]}..."
+
+
+class MusicSelect(discord.ui.Select):
+    "曲選択用のセレクトです。"
+
+    def __init__(
+        self, musics: list[Music], callback: Optional[
+            Callable[[MusicSelect, discord.Interaction], Union[Coroutine, Any]]
+        ] = None, **kwargs
+    ):
+        if "placeholder" not in kwargs:
+            kwargs["placeholder"] = "Select music"
+        self.max = kwargs.get("max_values", 5)
+        super().__init__(**kwargs)
+        self.musics, self.__callback = musics, callback
+        self.init_options()
+
+    def init_options(self):
+        "オプションをリセットして`options`にあるものを追加します。"
+        self.options = []
+        for count, music in enumerate(self.musics):
+            self.add_option(
+                label=adjust_length(music.title), value=str(count),
+                description=adjust_length(music.url)
+            )
+        # 最大選択数を調整する。
+        self.max_values = count + 1 if count < self.max - 1 else self.max
+
+    async def callback(self, interaction: discord.Interaction):
+        if self.__callback is not None:
+            if iscoroutinefunction(self.__callback):
+                await self.__callback(self, interaction)
+            else:
+                self.__callback(self, interaction)
+
+
+def _add_embed(
+    embeds: list[discord.Embed], title: str, description: str,
+    color: Union[discord.Color, int]
+):
+    embeds.append(discord.Embed(title=title, description=description, color=color))
+
+
+def make_embeds(
+    self: Queues, queues: list[Music], mode: Union[Literal["Queues"], str], range_: int = 5
+) -> tuple[list[discord.Embed], list[list[Music]]]:
+    "渡されたMusicのリストからEmbedのリストを作ります。"
+    text, count, embeds, musics, tmp = "", 0, [], [], []
+    for queue in queues:
+        if mode == "Queues":
+            text += f"\n{queue.author.mention}：{queue.marked_title}"
+        else:
+            text += f"\n{queue.marked_title}"
+        count += 1
+        tmp.append(queue)
+        if count % range_ == 0:
+            _add_embed(embeds, mode, text[1:], self.cog.bot.Colors.normal)
+            musics.append(tmp)
+            text, tmp = "", []
+    if tmp and text:
+        _add_embed(embeds, mode, text[1:], self.cog.bot.Colors.normal)
+        musics.append(tmp)
+    # 全ての埋め込みにページ数を書く。
+    max_ = count / range_
+    for page, embed in enumerate(embeds, 1):
+        try:
+            embeds[page]
+        except IndexError:
+            page = max_
+        embed.set_footer(text=f"Pages {page}/{max_} | {count} songs")
+    return embeds, musics
+
+
+class MusicEmbedList(EmbedPage):
+    "音楽リストのViewです。"
+
+    def __init__(self, cog: MusicCog, musics: list[Music], title: str):
+        self.cog = cog
+        embeds, self.musics = make_embeds(self, musics, title)
+        super().__init__(data=embeds)
+
+    def on_page(self):
+        assert isinstance(self.children[-1], MusicSelect), "Kaleidoscope pinging!"
+        for child in self.children:
+            if hasattr(child, "musics"):
+                child.musics = self.musics[self.page]
+                child.init_options()
+        return {"view": self}
+
+
+def process_musics(
+    page: int, values: list[str], list_: list, mode: str = "yield"
+) -> Optional[Iterator]:
+    for index in sorted(map(int, values), reverse=True):
+        index = page * 5 + index
+        if mode == "del":
+            del list_[index]
+        else:
+            yield list_[index]
+
+
+def delete_musics(page: int, values: list[str], list_: list) -> None:
+    "渡された音楽からSelectのvaluesのインデックスのものを消します。"
+    next(process_musics(page, values, list_, "del"), None)
+
+
+class Queues(MusicEmbedList):
+    "キューリストのViewです。"
+
     def __init__(self, *args, **kwargs):
+        kwargs["title"] = "Queues"
         super().__init__(*args, **kwargs)
-        self.add_item(
-            QueueSelectForDelete(
-                self.player.cog, self.now_queues[1:],
-                placeholder="キューの削除"
-            )
-        )
-        self.add_item(
-            QueueSelectForAddToPlaylist(
-                self.player.cog, self.now_queues,
-                placeholder="プレイリストに追加"
-            )
-        )
+        self.bot = self.cog.bot
+        self.add_item(MusicSelect(
+            self.musics[self.page], self.on_selected,
+            placeholder="Queueの削除 ｜ Remove queues",
+            max_values=5
+        ))
 
+    async def _process_queues(self, select, interaction):
+        delete_musics(self.page, select.values, self.cog.now[interaction.guild_id].queues)
+        self.stop()
 
-# ここからプレイリスト関連のクラスです。
-
-
-class PlaylistMusicSelect(MusicSelect):
-    """プレイリストにある音楽を選択された際に音楽データをselectedに渡して実行する、という処理をするセレクトのクラスです。
-    継承して使います。"""
-    async def callback(self, interaction):
-        if interaction.user.id == self.view.target.id:
-            await self.selected(
-                interaction, (
-                    self.queues[int(value)]
-                    for value in self.values
+    async def on_selected(self, select: MusicSelect, interaction: discord.Interaction):
+        if (data := is_require_dj(self.cog, interaction.user))[0]:
+            await do_confirmation(
+                self._process_queues(select, interaction), data[1],
+                interaction.response.edit_message, Context(
+                    self.cog.bot, interaction, self, "rt!DREAMER", True
+                ), content={
+                    "ja": "他の人が音楽を聞いている場合はDJ役職がなければキューの削除を実行することができません。\n"
+                        "または、以下のボタンをボイスチャンネルにいる人全員が押せば実行することができます。",
+                    "en": "If other people are also listening to the music, you will not be able to delete queues without a DJ role.\n"
+                        "Or, it can be done by having everyone in the voice channel press the following button."
+                }, embed=discord.Embed(
+                    title={"ja": "削除対象のキュー", "en": "Target queues"},
+                    description="\n".join(
+                        f"・{queue.marked_title}"
+                        for queue in process_musics(
+                            self.page, select.values, self.cog.now[interaction.guild_id].queues
+                        )
+                    ), color=self.bot.Colors.normal
                 )
             )
-
-    async def selected(self, interaction, queues):
-        ...
-
-
-class PlaylistMusicSelectDelete(PlaylistMusicSelect):
-    """プレイリストで音楽を消すということをするセレクトのクラスです。"""
-    async def selected(self, interaction, queues):
-        for queue in queues:
-            await self.cog.delete_playlist_item(
-                interaction.user.id, self.view.extras["name"],
-                queue.to_dict()
+        else:
+            await interaction.response.edit_message(
+                content={
+                    "ja": f"{self.cog.EMOJIS.removed} キューを削除しました。",
+                    "en": f"{self.cog.EMOJIS.removed} Removed queues"
+                }, embed=None, view=None
             )
-        await interaction.response.edit_message(
-            content="プレイリストから指定された曲を削除しました。",
-            embed=None, view=None
-        )
-
-
-def _wrap(coro, **kwargs):
-    # 指定されたコルーチン関数を指定されたキーワード引数を自動で渡して実行するものに変える関数です。
-    @wraps(coro)
-    async def new_coro(*args, **real_kwargs):
-        kwargs.update(real_kwargs)
-        return await coro(*args, **kwargs)
-    return new_coro
-
-
-class PlaylistMusicSelectPlay(PlaylistMusicSelect):
-    """プレイリストから音楽を再生するセレクトのクラスです。"""
-    async def selected(self, interaction, queues):
-        ctx = await self.cog.bot.get_context(interaction.message)
-        ctx.reply = _wrap(
-            interaction.response.edit_message,
-            embed=None, view=None
-        )
-        await self.cog.play(ctx, song="", datas=queues)
-
-
-class PlaylistMusicListView(MusicListView):
-    """プレイリストの音楽のリストのメニューのViewです。"""
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.add_item(
-            PlaylistMusicSelectDelete(
-                self.player.cog, self.now_queues,
-                placeholder="曲の削除"
-            )
-        )
-        if self.target.guild.id in self.player.cog.now:
-            self.add_item(
-                PlaylistMusicSelectPlay(
-                    self.player.cog, self.now_queues,
-                    placeholder="曲を再生"
-                )
-            )
-
-
-class FalsePlayer:
-    """音楽プレイヤークラスの../music_player.pyにあるMusicPlayerの偽物です。
-    これを使わないと実現できないものがあるためこのクラスがあります。"""
-    def __init__(self, cog, queues):
-        self.cog, self.queues = cog, queues
+            self.stop()
 
 
 class PlaylistSelect(discord.ui.Select):
-    """選択されたプレイリストにある曲のメニューを表示するセレクトのクラスです。"""
-    def __init__(
-        self, cog: Type[commands.Cog], playlists: List[str],
-        *args, extras=None, **kwargs
-    ):
-        self.cog: Type[commands.Cog] = cog
-        self.extras = extras
-        super().__init__(
-            *args, options=[
-                discord.SelectOption(
-                    label=playlist, value=playlist
-                ) for playlist in playlists
-            ], **kwargs
-        )
+    "プレイリスト選択用のSelect"
 
-    @staticmethod
-    def make_music_data_from_playlist(
-        datas: Dict[str, MusicRawDataForJson], author: discord.Member
-    ) -> List[MusicData]:
-        return [
-            data.update({"get_source": None})
-            or MusicData(data, author)
-            for data in datas
-            if data
-        ]
+    def __init__(self, playlists: list[str], cog: MusicCog, **kwargs):
+        self.cog = cog
+        super().__init__(**kwargs)
+        for name in playlists:
+            self.add_option(label=name, value=name)
 
-    async def callback(self, interaction):
-        data = await self.cog.read_playlists(
-            interaction.user.id, self.values[0]
-        )
-        try:
-            view = PlaylistMusicListView(
-                FalsePlayer(
-                    self.cog, self.make_music_data_from_playlist(
-                        data[self.values[0]], interaction.user
-                    )
-                ), interaction.user, "playlist",
-                extras={"name": self.values[0]}
-            )
-        except IndexError:
+
+class AddMusicPlaylistSelect(PlaylistSelect):
+    "プレイリストに曲を追加するのに使うSelect"
+
+    song: str
+
+    async def callback(self, interaction: discord.Interaction):
+        # PlaylistSelectで選択されたプレイリストに音楽を追加する。
+        if isinstance(self.song, str):
             await interaction.response.edit_message(
-                content="プレイリストが空です。", view=None
+                content="Now loading...", view=None
+            )
+            data = await Music.from_url(
+                self, interaction.user, self.song, self.cog.max(interaction.user)
             )
         else:
-            await interaction.response.edit_message(
-                content=None, view=view,
-                embed=view.make_embed(self.cog.bot.colors["queue"]),
-            )
-
-
-class PlaylistSelectForQueue(PlaylistSelect):
-    """選択されたキューをプレイリストに追加するセレクト"""
-    async def callback(self, interaction):
-        for music in self.view.musics:
-            await self.view.cog.write_playlist(
-                interaction.user.id, self.values[0],
-                music.to_dict()
-            )
-        await interaction.response.edit_message(
-            content="プレイリストに追加しました。", view=None
-        )
-
-
-class PlaylistSelectViewForQueue(discord.ui.View):
-    """選択されたキューをプレイリストに追加するセレクトのViewです。"""
-    def __init__(
-        self, cog: Type[commands.Cog],
-        musics: List[MusicData], *args, **kwargs
-    ):
-        self.cog = cog
-        self.musics = musics
-
-        super().__init__(self, *args, **kwargs)
-
-        self.add_item(
-            PlaylistSelectForQueue(cog)
-        )
-
-
-class PlaylistView(discord.ui.View):
-    """プレイリストの内容を表示するViewです。"""
-    def __init__(
-        self, playlists: List[str],
-        cog: Type[commands.Cog], *args, **kwargs
-    ):
-        super().__init__(*args, **kwargs)
-
-        self.add_item(
-            PlaylistSelect(
-                cog, playlists, placeholder="プレイリスト一覧"
-            )
-        )
-
-
-class AddToPlaylistSelect(PlaylistSelect):
-    """プレイリストに曲を追加するセレクトのクラスです。"""
-    async def callback(self, interaction):
-        length = len((
-            await self.view.cog.read_playlists(
-                interaction.user.id, self.values[0]
-            ))[self.values[0]]
-        )
-
-        error, musics = "", []
-        i = length
-        for music in self.view.musics:
-            if i == 800:
-                error = "\nですが、プレイリストに入れれる楽曲の最大数に達したためいくつかは追加されていません。"
-                break
+            # nowコマンドから登録しようとした場合はURLではなくMusicなのでそのままdataに入れる。
+            data = self.song
+        playlist = self.cog.get_playlist(interaction.user.id, self.values[0])
+        try:
+            if isinstance(data, Music):
+                playlist.add(data)
+            elif isinstance(data, tuple):
+                playlist.extend(data[0])
             else:
-                i += 1
-                musics.append(music.to_dict())
+                return await interaction.response.edit_message(
+                    content=f"何かしらエラーが発生しました。 / Something went to wrong.\nCode: `{data}`",
+                    view=None
+                )
+        except AssertionError as e:
+            kwargs = dict(content=e.args[0], view=None)
+        else:
+            kwargs = dict(content="設定しました。", view=None)
+        if interaction.response.is_done():
+            await interaction.edit_original_message(**kwargs)
+        else:
+            await interaction.response.edit_message(**kwargs)
 
-        if i > 15:
-            loading = self.view.cog.EMOJIS["loading"]
+
+class PlaylistMusics(MusicEmbedList):
+    "プレイリストにある音楽のリストを表示するためのView"
+
+    def __init__(self, playlist_name: str, *args, **kwargs):
+        self.playlist_name = playlist_name
+        kwargs["title"] = "Playlist"
+        super().__init__(*args, **kwargs)
+        for placeholder, select in (
+            ("曲の削除 ｜ Remove music", self.on_selected),
+            ("曲の再生 ｜ Play music", self.on_play_selected)
+        ):
+            self.add_item(MusicSelect(
+                self.musics[self.page], select, placeholder=placeholder
+            ))
+
+    def get_playlist(self, interaction: discord.Interaction) -> Playlist:
+        return self.cog.get_playlist(interaction.user.id, self.playlist_name)
+
+    async def on_selected(self, select: MusicSelect, interaction: discord.Interaction):
+        playlist = self.get_playlist(interaction)
+        delete_musics(self.page, select.values, playlist.data)
+        self.cog.data[interaction.user.id].playlists[self.playlist_name] = playlist.data
+
+        # 空なら丸ごと消す。
+        if not self.cog.data[interaction.user.id].playlists:
+            del self.cog.data[interaction.user.id]
+
+        await interaction.response.edit_message(content={
+            "ja": "削除しました。", "en": "Removed"
+        }, embed=None, view=None)
+
+    async def on_play_selected(self, select: MusicSelect, interaction: discord.Interaction):
+        if interaction.user.voice is None:
             await interaction.response.edit_message(
                 content={
-                    "ja": f"{loading} 追加中です...\n※これには数十秒かかることがあります。",
-                    "en": f"{loading} Now saving...\n※This may take a few seconds."
-                }, view=None
+                    "ja": "ボイスチャンネルに参加してください。",
+                    "en": "You must be connected to a voice channel."
+                }, embed=None, view=None
             )
-            del loading
-            edit = interaction.edit_original_message
         else:
-            edit = interaction.response.edit_message
+            await self.cog._play(
+                Context(self.cog.bot, interaction, self.cog.play, "rt!play"),
+                to_musics(
+                    list(process_musics(
+                        self.page, select.values, self.get_playlist(
+                            interaction
+                        ).data
+                    )),
+                    self.cog, interaction.user
+                )
+            )
 
-        await self.view.cog.bulk_write_playlist(
-            interaction.user.id, self.values[0], musics
+
+class ShowPlaylistSelect(PlaylistSelect):
+    "プレイリストの曲を表示する時のプレイリスト選択に使うSelect"
+
+    async def callback(self, interaction: discord.Interaction):
+        if (playlist := self.cog.get_playlist(interaction.user.id, self.values[0])).data:
+            view = PlaylistMusics(
+                self.values[0], self.cog, playlist.to_musics(self.cog, interaction.user)
+            )
+            await interaction.response.edit_message(content=None, embed=view.data[0], view=view)
+        else:
+            await interaction.response.edit_message(content="このプレイリストは空です。", embed=None, view=None)
+
+
+class PlayPlaylistSelect(PlaylistSelect):
+    "プレイリストの曲を全て再生またはキューに追加する際に使うSelect"
+
+    async def callback(self, interaction: discord.Interaction):
+        await self.cog._play(
+            Context(self.cog.bot, interaction, self.cog.play, "rt!play"),
+            self.cog.get_playlist(interaction.user.id, self.values[0]).to_musics(
+                self.cog, interaction.user
+            )
         )
-        del musics, i
-
-        await edit(
-            content=f"プレイリストに曲を追加しました。{error}"
-        )
 
 
-class AddToPlaylist(discord.ui.View):
-    """プレイリストに曲を追加するセレクトのViewです。"""
-    def __init__(
-        self, cog: Type[commands.Cog], queues: List[MusicData],
-        playlists: List[str], *args, **kwargs
-    ):
-        self.cog: Type[commands.Cog] = cog
-        self.musics: List[MusicData] = queues
+class AddMusicPlaylistView(TimeoutView):
+    "nowコマンドで表示した際に入れるプレイリストに登録ボタンです。"
 
+    def __init__(self, music: Music, cog: MusicCog, *args, **kwargs):
+        self.music, self.cog = music, cog
         super().__init__(*args, **kwargs)
 
-        self.add_item(
-            AddToPlaylistSelect(
-                cog, playlists, placeholder="プレイリスト選択"
+    @discord.ui.button(
+        label="プレイリストに追加 ｜ Add to playlist",
+        style=discord.ButtonStyle.green, emoji="➕"
+    )
+    async def add_to_playlist(
+        self, button: discord.ui.Button, interaction: discord.ui.Interaction
+    ):
+        try:
+            self.cog.assert_playlist(interaction.user.id)
+            view = TimeoutView()
+            view.add_item(
+                select := AddMusicPlaylistSelect(
+                    self.cog.data[interaction.user.id].playlists, self.cog
+                )
             )
-        )
+            select.song = self.music
+        except AssertionError as e:
+            await interaction.response.send_message(e, ephemeral=True)
+        else:
+            view.message = await interaction.response.send_message(
+                PLAYLIST_SELECT, view=view, ephemeral=True
+            )

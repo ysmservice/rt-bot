@@ -268,7 +268,8 @@ class Context:
 
     def __init__(
         self, bot: commands.Bot, interaction: discord.Interaction,
-        command: commands.Command, content: str
+        command: commands.Command, content: str, reply_edit: bool = False,
+        reply_noresponse_edit: bool = False
     ):
         self.interaction = interaction
         self.author, self.channel = interaction.user, interaction.channel
@@ -283,12 +284,30 @@ class Context:
         self.content, self.ctx = content, self
         self.edited_at, self.created_at = None, datetime.now(utc)
 
-    async def reply(self, *args, **kwargs):
+        self.reply_edit = reply_edit
+        self.reply_noresponse_edit = reply_noresponse_edit
+
+    def _remove_invalid_args(self, kwargs: dict, original):
         for key in list(kwargs.keys()):
-            if key not in self.interaction.response.send_message.__annotations__:
+            if key not in original.__annotations__:
                 # `discord.InteractionResponse.send_message`にない引数の値は消しておく。
                 del kwargs[key]
-        await self.interaction.response.send_message(*args, **kwargs)
+
+    async def reply(
+        self, *args, reply_edit: bool = False,
+        reply_noresponse_edit: bool = False, **kwargs
+    ):
+        if args:
+            kwargs["content"] = args.pop(0)
+        if self.reply_noresponse_edit or reply_noresponse_edit:
+            self._remove_invalid_args(kwargs, self.interaction.edit_original_message)
+            await self.interaction.edit_original_message(**kwargs)
+        elif self.reply_edit or reply_edit:
+            self._remove_invalid_args(kwargs, self.interaction.response.edit_message)
+            await self.interaction.response.edit_message(**kwargs)
+        else:
+            self._remove_invalid_args(kwargs, self.interaction.response.send_message)
+            await self.interaction.response.send_message(**kwargs)
 
 # スラッシュコマンドのテストと登録とその他を入れるコグ
 class SlashManager(commands.Cog):
@@ -439,3 +458,6 @@ async def loading(ctx: Union[commands.Context, Context]) -> None:
         return await ctx.interaction.response.defer()
     else:
         return await ctx.trigger_typing()
+
+
+UnionContext = Union[Context, commands.Context]

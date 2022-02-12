@@ -6,8 +6,10 @@ from typing import Literal, Optional, Any
 
 import discord
 
+from rtutil.views import TimeoutView
 
-class BasePage(discord.ui.View):
+
+class BasePage(TimeoutView):
     def __init__(self, *args, data: Optional[Any] = None, **kwargs):
         super().__init__(*args, **kwargs)
         self.data, self.page = data, 0
@@ -58,4 +60,7 @@ class EmbedPage(BasePage):
                 return await interaction.response.send_message(
                     "これ以上ページを捲ることができません。", ephemeral=True
                 )
-        await interaction.response.edit_message(embed=embed)
+        await interaction.response.edit_message(embed=embed, **self.on_page())
+
+    def on_page(self):
+        return {}
