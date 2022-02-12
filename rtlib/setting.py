@@ -210,7 +210,8 @@ class SettingManager(commands.Cog):
 
     @commands.Cog.listener()
     async def on_update_api(self):
-        await self.bot.rtc.request("dashboard.update", self.data)
+        if self.bot.rtc.ready.is_set():
+            await self.bot.rtc.request("dashboard.update", self.data)
 
     async def run(self, data: CommandRunData) -> tuple[Literal["Error", "Ok"], str]:
         "コマンドを走らせます。"
