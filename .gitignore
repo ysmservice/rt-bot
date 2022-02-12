@@ -24,3 +24,5 @@ auth.json
 rt_module
 .vscode
 .mypy_cache
+__*
+eng2kana.json
