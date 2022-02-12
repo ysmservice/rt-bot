@@ -68,6 +68,10 @@ class Confirmation(discord.ui.View):
             self.stop()
 
 
+def adjust_length(text: str, length: int = 100) -> str:
+    return f"{text[:length-3]}..."
+
+
 class MusicSelect(discord.ui.Select):
     "曲選択用のセレクトです。"
 
@@ -88,7 +92,8 @@ class MusicSelect(discord.ui.Select):
         self.options = []
         for count, music in enumerate(self.musics):
             self.add_option(
-                label=music.title, value=str(count), description=music.url
+                label=adjust_length(music.title), value=str(count),
+                description=adjust_length(music.url)
             )
         # 最大選択数を調整する。
         self.max_values = count + 1 if count < self.max - 1 else self.max
@@ -109,7 +114,7 @@ def _add_embed(
 
 
 def make_embeds(
-    self: Queues, queues: list[Music], mode: Union[Literal["Queues"], str], range: int = 5
+    self: Queues, queues: list[Music], mode: Union[Literal["Queues"], str], range_: int = 5
 ) -> tuple[list[discord.Embed], list[list[Music]]]:
     "渡されたMusicのリストからEmbedのリストを作ります。"
     text, count, embeds, musics, tmp = "", 0, [], [], []
@@ -120,21 +125,20 @@ def make_embeds(
             text += f"\n{queue.maked_title}"
         count += 1
         tmp.append(queue)
-        if count % range == 0:
+        if count % range_ == 0:
             _add_embed(embeds, mode, text[1:], self.cog.bot.Colors.normal)
             musics.append(tmp)
-            tmp = []
-            text = ""
-    else:
+            text, tmp = "", []
+    if tmp and text:
         _add_embed(embeds, mode, text[1:], self.cog.bot.Colors.normal)
         musics.append(tmp)
     # 全ての埋め込みにページ数を書く。
-    max_ = count / range
+    max_ = count / range_
     for page, embed in enumerate(embeds, 1):
         try:
             embeds[page]
         except IndexError:
-            count = max_
+            page = max_
         embed.set_footer(text=f"Pages {page}/{max_} | {count} songs")
     return embeds, musics
 
@@ -149,8 +153,10 @@ class MusicEmbedList(EmbedPage):
 
     def on_page(self):
         assert isinstance(self.children[-1], MusicSelect), "Kaleidoscope pinging!"
-        self.children[-1].musics = self.musics[self.page]
-        self.children[-1].init_options()
+        for child in self.children:
+            if hasattr(child, "musics"):
+                child.musics = self.musics[self.page]
+                child.init_options()
         return {"view": self}
 
 
@@ -159,16 +165,15 @@ def process_musics(
 ) -> Optional[Iterator[list]]:
     for index in sorted(map(int, values), reverse=True):
         index = page * 5 + index
-        if index != 0:
-            if mode == "del":
-                del list_[index]
-            else:
-                yield list_[index]
+        if mode == "del":
+            del list_[index]
+        else:
+            yield list_[index]
 
 
 def delete_musics(page: int, values: list[str], list_: list) -> None:
     "渡された音楽からSelectのvaluesのインデックスのものを消します。"
-    process_musics(page, values, list_, "del")
+    next(process_musics(page, values, list_, "del"), None)
 
 
 class Queues(MusicEmbedList):
@@ -213,7 +218,7 @@ class AddMusicPlaylistSelect(PlaylistSelect):
         # PlaylistSelectで選択されたプレイリストに音楽を追加する。
         if isinstance(self.song, str):
             await interaction.response.edit_message(
-                content="読み込み中...", view=None
+                content="Now loading...", view=None
             )
             data = await Music.from_url(
                 self, interaction.user, self.song, self.cog.max(interaction.user)
@@ -233,9 +238,13 @@ class AddMusicPlaylistSelect(PlaylistSelect):
                     view=None
                 )
         except AssertionError as e:
-            await interaction.response.edit_message(content=e.args[0], view=None)
+            kwargs = dict(content=e.args[0], view=None)
         else:
-            await interaction.response.edit_message(content="設定しました。", view=None)
+            kwargs = dict(content="設定しました。", view=None)
+        if interaction.response.is_done():
+            await interaction.edit_original_message(**kwargs)
+        else:
+            await interaction.response.edit_message(**kwargs)
 
 
 class PlaylistMusics(MusicEmbedList):
@@ -270,29 +279,38 @@ class PlaylistMusics(MusicEmbedList):
         }, embed=None, view=None)
 
     async def on_play_selected(self, select: MusicSelect, interaction: discord.Interaction):
-        await self.cog._play(
-            Context(self.cog.bot, interaction, self.cog.play, "rt!play"),
-            to_musics(
-                list(process_musics(
-                    self.page, select.values, self.get_playlist(
-                        interaction
-                    ).data
-                )),
-                self.cog, interaction.user
+        if interaction.user.voice is None:
+            await interaction.response.edit_message(
+                content={
+                    "ja": "ボイスチャンネルに参加してください。",
+                    "en": "You must be connected to a voice channel."
+                }, embed=None, view=None
             )
-        )
+        else:
+            await self.cog._play(
+                Context(self.cog.bot, interaction, self.cog.play, "rt!play"),
+                to_musics(
+                    list(process_musics(
+                        self.page, select.values, self.get_playlist(
+                            interaction
+                        ).data
+                    )),
+                    self.cog, interaction.user
+                )
+            )
 
 
 class ShowPlaylistSelect(PlaylistSelect):
     "プレイリストの曲を表示する時のプレイリスト選択に使うSelect"
 
     async def callback(self, interaction: discord.Interaction):
-        view = PlaylistMusics(
-            self.values[0], self.cog, self.cog.get_playlist(
-                interaction.user.id, self.values[0]
-            ).to_musics(self.cog, interaction.user)
-        )
-        await interaction.response.edit_message(content=None, embed=view.data[0], view=view)
+        if (playlist := self.cog.get_playlist(interaction.user.id, self.values[0])).data:
+            view = PlaylistMusics(
+                self.values[0], self.cog, playlist.to_musics(self.cog, interaction.user)
+            )
+            await interaction.response.edit_message(content=None, embed=view.data[0], view=view)
+        else:
+            await interaction.response.edit_message(content="このプレイリストは空です。", embed=None, view=None)
 
 
 class PlayPlaylistSelect(PlaylistSelect):
@@ -331,9 +349,7 @@ class AddMusicPlaylistView(TimeoutView):
             )
             select.song = self.music
         except AssertionError as e:
-            await interaction.response.send_message(
-                e, ephemeral=True
-            )
+            await interaction.response.send_message(e, ephemeral=True)
         else:
             view.message = await interaction.response.send_message(
                 PLAYLIST_SELECT, view=view, ephemeral=True

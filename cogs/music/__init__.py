@@ -54,6 +54,7 @@ def check(
     権限の確認等を行います。また、見出しをつけます。"""
     def decorator(func):
         original = func.callback
+        @commands.cooldown(1, 3, commands.BucketType.user)
         @wraps(func._callback)
         async def new(self: MusicCog, ctx: commands.Context, *args, **kwargs):
             if not check_state:
@@ -217,7 +218,7 @@ class MusicCog(commands.Cog, name="Music"):
                 content={
                     "ja": f"{status.get('ja', '')}{EMOJIS.queued} 曲をキューに追加しました。",
                     "en": f"{status.get('en', '')}{EMOJIS.queued} Queued"
-                }, view=None
+                }, embed=None, view=None
             )
         else:
             assert (now := self.now[ctx.guild.id].now) is not None, IM_MACHINE
@@ -296,7 +297,7 @@ class MusicCog(commands.Cog, name="Music"):
     @check({"ja": "現在再生中の曲を表示します。", "en": "Displays the currently playing music."})
     @commands.command(aliases=["現在"])
     async def now(self, ctx: UnionContext):
-        view = AddMusicPlaylistView(self.now[ctx.guild.id], self)
+        view = AddMusicPlaylistView(self.now[ctx.guild.id].now, self)
         view.message = await ctx.reply(
             embed=self.now[ctx.guild.id].now.make_embed(True), view=view
         )
@@ -359,7 +360,7 @@ class MusicCog(commands.Cog, name="Music"):
     )
     async def delete(self, ctx: UnionContext, *, name: str = discord.SlashOption("name", PN)):
         self.get_playlist(ctx.author.id, name)
-        del self.data[ctx.author.id]
+        del self.data[ctx.author.id].playlists[name]
         await ctx.reply("Ok")
 
     @playlist.command(aliases=["a", "追加"])
@@ -389,6 +390,16 @@ class MusicCog(commands.Cog, name="Music"):
     @playlist.command("play")
     async def playlist_play(self, ctx: UnionContext):
         await self._run_playlist_command(ctx, "PlayPlaylistSelect")
+
+    @check({"ja": "DJの設定をします。", "en": "Setting dj"}, False)
+    @commands.command(aliases=["だーじぇー"])
+    async def dj(self, ctx: UnionContext, *, role: Union[discord.Role, bool]):
+        if role is False:
+            if "dj" in self.dj[ctx.guild.id]:
+                del self.dj[ctx.guild.id]
+        else:
+            self.dj[ctx.giuld.id].dj = role.id
+        await ctx.reply("Ok")
 
     def cog_unload(self):
         # コグがアンロードされた際にもし使用されてる音楽プレイヤーがあれば終了する。

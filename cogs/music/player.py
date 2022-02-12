@@ -42,7 +42,7 @@ class Player:
         self._loop = LoopMode.none
         self.channel: Optional[discord.TextChannel] = None
         self.vc = voice_client
-        self._volume = 1.0
+        self._volume, self._skipped = 1.0, False
         self._stopped = Event()
         self._stopped.set()
 
@@ -99,13 +99,14 @@ class Player:
 
     def _process_closed_queue(self):
         # 音楽再生終了後のキューの処理をする。
-        if self.vc.is_connected():
+        if self.vc.is_connected() and not self._skipped:
             if self._loop == LoopMode.all:
                 self.queues.append(self.queues.pop(0))
             elif self._loop == LoopMode.none:
                 del self.queues[0]
         else:
             del self.queues[0]
+            self._skipped = False
 
     async def _after_play(self, e: Exception):
         # 音楽再生終了後の後始末をする。
@@ -173,6 +174,7 @@ class Player:
     def skip(self):
         "次のキューにスキップします。"
         self._assert_playing()
+        self._skipped = True
         self.vc.stop()
 
     @property
@@ -182,7 +184,7 @@ class Player:
         return self._volume * 100
 
     @volume.setter
-    def _volume_set(self, volume: int):
+    def volume(self, volume: int):
         self._volume = volume / 100
         # もし音楽の再生中なら再生中のものの音量を変更する。
         if (self.vc.is_playing()
@@ -194,14 +196,17 @@ class Player:
         if self.queues:
             self.queues[1:] = sample(self.queues[1:], len(self.queues[1:]))
 
-    def loop(self, mode: LoopMode) -> LoopMode:
+    def loop(self, mode: Optional[LoopMode] = None) -> LoopMode:
         "ループを設定します。"
-        if self._loop == LoopMode.none:
-            self._loop = LoopMode.one
-        elif self._loop == LoopMode.one:
-            self._loop = LoopMode.all
+        if mode is None:
+            if self._loop == LoopMode.none:
+                self._loop = LoopMode.one
+            elif self._loop == LoopMode.one:
+                self._loop = LoopMode.all
+            else:
+                self._loop = LoopMode.none
         else:
-            self._loop = LoopMode.none
+            self._loop = mode
         return self._loop
 
     async def wait_until_stopped(self) -> None:
