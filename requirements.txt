@@ -13,7 +13,7 @@ pillow
 jishaku
 emoji
 youtube_dl
-niconico_dl
+niconico.py
 bs4
 pyopenjtalk
 pydub
