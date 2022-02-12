@@ -270,7 +270,7 @@ class Music:
                 callback()
 
     @property
-    def maked_title(self) -> str:
+    def marked_title(self) -> str:
         "マークダウンによるURLリンク済みのタイトルの文字列を返します。"
         return f"[{self.title}]({self.url})"
 
@@ -323,7 +323,7 @@ class Music:
         embed = discord.Embed(title="Now playing", color=self.cog.bot.Colors.normal)
         if seek_bar:
             embed.description = self.make_seek_bar()
-        embed.add_field(name="Title", value=self.maked_title)
+        embed.add_field(name="Title", value=self.marked_title)
         self._init_start()
         embed.add_field(name="Time", value=self.elapsed)
         embed.set_thumbnail(url=self.thumbnail)

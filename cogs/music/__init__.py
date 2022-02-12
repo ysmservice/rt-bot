@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TypeVar, Callable, Literal, Union, Optional, Any
+from collections.abc import Callable, Coroutine
+from typing import TypeVar, Literal, Union, Optional, Any
 
 from functools import wraps
 
@@ -14,8 +15,8 @@ from rtutil.views import TimeoutView
 from rtlib import RT, Table, sendKwargs
 
 from .views import (
-    PLAYLIST_SELECT, Confirmation, MusicSelect, Queues, AddMusicPlaylistSelect,
-    ShowPlaylistSelect, PlayPlaylistSelect, AddMusicPlaylistView
+    PLAYLIST_SELECT, is_require_dj, do_confirmation, MusicSelect, Queues,
+    AddMusicPlaylistSelect, AddMusicPlaylistView
 )
 from .player import Player, NotAddedReason, LoopMode
 from .music import MusicDict, Music
@@ -74,24 +75,9 @@ def check(
                             "*P.S.* If this happens while you are on the voice channel, run `rt!disconnect on`."
                     }
                 )
-            elif len(
-                members := [
-                    member for member in ctx.author.voice.channel.members
-                    if not member.bot
-                ]
-            ) > 1 \
-                    and check_dj and "dj" in self.data[ctx.author.id] \
-                    and ctx.author.get_role(self.data[ctx.author.id].dj) is None:
+            elif check_dj and (data := is_require_dj(self, ctx.author))[0]:
                 # DJがないといけないのに持っていない場合はコマンドを実行して良いか募集する。
-                view = Confirmation(original(self, ctx, *args, **kwargs), members, ctx)
-                view.message = await ctx.reply(
-                    {
-                        "ja": "他の人がいも音楽を聞いている場合はDJ役職がなければこのコマンドを実行することができません。\n"
-                            "または、以下のボタンをボイスチャンネルにいる人全員が押せば実行することができます。",
-                        "en": "If other people are also listening to the music, you will not be able to execute this command without a DJ role.\n"
-                            "Or, it can be done by having everyone in the voice channel press the following button."
-                    }, view=view
-                )
+                await do_confirmation(original(self, ctx, *args, **kwargs), data[1], ctx.reply, ctx)
             else:
                 # チェックが済んだならメインを実行する。
                 return await original(self, ctx, *args, **kwargs)
@@ -128,6 +114,43 @@ class MusicCog(commands.Cog, name="Music"):
     async def play(self, ctx: UnionContext, *, song: str = discord.SlashOption(
         "song", PDETAILS := "曲のURLまたは検索ワード｜Song url or search term"
     )):
+        """!lang ja
+        --------
+        音楽再生を行います。
+
+        Notes
+        -----
+        対応しているものはYouTubeとニコニコ動画とSoundCloudです。
+        また、YouTubeの再生リストそしてニコニコ動画のマイリストの全ての曲の再生にも対応しています。
+        もし他の曲の再生中にこのコマンドを実行した場合はキューといういわゆる再生予定リストに登録されます。
+
+        Parameters
+        ----------
+        song : str
+            曲のURLまたは検索ワードです。
+
+        Aliases
+        -------
+        p, 再生
+
+        !lang en
+        --------
+        Play music.
+
+        Notes
+        -----
+        Supported are YouTube, Nico Nico Douga, and SoundCloud.
+        It also supports playback of YouTube playlists, and all songs in Nico Nico Douga's My List.
+        If you run this command while another song is playing, new song will be added to the queue, which is a list of songs that are scheduled to be played.
+
+        Parameters
+        ----------
+        song : str
+            The url or search word of the song.
+
+        Aliases
+        -------
+        p"""
         await loading(ctx)
         await self._play(ctx, song)
 
@@ -181,7 +204,7 @@ class MusicCog(commands.Cog, name="Music"):
                                     ctx.message.content, False, True
                                 ), status[int(select.values[0])]
                             )
-                        )
+                        ), max_values=1
                     ))
                     view.message = await ctx.reply(
                         content={
@@ -232,8 +255,31 @@ class MusicCog(commands.Cog, name="Music"):
             await self.now[ctx.guild.id].play()
 
     @check({"ja": "切断をします。", "en": "Disconnect"})
-    @commands.command(aliases=["leave", "stop", "dis", "bye", "切断"])
+    @commands.command(aliases=["stop", "dis", "切断"])
     async def disconnect(self, ctx: UnionContext, force: bool = False):
+        """!lang ja
+        --------
+        音楽再生を終了します。
+
+        Notes
+        -----
+        `rt!disconnect on`とすると強制的に切断させることができます。
+
+        Aliases
+        -------
+        stop, dis, 切断
+
+        !lang en
+        --------
+        音楽再生を終了します。
+
+        Notes
+        -----
+        `rt!disconnect on` to disconnect forcibly
+
+        Aliases
+        -------
+        stop, dis"""
         try:
             await self.now[ctx.guild.id].disconnect(force=force)
         except KeyError:
@@ -244,12 +290,42 @@ class MusicCog(commands.Cog, name="Music"):
     @check({"ja": "スキップをします。", "en": "Skip"})
     @commands.command(aliases=["s", "スキップ"])
     async def skip(self, ctx: UnionContext):
+        """!lang ja
+        --------
+        スキップをします。
+
+        Aliases
+        -------
+        s, スキップ
+
+        !lang en
+        --------
+        Skip
+
+        Aliases
+        -------
+        s"""
         self.now[ctx.guild.id].skip()
         await ctx.reply(f"{EMOJIS.skip} Skipped")
 
     @check({"ja": "ループの設定をします。", "en": "Toggle loop"})
     @commands.command(aliases=["rp", "loop", "ループ"])
     async def repeate(self, ctx: UnionContext, mode: Literal["none", "all", "one", "auto"] = "auto"):
+        """!lang ja
+        --------
+        ループ切り替えをします。
+
+        Aliases
+        -------
+        rp, loop, ループ
+
+        !lang en
+        --------
+        Toggle loop mode
+
+        Aliases
+        -------
+        rp, loop"""
         now = self.now[ctx.guild.id].loop() if mode == "auto" \
             else self.now[ctx.guild.id].loop(getattr(LoopMode, mode))
         if now == LoopMode.none:
@@ -272,12 +348,26 @@ class MusicCog(commands.Cog, name="Music"):
     @check({"ja": "シャッフルします。", "en": "Shuffle"})
     @commands.command(aliases=["sfl", "シャッフル"])
     async def shuffle(self, ctx: UnionContext):
+        """!lang ja
+        --------
+        キューに追加されている曲をシャッフルします。
+
+        !lang en
+        --------
+        Added queue"""
         self.now[ctx.guild.id].shuffle()
         await ctx.reply(f"{EMOJIS.shuffle} Shuffled")
 
     @check({"ja": "一時停止します。", "en": "Pause"})
     @commands.command(aliases=["ps", "resume", "一時停止"])
     async def pause(self, ctx: UnionContext):
+        """!lang ja
+        --------
+        曲を一時停止します。
+
+        !lang en
+        --------
+        Pause"""
         await ctx.reply(
             f"{EMOJIS.start} Resumed"
             if self.now[ctx.guild.id].pause() else
@@ -287,6 +377,33 @@ class MusicCog(commands.Cog, name="Music"):
     @check({"ja": "音量を変更します。", "en": "Change volume"})
     @commands.command(aliases=["vol", "音量"])
     async def volume(self, ctx: UnionContext, volume: Optional[float] = None):
+        """!lang ja
+        --------
+        音量を調整又は表示します。
+
+        Parameters
+        ----------
+        volume : float, optional
+            パーセントで音量を設定します。
+            もしこの引数を指定しなかった場合は現在の音量を表示します。
+
+        Aliases
+        -------
+        vol, 音量
+
+        !lang en
+        --------
+        Adjusts or displays the volume.
+
+        Parameters
+        ----------
+        volume : float, optional
+            Sets the volume as a percentage.
+            If this argument is not specified, the current volume will be displayed.
+
+        Aliases
+        -------
+        vol"""
         if volume is None:
             await ctx.reply(f"Now volume: {self.now[ctx.guild.id].volume}")
         else:
@@ -294,17 +411,46 @@ class MusicCog(commands.Cog, name="Music"):
             self.now[ctx.guild.id].volume = volume
             await ctx.reply("🔈 Changed")
 
-    @check({"ja": "現在再生中の曲を表示します。", "en": "Displays the currently playing music."})
+    @check(
+        {"ja": "現在再生中の曲を表示します。", "en": "Displays the currently playing music."},
+        True, False
+    )
     @commands.command(aliases=["現在"])
     async def now(self, ctx: UnionContext):
+        """!lang ja
+        --------
+        現在再生中の曲の情報と経過時刻を表示します。
+        また、プレイリストに追加ボタンもついています。
+
+        Aliases
+        -------
+        現在
+
+        !lang en
+        --------
+        Displays currently playing music information."""
+        assert self.now[ctx.guild.id].now is not None, {
+            "ja": "現在何も再生していません。", "en": "I'm not playing anything."
+        }
         view = AddMusicPlaylistView(self.now[ctx.guild.id].now, self)
         view.message = await ctx.reply(
             embed=self.now[ctx.guild.id].now.make_embed(True), view=view
         )
 
-    @check({"ja": "現在登録されているキューを表示します。", "en": "Displays currently queues registered."})
+    @check(
+        {"ja": "現在登録されているキューを表示します。", "en": "Displays currently queues registered."},
+        True, False
+    )
     @commands.command(aliases=["キュー", "qs"])
     async def queues(self, ctx: UnionContext):
+        """!lang ja
+        --------
+        現在登録されているキューのリストを表示します。
+        また、キューの削除も行うことができます。
+
+        !lang en
+        --------
+        Displays queues list."""
         view = Queues(self, self.now[ctx.guild.id].queues)
         view.message = await ctx.reply(embed=view.data[0], view=view)
 
@@ -398,7 +544,7 @@ class MusicCog(commands.Cog, name="Music"):
             if "dj" in self.dj[ctx.guild.id]:
                 del self.dj[ctx.guild.id]
         else:
-            self.dj[ctx.giuld.id].dj = role.id
+            self.dj[ctx.guild.id].dj = role.id
         await ctx.reply("Ok")
 
     def cog_unload(self):

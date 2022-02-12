@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Coroutine, Callable
-from typing import TYPE_CHECKING, Optional, Any
+from collections.abc import Coroutine, Callable, Iterator
+from typing import TYPE_CHECKING, Literal, Union, Optional, Any
 
 from inspect import iscoroutinefunction
 
@@ -11,8 +11,7 @@ import discord
 
 from rtutil.views import TimeoutView
 from rtlib.page import EmbedPage
-from rtlib.slash import Context
-from rtlib import RT
+from rtlib.slash import Context, UnionContext
 
 from .playlist import to_musics, Playlist
 from .music import Music
@@ -27,13 +26,23 @@ PLAYLIST_SELECT = {
 }
 
 
+def is_require_dj(self: MusicCog, author: discord.Member) -> tuple[bool, list[discord.Member]]:
+    "DJが必要かどうかをチェックします。"
+    return len(members := [
+        member for member in author.voice.channel.members if not member.bot
+    ]) > 1 \
+        and author.get_role(
+            self.dj[author.guild.id].dj if "dj" in self.dj[author.guild.id] else 0
+        ) is None, members
+
+
 class Confirmation(discord.ui.View):
     """DJ役職を持っていなくてもスキップをするためのボタンのViewです。
     `message`にこのViewを使ったメッセージオブジェクトを入れている必要があります。"""
 
-    message: discord.Message
+    message: Optional[discord.Message] = None
 
-    def __init__(self, coro: Coroutine, members: list[discord.Member], ctx: RT):
+    def __init__(self, coro: Coroutine, members: list[discord.Member], ctx: UnionContext):
         self.coro, self.number_members, self.members = coro, len(members), members
         self.confirmed: list[int] = []
         self.ctx = ctx
@@ -41,31 +50,50 @@ class Confirmation(discord.ui.View):
 
     @discord.ui.button(label="Confirm", emoji="✅")
     async def continue_(self, _, interaction: discord.Interaction):
-        if self.confirmed == self.number_members:
-            await self.timeout()
+        if interaction.user.id not in self.confirmed:
+            self.confirmed.append(interaction.user.id)
+        if (length := len(self.confirmed)) == self.number_members:
+            await self.on_timeout()
             await interaction.response.send_message(
-                "続行することが決定しました。"
+                {"ja": "全員納得したようなので実行しました。",
+                 "en": "They all seemed to agree, so I did it."}
             )
             try:
                 await self.coro
             except Exception as e:
                 self.ctx.bot.dispatch("on_command_error", self.ctx, e)
         else:
-            assert interaction.user is not None
-            if interaction.user.id not in self.confirmed:
-                self.confirmed.append(interaction.user.id)
-                await interaction.response.send_message(
-                    f"Ok, Confirmed: {len(self.confirmed)}/{self.number_members}",
-                    ephemeral=True
-                )
+            await interaction.response.send_message(
+                f"Ok, Confirmed: {length}/{self.number_members}",
+                ephemeral=True
+            )
 
-    async def timeout(self):
+    async def on_timeout(self):
         # タイムアウトした場合は締め切る。
         if not self.is_finished():
             self.children[0].label = "Closed"
             self.children[0].disabled = True
-            await self.message.edit(view=self)
+            if self.message is not None:
+                await self.message.edit(view=self)
             self.stop()
+
+
+async def do_confirmation(
+    coro: Coroutine, members: list[discord.Member], reply: Callable[..., Coroutine],
+    ctx: UnionContext, **kwargs
+):
+    "DJがいない時のための募集ボタンを作ります。"
+    if "content" not in kwargs:
+        kwargs["content"] = {
+        "ja": "他の人が音楽を聞いている場合はDJ役職がなければこれを実行することができません。\n"
+            "または、以下のボタンをボイスチャンネルにいる人全員が押せば実行することができます。",
+        "en": "If other people are also listening to the music, you will not be able to execute without a DJ role.\n"
+            "Or, it can be done by having everyone in the voice channel press the following button."
+    }
+    view = Confirmation(coro, members, ctx)
+    view.message = await reply(
+        view=view, **kwargs
+    )
 
 
 def adjust_length(text: str, length: int = 100) -> str:
@@ -120,9 +148,9 @@ def make_embeds(
     text, count, embeds, musics, tmp = "", 0, [], [], []
     for queue in queues:
         if mode == "Queues":
-            text += f"\n{queue.author.mention}：{queue.maked_title}"
+            text += f"\n{queue.author.mention}：{queue.marked_title}"
         else:
-            text += f"\n{queue.maked_title}"
+            text += f"\n{queue.marked_title}"
         count += 1
         tmp.append(queue)
         if count % range_ == 0:
@@ -162,7 +190,7 @@ class MusicEmbedList(EmbedPage):
 
 def process_musics(
     page: int, values: list[str], list_: list, mode: str = "yield"
-) -> Optional[Iterator[list]]:
+) -> Optional[Iterator]:
     for index in sorted(map(int, values), reverse=True):
         index = page * 5 + index
         if mode == "del":
@@ -182,21 +210,46 @@ class Queues(MusicEmbedList):
     def __init__(self, *args, **kwargs):
         kwargs["title"] = "Queues"
         super().__init__(*args, **kwargs)
+        self.bot = self.cog.bot
         self.add_item(MusicSelect(
             self.musics[self.page], self.on_selected,
             placeholder="Queueの削除 ｜ Remove queues",
             max_values=5
         ))
 
-    async def on_selected(self, select: MusicSelect, interaction: discord.Interaction):
+    async def _process_queues(self, select, interaction):
         delete_musics(self.page, select.values, self.cog.now[interaction.guild_id].queues)
-        await interaction.response.edit_message(
-            content={
-                "ja": f"{self.cog.EMOJIS.removed} キューを削除しました。",
-                "en": f"{self.cog.EMOJIS.removed} Removed queues"
-            }, embed=None, view=None
-        )
         self.stop()
+
+    async def on_selected(self, select: MusicSelect, interaction: discord.Interaction):
+        if (data := is_require_dj(self.cog, interaction.user))[0]:
+            await do_confirmation(
+                self._process_queues(select, interaction), data[1],
+                interaction.response.edit_message, Context(
+                    self.cog.bot, interaction, self, "rt!DREAMER", True
+                ), content={
+                    "ja": "他の人が音楽を聞いている場合はDJ役職がなければキューの削除を実行することができません。\n"
+                        "または、以下のボタンをボイスチャンネルにいる人全員が押せば実行することができます。",
+                    "en": "If other people are also listening to the music, you will not be able to delete queues without a DJ role.\n"
+                        "Or, it can be done by having everyone in the voice channel press the following button."
+                }, embed=discord.Embed(
+                    title={"ja": "削除対象のキュー", "en": "Target queues"},
+                    description="\n".join(
+                        f"・{queue.marked_title}"
+                        for queue in process_musics(
+                            self.page, select.values, self.cog.now[interaction.guild_id].queues
+                        )
+                    ), color=self.bot.Colors.normal
+                )
+            )
+        else:
+            await interaction.response.edit_message(
+                content={
+                    "ja": f"{self.cog.EMOJIS.removed} キューを削除しました。",
+                    "en": f"{self.cog.EMOJIS.removed} Removed queues"
+                }, embed=None, view=None
+            )
+            self.stop()
 
 
 class PlaylistSelect(discord.ui.Select):
