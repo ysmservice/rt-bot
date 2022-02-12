@@ -155,8 +155,8 @@ class ChannelStatus(commands.Cog, DataManager):
                         await channel.edit(
                             name=text, reason="ステータス更新のため。/To update status."
                         )
-                    except discord.Forbidden:
-                        pass
+                    except Exception as e:
+                        self._last_exception = e
 
 
 def setup(bot):

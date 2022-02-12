@@ -41,7 +41,8 @@ class CloseButton(discord.ui.View):
                     name=f"{emoji} {subject}", value=str(count), inline=False
                 )
             await interaction.response.edit_message(
-                content=None, view=None, embed=embed
+                content=interaction.message.embeds[0].title,
+                view=None, embed=embed
             )
         else:
             await interaction.response.send_message(
@@ -127,7 +128,7 @@ class Poll(commands.Cog):
         if content.count("\n") > 25:
             return await ctx.reply(
                 {"ja": "項目が多すぎるため投票パネルを作れませんでした。最大25個までです。",
-                 "en": "..."}
+                 "en": "There were too many items to make a voting panel. Up to 25."}
             )
         description, emojis = self.make_description(content)
 
@@ -156,7 +157,7 @@ class Poll(commands.Cog):
                 )
 
     def make_description(self, content: str, on_integer: Callable = None) -> Tuple[str, List[str]]:
-        # 渡された情報から投票パネルの説明に入れる文字列を作成する。
+        "渡された情報から投票パネルの説明に入れる文字列を作成する。"
         description, i, emojis, emoji = "", -1, [], ""
         index, did = int(on_integer is not None), False
 
@@ -185,6 +186,7 @@ class Poll(commands.Cog):
                 description += (f"`{0 if on_integer is None else on_integer(emojis[-1])}` "
                                 + line[index:] + "\n")
         del content, i, emoji
+
         return description, emojis
 
     def check_panel(self, payload: discord.RawReactionActionEvent) -> bool:
@@ -195,7 +197,7 @@ class Poll(commands.Cog):
                         for reaction in payload.message.reactions))
 
     def graph(self, p: dict, size: int = 28) -> str:
-        # グラフを作るための関数です。
+        "グラフを作るための関数です。"
         r, t = '[', len(p)
 
         for n in list(p.keys()):
