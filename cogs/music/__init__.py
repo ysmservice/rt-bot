@@ -713,6 +713,15 @@ class MusicCog(commands.Cog, name="Music"):
         "音楽プレイヤーを削除するだけの関数です。"
         del self.now[guild_id]
 
+    @commands.Cog.listener()
+    async def on_voice_abandoned(self, voice_client: discord.VoiceClient):
+        # 放置された場合は切断する。
+        if voice_client.guild.id in self.now:
+            await self.now[voice_client.guild.id].disconnect(
+                {"ja": "一人ぼっちになったので切断しました。",
+                 "en": "I was alone, so I disconnected."}
+            )
+
 
 def setup(bot):
     bot.add_cog(MusicCog(bot))
