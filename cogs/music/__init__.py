@@ -81,8 +81,9 @@ def check(
             else:
                 # チェックが済んだならメインを実行する。
                 return await original(self, ctx, *args, **kwargs)
-        if "headding" not in func.extras:
-            func.extras["headding"] = headding
+        func.__original_kwargs__["extras"] = {}
+        func.__original_kwargs__["extras"]["headding"] = headding
+        func.__original_kwargs__["extras"]["parent"] = "Music"
         func._callback = new
         return func
     return decorator
@@ -457,6 +458,27 @@ class MusicCog(commands.Cog, name="Music"):
     @check({"ja": "プレイリスト", "en": "Playlist"}, False)
     @commands.group(aliases=["pl", "プレイリスト", "再生リスト"])
     async def playlist(self, ctx: UnionContext):
+        """!lang ja
+        ---------
+        プレイリストです。
+        十個までプレイリストを作成することができます。
+        また、一つのプレイリストには八百曲まで登録することができます。
+        `rt!playlist`で現在登録されているプレイリストの一覧を表示します。
+
+        Aliases
+        -------
+        pl, プレイリスト, 再生リスト
+
+        !lang en
+        --------
+        Playlists.
+        You can create up to ten playlists.
+        Also, up to 800 songs can be registered in one playlist.
+        `rt!playlist` to displays list of playlists created.
+
+        Aliases
+        -------
+        pl"""
         if not ctx.invoked_subcommand:
             self.assert_playlist(ctx.author.id)
             await ctx.reply(embed=discord.Embed(
@@ -487,6 +509,31 @@ class MusicCog(commands.Cog, name="Music"):
     async def create(self, ctx: UnionContext, *, name: str = discord.SlashOption(
         "name", PN := "プレイリストの名前です。｜Playlist name"
     )):
+        """!lang ja
+        --------
+        プレイリストを作成します。
+
+        Parameters
+        ----------
+        name : str
+            作成するプレイリストの名前です。
+
+        Aliases
+        -------
+        c, new, 作成
+
+        !lang en
+        --------
+        Create playlist.
+
+        Parameters
+        ----------
+        name : str
+            The name of the playlist to create.
+
+        Aliases
+        -------
+        c, new"""
         if "playlists" not in self.data[ctx.author.id]:
             self.data[ctx.author.id].playlists = {}
         assert len(self.data[ctx.author.id].playlists) < 10, {
@@ -505,12 +552,62 @@ class MusicCog(commands.Cog, name="Music"):
         aliases=["rm", "del", "削除"], description="プレイリストを削除します。｜Delete playlist"
     )
     async def delete(self, ctx: UnionContext, *, name: str = discord.SlashOption("name", PN)):
+        """!lang ja
+        --------
+        プレイリストを削除します。
+
+        Parameters
+        ----------
+        name : str
+            プレイリストの名前です。
+
+        Aliases
+        -------
+        rm, del, 削除
+
+        !lang en
+        --------
+        Delete playlist
+
+        Parameters
+        ----------
+        name : str
+            Playlist name
+
+        Aliases
+        -------
+        rm, del"""
         self.get_playlist(ctx.author.id, name)
         del self.data[ctx.author.id].playlists[name]
         await ctx.reply("Ok")
 
     @playlist.command(aliases=["a", "追加"])
     async def add(self, ctx: UnionContext, *, url: str = discord.SlashOption("url", PDETAILS)):
+        """!lang ja
+        --------
+        プレイリストに曲を追加します。
+
+        Parameters
+        ----------
+        url : str
+            追加する曲またはYouTubeの再生リストまたはニコニコ動画のマイリストのURLです。
+
+        Aliases
+        -------
+        a, 追加
+
+        !lang en
+        --------
+        Adds a song to the playlist.
+
+        Parameters
+        ----------
+        url : str
+            The URL of the song to add, or the URL of the YouTube playlist or Nico Nico Douga My List.
+
+        Aliases
+        -------
+        a"""
         self.assert_playlist(ctx.author.id)
         assert self.data[ctx.author.id].playlists, "プレイリストがまだ作られていません。"
         view = TimeoutView()
@@ -531,15 +628,70 @@ class MusicCog(commands.Cog, name="Music"):
 
     @playlist.command(aliases=["s", "表示"])
     async def show(self, ctx: UnionContext):
+        """!lang ja
+        ---------
+        プレイリストにある曲を表示します。
+        また選択して曲の削除や再生もすることが可能です。
+
+        Aliases
+        -------
+        s, 表示
+
+        !lang en
+        --------
+        Displays the songs in the playlist.
+        You can also delete or play songs by selecting them.
+
+        Aliases
+        -------
+        s"""
         await self._run_playlist_command(ctx, "ShowPlaylistSelect")
 
-    @playlist.command("play")
+    @playlist.command("play", aliases=["p", "再生"])
     async def playlist_play(self, ctx: UnionContext):
+        """!lang ja
+        --------
+        プレイリストにある曲を全て再生します。
+
+        Aliases
+        -------
+        p, 再生
+
+        !lang en
+        --------
+        Play musics included in playlist.
+
+        Aliases
+        -------
+        p"""
         await self._run_playlist_command(ctx, "PlayPlaylistSelect")
 
     @check({"ja": "DJの設定をします。", "en": "Setting dj"}, False)
     @commands.command(aliases=["だーじぇー"])
     async def dj(self, ctx: UnionContext, *, role: Union[discord.Role, bool]):
+        """!lang ja
+        --------
+        DJロールの設定をします。
+
+        Parameters
+        ----------
+        role : ロールのメンションか名前またはIDそれか`off`
+            DJロールとして設定するロールです。
+            もし`off`とした場合はDJロールをなくします。
+
+        Aliases
+        -------
+        だーじぇー
+
+        !lang en
+        --------
+        Setting DJ role
+
+        Parameters
+        ----------
+        role : Role's mention, name or ID or `off`
+            DJ Role
+            If you type `off`, dj role will not be set."""
         if role is False:
             if "dj" in self.dj[ctx.guild.id]:
                 del self.dj[ctx.guild.id]
