@@ -15,7 +15,7 @@ CHP_HELP = {
     "en": ("...", """...""")
 }
 
-def log(mode: str = "normal"):
+def log(mode: str = "normal", force: bool = False):
     # ログ用のデコレータです。
     def decorator(func):
         @wraps(func)
@@ -33,13 +33,13 @@ def log(mode: str = "normal"):
                 channel = discord.utils.find(
                     lambda ch: (
                         "log-rt" in ch.name
-                        or (ch.topic and "rt>log" in ch.topic)),
-                        guild.text_channels
+                        or (ch.topic and "rt>log" in ch.topic)
+                    ), guild.text_channels
                 )
 
-                if channel:
+                if channel or force:
                     embed = await func(self, first_arg, *args, **kwargs)
-                    if embed:
+                    if embed and channel:
                         embed.set_footer(
                             text=f"RTログ | {datetime.now().strftime('%Y-%m-%d %H:%M')}"
                         )

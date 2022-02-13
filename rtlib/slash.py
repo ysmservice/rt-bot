@@ -1,6 +1,7 @@
 # RT - Slash, Author: tasuren, Description: このコードはパブリックドメインとします。
 
-from typing import TYPE_CHECKING, Callable, Optional, Union, Literal, get_origin
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Optional, Union, Literal, get_origin
 
 from inspect import signature
 from datetime import datetime
@@ -15,6 +16,19 @@ from pytz import utc
 
 if TYPE_CHECKING:
     from . import RT
+
+
+discord.CommandOption.description = property(
+    lambda self: self._description
+    if self._description else "No description provided"
+)
+ds = lambda self, value: setattr(self, "_description", value)
+discord.CommandOption.description = discord.CommandOption.description.setter(ds)
+discord.ApplicationSubcommand.description = property(
+    lambda self: "No description provided"
+    if self._description is discord.utils.MISSING else self._description
+)
+discord.ApplicationSubcommand.description = discord.ApplicationSubcommand.description.setter(ds)
 
 
 def check(command: commands.Command):
@@ -52,7 +66,7 @@ def make_command_instance(decorator, function: commands.Command):
         "headding", function.extras.get("headding", {})
     ).get("ja", None)
     if kwargs["description"] is None:
-        del kwargs["description"]
+        kwargs["description"] = "No description provided"
     # `discord.SlashOption`のインスタンスを引数のデフォルトに置くことでスラッシュコマンドの引数の詳細を設定できる。
     # だが、それだとコマンドフレームワーク内で実行した際に`discord.SlashOption`に設定した`default`が渡されない。
     # それを修正するようにする。
@@ -88,7 +102,10 @@ def make_command_monkey(decorator):
             if check(function):
                 # カテゴリーを親コマンドとして設定したいので、ここでそのカテゴリーの親コマンドとする偽の関数を用意する。
                 category_name = get_category_name(function)
-                @discord.slash_command(category_name := camel2snake(category_name))
+                @discord.slash_command(
+                    category_name := camel2snake(category_name),
+                    "No description provided"
+                )
                 async def fake(self, _):
                     ...
                 # おかしいことなるので関数の名前をしっかりと設定しておく。
@@ -268,7 +285,8 @@ class Context:
 
     def __init__(
         self, bot: commands.Bot, interaction: discord.Interaction,
-        command: commands.Command, content: str
+        command: commands.Command, content: str, reply_edit: bool = False,
+        reply_noresponse_edit: bool = False
     ):
         self.interaction = interaction
         self.author, self.channel = interaction.user, interaction.channel
@@ -283,12 +301,30 @@ class Context:
         self.content, self.ctx = content, self
         self.edited_at, self.created_at = None, datetime.now(utc)
 
-    async def reply(self, *args, **kwargs):
+        self.reply_edit = reply_edit
+        self.reply_noresponse_edit = reply_noresponse_edit
+
+    def _remove_invalid_args(self, kwargs: dict, original):
         for key in list(kwargs.keys()):
-            if key not in self.interaction.response.send_message.__annotations__:
+            if key not in original.__annotations__:
                 # `discord.InteractionResponse.send_message`にない引数の値は消しておく。
                 del kwargs[key]
-        await self.interaction.response.send_message(*args, **kwargs)
+
+    async def reply(
+        self, *args, reply_edit: bool = False,
+        reply_noresponse_edit: bool = False, **kwargs
+    ):
+        if args:
+            kwargs["content"] = args.pop(0)
+        if self.reply_noresponse_edit or reply_noresponse_edit:
+            self._remove_invalid_args(kwargs, self.interaction.edit_original_message)
+            await self.interaction.edit_original_message(**kwargs)
+        elif self.reply_edit or reply_edit:
+            self._remove_invalid_args(kwargs, self.interaction.response.edit_message)
+            await self.interaction.response.edit_message(**kwargs)
+        else:
+            self._remove_invalid_args(kwargs, self.interaction.response.send_message)
+            await self.interaction.response.send_message(**kwargs)
 
 # スラッシュコマンドのテストと登録とその他を入れるコグ
 class SlashManager(commands.Cog):
@@ -424,3 +460,21 @@ class SlashManager(commands.Cog):
 
 def setup(bot):
     bot.add_cog(SlashManager(bot))
+
+
+def is_slash_context(ctx: Union[commands.Context, Context]) -> bool:
+    "スラッシュのContextかどうかを調べます。"
+    return hasattr(ctx, "interaction")
+
+
+async def loading(ctx: Union[commands.Context, Context]) -> None:
+    """ローディング表示をします。
+    インタラクションの場合はこれをした後のreplyではcontentをキーワード引数で指定する必要があります。"""
+    if is_slash_context(ctx):
+        setattr(ctx, "reply", ctx.interaction.edit_original_message)
+        return await ctx.interaction.response.defer()
+    else:
+        return await ctx.trigger_typing()
+
+
+UnionContext = Union[Context, commands.Context]

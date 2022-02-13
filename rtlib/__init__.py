@@ -2,7 +2,7 @@
 
 from typing import Union, Tuple, List
 
-from discord.ext import commands, tasks
+from discord.ext import commands, tasks # type: ignore
 import discord
 
 from pymysql.err import OperationalError
@@ -11,7 +11,7 @@ from .slash import Context as SlashContext
 from . import mysql_manager as mysql
 from .data_manager import Table
 from .ext import componesy
-from .typed import RT
+from .typed import RT, sendableString
 
 
 DatabaseManager = mysql.DatabaseManager
@@ -48,8 +48,8 @@ async def webhook_send(
 
 
 # webhook_sendを新しく定義する。
-discord.abc.Messageable.webhook_send = webhook_send
-discord.ext.easy = componesy
+discord.abc.Messageable.webhook_send = webhook_send # type: ignore
+discord.ext.easy = componesy # type: ignore
 
 
 def setup(bot, only: Union[Tuple[str, ...], List[str]] = []):
@@ -72,3 +72,13 @@ def _init(self, *args, **kwargs):
     default(self, *args, **kwargs)
     self.add_exception_type(OperationalError)
 tasks.Loop.__init__ = _init
+
+
+def sendKwargs(ctx, **kwargs):
+    if isinstance(ctx, commands.Context):
+        for key in list(kwargs.keys()):
+            if (key not in discord.abc.Messageable.send.__annotations__
+                    and key in discord.InteractionResponse
+                        .send_message.__annotations__):
+                del kwargs[key]
+    return kwargs

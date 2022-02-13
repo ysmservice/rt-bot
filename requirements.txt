@@ -1,7 +1,7 @@
 # rtlib
 aiofiles
 ujson
-nextcord
+nextcord[voice,speed]
 aiomysql
 pytz
 websockets
@@ -13,12 +13,11 @@ pillow
 jishaku
 emoji
 youtube_dl
-niconico_dl
+niconico.py
 bs4
 pyopenjtalk
 pydub
 psutil
-PyNacl
 captcha
 deep-translator
 topggpy

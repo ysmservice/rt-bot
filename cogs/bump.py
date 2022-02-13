@@ -296,8 +296,12 @@ class Bump(commands.Cog, DataManager):
     async def delay_on_message(self, seconds: int, message: discord.Message) -> None:
         # 遅れて再取得してもう一回on_messageを実行する。
         await sleep(seconds)
-        message = await message.channel.fetch_message(message.id)
-        await self.on_message(message, True)
+        try:
+            message = await message.channel.fetch_message(message.id)
+        except discord.NotFOund:
+            ...
+        else:
+            await self.on_message(message, True)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message, retry: bool = False):
@@ -305,8 +309,7 @@ class Bump(commands.Cog, DataManager):
             return
 
         data = self.IDS.get(message.author.id)
-        if (not retry and data and data["mode"] != "bump"
-                and message.type == discord.MessageType.application_command):
+        if not retry and data and data["mode"] != "bump":
             # もしDissokuなら数秒後に再取得してもう一度この関数on_messageを呼び出す。
             self.bot.loop.create_task(self.delay_on_message(5, message))
             return

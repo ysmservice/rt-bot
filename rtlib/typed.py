@@ -1,6 +1,6 @@
 # RT Lib - Typed
 
-from typing import List
+from typing import Union, Dict, List
 
 from discord.ext import commands
 
@@ -16,11 +16,11 @@ class RT(commands.AutoShardedBot):
     mysql: MySQLManager
     pool: Pool
     test: bool
-    data: data
+    data: data # type: ignore
     admins: List[int]
     session: ClientSession
     secret: dict
-    is_admin: is_admin
+    is_admin: is_admin # type: ignore
     colors: dict
     Colors: Colors
     rtc: ExtendedRTC
@@ -42,3 +42,6 @@ class RT(commands.AutoShardedBot):
 
     def get_website_url(self) -> str:
         return "http://localhost/" if self.test else "https://rt-bot.com/"
+
+
+sendableString = Union[str, Dict[str, str]]

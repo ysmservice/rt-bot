@@ -153,7 +153,7 @@ class NgWord(commands.Cog, DataManager):
         await ctx.reply("Ok")
 
     @commands.Cog.listener()
-    @log()
+    @log(force=True)
     async def on_message(self, message: discord.Message):
         # 関係ないメッセージは無視する。
         if (not message.guild or message.author.id == self.bot.user.id

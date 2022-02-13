@@ -1,957 +1,510 @@
 # RT - TTS
 
-from typing import Optional, Type, Dict, List
+from __future__ import annotations
 
-from aiofiles.os import remove as async_remove
-from aiofiles import open as async_open
-from os import listdir, remove
-from os.path import exists
+from typing import TypedDict, TypeVar, Literal, Union, Optional, Any
 
-from urllib.parse import unquote
 from functools import wraps
+from os import listdir
 
 from discord.ext import commands, tasks
 import discord
 
-from jishaku.functools import executor_function
-from base64 import encodebytes
-from pydub import AudioSegment
+from aiofiles.os import remove
 
-from rtlib.page import EmbedPage
-from rtlib.ext import componesy
-from rtlib import websocket, RT
+from rtlib.slash import UnionContext
+from rtlib import RT, Table
+from rtutil.views import TimeoutView
 
-from .voice_manager import VoiceManager, voiceroid
-from .data_manager import DataManager
-from data import voices as VOICES
+from .agents import OPENJTALK, AGENTS
+from .voice import OUTPUT_DIRECTORY
+from .manager import Manager
 
 
-def require_connected(coro):
-    # 接続していないと実行できないコマンドに付けるデコレータです。
-    @wraps(coro)
-    async def new_coro(self, ctx, *args, **kwargs):
-        if not ctx.author.voice:
-            await ctx.reply(
-                {"ja": "ボイスチャンネルに接続していません。",
-                 "en": "I'm not connected to voice channel."}
-            )
-        elif ctx.guild.id in self.now:
-            return await coro(self, ctx, *args, **kwargs)
+class RoutineData(TypedDict):
+    keys: list[str]
+    path: str
+
+
+class TTSUserData(Table):
+    __allocation__ = "UserID"
+    routines: list[RoutineData]
+    voice: str
+
+
+class TTSGuildData(Table):
+    __allocation__ = "GuildID"
+    dictionary: dict[str, str]
+
+
+DecoFuncT = TypeVar("DecoFuncT")
+def check(func: DecoFuncT) -> DecoFuncT:
+    "読み上げの設定を変更可能かどうかチェックするデコレータ"
+    @wraps(func)
+    async def new(self: TTSCog, ctx: UnionContext, *args, **kwargs):
+        if ctx.guild.id not in self.now:
+            await ctx.reply({
+                "ja": "まだ読み上げを開始していません。",
+                "en": "It has not yet started tts."
+            })
         else:
-            await ctx.reply(
-                {"ja": "ボイスチャンネルに接続していません。\n`rt!tts join`を実行しましょう。",
-                 "en": "I'm not connected to voice channel.\nSo let's run `rt!tts join`."}
-            )
-    return new_coro
+            return await func(self, ctx, *args, **kwargs)
+    return new
 
 
-class TTS(commands.Cog, VoiceManager, DataManager):
+class SelectAgentView(TimeoutView):
+    "AgentセレクトのViewです。"
 
-    VOICE_FORMAT: Dict[str, List[str]] = {
-        "wav": ["mei", "man", "reimu", "marisa",
-                "miku", "nero", "homu", "kaoru", "wacky"]
-    }
-    EMOJIS = {
-        "error": "<:error:878914351338246165>"
-    }
+    def __init__(self, cog: TTSCog, *args, **kwargs):
+        self.cog = cog
+        super().__init__(*args, **kwargs)
+
+    @discord.ui.select(
+        placeholder="Select agent", options=[
+            discord.SelectOption(
+                label=agent.name, value=agent.code,
+                description=agent.details, emoji=agent.emoji
+            ) for agent in AGENTS.values()
+        ]
+    )
+    async def agent_select(self, select: discord.ui.Select, interaction: discord.Interaction):
+        self.cog.user[interaction.user.id].voice = select.values[0]
+        await interaction.response.send_message({"ja": "設定しました。", "en": "Ok"})
+
+
+class TTSCog(commands.Cog, name="TTS"):
+
+    RTCHAN = False
 
     def __init__(self, bot: RT):
         self.bot = bot
-        self.cache: Dict[int, dict] = {}
-        self.now: Dict[int, dict] = {}
-        super(commands.Cog, self).__init__(bot.session, VOICES)
-        self.bot.loop.create_task(self.on_ready())
 
-    async def on_ready(self):
-        super(VoiceManager, self).__init__(
-            self.bot.data["mysql"]
-        )
-        await self.init_table()
-
+        self.user = TTSUserData(self.bot)
+        self.guild = TTSGuildData(self.bot)
         self.auto_leave.start()
 
-    @commands.group(
-        extras={
-            "headding": {"ja": "ボイスチャンネルで読み上げをします。",
-                         "en": "TTS on voice channel"},
-            "parent": "Entertainment"
-        },
-        aliases=["yomi", "yomiage", "読み上げ", "よみあげ"],
-        slash_command=True,
-        description="TTS"
-    )
-    async def tts(self, ctx):
+        self.RTCHAN = self.bot.user.id == 888635684552863774
+        global OPENJTALK
+        if self.RTCHAN:
+            # もしりつたんの場合はOpenJTalkの場所を直接指定する。
+            OPENJTALK = "/home/tasuren/opt/bin/open_jtalk"
+
+        self.now: dict[int, Manager] = {}
+
+    @commands.group(aliases=("読み上げ",), extras={
+        "headding": {"ja": "読み上げ", "en": "TTS"}, "parent": "Entertainment"
+    })
+    async def tts(self, ctx: UnionContext):
         """!lang ja
         --------
-        ボイスチャンネルで読み上げをします。
-
-        Aliases
-        -------
-        yomi, yomiage, 読み上げ
+        読み上げ機能です。
 
         !lang en
         --------
-        TTS on voice channel"""
+        TTS"""
         if not ctx.invoked_subcommand:
-            await ctx.reply(
-                {"ja": "使用方法が違います。",
-                 "en": "It is used in different ways."}
-            )
+            await ctx.reply({
+                "ja": "使用方法が違います。", "en": "It is wrong way to use this feature."
+            })
 
-    @tts.command(
-        aliases=["connect", "じょいん", "接続"],
-        description="読み上げを開始します。 / Start tts."
-    )
-    async def join(self, ctx):
+    @tts.command(aliases=("start", "s", "j", "開始", "参加"))
+    @commands.cooldown(1, 10, commands.BucketType.guild)
+    async def join(self, ctx: UnionContext):
         """!lang ja
         --------
-        ボイスチャンネルに接続させこのコマンドを実行したチャンネルにでたメッセージを読み上げます。
+        読み上げを開始します。
 
         Aliases
         -------
-        connect, 接続, じょいん
+        start, s, j, 開始, 参加
 
         !lang en
         --------
-        ..."""
-        reply = ctx.reply
+        Start TTS.
+
+        Aliases
+        -------
+        start, s, j"""
         if ctx.guild.voice_client:
-            data = {
+            await ctx.reply({
                 "ja": "既に別のチャンネルに接続しています。",
                 "en": "It is already connected to another channel."
-            }
-        elif not ctx.author.voice:
-            data = {
+            })
+        elif ctx.author.voice is None:
+            await ctx.reply({
                 "ja": "ボイスチャンネルに接続してください。",
-                "en": "Connect to a voice channel."
-            }
-        elif ctx.guild.id in self.bot.cogs["MusicNormal"].now:
-            data = {
-                "ja": "音楽プレイヤーと同時に使用することはできません。\nサブのRTであるりつたんを使用してください。",
+                "en": "You must be connected to a voice channel."
+            })
+        elif ctx.guild.id in self.bot.cogs["Music"].now:
+            await ctx.reply({
+                "ja": "音楽プレイヤーと同時に使うことはできません。",
                 "en": "Cannot be used with a music player at the same time.\nWe are currently preparing English support for Ritsu-chan, our sub RT.\nPlease wait for it to be released."
-            }
+            })
         else:
-            if hasattr(ctx, "interaction"):
-                reply = ctx.interaction.edit_original_message
-                await ctx.reply("Now loading...")
-            else:
-                await ctx.trigger_typing()
-            data = {
-                "ja": "接続しました。",
-                "en": "Connected!"
-            }
-
-            self.now[ctx.guild.id] = {
-                "guild": ctx.guild,
-                "dictionary": await self.read_dictionary(ctx.guild.id),
-                "queue": [],
-                "playing": False,
-                "channels": [ctx.channel.id]
-            }
             await ctx.author.voice.channel.connect()
-            for member in ctx.author.voice.channel.members:
-                await self.on_member("join", member)
+            self.now[ctx.guild.id] = Manager(self, ctx.guild)
+            self.now[ctx.guild.id].add_channel(ctx.channel.id)
+            await ctx.reply({"ja": "接続しました。", "en": "Connected!"})
 
-        await reply(content=data)
-
-    @tts.command(
-        aliases=["disconnect", "dis", "切断", "せつだん"],
-        description="読み上げを終了します。 / Stop tts."
-    )
-    @require_connected
-    async def leave(self, ctx):
+    @tts.command(aliases=("l", "さようなら"))
+    @check
+    async def leave(self, ctx: UnionContext):
         """!lang ja
         --------
-        読み上げを切断させます。
+        読み上げを終了します。
 
         Aliases
         -------
-        disconnect, dis, 切断, せつだん
+        l, さようなら
 
         !lang en
         --------
-        Disconnect from a voice channel.
+        Stop tts
 
         Aliases
         -------
-        disconnecte, dis"""
-        if ctx.guild.voice_client:
-            await ctx.guild.voice_client.disconnect()
-        del self.now[ctx.guild.id]
-        await ctx.reply(
-            {"ja": "切断しました。",
-             "en": "Bye."}
-        )
+        l"""
+        self.clean(self.now[ctx.guild.id])
+        await ctx.reply("Bye!")
 
-    async def after_playing(
-        self, guild: discord.Guild, file_path: str, e: Optional[Type[Exception]]
-    ) -> None:
-        # 読み上げ後は読み上げたファイルを削除してもう一度playを実行します。
-        if (not file_path.startswith("http") and file_path != "None"
-                and "routine" not in file_path):
-            # 声がVOICEROIDの場合はダウンロードリンクを直接使い読み上げる。
-            # それ以外の声の場合は音声ファイルを作成するので削除する必要がある。
-            try:
-                await async_remove(file_path)
-            except FileNotFoundError:
-                pass
-
-        if guild.id in self.now:
-            self.now[guild.id]["playing"] = False
-            # もう一度再生をする。
-            await self.play(guild)
-
-    async def play(self, guild: discord.Guild) -> None:
-        # キューにメッセージがあるなら再生を行います。
-        if self.now[guild.id]["queue"]:
-            self.now[guild.id]["playing"] = True
-            # 色々必要なデータなどを取り出す。
-            message = self.now[guild.id]["queue"].pop(0)
-            text = message.clean_content
-            data = self.now[guild.id]
-
-            # もしネタ機能の音声ならそっちを再生する。
-            for path in self.cache[message.author.id]["routine"]:
-                for alias in self.cache[message.author.id]["routine"][path]["aliases"]:
-                    if text == alias:
-                        if self.bot.user.id == 888635684552863774:
-                            url = f"http{'://localhost' if self.bot.test else 's://rt-bot.com'}/" \
-                                f"api/tts/routine/get/{path[path.rfind('/') + 1:]}"
-                        else:
-                            url = path
-                        break
-                else:
-                    continue
-                break
-            else:
-                # もしネタ機能の音声じゃないなら普通に再生する準備をする。
-                # カスタム辞書にあるものを交換する。
-                for word in data["dictionary"]:
-                    text = text.replace(word, data["dictionary"][word])
-
-                # ファイル名を用意する。
-                voice = self.cache[message.author.id]["voice"]
-                if voice in self.VOICE_FORMAT["wav"]:
-                    ext = "wav"
-                else:
-                    ext = "ogg"
-                file_path = f"cogs/tts/outputs/{message.channel.id}_{message.id}.{ext}"
-
-                # 音声合成をする。
-                try:
-                    url = await self.synthe(
-                        voice, text, file_path,
-                        rtchan=self.bot.user.id == 888635684552863774
-                    ) or file_path
-                except Exception as e:
-                    print("TTS Error: ", e)
-                    self.final_error = e
-                    await self.after_playing(guild, "None", None)
-                    try:
-                        await message.add_reaction(self.EMOJIS["error"])
-                    except:
-                        pass
-                    url = "None"
-
-            # 再生終了後に実行する関数を用意する。
-            after = lambda e: self.bot.loop.create_task(
-                self.after_playing(guild, url, e))
-
-            if url != "None":
-                # もし文字列が存在するなら再生する。
-                if "routine" in url:
-                    kwargs = {"options": '-filter:a "volume=1.5"'}
-                elif voice != "gtts":
-                    vol = 2.2 if voice in ("reimu", "marisa") else 5.5
-                    kwargs = {"options": f'-filter:a "volume={vol}"'}
-                    if ext == "ogg":
-                        kwargs["options"] += \
-                            f" -ss {voiceroid.VOICEROIDS[voice]['zisa'] - 0.8}"
-                else:
-                    kwargs = {}
-
-                # 音声を再生する。
-                source = discord.PCMVolumeTransformer(
-                    discord.FFmpegPCMAudio(url, **kwargs),
-                    volume=self.now.get("volume", 1.0)
-                )
-                if source and guild.voice_client:
-                    guild.voice_client.play(source, after=after)
-                else:
-                    after(None)
-            else:
-                after(None)
-
-    @commands.Cog.listener()
-    async def on_message(self, message: discord.Message) -> None:
-        if not message.guild:
-            return
-
-        if (message.guild.id in self.now and message.author.id in self.cache
-                and message.guild.voice_client
-                and discord.utils.get(
-                    message.guild.voice_client.channel.members,
-                    id=message.author.id
-                ) and message.content
-                and message.channel.id in self.now[message.guild.id]["channels"]
-                and not message.content.startswith(tuple(self.bot.command_prefix))
-                and not message.content.startswith(("!", "?", ".", "#", "sb#", "sb."))):
-            # 読み上げをします。
-            self.now[message.guild.id]["queue"].append(message)
-            if not self.now[message.guild.id]["playing"]:
-                await self.play(message.guild)
-
-    @tts.group(
-        aliases=["ch", "ちゃんねる"],
-        description="読み上げ対象チャンネルの追加、削除コマンド。"
-    )
-    @require_connected
-    async def channel(self, ctx):
+    @tts.command(aliases=("v", "声", "agent"))
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def voice(self, ctx: UnionContext):
         """!lang ja
         --------
-        読み上げ対象のチャンネルを管理します。  
-        `rt!tts channel`と実行すると現在読み上げ対象となっているチャンネル一覧が表示されます。
+        読み上げで使う音声を変更します。
 
         Aliases
         -------
-        ch, ちゃんねる
+        v, agent, 声
 
         !lang en
         --------
-        This function manages the channels to be read out.  
-        If you run `rt!tts channel`, a list of channels currently being read out will be displayed.
+        Change voice that will be used when do TTS.
+
+        Notes
+        -----
+        For those who set the language setting to English, gTTS (For english) will be set by default.
+        If you are speaking in English, you may want to set it to gTTS, as anything other than gTTS will not be pronounced well.
+
+        Aliases
+        -------
+        v, agent"""
+        await ctx.reply({
+            "ja": "音声を選んでください。", "en": "Choose your voice."
+        }, view=SelectAgentView(self))
+
+    @tts.command(aliases=("ch", "チャンネル"))
+    async def channel(self, ctx: UnionContext, mode: Literal["toggle", "list"]):
+        """!lang ja
+        ---------
+        読み上げ対象チャンネルを設定します。
+        最大十個まで設定が可能です。
+
+        Parameters
+        ----------
+        mode : toggle / list
+            `toggle`にした場合は実行したチャンネルを読み上げるか読み上げないかを切り替えます。
+            `list`にした場合は現在設定されている読み上げの対象のチャンネルの一覧を表示します。
+
+        Aliases
+        -------
+        ch, チャンネル
+
+        !lang en
+        --------
+        Sets the target channel for reading out.
+        A maximum of ten channels can be set.
+
+        Parameters
+        ----------
+        mode : toggle / list
+            When set to `toggle`, toggles between reading out the current channel and not reading out the current channel.
+            If set to `list`, it will display the list of channels that are currently set to be read out.
 
         Aliases
         -------
         ch"""
-        if not ctx.invoked_subcommand:
-            await ctx.reply(
-                "* " + "\n* ".join(
-                    f"<#{ch}>" for ch in self.now[ctx.guild.id]["channels"]
-                ), replace_language=False
-            )
-
-    @channel.command(
-        name="add", aliases=["あどど", "ad"],
-        description="読み上げ対象のチャンネルを追加します。 / Add tts target channel."
-    )
-    @require_connected
-    async def add_channel(self, ctx):
-        """!lang ja
-        --------
-        読み上げ対象のチャンネルを追加します。  
-        5個まで登録できます。
-
-        Aliases
-        -------
-        あどど, ad
-
-        !lang en
-        --------
-        Add a channel to be read out.  
-        Up to five channels can be registered.
-
-        Aliases
-        -------
-        ad"""
-        if len(self.now[ctx.guild.id]["channels"]) == 5:
-            await ctx.reply(
-                {"ja": "五個まで追加可能です。",
-                 "en": "Up to five more can be added."}
-            )
-        else:
-            self.now[ctx.guild.id]["channels"].append(ctx.channel.id)
-            await ctx.reply(
-                {"ja": "読み上げ対象チャンネルを追加しました。",
-                 "en": "Added channels for reading out."}
-            )
-
-    @channel.command(
-        name="remove", aliases=["rm", "りむーぶ", "さくじょ"],
-        description="読み上げ対象のチャンネルを削除します。 / Remove tts target channel."
-    )
-    @require_connected
-    async def remove_channel(self, ctx):
-        """!lang ja
-        --------
-        読み上げ対象のチャンネルを削除します。
-
-        Aliases
-        -------
-        rm, りむーぶ, さくじょ
-
-        !lang en
-        --------
-        Deletes the channel to be read out."""
-        if len(self.now[ctx.guild.id]["channels"]) == 1:
-            await ctx.reply(
-                {"ja": "読み上げ対象のチャンネルがなくなってしまいます。",
-                 "en": "The channel to be read out will be lost."}
-            )
-        else:
-            if ctx.channel.id in self.now[ctx.guild]:
-                self.now[ctx.guild.id]["channels"].remove(ctx.channel.id)
-                await ctx.reply(
-                    {"ja": "読み上げ対象チャンネルを削除しました。",
-                     "en": "Deleted the channel to be read out."}
-                )
-            else:
-                await ctx.reply(
-                    {"ja": "このチャンネルは読み上げ対象ではありません。",
-                     "en": "This channel is not for reading out loud."}
-                )
-
-    @tts.group(
-        name="dictionary", aliases=["dic", "じしょ", "辞書"],
-        description="辞書の追加、削除コマンドです。 / Dictionary manage command."
-    )
-    async def guild_dictionary(self, ctx):
-        """!lang ja
-        --------
-        読み上げ時に置き換える文字列を設定する辞書機能です。  
-        `rt!tts dictionary`と実行すれば設定されている辞書一覧を見れます。
-
-        Aliases
-        -------
-        dic, じしょ, 辞書
-
-        !lang en
-        --------
-        This is a dictionary function to set strings to be replaced when reading out loud.  
-        You can see the list of dictionaries set by running `rt!tts dictionary`.
-
-        Aliases
-        -------
-        dic"""
-        if not ctx.invoked_subcommand:
-            data = await self.read_dictionary(ctx.guild.id)
-            embeds = []
-            add_embed = lambda description, count: embeds.append(
-                discord.Embed(
-                    title={
-                        "ja": f"辞書 {count}",
-                        "en": f"Dictionary {count}"
-                    },
-                    description=description[:-1],
-                    color=self.bot.colors["normal"]
-                )
-            )
-            description = ""
-            i, count = 0, 0
-            for key in data:
-                i += 1
-                description += f"{key}：{data[key]}\n"
-                if i == 10:
-                    count += 1
-                    add_embed(description, count)
-                    i = 0
-            if i != 10:
-                count += 1
-                add_embed(description, count)
-            if count == 1:
-                await ctx.reply(embed=embeds[0], view=EmbedPage(data=embeds))
-            else:
-                await ctx.reply(embeds=embeds)
-            del embeds
-
-    @guild_dictionary.command(
-        name="show", description="読み上げの辞書を表示します。")
-    async def show_dictionary(self, ctx):
-        ctx.invoked_subcommand = False
-        await self.guild_dictionary(ctx)
-
-    @guild_dictionary.command(
-        name="set", aliases=["せっと"],
-        description="読み上げの辞書の追加をします。"
-    )
-    @commands.has_permissions(administrator=True)
-    async def set_dictionary(
-        self, ctx, before: str = discord.SlashOption(
-            "target", "交換対象とする文字列です。"
-        ), *, after: str = discord.SlashOption(
-            "replace", "交換する文字列です。"
-        )
-    ):
-        """!lang ja
-        --------
-        辞書を設定します。  
-        30個まで設定可能です。
-
-        Parameters
-        ----------
-        before : str
-            置き換える対象の文字列です。
-        after : str
-            置き換える文字列です。
-
-        Examples
-        --------
-        `rt!tts dictionary set yaakiyu 彼の名はやあきゆ、希少価値だ。`
-
-        Aliases
-        -------
-        せっと
-
-        !lang en
-        --------
-        Sets the dictionary.  
-        Up to 30 dictionaries can be set.
-
-        Parameters
-        ----------
-        before : str
-            The string to be replaced.
-        after : str
-            The string to replace.
-
-        Examples
-        --------
-        `rt!tts dictionary set yaakiyu His name is Yaakiyu, and he is a rarity.`"""
-        data = await self.read_dictionary(ctx.guild.id)
-        if len(data) == 30:
-            await ctx.reply(
-                {"ja": "辞書は30個より多く設定することはできません。",
-                 "en": "You cannot set more than 30 dictionaries."}
-            )
-        else:
-            data[before] = after
-            await self.write_dictionary(data, ctx.guild.id)
-            if ctx.guild.id in self.now:
-                self.now[ctx.guild.id]["dictionary"] = data
+        if mode == "toggle":
+            if not self.now[ctx.guild.id].remove_channel(ctx.channel.id):
+                self.now[ctx.guild.id].add_channel(ctx.channel.id)
             await ctx.reply("Ok")
+        else:
+            await ctx.reply(embed=discord.Embed(
+                title={"ja": "読み上げ対称チャンネル", "en": "TTS Target Channel"},
+                description="\n".join(
+                    f"・<#{channel_id}>" for channel_id in self.now[ctx.guild.id].channels
+                ), color=self.bot.Colors.normal
+            ))
 
-    @guild_dictionary.command(
-        name="delete", aliases=["でる", "rm", "remove", "del"],
-        description="読み上げの辞書を削除します。"
-    )
-    @commands.has_permissions(administrator=True)
-    async def delete_dictionary(
-        self, ctx, *, word: str = discord.SlashOption(
-            "target", "削除する辞書の交換対象名です。"
-        )
-    ):
+    def _assert_dict(self, ctx: UnionContext):
+        assert "dictionary" in self.guild[ctx.guild.id], {
+            "ja": "まだ辞書には何も設定されていません。", "en": "Nothing has been set in the dictionary yet."
+        }
+
+    @tts.group(aliases=("dic", "dict", "辞書"))
+    async def dictionary(self, ctx: UnionContext):
+        """!lang ja
+        --------
+        辞書を設定します。
+        辞書というのは特定の文字列があれば別の文字列に置き換えるというものです。
+        `rt!tts dictionary`と実行することで登録されているワードの一覧を表示できます。
+
+        Aliases
+        -------
+        dic, dict, 辞書
+
+        !lang en
+        --------
+        Set up a dictionary.
+        A dictionary is a string of characters that, if present, will be replaced by another string.
+        `rt!tts dictionary` to displays words registered.
+
+        Aliases
+        -------
+        dic, dict"""
+        if ctx.invoked_subcommand:
+            await ctx.reply("Ok")
+        else:
+            self._assert_dict(ctx)
+            await ctx.reply(embed=discord.Embed(
+                title={"ja": "辞書", "en": "Dictionary"},
+                description="\n".join(
+                    f"{before}：{after}" for before, after in list(
+                        self.guild[ctx.guild.id].dictionary.items()
+                    )
+                ), color=self.bot.Colors.normal
+            ))
+
+    @dictionary.command(aliases=("設定", "s"))
+    async def set(self, ctx: UnionContext, before, *, after):
+        """!lang ja
+        --------
+        辞書を設定します。
+
+        Parameters
+        ----------
+        before : str
+            置き換える対象の文字列
+        after : str
+            置き換え後の文字列
+
+        Aliases
+        -------
+        s, 設定
+
+        !lang en
+        --------
+        Sets the dictionary.
+
+        Parameters
+        ----------
+        before : str
+            The target string
+        after : str
+            The string to be replaced
+
+        Aliases
+        -------
+        s"""
+        if "dictionary" not in self.guild[ctx.guild.id]:
+            self.guild[ctx.guild.id].dictionary = {}
+        self.guild[ctx.guild.id].dictionary[before] = after
+
+    @dictionary.command(aliases=("del", "rm", "remove", "削除"))
+    async def delete(self, ctx: UnionContext, *, before):
         """!lang ja
         --------
         辞書を削除します。
 
         Parameters
         ----------
-        word : str
-            置き換える対象の文字列です。
+        before : str
+            置き換え対象の文字列
 
         Aliases
         -------
-        でる, rm, remove, del
+        del, rm, remove, 削除
 
         !lang en
         --------
-        Deletes a dictionary.
+        Delete dictionary
 
         Parameters
         ----------
-        word : str
-            The string to be replaced."""
-        data = await self.read_dictionary(ctx.guild.id)
-        if word in data:
-            del data[word]
-            if ctx.guild.id in self.now:
-                self.now[ctx.guild.id]["dictionary"] = data
-            await self.write_dictionary(data, ctx.guild.id)
-            await ctx.reply("Ok")
-        else:
-            await ctx.reply(
-                {"ja": "その辞書が見つかりませんでした。",
-                 "en": "Not found"}
-            )
-
-    @tts.group(
-        aliases=["rt", "ねた", "ネタ"],
-        description="読み上げにネタ音声を追加、削除します。 / Add or remove routine voice."
-    )
-    async def routine(self, ctx):
-        """!lang ja
-        -------
-        自分の好きなの音声を読み上げ時に使うようにできます。  
-        例：`そうだよ(便乗)`, `FOO↑気持ちぃ〜`, `いいゾ〜これ`, `ないです`  
-        **りつたんから登録することはできないのでRTから追加してください。**
+        before : str
+            Target string
 
         Aliases
         -------
-        ねた, ネタ
+        del, rm, remove"""
+        self._assert_dict(ctx)
+        assert before in self.guild[ctx.guild.id].dictionary, {
+            "ja": "そのワードは設定されていません。", "en": "The word is not set."
+        }
+        del self.guild[ctx.guild.id].dictionary[before]
 
-        !lang en
-        --------
-        You can choose to use the voice of your choice when reading out loud.  
-        For example: [HEYYEYAAEYAAAEYAEYAA](https://www.youtube.com/watch?v=ZZ5LpwO-An4), [Never Gonna Give You Up](https://www.youtube.com/watch?v=dQw4w9WgXcQ).  
-        **You can't register from Rintan, please add from RT. **."""
-        if not ctx.invoked_subcommand:
-            data = await self.read_routine(ctx.author.id)
-            embed = discord.Embed(
-                title="Routine List",
-                color=self.bot.colors["normal"]
-            )
-            for key in data:
-                embed.add_field(
-                    name=data[key]["file_name"],
-                    value=", ".join(data[key]["aliases"])
-                )
-            await ctx.reply(embed=embed, replace_language=False)
+    def _assert_routine(self, ctx: UnionContext):
+        assert "routines" in self.user[ctx.author.id], {
+            "ja": "まだ何もRoutineは登録されていません。", "en": "Nothing has been registered for Routine yet."
+        }
 
-    @routine.command(
-        name="show", description="読み上げに追加されているネタ音声を表示します。 / Show routine voices."
-    )
-    async def show_routine(self, ctx):
-        await self.routine(ctx)
-
-    @routine.command()
-    async def reload(self, ctx):
+    @tts.group(aliases=("ネタ", "r", "meme"))
+    async def routine(self, ctx: UnionContext):
         """!lang ja
         --------
-        ネタボイス(routine)の再読み込みをします。  
-        このコマンドはRTのサブであるりつたんを使っている場合のみ使うコマンドです。  
-        普通のRTでの実行は意味がありません。  
-        このコマンドは実行者のRoutineの登録リストを再読み込みするコマンドです。  
-        もしRTにネタボイスを追加した際にりつたんを使用していた場合は、このコマンドを実行しないとりつたんでネタボイスを使用できません。
+        ネタ音声です。
+        これは特定の音声を読み上げで流すことが可能です。
+        例えば[そうだよ](https://commons.nicovideo.jp/material/nc115697)などです。
+        `rt!tts routine`と実行することで登録されているRoutineのリストを表示することができます。
+
+        Aliases
+        -------
+        r, meme, ネタ
 
         !lang en
         --------
-        ..."""
-        data = await self.read_routine(ctx.author.id)
-        if ctx.author.id in self.cache:
-            self.cache[ctx.author.id]["routine"] = data
+        Meme player
+        This can be used to play a meme voice on tts.
+        Example: [hpg](https://www.youtube.com/watch?v=vjUqUVrXclE)
+        You can display the list of registered Routines by running `rt!tts routine`.
+
+        Aliases
+        -------
+        r, meme"""
+        if ctx.invoked_subcommand:
+            self._assert_routine(ctx)
+            await ctx.reply(embed=discord.Embed(
+                title="Routines", description="\n".join(
+                    f"・[{', '.join(routine['keys'])}]({routine['path']})"
+                    for routine in self.user[ctx.author.id].routines
+                ), color=self.bot.Colors.normal
+            ))
+
+    @routine.command("set", aliases=("s", "設定"))
+    async def set_routine(self, ctx: UnionContext, voice: Union[Literal["up"], str], *, aliases):
+        """!lang ja
+        --------
+        ネタ音声を設定します。
+
+        Parameters
+        ----------
+        voice : URLまたはup
+            ネタ音声のURLです。
+            もしアップロードする場合はこれをupにしてファイルを添付してください。
+        aliases : str
+            カンマ(`,`)で区切った送信したら音声が流れる文字列です。
+
+        Aliases
+        -------
+        s
+
+        !lang en
+        --------
+        Setting meme voice
+
+        Parameters
+        ----------
+        voice : URL or up
+            The URL of the meme voice.
+            If you want to upload the file, set this to up and attach the file.
+        aliases : str
+            A string of characters separated by commas (`,`) that will play the voice when sent.
+
+        Aliases
+        -------
+        s, 設定"""
+        assert voice.startswith("http") or ctx.message.attachments, {
+            "ja": "音楽ファイルをアップロードするか音声ファイルのURLを指定してください。",
+            "en": "Upload the music file or specify the URL of the audio file."
+        }
+        if "routines" not in self.user[ctx.author.id]:
+            self.user[ctx.author.id].routines = []
+        assert len(self.user[ctx.author.id].routines) < 20, {
+            "ja": "これ以上設定できません。", "en": "No more settings can be made."
+        }
+        self.user[ctx.author.id].routines.append(RoutineData(
+            keys=aliases.split(","), path=ctx.message.attachments[0].url
+                if voice == "up" else voice
+        ))
         await ctx.reply("Ok")
 
-    @executor_function
-    def get_durations(self, path: str) -> float:
-        return AudioSegment.from_file(path, path[path.rfind(".") + 1:]).duration_seconds
-
-    @routine.command(
-        name="add", aliases=["あどど"],
-        description="ネタ音声を追加します。 / Add rutine voice."
-    )
-    @commands.cooldown(1, 15, commands.BucketType.user)
-    async def add_routine(
-        self, ctx, *, aliases: str = discord.SlashOption(
-            "triggers", "ネタ音声の再生のトリガーとなる文字列です。空白で複数選択可能です。 / Aliases."
-        )
-    ):
+    @routine.command("delete", aliaess=("del", "rm", "remove", "削除"))
+    async def delete_routine(self, ctx: UnionContext, *, alias):
         """!lang ja
         --------
-        ネタボイスを登録します。  
-        対象の音声を添付してください。  
-
-        Notes
-        -----
-        添付できる音声は3MBまでで7秒以内の必要があります。  
-        そして登録できるネタボイスは20個までです。  
-        対応しているフォーマットは`wav`と`ogg`です。
-
-        Warnings
-        --------
-        RTのサブであるりつたんの場合はこのコマンドは実行できません。  
-        RTからこのコマンドを実行してください。  
-        もしりつたんの読み上げを使用中にRTからこのコマンドでネタボイスを追加した際は、りつたんの方で`rt#tts routine reload`を実行してください。  
-        なお現在スラッシュコマンドによるネタボイスの追加はできないのですみませんが`rt!tts routine add`のようにして実行してください。
-
-        Parameters
-        ----------
-        aliases : str
-            空白か改行でわけた送信したら音声が流れる文字列です。  
-            例：`そうだよ そうだよ(便乗) sdy mur`  
-            (この中のどれかを送れば音声が流れる。)
-
-        Examples
-        --------
-        `rt!tts routine add yeah Yeah そうだな おっ、そうだな`
-
-        Aliases
-        -------
-        あどど
-
-        !lang en
-        --------
-        Register a story voice.  
-        Please attach the target voice.  
-
-        Notes
-        -----
-        You can attach up to 3MB of audio and it must be within 7 seconds.  
-        And you can register up to 20 story voices.  
-        Supported formats are `wav` and `ogg`.
-
-        Parameters
-        ----------
-        aliases : str
-            The aliases are strings that will be played when sent, separated by spaces or newlines.  
-            Example: `nv never`.  
-            (If you send any of these, the voice will be played.)
-
-        Examples
-        --------
-        `rt!tts routine add nv never`  
-        (Never Gonna Give You Up)"""
-        if ctx.message.attachments and self.bot.user.id != 888635684552863774:
-            data = await self.read_routine(ctx.author.id)
-            if len(data) == 20:
-                await ctx.reply(
-                    {"ja": "既に20個登録されているためこれ以上登録できません。",
-                     "en": "You have already registered 20 items, so you cannot register any more."}
-                )
-            elif ctx.message.attachments[0].size > 3_145_728:
-                await ctx.reply(
-                    {"ja": "アップロードできる音声は約3MBまでです。",
-                     "en": "You can upload up to approximately 3MB of audio."}
-                )
-            elif ctx.message.attachments[0].url.endswith((".wav", ".ogg")):
-                await ctx.trigger_typing()
-                # セーブする。
-                path = f"cogs/tts/routine/{ctx.author.id}-{ctx.message.attachments[0].filename}"
-                await ctx.message.attachments[0].save(path)
-                # 時間が7秒以上じゃないか確認する。
-                if await self.get_durations(path) <= 7:
-                    data[path] = {
-                        "aliases": aliases.split(),
-                        "file_name": ctx.message.attachments[0].filename
-                    }
-                    await self.write_routine(ctx.author.id, data)
-
-                    if ctx.author.id in self.cache:
-                        self.cache[ctx.author.id]["routine"] = data
-                    await ctx.reply("Ok")
-                else:
-                    await ctx.reply(
-                        {"ja": "音声は七秒以内で終わる必要があります。",
-                         "en": "The audio should last no more than seven seconds."}
-                    )
-            else:
-                await ctx.reply(
-                    {"ja": "ファイルのフォーマットは`wav`, `ogg`のどれかの必要があります。",
-                     "en": "The format of the file should be one of `wav`, `ogg`."}
-                )
-        else:
-            await ctx.reply(
-                {"ja": "登録する音声を追加してください。\nまたはりつたんに登録することはできません。",
-                 "en": "Attach the voice to be registered."}
-            )
-
-    @routine.command(
-        name="remove", aliases=["rm", "りむーぶ", "del", "delete"],
-        description="ネタ音声を削除します。 / Remove routine voice."
-    )
-    @commands.cooldown(1, 15, commands.BucketType.user)
-    async def remove_routine(
-        self, ctx, *, alias: str = discord.SlashOption(
-            "target", "削除するネタ音声に登録してる言葉です。"
-        )
-    ):
-        """!lang ja
-        --------
-        登録したネタボイスを削除します。
+        ネタ音声を削除します。
 
         Parameters
         ----------
         alias : str
-            削除する対象のネタボイスのトリガーとなる文字列の一つです。  
-            例：`そうだよ(便乗)`
+            削除したいネタ音声の登録時に引数aliasesに指定したワードのどれかです。
 
         Aliases
         -------
-        rm, りむーぶ, del, delete
+        del, rm, remove, 削除
 
         !lang en
         --------
-        Deletes a registered story voice.
+        Delete meme voice
 
         Parameters
         ----------
         alias : str
-            One of the strings that trigger the routine voice to be deleted."""
-        data = await self.read_routine(ctx.author.id)
-        if data and self.bot.user.id != 888635684552863774:
-            await ctx.trigger_typing()
-
-            files = []
-            for key in list(data.keys()):
-                if alias in data[key]["aliases"]:
-                    del data[key]
-                    await async_remove(key)
-                    files.append(key)
-            await self.write_routine(ctx.author.id, data)
-
-            if ctx.author.id in self.cache:
-                self.cache["routine"] = data
-
-            async with self.bot.session.post(
-                f"{self.bot.get_url()}/api/tts/routine/delete",
-                json={"files": [path[path.rfind("/") + 1:] for path in files]}
-            ) as r:
-                self.bot.print("[TTS.RoutineDelete]", files)
-
-            await ctx.reply("Ok")
-        else:
-            await ctx.reply(
-                {"ja": "まだRoutineは追加されていません。\nまたはりつたんから削除することはできません。",
-                 "en": "Routine has not been added yet."}
-            )
-
-    async def on_member(self, event_type: str, member: discord.Member) -> None:
-        if member.guild.id in self.now:
-            # メンバーがボイスチャンネルに接続または切断した際に呼び出される関数です。
-            # そのメンバーが設定している声のキャッシュを取得または削除をします。
-            if event_type == "join":
-                v, d = await self.read_voice(member.id)
-                if d and self.bot.cogs["Language"].get(member.id) != "ja":
-                    v = "gtts"
-                self.cache[member.id] = {
-                    "voice": v,
-                    "routine": await self.read_routine(member.id)
-                }
-            elif member.id in self.voices:
-                del self.cache[member.id]
-
-    @commands.Cog.listener()
-    async def on_voice_state_update(
-        self, member: discord.Member,
-        before: discord.VoiceState,
-        after: discord.VoiceState
-    ) -> None:
-        # on_member_join/leaveのどっちかを呼び出すためのものです。
-        if before.channel and after.channel and before.channel.id != after.channel.id:
-            # もしメンバーがボイスチャンネルを移動したなら。
-            self.bot.dispatch("voice_leave", member, before, after)
-            self.bot.dispatch("voice_join", member, before, after)
-        elif not before.channel:
-            # もしメンバーがボイスチャンネルに接続したなら。
-            self.bot.dispatch("voice_join", member, before, after)
-            await self.on_member("join", member)
-        elif not after.channel:
-            # もしメンバーがボイスチャンネルから切断したなら。
-            self.bot.dispatch("voice_leave", member, before, after)
-            await self.on_member("leave", member)
-
-    async def on_select_voice(self, select, interaction):
-        # もしvoiceコマンドで声の種類を設定されたら呼び出される関数です。
-        if select.values:
-            if interaction.user.id in self.cache:
-                self.cache[interaction.user.id]["voice"] = select.values[0]
-            await self.write_voice(interaction.user.id, select.values[0])
-            await interaction.message.channel.send(
-                {"ja": f"{interaction.user.mention}, 設定しました。",
-                 "en": f"{interaction.user.mention}, Ok"},
-                target=interaction.user.id
-            )
-            await interaction.message.delete()
-
-    @tts.command(
-        aliases=["声", "こえ", "vcset", "vc"],
-        description="読み上げの声を変更します。 / Change tts voice."
-    )
-    @commands.cooldown(1, 10, commands.BucketType.user)
-    async def voice(self, ctx):
-        """!lang ja
-        --------
-        読み上げ時に使用する声を変更します。  
-        実行すると選択ボックスが現れます。
+            This is one of the words specified in the argument aliases when registering the meme voice you want to delete.
 
         Aliases
         -------
-        声, こえ, vc, vcset
-
-        !lang en
-        --------
-        ..."""
-        view = componesy.View("TtsVoiceSelect")
-        view.add_item(
-            "Select", self.on_select_voice,
-            options=[
-                discord.SelectOption(
-                    label=VOICES[voice]["name"], value=voice,
-                    description=VOICES[voice]["description"]
-                ) for voice in VOICES
-            ], placeholder="声の種類を選択 / Select Voice"
-        )
-        await ctx.reply("下のメニューバーから声を選択してください。", view=view())
-
-    def cog_unload(self):
-        # 読み上げを終わらせておく。
-        for guild_id in list(self.now.keys()):
-            self.bot.loop.create_task(
-                self.now[guild_id]["guild"].voice_client.disconnect()
-            )
-            del self.now[guild_id]
-
-        self.now = {}
-
-        # 削除されていないファイルがあるならそのファイルを削除する。
-        for file_name in listdir("cogs/tts/outputs"):
-            try:
-                remove(f"cogs/tts/outputs/{file_name}")
-            except Exception as e:
-                print("Passed error on TTS:", e)
-
-        self.bot.loop.create_task(self.tts_routine.close())
-
-        self.auto_leave.cancel()
-
-    async def do_nothing(self, _):
-        pass
+        del, rm, remove"""
+        self._assert_routine(ctx)
+        for index, routine in enumerate(self.user[ctx.author.id].routines):
+            if alias in routine["keys"]:
+                del self.user[ctx.author.id].routines[index]
+                await ctx.reply("Ok")
+                break
+        else:
+            await ctx.reply({"ja": "見つかりませんでした。", "en": "Not found"})
 
     @commands.Cog.listener()
-    async def on_voice_abandoned(self, voice_client):
-        # もしメンバーがいないのに接続されているチャンネルがあるなら自動で抜け出す。
-        if voice_client.channel.guild.id in self.now:
-            channel = self.bot.get_channel(
-                self.now[voice_client.channel.guild.id]["channels"][0]
-            )
-            ctx = type(
-                "Context", (), {
-                    "reply": self.do_nothing,
-                    "guild": voice_client.channel.guild,
-                    "author": voice_client.channel.members[0]
-                }
-            )
-            await self.leave(ctx)
-            await channel.send(
-                "誰もいないので読み上げを終了します。"
-            )
+    async def on_message(self, message: discord.Message):
+        if message.guild and message.content and message.guild.id in self.now \
+                and self.now[message.guild.id].check_channel(message.channel.id) \
+                and message.content.startswith(tuple(self.bot.command_prefix)):
+            await self.now[message.guild.id].add(message)
+
+    @commands.Cog.listener()
+    async def on_voice_abandoned(self, voice_client: discord.VoiceClient):
+        # 一人ぼっちになったのなら切断する。
+        if voice_client.guild.id in self.now:
+            self.clean(self.now[voice_client.guild.id], {
+                "ja": "一人ぼっちになったので切断しました。", "en": "I was alone, so I disconnected."
+            })
 
     @tasks.loop(seconds=10)
     async def auto_leave(self):
-        # メンバーがいないのに接続している際はそのイベントを呼び出す。
+        # メンバーがいないのに接続している際はvoice_abandonedイベントを呼び出す。
         for voice_client in self.bot.voice_clients:
             if all(member.bot for member in voice_client.channel.members):
                 self.bot.dispatch("voice_abandoned", voice_client)
 
-    @executor_function
-    def aioexists(self, path: str) -> bool:
-        return exists(path)
-"""
-    @websocket.websocket("/api/tts/routine/loader", auto_connect=True, reconnect=True)
-    async def tts_routine(self, ws: websocket.WebSocket, _):
-        "りつたんからTTSのRoutineをバックエンドを経由して使うためのウェブソケット通信です。"
-        await ws.send("ready")
+    def clean(self, manager: Manager, reason: Optional[Any] = None) -> None:
+        "渡されたManagerの後始末をします。"
+        self.bot.loop.create_task(manager.disconnect(reason)) \
+            .add_done_callback(lambda _: self.now.pop(manager.guild.id))
 
-    @tts_routine.event("load")
-    async def test(self, ws: websocket.WebSocket, filename: str):
-        # Routineのファイルを返す。
-        if "%" in filename:
-            filename = unquote(filename)
-        # ファイルがあるか確認をする。
-        path = f"cogs/tts/routine/{filename}"
-        if await self.aioexists(path):
-            async with async_open(path, "rb") as f:
-                data = {
-                    "filename": filename,
-                    "data": encodebytes(await f.read()).decode()
-                }
-            async with self.bot.session.post(
-                f"{self.bot.get_url()}/api/tts/routine/post", json=data
-            ) as r:
-                self.bot.print("[TTS.RoutineUploader]", filename, await r.json())
-            await ws.send("ok")
-        else:
-            await ws.send("not_found")"""
+    def cog_unload(self):
+        self.auto_leave.cancel()
+        for manager in list(self.now.values()):
+            self.clean(manager, {
+                "ja": "再起動または機能更新のため切断しました。",
+                "en": "Disconnected for reboot or feature update."
+            })
+
+        # もしお片付けされていないファイルがあるのなら削除しておく。
+        for file_name in listdir(OUTPUT_DIRECTORY):
+            if file_name.endswith(".wav"):
+                self.bot.loop.create_task(remove(f"{OUTPUT_DIRECTORY}/{file_name}"))
 
 
 def setup(bot):
-    bot.add_cog(TTS(bot))
+    bot.add_cog(TTSCog(bot))
