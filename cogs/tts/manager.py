@@ -105,7 +105,7 @@ class Manager:
                 self.cog.bot.loop.create_task(
                     self._after(None), name=f"{self}: After playing voice"
                 )
-            else:
+            elif self.vc.is_connected():
                 self.vc.play(
                     self.queues[0].source, after=lambda e: self.cog.bot.loop.create_task(
                         self._after(e), name=f"{self}: After playing voice"

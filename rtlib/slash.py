@@ -1,6 +1,7 @@
 # RT - Slash, Author: tasuren, Description: このコードはパブリックドメインとします。
 
-from typing import TYPE_CHECKING, Callable, Optional, Union, Literal, get_origin, overload
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Optional, Union, Literal, get_origin
 
 from inspect import signature
 from datetime import datetime
@@ -15,6 +16,19 @@ from pytz import utc
 
 if TYPE_CHECKING:
     from . import RT
+
+
+discord.CommandOption.description = property(
+    lambda self: self._description
+    if self._description else "No description provided"
+)
+ds = lambda self, value: setattr(self, "_description", value)
+discord.CommandOption.description = discord.CommandOption.description.setter(ds)
+discord.ApplicationSubcommand.description = property(
+    lambda self: "No description provided"
+    if self._description is discord.utils.MISSING else self._description
+)
+discord.ApplicationSubcommand.description = discord.ApplicationSubcommand.description.setter(ds)
 
 
 def check(command: commands.Command):
@@ -52,7 +66,7 @@ def make_command_instance(decorator, function: commands.Command):
         "headding", function.extras.get("headding", {})
     ).get("ja", None)
     if kwargs["description"] is None:
-        del kwargs["description"]
+        kwargs["description"] = "No description provided"
     # `discord.SlashOption`のインスタンスを引数のデフォルトに置くことでスラッシュコマンドの引数の詳細を設定できる。
     # だが、それだとコマンドフレームワーク内で実行した際に`discord.SlashOption`に設定した`default`が渡されない。
     # それを修正するようにする。
@@ -88,7 +102,10 @@ def make_command_monkey(decorator):
             if check(function):
                 # カテゴリーを親コマンドとして設定したいので、ここでそのカテゴリーの親コマンドとする偽の関数を用意する。
                 category_name = get_category_name(function)
-                @discord.slash_command(category_name := camel2snake(category_name))
+                @discord.slash_command(
+                    category_name := camel2snake(category_name),
+                    "No description provided"
+                )
                 async def fake(self, _):
                     ...
                 # おかしいことなるので関数の名前をしっかりと設定しておく。

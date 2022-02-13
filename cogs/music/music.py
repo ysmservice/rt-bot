@@ -38,6 +38,11 @@ FLAT_OPTIONS = {
 }
 
 
+#   FFmpeg用の再接続するようにするためのオプション
+FFMPEG_BEFORE_OPTIONS = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
+FFMPEG_OPTIONS = "-vn"
+
+
 #   型等
 class MusicTypes:
     "何のサービスの音楽かです。"
@@ -239,7 +244,10 @@ class Music:
         if discord.opus.is_loaded():
             # 通常
             return discord.PCMVolumeTransformer(
-                discord.FFmpegPCMAudio(await self._prepare_source())
+                discord.FFmpegPCMAudio(
+                    await self._prepare_source(), before_options=FFMPEG_BEFORE_OPTIONS,
+                    options=FFMPEG_OPTIONS
+                )
             )
         else:
             # もしOpusライブラリが読み込まれていないのならFFmpegにOpusの処理をしてもらう。

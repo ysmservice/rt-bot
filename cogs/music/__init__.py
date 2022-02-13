@@ -16,7 +16,7 @@ from rtlib import RT, Table, sendKwargs
 
 from .views import (
     PLAYLIST_SELECT, is_require_dj, do_confirmation, MusicSelect, Queues,
-    AddMusicPlaylistSelect, AddMusicPlaylistView
+    ShowPlaylistSelect, PlayPlaylistSelect, AddMusicPlaylistSelect, AddMusicPlaylistView
 )
 from .player import Player, NotAddedReason, LoopMode
 from .music import MusicDict, Music
@@ -668,6 +668,7 @@ class MusicCog(commands.Cog, name="Music"):
 
     @check({"ja": "DJの設定をします。", "en": "Setting dj"}, False)
     @commands.command(aliases=["だーじぇー"])
+    @commands.has_guild_permissions(manage_roles=True)
     async def dj(self, ctx: UnionContext, *, role: Union[discord.Role, bool]):
         """!lang ja
         --------

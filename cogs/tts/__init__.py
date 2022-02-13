@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TypedDict, TypeVar, Literal, Optional, Any
+from typing import TypedDict, TypeVar, Literal, Union, Optional, Any
 
 from functools import wraps
 from os import listdir
@@ -91,16 +91,40 @@ class TTSCog(commands.Cog, name="TTS"):
 
         self.now: dict[int, Manager] = {}
 
-    @commands.group()
+    @commands.group(aliases=("読み上げ",), extras={
+        "headding": {"ja": "読み上げ", "en": "TTS"}, "parent": "Entertainment"
+    })
     async def tts(self, ctx: UnionContext):
+        """!lang ja
+        --------
+        読み上げ機能です。
+
+        !lang en
+        --------
+        TTS"""
         if not ctx.invoked_subcommand:
             await ctx.reply({
                 "ja": "使用方法が違います。", "en": "It is wrong way to use this feature."
             })
 
-    @tts.command()
+    @tts.command(aliases=("start", "s", "j", "開始", "参加"))
     @commands.cooldown(1, 10, commands.BucketType.guild)
     async def join(self, ctx: UnionContext):
+        """!lang ja
+        --------
+        読み上げを開始します。
+
+        Aliases
+        -------
+        start, s, j, 開始, 参加
+
+        !lang en
+        --------
+        Start TTS.
+
+        Aliases
+        -------
+        start, s, j"""
         if ctx.guild.voice_client:
             await ctx.reply({
                 "ja": "既に別のチャンネルに接続しています。",
@@ -125,18 +149,82 @@ class TTSCog(commands.Cog, name="TTS"):
     @tts.command(aliases=("l", "さようなら"))
     @check
     async def leave(self, ctx: UnionContext):
+        """!lang ja
+        --------
+        読み上げを終了します。
+
+        Aliases
+        -------
+        l, さようなら
+
+        !lang en
+        --------
+        Stop tts
+
+        Aliases
+        -------
+        l"""
         self.clean(self.now[ctx.guild.id])
         await ctx.reply("Bye!")
 
     @tts.command(aliases=("v", "声", "agent"))
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def voice(self, ctx: UnionContext):
+        """!lang ja
+        --------
+        読み上げで使う音声を変更します。
+
+        Aliases
+        -------
+        v, agent, 声
+
+        !lang en
+        --------
+        Change voice that will be used when do TTS.
+
+        Notes
+        -----
+        For those who set the language setting to English, gTTS (For english) will be set by default.
+        If you are speaking in English, you may want to set it to gTTS, as anything other than gTTS will not be pronounced well.
+
+        Aliases
+        -------
+        v, agent"""
         await ctx.reply({
             "ja": "音声を選んでください。", "en": "Choose your voice."
         }, view=SelectAgentView(self))
 
     @tts.command(aliases=("ch", "チャンネル"))
     async def channel(self, ctx: UnionContext, mode: Literal["toggle", "list"]):
+        """!lang ja
+        ---------
+        読み上げ対象チャンネルを設定します。
+        最大十個まで設定が可能です。
+
+        Parameters
+        ----------
+        mode : toggle / list
+            `toggle`にした場合は実行したチャンネルを読み上げるか読み上げないかを切り替えます。
+            `list`にした場合は現在設定されている読み上げの対象のチャンネルの一覧を表示します。
+
+        Aliases
+        -------
+        ch, チャンネル
+
+        !lang en
+        --------
+        Sets the target channel for reading out.
+        A maximum of ten channels can be set.
+
+        Parameters
+        ----------
+        mode : toggle / list
+            When set to `toggle`, toggles between reading out the current channel and not reading out the current channel.
+            If set to `list`, it will display the list of channels that are currently set to be read out.
+
+        Aliases
+        -------
+        ch"""
         if mode == "toggle":
             if not self.now[ctx.guild.id].remove_channel(ctx.channel.id):
                 self.now[ctx.guild.id].add_channel(ctx.channel.id)
@@ -156,6 +244,25 @@ class TTSCog(commands.Cog, name="TTS"):
 
     @tts.group(aliases=("dic", "dict", "辞書"))
     async def dictionary(self, ctx: UnionContext):
+        """!lang ja
+        --------
+        辞書を設定します。
+        辞書というのは特定の文字列があれば別の文字列に置き換えるというものです。
+        `rt!tts dictionary`と実行することで登録されているワードの一覧を表示できます。
+
+        Aliases
+        -------
+        dic, dict, 辞書
+
+        !lang en
+        --------
+        Set up a dictionary.
+        A dictionary is a string of characters that, if present, will be replaced by another string.
+        `rt!tts dictionary` to displays words registered.
+
+        Aliases
+        -------
+        dic, dict"""
         if ctx.invoked_subcommand:
             await ctx.reply("Ok")
         else:
@@ -171,12 +278,66 @@ class TTSCog(commands.Cog, name="TTS"):
 
     @dictionary.command(aliases=("設定", "s"))
     async def set(self, ctx: UnionContext, before, *, after):
+        """!lang ja
+        --------
+        辞書を設定します。
+
+        Parameters
+        ----------
+        before : str
+            置き換える対象の文字列
+        after : str
+            置き換え後の文字列
+
+        Aliases
+        -------
+        s, 設定
+
+        !lang en
+        --------
+        Sets the dictionary.
+
+        Parameters
+        ----------
+        before : str
+            The target string
+        after : str
+            The string to be replaced
+
+        Aliases
+        -------
+        s"""
         if "dictionary" not in self.guild[ctx.guild.id]:
             self.guild[ctx.guild.id].dictionary = {}
         self.guild[ctx.guild.id].dictionary[before] = after
 
     @dictionary.command(aliases=("del", "rm", "remove", "削除"))
     async def delete(self, ctx: UnionContext, *, before):
+        """!lang ja
+        --------
+        辞書を削除します。
+
+        Parameters
+        ----------
+        before : str
+            置き換え対象の文字列
+
+        Aliases
+        -------
+        del, rm, remove, 削除
+
+        !lang en
+        --------
+        Delete dictionary
+
+        Parameters
+        ----------
+        before : str
+            Target string
+
+        Aliases
+        -------
+        del, rm, remove"""
         self._assert_dict(ctx)
         assert before in self.guild[ctx.guild.id].dictionary, {
             "ja": "そのワードは設定されていません。", "en": "The word is not set."
@@ -188,23 +349,74 @@ class TTSCog(commands.Cog, name="TTS"):
             "ja": "まだ何もRoutineは登録されていません。", "en": "Nothing has been registered for Routine yet."
         }
 
-    @tts.group(aliases=("ネタ", "r"))
+    @tts.group(aliases=("ネタ", "r", "meme"))
     async def routine(self, ctx: UnionContext):
+        """!lang ja
+        --------
+        ネタ音声です。
+        これは特定の音声を読み上げで流すことが可能です。
+        例えば[そうだよ](https://commons.nicovideo.jp/material/nc115697)などです。
+        `rt!tts routine`と実行することで登録されているRoutineのリストを表示することができます。
+
+        Aliases
+        -------
+        r, meme, ネタ
+
+        !lang en
+        --------
+        Meme player
+        This can be used to play a meme voice on tts.
+        Example: [hpg](https://www.youtube.com/watch?v=vjUqUVrXclE)
+        You can display the list of registered Routines by running `rt!tts routine`.
+
+        Aliases
+        -------
+        r, meme"""
         if ctx.invoked_subcommand:
-            await ctx.reply("Ok")
-        else:
             self._assert_routine(ctx)
             await ctx.reply(embed=discord.Embed(
                 title="Routines", description="\n".join(
                     f"・[{', '.join(routine['keys'])}]({routine['path']})"
                     for routine in self.user[ctx.author.id].routines
-                )
+                ), color=self.bot.Colors.normal
             ))
 
     @routine.command("set", aliases=("s", "設定"))
-    async def set_routine(self, ctx: UnionContext, *, aliases):
-        assert ctx.message.attachments, {
-            "ja": "音楽ファイルをアップロードしてください。", "en": "You must upload file."
+    async def set_routine(self, ctx: UnionContext, voice: Union[Literal["up"], str], *, aliases):
+        """!lang ja
+        --------
+        ネタ音声を設定します。
+
+        Parameters
+        ----------
+        voice : URLまたはup
+            ネタ音声のURLです。
+            もしアップロードする場合はこれをupにしてファイルを添付してください。
+        aliases : str
+            カンマ(`,`)で区切った送信したら音声が流れる文字列です。
+
+        Aliases
+        -------
+        s
+
+        !lang en
+        --------
+        Setting meme voice
+
+        Parameters
+        ----------
+        voice : URL or up
+            The URL of the meme voice.
+            If you want to upload the file, set this to up and attach the file.
+        aliases : str
+            A string of characters separated by commas (`,`) that will play the voice when sent.
+
+        Aliases
+        -------
+        s, 設定"""
+        assert voice.startswith("http") or ctx.message.attachments, {
+            "ja": "音楽ファイルをアップロードするか音声ファイルのURLを指定してください。",
+            "en": "Upload the music file or specify the URL of the audio file."
         }
         if "routines" not in self.user[ctx.author.id]:
             self.user[ctx.author.id].routines = []
@@ -213,10 +425,37 @@ class TTSCog(commands.Cog, name="TTS"):
         }
         self.user[ctx.author.id].routines.append(RoutineData(
             keys=aliases.split(","), path=ctx.message.attachments[0].url
+                if voice == "up" else voice
         ))
+        await ctx.reply("Ok")
 
     @routine.command("delete", aliaess=("del", "rm", "remove", "削除"))
     async def delete_routine(self, ctx: UnionContext, *, alias):
+        """!lang ja
+        --------
+        ネタ音声を削除します。
+
+        Parameters
+        ----------
+        alias : str
+            削除したいネタ音声の登録時に引数aliasesに指定したワードのどれかです。
+
+        Aliases
+        -------
+        del, rm, remove, 削除
+
+        !lang en
+        --------
+        Delete meme voice
+
+        Parameters
+        ----------
+        alias : str
+            This is one of the words specified in the argument aliases when registering the meme voice you want to delete.
+
+        Aliases
+        -------
+        del, rm, remove"""
         self._assert_routine(ctx)
         for index, routine in enumerate(self.user[ctx.author.id].routines):
             if alias in routine["keys"]:
@@ -224,12 +463,13 @@ class TTSCog(commands.Cog, name="TTS"):
                 await ctx.reply("Ok")
                 break
         else:
-            await ctx.reply({"ja": "d見つかりませんでした。", "en": "Not found"})
+            await ctx.reply({"ja": "見つかりませんでした。", "en": "Not found"})
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if message.guild.id in self.now \
-                and self.now[message.guild.id].check_channel(message.channel.id):
+        if message.guild and message.content and message.guild.id in self.now \
+                and self.now[message.guild.id].check_channel(message.channel.id) \
+                and message.content.startswith(tuple(self.bot.command_prefix)):
             await self.now[message.guild.id].add(message)
 
     @commands.Cog.listener()

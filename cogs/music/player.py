@@ -187,8 +187,7 @@ class Player:
     def volume(self, volume: int):
         self._volume = volume / 100
         # もし音楽の再生中なら再生中のものの音量を変更する。
-        if (self.vc.is_playing()
-                and not self.vc.source.is_opus()):
+        if self.vc.is_playing():
             self.vc.source.volume = self._volume
 
     def shuffle(self):
