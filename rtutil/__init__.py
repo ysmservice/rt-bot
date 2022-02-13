@@ -1,7 +1,8 @@
 # rtutil
 
-from typing import List
+from typing import Optional
 
+from discord.ext import commands
 import discord
 
 from .minesweeper import Ms as Minesweeper
@@ -9,7 +10,7 @@ from .data_manager import DatabaseManager
 
 
 def check_int(v: str) -> bool:
-    # 渡された文字列が整数かどうかをチェックします。
+    "渡された文字列が整数かどうかをチェックします。"
     try:
         int(v)
     except BaseException:
@@ -19,18 +20,18 @@ def check_int(v: str) -> bool:
 
 
 def similer(before: str, after: str, check_length: int) -> bool:
-    # beforeがafterとcheck_lengthの文字数分似ているかどうかをチェックします。
+    "beforeがafterとcheck_lengthの文字数分似ているかどうかをチェックします。"
     return any(after[i:i + check_length] in before
                for i in range(len(after) - check_length))
 
 
-def has_roles(member: discord.Member, roles: List[discord.Role]) -> bool:
-    # メンバーが指定された役職の中にあるかどうかを確かめます。
+def has_roles(member: discord.Member, roles: list[discord.Role]) -> bool:
+    "メンバーが指定された役職の中にあるかどうかを確かめます。"
     return any(role in member.roles for role in roles)
 
 
-def role2obj(guild: discord.Guild, arg: str) -> List[discord.Role]:
-    # `役職1, 役職2, ...`のようになってるものをロールオブジェクトに変換します。
+def role2obj(guild: discord.Guild, arg: str) -> list[Optional[discord.Role]]:
+    "`役職1, 役職2, ...`のようになってるものをロールオブジェクトに変換します。"
     roles_raw, roles = arg.split(','), []
     for role in roles_raw:
         if '@' in role:
@@ -42,14 +43,14 @@ def role2obj(guild: discord.Guild, arg: str) -> List[discord.Role]:
     return roles
 
 
-class Roler(discord.ext.commands.Converter):
-    # discord.pyのコマンドフレームワークのコンバーターで複数の役職をロールオブジェクトに交換します。
+class Roler(commands.Converter):
+    "`role2obj`のコンバーターです。"
     async def convert(self, ctx, arg):
         return role2obj(ctx.guild, arg)
 
 
 async def get_webhook(
     channel: discord.TextChannel, name: str = "RT-Tool"
-) -> discord.Webhook:
+) -> Optional[discord.Webhook]:
     "ウェブフックを取得します。"
     return discord.utils.get(await channel.webhooks(), name=name)
