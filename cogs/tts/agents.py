@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypedDict, Literal, Union
+from typing import Literal, Union, Optional
 from enum import Enum
 
 from subprocess import Popen, TimeoutExpired, PIPE
@@ -23,14 +23,13 @@ from aiohttp import ClientSession
 from bs4 import BeautifulSoup
 from ujson import load, dumps
 
-if TYPE_CHECKING:
-    from . import TTSCog
-
 
 ENG2KANA_DATA_PATH = "cogs/tts/data/eng2kana.json"
 "英語からカタカナに変換されている辞書があるJSONファイルです。"
 AQUESTALK_DIRECTORY = "cogs/tts/lib/AquesTalk"
 "AquesTalkのプログラムが入っているフォルダです。"
+AQUESTALK_ALLOWED_CHARACTERS_CSV = "cogs/tts/data/aquestalk_allowed_characters.csv"
+"AquesTalkで読み上げ可能な文字が入っているcsvファイルです。"
 OPENJTALK = "open_jtalk"
 "なんのコマンドでOpenJTalkを実行するかです。"
 OPENJTALK_DICTIONARY = "cogs/tts/lib/OpenJTalk/dic"
@@ -39,7 +38,7 @@ OPENJTALK_VOICE_DIRECTORY = "cogs/tts/lib/OpenJTalk"
 "OpenJTalkで使う音声のデータがあるディレクトリです。"
 AGENTS_JSON = "cogs/tts/data/avaliable_voices.json"
 "使用可能な音声の情報が書いてあるJSONファイルのパスです。"
-AGENTS: dict[str, Agent]
+AGENTS: dict[str, Agent] = {}
 "使用可能なAgentの辞書です。"
 
 
@@ -57,12 +56,20 @@ Source = Union[discord.FFmpegOpusAudio, discord.FFmpegPCMAudio]
 class Agent:
     "音声合成の音声のクラスです。"
 
-    def __init__(self, type_: VoiceTypes, name: str, agent: str, details: str):
+    def __init__(
+        self, type_: VoiceTypes, name: str, agent: str,
+        details: str, emoji: Optional[str] = None
+    ):
         self.type, self.name, self.agent, self.details = type_, name, agent, details
+        self.emoji = emoji
 
     async def synthe(self, text: str, path: str) -> Source:
         "音声合成を行います。"
-        return globals()[self.type.name](text, path, self.agent)
+        return await globals()[self.type.name](text, path, self.agent)
+
+    @property
+    def code(self) -> str:
+        return f"{self.type.name}-{self.agent}"
 
     @staticmethod
     def from_agent_code(code: str) -> Agent:
@@ -74,7 +81,8 @@ with open(AGENTS_JSON, "r") as f:
     for type_, datas in load(f).items():
         for agent, data in datas.items():
             AGENTS[f"{type_}-{agent}"] = Agent(
-                getattr(VoiceTypes, type_), data["name"], agent, data["details"]
+                getattr(VoiceTypes, type_), data["name"], agent, data["details"],
+                data.get("emoji")
             )
 
 
@@ -176,7 +184,7 @@ def prepare_source(path: str) -> Source:
 
 
 #   AquesTalk
-with open("aquestalk_allowed_characters.csv", "r") as f:
+with open(AQUESTALK_ALLOWED_CHARACTERS_CSV, "r") as f:
     AQUESTALK_ALLOWED_CHARACTERS = f.read().split()
     "AquesTalkで使える文字のリスト"
 AQUESTALK_REPLACE_CHARACTERS = {
@@ -227,7 +235,8 @@ async def openjtalk(text: str, path: str, agent:str) -> Source:
     "OpenJTalkで音声合成を行います。"
     await _synthe(
         f"OpenJTalk[{agent}]", f"""{OPENJTALK} -x {OPENJTALK_DICTIONARY}
- -m {f'{OPENJTALK_VOICE_DIRECTORY}/{agent}.htsvoice'} -r 1.0 -ow {path}""", text
+            -m {f'{OPENJTALK_VOICE_DIRECTORY}/{agent}.htsvoice'} -r 1.0 -ow {path}"""
+                .replace("\n", ""), text
     )
     return prepare_source(path)
 
