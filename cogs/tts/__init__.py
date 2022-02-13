@@ -125,7 +125,7 @@ class TTS(commands.Cog, VoiceManager, DataManager):
                 "ja": "ボイスチャンネルに接続してください。",
                 "en": "Connect to a voice channel."
             }
-        elif ctx.guild.id in self.bot.cogs["MusicNormal"].now:
+        elif ctx.guild.id in self.bot.cogs["Music"].now:
             data = {
                 "ja": "音楽プレイヤーと同時に使用することはできません。\nサブのRTであるりつたんを使用してください。",
                 "en": "Cannot be used with a music player at the same time.\nWe are currently preparing English support for Ritsu-chan, our sub RT.\nPlease wait for it to be released."
