@@ -16,7 +16,7 @@ from rtlib import RT, Table, sendKwargs
 
 from .views import (
     PLAYLIST_SELECT, is_require_dj, do_confirmation, MusicSelect, Queues,
-    AddMusicPlaylistSelect, AddMusicPlaylistView
+    ShowPlaylistSelect, PlayPlaylistSelect, AddMusicPlaylistSelect, AddMusicPlaylistView
 )
 from .player import Player, NotAddedReason, LoopMode
 from .music import MusicDict, Music
