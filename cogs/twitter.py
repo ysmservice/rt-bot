@@ -11,7 +11,7 @@ from discord.ext import commands
 import discord
 
 from tweepy.asynchronous import AsyncStream
-from tweepy import API, OAuthHandler
+from tweepy import API, OAuth1UserHandler
 from tweepy.errors import NotFound
 from tweepy.models import Status
 
@@ -118,7 +118,7 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
         self.ready = Event()
 
         if "twitter" in self.bot.secret:
-            oauth = OAuthHandler(
+            oauth = OAuth1UserHandler(
                 self.bot.secret["twitter"]["consumer_key"],
                 self.bot.secret["twitter"]["consumer_secret"]
             )
