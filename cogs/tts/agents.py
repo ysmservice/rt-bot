@@ -177,10 +177,13 @@ async def adjust_text(text: str) -> str:
     return await eng2kana(text)
 
 
-def prepare_source(path: str) -> Source:
+def prepare_source(path: str, volume: float = 5.5) -> Source:
     "Sourceを作ります。"
-    return discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(path)) \
-        if discord.opus.is_loaded() else discord.FFmpegOpusAudio(path)
+    return discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(
+        path, options=f'-filter:a "volume={volume}"'
+    )) if discord.opus.is_loaded() else discord.FFmpegOpusAudio(
+        path, options=f'-filter:a "volume={volume}"'
+    )
 
 
 #   AquesTalk
@@ -227,7 +230,7 @@ async def aquestalk(text: str, path: str, agent: Union[Literal["f1", "f2"], str]
         f"AquesTalk[{agent}]", f"./{f'{AQUESTALK_DIRECTORY}/{agent}'} 130 > {path}", text
     )
 
-    return prepare_source(path)
+    return prepare_source(path, 2.2)
 
 
 #   OpenJTalk

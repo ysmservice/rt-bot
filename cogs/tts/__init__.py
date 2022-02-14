@@ -469,7 +469,7 @@ class TTSCog(commands.Cog, name="TTS"):
     async def on_message(self, message: discord.Message):
         if message.guild and message.content and message.guild.id in self.now \
                 and self.now[message.guild.id].check_channel(message.channel.id) \
-                and message.content.startswith(tuple(self.bot.command_prefix)):
+                and not message.content.startswith(tuple(self.bot.command_prefix)):
             await self.now[message.guild.id].add(message)
 
     @commands.Cog.listener()
