@@ -258,7 +258,8 @@ discord.CommandOption.get_type = new_get_type
 # スラッシュコマンド等を登録するのがイベント`on_connect`が呼ばれた時に設定されている。
 # RTではコグを`on_ready`が呼び出された後に読み込むためスラッシュコマンドがこれだと登録されない。
 # そのため登録されるようにする。
-del discord.Client.on_connect
+if hasattr(discord.Client, "on_connect"):
+    del discord.Client.on_connect
 discord.Client.on_full_ready = discord.Client.rollout_application_commands
 
 
