@@ -372,7 +372,7 @@ class TTSCog(commands.Cog, name="TTS"):
         Aliases
         -------
         r, meme"""
-        if ctx.invoked_subcommand:
+        if not ctx.invoked_subcommand:
             self._assert_routine(ctx)
             await ctx.reply(embed=discord.Embed(
                 title="Routines", description="\n".join(
