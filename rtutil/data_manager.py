@@ -29,12 +29,12 @@ class DatabaseManager:
                 if "cursor" in kwargs:
                     await kwargs["cursor"].close()
                 if conn:
-                    conn.close()
+                    self.pool.release(conn)
                 raise e
             finally:
                 if "cursor" in kwargs:
                     await kwargs["cursor"].close()
                 if conn:
-                    conn.close()
+                    self.pool.release(conn)
             return data
         return new_coro
