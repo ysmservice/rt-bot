@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TypedDict, Union, Optional, Literal, overload, get_origin, get_args
+from typing import Union, Optional, Literal, overload, get_origin, get_args
 
-from asyncio import Event, wait_for, TimeoutError as AioTimeoutError, sleep
+from asyncio import Event, wait_for, TimeoutError as AioTimeoutError
 from datetime import datetime
 
 from discord.ext import commands
@@ -210,7 +210,11 @@ class SettingManager(commands.Cog):
 
     @commands.Cog.listener()
     async def on_update_api(self):
-        if self.bot.rtc.ready.is_set():
+        try:
+            await wait_for(self.bot.rtc.ready.wait(), timeout=10)
+        except AioTimeoutError:
+            ...
+        else:
             await self.bot.rtc.request("dashboard.update", self.data)
 
     async def run(self, data: CommandRunData) -> tuple[Literal["Error", "Ok"], str]:
