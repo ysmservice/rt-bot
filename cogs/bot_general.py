@@ -68,7 +68,11 @@ THANKYOU_TEMPLATE = cleandoc(
 
     **RT 利用規約**
     RTを利用した場合以下の利用規約に同意したことになります。
-    https://rt-bot.com/terms.html"""
+    https://rt-bot.com/terms.html
+
+    **RT プライバシーポリシー**
+    RTのプライバシーポリシーは以下から閲覧可能です。
+    https://rt-bot.com/privacy.html"""
 )
 
 

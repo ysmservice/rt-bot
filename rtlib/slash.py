@@ -316,7 +316,7 @@ class Context:
         reply_noresponse_edit: bool = False, **kwargs
     ):
         if args:
-            kwargs["content"] = args.pop(0)
+            kwargs["content"] = args[0]
         if self.reply_noresponse_edit or reply_noresponse_edit:
             self._remove_invalid_args(kwargs, self.interaction.edit_original_message)
             await self.interaction.edit_original_message(**kwargs)

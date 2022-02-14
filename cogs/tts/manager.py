@@ -66,10 +66,11 @@ class Manager:
 
     async def disconnect(self, reason: Optional[Any] = None, force: bool = False) -> None:
         "切断をします。これをやったあとキューのお片付けをしたい場合はdelしてください。"
-        try: await self.vc.disconnect(force=force)
+        try:
+            await self.vc.disconnect(force=force)
+            if reason is not None:
+                await self.guild.get_channel(self.channels[0]).send(reason)
         except Exception: ...
-        if reason is not None:
-            await self.guild.get_channel(self.channels[0]).send(reason)
 
     async def add(self, message: discord.Message):
         "渡されたメッセージを読み上げキューに追加します。"

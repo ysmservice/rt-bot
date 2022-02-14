@@ -45,7 +45,7 @@ class Voice:
                     ... # TODO: りつたんでもバックエンドを経由してRoutineを手に入れて再生を行う。
                 else:
                     # Routineがあればそれの再生を行う。
-                    self.source = prepare_source(routine["path"])
+                    self.source = prepare_source(routine["path"], 1.5)
                     return self.print("Found routine:", routine)
 
         # Agentコードを取得する。
