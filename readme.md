@@ -25,10 +25,12 @@ RTについて知らない人は[ここ](https://rt-bot.com)を見てみまし�
 ### 起動手順
 1. 必要なものを`pip install -r requirements.txt`でインストールをします。
 2. 必要なTOKENなどを`auth.template.json`を参考に`auth.json`に書き込む。
-3. `{}`を書き込んだ`cogs/tts/dic/dictionary.json`を作る。
-4. `cogs/tts/outputs`フォルダを作る。
-5. `rtlib`に`rt-module`リポジトリを置いてフォルダの名前を`rt_module`にする。
-6. `rt-backend`リポジトリにあるプログラムを動かす。
-7. `python3 main.py test`でテストを実行する。(この際TOKENは`test`のキーにあるものが使用されます。)
+3. `rtlib`に`rt-module`リポジトリを置いてフォルダの名前を`rt_module`にする。
+4. `rt-backend`リポジトリにあるプログラムを動かす。
+   (これはオプションで認証等のバックエンドを必要とするものを動かしたい場合は動かす必要があります。)
+5. `python3 main.py test`でテストを実行する。
+   (この際TOKENは`auth.json`の`test`のキーにあるものが使用されます。)
+
+※ もし読み上げを動かしたいのなら`cogs/tts`にある`readme.md`を読んでください。
 ### 本番の実行
 起動コマンドは`sudo -E python3 main.py production`で`auth.json`のTOKENで`production`のTOKENが必要となります。
