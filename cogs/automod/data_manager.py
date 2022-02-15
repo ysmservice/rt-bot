@@ -136,13 +136,14 @@ class DataManager(DatabaseManager):
                             and data.member.id in self.cog.caches[row[0]][1]):
                         del self.cog.caches[row[0]][1][data.member.id]
 
-    async def toggle_automod(self, guild_id: int, cursor: Cursor = None) -> None:
+    async def toggle_automod(self, guild_id: int, cursor: Cursor = None) -> bool:
         "AutoModのOnOffを切り替えます。"
         if guild_id in self.cog.enabled:
             await cursor.execute(
                 f"DELETE FROM {self.TABLES[0]} WHERE GuildID = %s;", (guild_id,)
             )
             self.cog.enabled.remove(guild_id)
+            return False
         else:
             await cursor.execute(
                 f"INSERT INTO {self.TABLES[0]} VALUES (%s, %s, %s);", (
@@ -150,6 +151,7 @@ class DataManager(DatabaseManager):
                 )
             )
             self.cog.enabled.append(guild_id)
+            return True
 
     def if_str_loads(self, data: Union[str, dict]) -> dict:
         if isinstance(data, str):
