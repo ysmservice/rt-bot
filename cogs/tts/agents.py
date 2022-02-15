@@ -165,6 +165,7 @@ async def adjust_text(text: str) -> str:
     "日本語の文章をちょうどよく調整します。"
     if len(text) > 40:
         text = text[:41] + " いかしょうりゃく"
+    text = text.replace("（", "(").replace("）", ")")
     # 二回連続の「っ」などを一つにする。
     for char in NO_JOINED_TWICE_CHARS:
         text = sub(f"{char}+", char, text)
@@ -173,6 +174,7 @@ async def adjust_text(text: str) -> str:
     # 日本語の一部文字列を最適な文字列にする。
     text = text.replace("()", "かっこしっしょう")
     text = text.replace("(笑)", "かっこわらい")
+    text = text.replace("(", "かっこ").replace(")", "かっことじ")
 
     return await eng2kana(text)
 
