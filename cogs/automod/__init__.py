@@ -51,7 +51,7 @@ class AutoMod(commands.Cog, DataManager):
         if args:
             args = list(args)
             if args[0] == OK:
-                if kwargs.get("add_or_remove"):
+                if kwargs.pop("add_or_remove", None):
                     args[0] = "onに設定しました。"
                 else:
                     args[0) = "offに設定しました。"
