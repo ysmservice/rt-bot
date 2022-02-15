@@ -51,7 +51,10 @@ class AutoMod(commands.Cog, DataManager):
         if args:
             args = list(args)
             if args[0] == OK:
-                args[0] = "設定しました。"
+                if kwargs.get("add_or_remove"):
+                    args[0] = "onに設定しました。"
+                else:
+                    args[0) = "offに設定しました。"
             else:
                 kwargs["color"] = "error"
             kwargs["title"] = "AutoMod"
@@ -122,8 +125,8 @@ class AutoMod(commands.Cog, DataManager):
             await self.prepare_cache_guild(ctx.guild)
         else:
             if ctx.message.content.endswith(("automod", "amd", "自動モデレーション")):
-                await self.toggle_automod(ctx.guild.id)
-                await self.reply(ctx, OK)
+                add_or_remove = await self.toggle_automod(ctx.guild.id)
+                await self.reply(ctx, OK, add_or_remvoe = add_or_remove)
             else:
                 await self.reply(ctx, "使用方法が違います。")
 
