@@ -125,8 +125,7 @@ class AutoMod(commands.Cog, DataManager):
             await self.prepare_cache_guild(ctx.guild)
         else:
             if ctx.message.content.endswith(("automod", "amd", "自動モデレーション")):
-                add_or_remove = await self.toggle_automod(ctx.guild.id)
-                await self.reply(ctx, OK, add_or_remove = add_or_remove)
+                await self.reply(ctx, OK, add_or_remove = await self.toggle_automod(ctx.guild.id))
             else:
                 await self.reply(ctx, "使用方法が違います。")
 
