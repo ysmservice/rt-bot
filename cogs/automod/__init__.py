@@ -54,7 +54,7 @@ class AutoMod(commands.Cog, DataManager):
                 if kwargs.pop("add_or_remove", None):
                     args[0] = "onに設定しました。"
                 else:
-                    args[0) = "offに設定しました。"
+                    args[0] = "offに設定しました。"
             else:
                 kwargs["color"] = "error"
             kwargs["title"] = "AutoMod"
