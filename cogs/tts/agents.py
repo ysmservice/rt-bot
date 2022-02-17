@@ -28,7 +28,7 @@ ENG2KANA_DATA_PATH = "cogs/tts/data/eng2kana.json"
 "英語からカタカナに変換されている辞書があるJSONファイルです。"
 AQUESTALK_DIRECTORY = "cogs/tts/lib/AquesTalk"
 "AquesTalkのプログラムが入っているフォルダです。"
-AQUESTALK_ALLOWED_CHARACTERS_CSV = "cogs/tts/data/aquestalk_allowed_characters.csv"
+ALLOWED_CHARACTERS_CSV = "cogs/tts/data/allowed_characters.csv"
 "AquesTalkで読み上げ可能な文字が入っているcsvファイルです。"
 OPENJTALK = "open_jtalk"
 "なんのコマンドでOpenJTalkを実行するかです。"
@@ -51,7 +51,7 @@ class VoiceTypes(Enum):
 
 
 with open(AQUESTALK_ALLOWED_CHARACTERS_CSV, "r") as f:
-    AQUESTALK_ALLOWED_CHARACTERS = tuple(f.read().split())
+    ALLOWED_CHARACTERS = tuple(f.read().split())
     "AquesTalkで使える文字のタプル"
 Source = Union[discord.FFmpegOpusAudio, discord.FFmpegPCMAudio]
 
@@ -108,6 +108,12 @@ async def eng2kana(text: str) -> str:
     return text
 
 
+@executor_function
+def aiog2p(*args, **kwargs):
+    "`run_in_executor_function`を使って非同期に実行できるようにした`pyopenjtalk.g2p`です。"
+    return g2p(*args, **kwargs)
+
+
 NO_JOINED_TWICE_CHARS = (
     "ー", "、", "。", "っ", "ゃ", "ゅ", "ょ",
     "ッ", "ャ", "ュ", "ョ"
@@ -115,7 +121,7 @@ NO_JOINED_TWICE_CHARS = (
 REPLACES = (
     ("（", "("), ("）", ")"), ("＜", ""), ("＞", ""), ("？", "?")
 )
-async def adjust_text(text: str) -> str:
+async def adjust_text(text: str, gtts: bool = False) -> str:
     "日本語の文章をちょうどよく調整します。"
     if len(text) > 40:
         text = text[:41] + " いかしょうりゃく"
@@ -128,10 +134,16 @@ async def adjust_text(text: str) -> str:
     # 連続するwは一つにする。にする。
     text = sub("w{2,}", "わらわら", text)
     # 日本語の一部文字列を最適な文字列にする。
-    text = text.replace("()", "かっこしっしょう")
-    text = text.replace("(笑)", "かっこわらい")
-    text = text.replace("(", "かっこ、").replace(")", "、かっことじ")
+    text = text.replace("()", "かっこしっしょう") \
+        .replace("(笑)", "かっこわらい").replace("(", "かっこ、") \
+        .replace(")", "、かっことじ")
 
+    if not gtts:
+        # 読めない文字は消す。
+        text = await aiog2p(text, kana=True)
+        text = "".join(char for char in text if char in ALLOWED_CHARACTERS)
+
+    # 英語をかなにする。
     return await eng2kana(text)
 
 
@@ -203,19 +215,8 @@ AQUESTALK_REPLACE_CHARACTERS = {
     "ァ": "あ", "ィ": "い", "ゥ": "う", "ェ": "え", "ォ": "お"
 }
 "AquesTalkで読めない文字の置き換えに使う辞書"
-
-
-@executor_function
-def aiog2p(*args, **kwargs):
-    "`run_in_executor_function`を使って非同期に実行できるようにした`pyopenjtalk.g2p`です。"
-    return g2p(*args, **kwargs)
-
-
 async def aquestalk(text: str, path: str, agent: Union[Literal["f1", "f2"], str]) -> Source:
     "AquesTalkで音声合成をします。"
-    # 英語をかなに変換して残った感じ等もかなにする。
-    text = await aiog2p(text, kana=True)
-
     # AquesTalk用に文字列を調整する。
     for char in AQUESTALK_REPLACE_CHARACTERS:
         text = text.replace(char, AQUESTALK_REPLACE_CHARACTERS[char])
@@ -229,9 +230,6 @@ async def aquestalk(text: str, path: str, agent: Union[Literal["f1", "f2"], str]
         elif first:
             first = False
         new_text += char
-
-    # 読めない文字は消す。
-    text = "".join(char for char in new_text if char in AQUESTALK_ALLOWED_CHARACTERS)
 
     # 音声合成をする。
     await _synthe(
