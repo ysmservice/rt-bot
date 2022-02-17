@@ -723,6 +723,17 @@ class MusicCog(commands.Cog, name="Music"):
                  "en": "I was alone, so I disconnected."}
             )
 
+    @commands.Cog.listener()
+    async def on_voice_leave(self, member: discord.Member, _, __):
+        if member.id == self.bot.user.id and member.guild.id in self.now \
+                and not self.now[member.guild.id]._closing:
+            await self.now[member.guild.id].disconnect(
+                {
+                    "ja": "ｷｬｯ、誰かにVCから蹴られたかバグが発生しました。",
+                    "en": "Ah, someone kicked me out of the VC or there was a bug."
+                }
+            )
+
 
 def setup(bot):
     bot.add_cog(MusicCog(bot))
