@@ -50,7 +50,7 @@ class VoiceTypes(Enum):
     gtts = 3
 
 
-with open(AQUESTALK_ALLOWED_CHARACTERS_CSV, "r") as f:
+with open(ALLOWED_CHARACTERS_CSV, "r") as f:
     ALLOWED_CHARACTERS = tuple(f.read().split())
     "AquesTalkで使える文字のタプル"
 Source = Union[discord.FFmpegOpusAudio, discord.FFmpegPCMAudio]
