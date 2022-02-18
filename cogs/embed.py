@@ -26,11 +26,11 @@ class Embed(commands.Cog):
     async def embed(self, ctx):
         """!lang ja
         -------
-        [こちらをご覧ください。](https://rt-team.github.io/notes/embed)
+        [こちらをご覧ください。](https://rt-team.github.io/ja/notes/embed)
 
         !lang en
         --------
-        Let's see [here](https://rt-team.github.io/notes/embed)."""
+        Let's see [here](https://rt-team.github.io/en/notes/embed)."""
         if not ctx.invoked_subcommand:
             await ctx.reply("使用方法が違います。")
 

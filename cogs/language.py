@@ -34,6 +34,8 @@ class Language(commands.Cog):
     def __init__(self, bot: RT):
         self.bot = bot
         self.cache = {}
+        self.guild_cache = {}
+
         self.bot.cogs["OnSend"].add_event(self._new_send, "on_send")
         self.bot.cogs["OnSend"].add_event(self._new_send, "on_webhook_send")
         self.bot.cogs["OnSend"].add_event(self._new_send, "on_webhook_message_edit")
@@ -45,6 +47,18 @@ class Language(commands.Cog):
         with open("data/replies.json") as f:
             self.replies = loads(f.read())
 
+    def cog_unload(self):
+        for key in list(self.bot.cogs["OnSend"].events.keys()):
+            for value in self.bot.cogs["OnSend"].events[key]:
+                if value.__name__ == "_new_send":
+                    self.bot.cogs["OnSend"].events[key].remove(value)
+
+    def _get_ug(self, guild_id: int, user_id: int) -> str:
+        lang = self.cache.get(guild_id)
+        if lang is None or user_id in self.cache:
+            return self.get(user_id)
+        return lang
+
     async def _new_send(self, channel, *args, **kwargs):
         # 元のsendにつけたしをする関数。rtlib.libs.on_sendを使う。
         # このsendが返信に使われたのなら返信先のメッセージの送信者(実行者)の言語設定を読み込む。
@@ -52,21 +66,30 @@ class Language(commands.Cog):
         if isinstance(channel, discord.Message):
             if (reference := channel.reference) is not None:
                 if reference.cached_message:
-                    lang = self.get(reference.cached_message.author.id)
+                    if channel.guild is None:
+                        lang = self.get(reference.cached_message.author.id)
+                    else:
+                        lang = self._get_ug(channel.guild.id, reference.cached_message.author.id)
         elif isinstance(channel, discord.InteractionResponse):
-            lang = self.get(channel._parent.user.id)
+            if channel._parent.guild_id is None:
+                lang = self.get(channel._parent.user.id)
+            else:
+                lang = self._get_ug(channel._parent.guild_id)
         elif (reference := kwargs.get("reference")) is not None:
-            lang = self.get(reference.author.id)
+            if reference.guild is None:
+                lang = self.get(reference.author.id)
+            else:
+                lang = self._get_ug(reference.guild.id, reference.author.id)
         if (target := kwargs.pop("target", False)):
             if not isinstance(target, int):
                 target = target.id
-            lang = self.get(target)
+            lang = self.cache.get(target) or self.get(target)
 
         if not kwargs.pop("replace_language", True):
             # もし言語データ交換するなと引数から指定されたならデフォルトのjaにする。
             lang = "ja"
         # contentなどの文字列が言語データにないか検索をする。
-        if (content := kwargs.get("content", False)):
+        if kwargs.get("content", False):
             kwargs["content"] = self.get_text(kwargs["content"], lang)
         if args and not isinstance(args[0], int):
             args = (self.get_text(args[0], lang),)
@@ -188,9 +211,7 @@ class Language(commands.Cog):
         async with self.bot.session.post(
             f"{self.bot.get_url()}/api/account/language", json=self.cache
         ) as r:
-            if self.bot.test:
-                ...
-                # self.bot.print("[LanguageUpdate]", await r.text())
+            self.bot.print("[LanguageUpdate]", await r.text())
 
     async def on_ready(self):
         async with self.pool.acquire() as conn:
@@ -226,7 +247,7 @@ class Language(commands.Cog):
         }
     )
     @setting.Setting("user", "!Language")
-    async def language(self, ctx, language: Literal["ja", "en"]):
+    async def language(self, ctx, language: Literal["ja", "en"], mode: Literal["server", "user"] = "user"):
         """!lang ja
         --------
         Change the language setting for RT.
@@ -236,6 +257,9 @@ class Language(commands.Cog):
         language : Language code, `ja` or `en`
             Code for the language to change.  
             You can use the Japanese `ja` or the English `en`.
+        mode : server or user, default user
+            You can either set it for the entire server or for a user.  
+            If you set it to server-wide and set it to English, it will be set to English even if no one on that server has it set to English.
 
         Raises
         ------
@@ -243,7 +267,8 @@ class Language(commands.Cog):
 
         Examples
         --------
-        `rt!language en`
+        `rt!language en` to set your language to English.
+        Set the language of the entire server to English, as executed by `rt!language en server`.
 
         !lang en
         --------
@@ -254,6 +279,8 @@ class Language(commands.Cog):
         language : 言語コード, `ja`または`en`
             変更対象の言語コードです。  
             現在は日本語である`ja`と英語である`en`に対応しています。
+        mode : server or user
+            サーバー全体に設定するか自分にユーザー
 
         Raises
         ------
@@ -273,29 +300,27 @@ class Language(commands.Cog):
         await ctx.trigger_typing()
 
         # データベースに変更内容を書き込む。
+        ugid = ctx.author.id if mode == "user" else ctx.guild.id
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cursor:
                 await cursor.execute(
                     "SELECT id FROM language WHERE id = %s;",
-                    (ctx.author.id,)
+                    (ugid,)
                 )
                 if await cursor.fetchone():
                     await cursor.execute(
                         "UPDATE language SET language = %s WHERE id = %s;",
-                        (language, ctx.author.id)
+                        (language, ugid)
                     )
                 else:
                     await cursor.execute(
                         "INSERT INTO language VALUES (%s, %s);",
-                        (ctx.author.id, language)
+                        (ugid, language)
                     )
-                await self.update_cache(cursor)
+                self.cache[ugid] = language
 
         # 返信をする。
-        embed = discord.Embed(
-            title=title, description=description, color=color
-        )
-        await ctx.reply(embed=embed)
+        await ctx.reply("Ok")
 
 
 def setup(bot):
