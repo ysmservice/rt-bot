@@ -74,7 +74,7 @@ class Language(commands.Cog):
             if channel._parent.guild_id is None:
                 lang = self.get(channel._parent.user.id)
             else:
-                lang = self._get_ug(channel._parent.guild_id)
+                lang = self._get_ug(channel._parent.guild_id, channel._parent.user.id)
         elif (reference := kwargs.get("reference")) is not None:
             if reference.guild is None:
                 lang = self.get(reference.author.id)
