@@ -9,14 +9,13 @@ websockets
 ## OAuth
 reprypt
 # RT main
+onami
 pillow
-jishaku
 emoji
 youtube_dl
 niconico.py
 bs4
 pyopenjtalk
-pydub
 psutil
 captcha
 deep-translator
