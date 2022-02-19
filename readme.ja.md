@@ -16,11 +16,9 @@ RTについて知らない人は[ここ](https://rt-bot.com)を見てみまし�
 ### 依存性
 必要なものです。
 
-* Python3.8以上
+* Python 3.10
 * MySQL または MariaDB
 * `requirements.txt`にあるもの全て。
-  注意：`jishaku`をインストールすると依存しているdiscord.pyがインストールされます。
-  ですがRTはnextcordを使っているので、jishakuをインストールした後にdiscord.pyを消してからnextcordをインストールするのを推奨します。
 * 認証等のバックエンドを必要とする機能を使う場合は`rt-backend`の実行
 ### 起動手順
 1. 必要なものを`pip install -r requirements.txt`でインストールをします。
