@@ -41,6 +41,7 @@ class Manager:
         self.vc: discord.VoiceClient = guild.voice_client
         self.queues: list[Voice] = []
         self.channels: list[int] = []
+        self._closing = False
 
     def add_channel(self, channel_id: int) -> None:
         "読み上げチャンネルを追加します。"
@@ -66,6 +67,7 @@ class Manager:
 
     async def disconnect(self, reason: Optional[Any] = None, force: bool = False) -> None:
         "切断をします。これをやったあとキューのお片付けをしたい場合はdelしてください。"
+        self._closing = True
         try:
             await self.vc.disconnect(force=force)
             if reason is not None:
@@ -78,8 +80,9 @@ class Manager:
         try:
             await queue.synthe()
         except Exception as e:
+            if self.cog.bot.test:
+                await try_add_reaction(message, EMOJI_ERROR)
             self.print("Failed to do voice synthesis:", f"{e.__class__.__name__} - {e}")
-            await try_add_reaction(message, EMOJI_ERROR)
         else:
             self.queues.append(queue)
             try: self.queues[1]

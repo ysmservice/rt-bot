@@ -372,7 +372,7 @@ class TTSCog(commands.Cog, name="TTS"):
         Aliases
         -------
         r, meme"""
-        if ctx.invoked_subcommand:
+        if not ctx.invoked_subcommand:
             self._assert_routine(ctx)
             await ctx.reply(embed=discord.Embed(
                 title="Routines", description="\n".join(
@@ -504,6 +504,36 @@ class TTSCog(commands.Cog, name="TTS"):
         for file_name in listdir(OUTPUT_DIRECTORY):
             if file_name.endswith(".wav"):
                 self.bot.loop.create_task(remove(f"{OUTPUT_DIRECTORY}/{file_name}"))
+
+    @commands.Cog.listener()
+    async def on_voice_leave(self, member: discord.Member, _, __):
+        # 強制切断されたらお片付けをする。
+        if member.id == self.bot.user.id and member.guild.id in self.now \
+                and not self.now[member.guild.id]._closing:
+            self.clean(
+                self.now[member.guild.id], {
+                    "ja": "ｷｬｯ、誰かにVCから蹴られたかバグが発生しました。",
+                    "en": "Ah, someone kicked me out of the VC or there was a bug."
+                }
+            )
+
+    @commands.Cog.listener()
+    async def on_voice_state_update(
+        self, member: discord.Member,
+        before: discord.VoiceState,
+        after: discord.VoiceState
+    ) -> None:
+        # on_member_join/leaveのどっちかを呼び出すためのものです。
+        if before.channel and after.channel and before.channel.id != after.channel.id:
+            # もしメンバーがボイスチャンネルを移動したなら。
+            self.bot.dispatch("voice_leave", member, before, after)
+            self.bot.dispatch("voice_join", member, before, after)
+        elif not before.channel:
+            # もしメンバーがボイスチャンネルに接続したなら。
+            self.bot.dispatch("voice_join", member, before, after)
+        elif not after.channel:
+            # もしメンバーがボイスチャンネルから切断したなら。
+            self.bot.dispatch("voice_leave", member, before, after)
 
 
 def setup(bot):

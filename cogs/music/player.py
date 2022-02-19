@@ -45,6 +45,7 @@ class Player:
         self._volume, self._skipped = 1.0, False
         self._stopped = Event()
         self._stopped.set()
+        self._closing = False
 
     def print(self, *args, **kwargs):
         "デバッグ用とかっこつけるためのprintです。"
@@ -218,6 +219,7 @@ class Player:
         "お片付けをして切断をします。"
         self._assert_vc()
         self.print("Disconnecting...")
+        self._closing = True
 
         # キューが二個以上あるならキューを一個以外全部消す。
         if len(self.queues) > 1:

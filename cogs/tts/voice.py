@@ -74,5 +74,10 @@ class Voice:
         "お片付けが済んでいるかどうかです。"
         return self.path is None
 
+    def __del__(self):
+        if not self.is_closed(): self.cog.bot.loop.create_task(
+            self.close(), name=f"{self}: Closing..."
+        )
+
     def __str__(self) -> str: 
         return f"<Voice author={self.message.author} path={self.path}>"

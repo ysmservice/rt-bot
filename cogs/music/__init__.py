@@ -181,6 +181,10 @@ class MusicCog(commands.Cog, name="Music"):
         # 曲を再生するための関数です。playコマンドの実装であり再呼び出しをする際の都合上別に分けています。
         assert ctx.guild is not None, "サーバーでなければ実行できません。"
 
+        # 接続しているはずなのに接続していない場合、接続していないことにする。
+        if (ctx.guild.id in self.now
+            and ctx.guild.voice_client is None):
+            del self.now[ctx.guild.id]
         # 接続していない場合は接続してPlayerを準備する。
         if ctx.guild.id not in self.now:
             self.now[ctx.guild.id] = Player(
@@ -721,6 +725,17 @@ class MusicCog(commands.Cog, name="Music"):
             await self.now[voice_client.guild.id].disconnect(
                 {"ja": "一人ぼっちになったので切断しました。",
                  "en": "I was alone, so I disconnected."}
+            )
+
+    @commands.Cog.listener()
+    async def on_voice_leave(self, member: discord.Member, _, __):
+        if member.id == self.bot.user.id and member.guild.id in self.now \
+                and not self.now[member.guild.id]._closing:
+            await self.now[member.guild.id].disconnect(
+                {
+                    "ja": "ｷｬｯ、誰かにVCから蹴られたかバグが発生しました。",
+                    "en": "Ah, someone kicked me out of the VC or there was a bug."
+                }
             )
 
 

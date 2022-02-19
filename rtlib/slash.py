@@ -311,6 +311,10 @@ class Context:
                 # `discord.InteractionResponse.send_message`にない引数の値は消しておく。
                 del kwargs[key]
 
+    async def trigger_typing(self):
+        await self.interaction.response.defer()
+        self.reply_noresponse_edit = True
+
     async def reply(
         self, *args, reply_edit: bool = False,
         reply_noresponse_edit: bool = False, **kwargs

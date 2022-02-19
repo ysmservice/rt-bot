@@ -300,11 +300,12 @@ class ThreadManager(commands.Cog, DataManager):
                 if message.channel.slowmode_delay < 10:
                     # もしスローモードが設定されていないなら十秒にする。
                     await message.channel.edit(slowmode_delay=10)
+                content = message.clean_content
 
                 await message.channel.create_thread(
                     name=(
-                        message.content[:message.content.find("\n")]
-                        if "\n" in message.content else message.content
+                        content[:content.find("\n")]
+                        if "\n" in content else content
                     ),
                     message=message
                 )

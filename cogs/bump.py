@@ -298,7 +298,7 @@ class Bump(commands.Cog, DataManager):
         await sleep(seconds)
         try:
             message = await message.channel.fetch_message(message.id)
-        except discord.NotFOund:
+        except discord.NotFound:
             ...
         else:
             await self.on_message(message, True)

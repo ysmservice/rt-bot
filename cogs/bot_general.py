@@ -58,13 +58,8 @@ THANKYOU_TEMPLATE = cleandoc(
     **RT 情報**
     公式ウェブサイト：https://rt-bot.com
     サポートサーバー：https://discord.com/invite/ugMGw5w
-    チュートリアル　：https://rt-team.github.io/notes/tutorial
+    チュートリアル　：https://rt-team.github.io/ja/notes/tutorial
     プリフィックス　：`rt!`, `Rt!`, `RT!`, `rt.`, `Rt.`, `RT.`, `りつ！`, `りつ.`
-
-    **RT 備考**
-    全てのコマンドをスラッシュから実行することが可能です。
-    詳細は以下を見てください。
-    https://rt-team.github.io/notes/slash_table
 
     **RT 利用規約**
     RTを利用した場合以下の利用規約に同意したことになります。
@@ -72,8 +67,36 @@ THANKYOU_TEMPLATE = cleandoc(
 
     **RT プライバシーポリシー**
     RTのプライバシーポリシーは以下から閲覧可能です。
-    https://rt-bot.com/privacy.html"""
+    https://rt-bot.com/privacy.html
+
+    **If you do not understand Japanese**
+    You can check what is written above in English by pressing the button at the bottom."""
 )
+class EnglishThxTemplateView(discord.ui.View):
+    @discord.ui.button(label="See english version", custom_id="SeeEnglishVersionOfThx")
+    async def sev(self, _, interaction: discord.Interaction):
+        await interaction.response.send_message(
+            cleandoc(
+                """Thank you for inviting RT.
+                If you have any bugs or requests, please let us know on the official support server via the website.
+                You can also use `rt!lang en` to set the language to English.
+                (If you want to set it for the whole server, run `rt!lang en server`.)
+
+                **RT Info**.
+                Official website: https://rt-bot.com
+                Support server: https://discord.com/invite/ugMGw5w
+                Tutorial: https://rt-team.github.io/en/notes/tutorial
+                Prefixes: `rt!`, `Rt!`, `RT!`, `rt.`, `Rt.`, `RT.`, `りつ！`, `りつ.`
+
+                **RT Terms of Service**.
+                By using RT, you agree to the following terms of use.
+                https://rt-bot.com/terms.html
+
+                **RT Privacy Policy**
+                RT's privacy policy can be viewed at
+                https://rt-bot.com/privacy.html"""
+            )
+        )
 
 
 class BotGeneral(commands.Cog):
@@ -85,6 +108,11 @@ class BotGeneral(commands.Cog):
 
     def __init__(self, bot: RT):
         self.bot, self.rt = bot, bot.data
+
+        if not hasattr(self, "thx_view"):
+            self.thx_view = EnglishThxTemplateView(timeout=None)
+            self.bot.add_view(self.thx_view)
+
         self.wslatency = "..."
         self.cache: defaultdict[int, dict[str, float]] = defaultdict(dict)
         self.remove_cache.start()
@@ -413,7 +441,7 @@ class BotGeneral(commands.Cog):
             else:
                 if tentative is None:
                     tentative = choice(guild.text_channels)
-            await tentative.send(THANKYOU_TEMPLATE)
+            await tentative.send(THANKYOU_TEMPLATE, view=self.thx_view)
 
 
 def setup(bot):

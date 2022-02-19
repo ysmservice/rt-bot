@@ -28,7 +28,7 @@ ENG2KANA_DATA_PATH = "cogs/tts/data/eng2kana.json"
 "英語からカタカナに変換されている辞書があるJSONファイルです。"
 AQUESTALK_DIRECTORY = "cogs/tts/lib/AquesTalk"
 "AquesTalkのプログラムが入っているフォルダです。"
-AQUESTALK_ALLOWED_CHARACTERS_CSV = "cogs/tts/data/aquestalk_allowed_characters.csv"
+ALLOWED_CHARACTERS_CSV = "cogs/tts/data/allowed_characters.csv"
 "AquesTalkで読み上げ可能な文字が入っているcsvファイルです。"
 OPENJTALK = "open_jtalk"
 "なんのコマンドでOpenJTalkを実行するかです。"
@@ -50,7 +50,101 @@ class VoiceTypes(Enum):
     gtts = 3
 
 
+with open(ALLOWED_CHARACTERS_CSV, "r") as f:
+    ALLOWED_CHARACTERS = tuple(f.read().split())
+    "AquesTalkで使える文字のタプル"
 Source = Union[discord.FFmpegOpusAudio, discord.FFmpegPCMAudio]
+
+# 英語とカタカナの辞書を読み込んでおく。
+eng2kanaData: dict[str, str] = {}
+if exists(ENG2KANA_DATA_PATH):
+    with open(ENG2KANA_DATA_PATH, "r") as f:
+        eng2kanaData.update(load(f))
+else:
+    # 存在しないなら空のものを作っておく。
+    with open(ENG2KANA_DATA_PATH, "w") as f:
+        f.write(r"{}")
+
+
+async def _dumps_eng2kana_data():
+    # eng2kanaのデータを保存します。
+    async with aioopen(ENG2KANA_DATA_PATH, "w") as f:
+        await f.write(dumps(eng2kanaData, indent=2, ensure_ascii=False))
+
+
+HEADERS = {'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:47.0) Gecko/20100101 Firefox/47.0'}
+"英語をカタカナに変換するのに使うウェブサイトへアクセスするのに使うヘッダー"
+session, loop = None, None
+async def eng2kana(text: str) -> str:
+    "渡された文字列にある英語をかなにします。"
+    global session, loop
+    if session is None:
+        session = ClientSession(
+            loop=(loop := get_running_loop()), raise_for_status=True
+        )
+
+    text = text.replace("\n", "、").lower()
+
+    # 英単語をカタカナにする。
+    words = findall("[a-zA-Z]+", text)
+    for word in words:
+        # 既にある英語辞書から英単語を検索する。
+        result = eng2kanaData.get(word)
+
+        if result is None:
+            # もしまだない英単語の場合は読み方の取得を行う。
+            async with session.get(
+                f"https://www.sljfaq.org/cgi/e2k_ja.cgi?word={word.replace(' ', '+')}", headers=HEADERS
+            ) as r:
+                eng2kanaData[word] = BeautifulSoup(await r.text(), "lxml") \
+                    .find(class_='katakana-string').string.replace('\n', '')
+            result = eng2kanaData[word]
+
+            # 同期しておく。
+            loop.create_task(_dumps_eng2kana_data(), name="TTS: Sync eng2kana data")
+
+        text = text.replace(word, result)
+
+    return text
+
+
+@executor_function
+def aiog2p(*args, **kwargs):
+    "`run_in_executor_function`を使って非同期に実行できるようにした`pyopenjtalk.g2p`です。"
+    return g2p(*args, **kwargs)
+
+
+NO_JOINED_TWICE_CHARS = (
+    "ー", "、", "。", "っ", "ゃ", "ゅ", "ょ",
+    "ッ", "ャ", "ュ", "ョ"
+)
+REPLACES = (
+    ("（", "("), ("）", ")"), ("＜", ""), ("＞", ""), ("？", "?")
+)
+async def adjust_text(text: str, gtts: bool = False) -> str:
+    "日本語の文章をちょうどよく調整します。"
+    if len(text) > 40:
+        text = text[:41] + " いかしょうりゃく"
+
+    for before, after in REPLACES:
+        text = text.replace(before, after)
+    # 二回連続の「っ」などを一つにする。
+    for char in NO_JOINED_TWICE_CHARS:
+        text = sub(f"{char}+", char, text)
+    # 連続するwは一つにする。にする。
+    text = sub("w{2,}", "わらわら", text)
+    # 日本語の一部文字列を最適な文字列にする。
+    text = text.replace("()", "かっこしっしょう") \
+        .replace("(笑)", "かっこわらい").replace("(", "かっこ、") \
+        .replace(")", "、かっことじ")
+
+    if not gtts:
+        # 読めない文字は消す。
+        text = await aiog2p(text, kana=True)
+        text = "".join(char for char in text if char in ALLOWED_CHARACTERS)
+
+    # 英語をかなにする。
+    return await eng2kana(text)
 
 
 class Agent:
@@ -63,9 +157,11 @@ class Agent:
         self.type, self.name, self.agent, self.details = type_, name, agent, details
         self.emoji = emoji
 
-    async def synthe(self, text: str, path: str) -> Source:
+    async def synthe(self, text: str, path: str) -> Optional[Source]:
         "音声合成を行います。"
-        return await globals()[self.type.name](text, path, self.agent)
+        text = await adjust_text(text)
+        if text:
+            return await globals()[self.type.name](text, path, self.agent)
 
     @property
     def code(self) -> str:
@@ -104,79 +200,6 @@ def _synthe(log_name: str, commands: str, text: str):
             raise SyntheError(f"{log_name}: 音声合成に失敗しました。ERR:{stderr_}")
 
 
-# 英語とカタカナの辞書を読み込んでおく。
-eng2kana: dict[str, str] = {}
-if exists(ENG2KANA_DATA_PATH):
-    with open(ENG2KANA_DATA_PATH, "r") as f:
-        eng2kana.update(load(f))
-else:
-    # 存在しないなら空のものを作っておく。
-    with open(ENG2KANA_DATA_PATH, "w") as f:
-        f.write(r"{}")
-
-
-async def _dumps_eng2kana_data():
-    # eng2kanaのデータを保存します。
-    async with aioopen(ENG2KANA_DATA_PATH, "w") as f:
-        await f.write(dumps(eng2kana, indent=2, ensure_ascii=False))
-
-
-HEADERS = {'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:47.0) Gecko/20100101 Firefox/47.0'}
-"英語をカタカナに変換するのに使うウェブサイトへアクセスするのに使うヘッダー"
-session = None
-async def eng2kana(text: str) -> str:
-    "渡された文字列にある英語をかなにします。"
-    global session
-    if session is None:
-        session = ClientSession(
-            loop=get_running_loop(), raise_for_status=True
-        )
-
-    text = text.replace("\n", "、").lower()
-
-    # 英単語をカタカナにする。
-    words = findall("[a-zA-Z]+", text)
-    for word in words:
-        # 既にある英語辞書から英単語を検索する。
-        result = eng2kana.get(word)
-
-        if result is None:
-            # もしまだない英単語の場合は読み方の取得を行う。
-            async with session.get(
-                f"https://www.sljfaq.org/cgi/e2k_ja.cgi?word={result.replace(' ', '+')}", headers=HEADERS
-            ) as r:
-                eng2kana[word] = BeautifulSoup(await r.text(), "lxml") \
-                    .find(class_='katakana-string').string.replace('\n', '')
-            result = eng2kana[word]
-
-            # 同期しておく。
-            session.loop.create_task(_dumps_eng2kana_data(), name="TTS: Sync eng2kana data")
-
-        text = text.replace(word, result)
-
-    return text
-
-
-NO_JOINED_TWICE_CHARS = (
-    "ー", "、", "。", "っ", "ゃ", "ゅ", "ょ",
-    "ッ", "ャ", "ュ", "ョ"
-)
-async def adjust_text(text: str) -> str:
-    "日本語の文章をちょうどよく調整します。"
-    if len(text) > 40:
-        text = text[:41] + " いかしょうりゃく"
-    # 二回連続の「っ」などを一つにする。
-    for char in NO_JOINED_TWICE_CHARS:
-        text = sub(f"{char}+", char, text)
-    # 連続するwは一つにする。にする。
-    text = sub("w{2,}", "わらわら", text)
-    # 日本語の一部文字列を最適な文字列にする。
-    text = text.replace("()", "かっこしっしょう")
-    text = text.replace("(笑)", "かっこわらい")
-
-    return await eng2kana(text)
-
-
 def prepare_source(path: str, volume: float = 5.5) -> Source:
     "Sourceを作ります。"
     return discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(
@@ -187,27 +210,13 @@ def prepare_source(path: str, volume: float = 5.5) -> Source:
 
 
 #   AquesTalk
-with open(AQUESTALK_ALLOWED_CHARACTERS_CSV, "r") as f:
-    AQUESTALK_ALLOWED_CHARACTERS = f.read().split()
-    "AquesTalkで使える文字のリスト"
 AQUESTALK_REPLACE_CHARACTERS = {
     "ぁ": "あ", "ぃ": "い", "ぅ": "う", "ぇ": "え", "ぉ": "お",
     "ァ": "あ", "ィ": "い", "ゥ": "う", "ェ": "え", "ォ": "お"
 }
 "AquesTalkで読めない文字の置き換えに使う辞書"
-
-
-@executor_function
-def aiog2p(*args, **kwargs):
-    "`run_in_executor_function`を使って非同期に実行できるようにした`pyopenjtalk.g2p`です。"
-    return g2p(*args, **kwargs)
-
-
 async def aquestalk(text: str, path: str, agent: Union[Literal["f1", "f2"], str]) -> Source:
     "AquesTalkで音声合成をします。"
-    # 英語をかなに変換して残った感じ等もかなにする。
-    text = await aiog2p(text, kana=True)
-
     # AquesTalk用に文字列を調整する。
     for char in AQUESTALK_REPLACE_CHARACTERS:
         text = text.replace(char, AQUESTALK_REPLACE_CHARACTERS[char])
@@ -221,9 +230,6 @@ async def aquestalk(text: str, path: str, agent: Union[Literal["f1", "f2"], str]
         elif first:
             first = False
         new_text += char
-
-    # 読めない文字は消す。
-    text = "".join(char for char in new_text if char in AQUESTALK_ALLOWED_CHARACTERS)
 
     # 音声合成をする。
     await _synthe(
