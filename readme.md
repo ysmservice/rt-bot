@@ -1,36 +1,35 @@
 [![Discord Bots](https://top.gg/api/widget/status/716496407212589087.svg)](https://top.gg/bot/716496407212589087) [![Discord Bots](https://top.gg/api/widget/servers/716496407212589087.svg)](https://top.gg/bot/716496407212589087) ![Discord](https://img.shields.io/discord/718641964672876614?label=support&logo=discord)
 # RT Bot
-DiscordのBotのRTのBotです。  
-RTというのはこのBotだけで済むようなBotを目指す多機能で便利なBotです。  
-DiscordのBotアカウントであるRTに接続してRTのサービスを開始します。  
-ウェブ認証などのために`rt-backend`とWebSocketで通信も行います。  
-RTについて知らない人は[ここ](https://rt-bot.com)を見てみましょう。
+This is the RT Bot of Discord's Bot.  
+RT is a feature-rich bot with features that most bots have, plus more.　　
+It also has features that other bots don't have, such as a music player and TTS.  
+Connect to RT, Discord's Bot account, to start RT's service.  
+It also communicates with `rt-backend` via WebSocket for web authentication and so on.  
+If you don't know about RT, have a look at [here](https://rt-bot.com).
 
 ## LICENSE
-`BSD 4-Clause License` (`LICENSE`ファイルに詳細があります。)
+`BSD 4-Clause License` (The `LICENSE` file has more details.)
 
-## Contributing
-`contributing.md`をご覧ください。
+## CONTRIBUTION
+See `contributing.md`.
 
-## Installation
-### 依存性
-必要なものです。
+## Installation.
+## Dependencies.
+Required.
 
-* Python3.8以上
-* MySQL または MariaDB
-* `requirements.txt`にあるもの全て。
-  注意：`jishaku`をインストールすると依存しているdiscord.pyがインストールされます。
-  ですがRTはnextcordを使っているので、jishakuをインストールした後にdiscord.pyを消してからnextcordをインストールするのを推奨します。
-* 認証等のバックエンドを必要とする機能を使う場合は`rt-backend`の実行
-### 起動手順
-1. 必要なものを`pip install -r requirements.txt`でインストールをします。
-2. 必要なTOKENなどを`auth.template.json`を参考に`auth.json`に書き込む。
-3. `rtlib`に`rt-module`リポジトリを置いてフォルダの名前を`rt_module`にする。
-4. `rt-backend`リポジトリにあるプログラムを動かす。
-   (これはオプションで認証等のバックエンドを必要とするものを動かしたい場合は動かす必要があります。)
-5. `python3 main.py test`でテストを実行する。
-   (この際TOKENは`auth.json`の`test`のキーにあるものが使用されます。)
+* Python 3.10
+* MySQL or MariaDB.
+* Everything in `requirements.txt`.
+* Run `rt-backend` if you want to use functions that require a backend such as authentication.
+### Startup procedure: 1.
+1. install required items with `pip install -r requirements.txt` 2.
+2. write necessary TOKEN etc. to `auth.json` referring to `auth.template.json`. 3.
+Put the `rt-module` repository in `rtlib` and name the folder `rt_module`. 4.
+4. run the program in the `rt-backend` repository.
+   (This is optional and you need to do it if you want to run something that requires a backend such as authentication. 5.)
+Run the tests with `python3 main.py test`.
+   (In this case, TOKEN will be the one in the `test` key of `auth.json`.)
 
-※ もし読み上げを動かしたいのなら`cogs/tts`にある`readme.md`を読んでください。
-### 本番の実行
-起動コマンドは`sudo -E python3 main.py production`で`auth.json`のTOKENで`production`のTOKENが必要となります。
+(In this case, TOKEN is the one in the key of `test` in `auth.json`.) * Read `readme.md` in `cogs/tts` if you want to run the readout.
+### Run production.
+The startup command is `sudo -E python3 main.py production` and you need `auth.json` TOKEN for `production`.
