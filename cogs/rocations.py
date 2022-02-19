@@ -27,6 +27,7 @@ class Server(TypedDict):
     invite: str
     nices: list[Nice]
     raised: float
+    name: str
 
 
 class RocationsData(Table):
@@ -65,21 +66,32 @@ class Rocations(commands.Cog):
         self._sorted_cache: list[Servers] = []
 
         self.bot.rtc.set_event(self.get_rocations)
+        self.bot.rtc.set_event(self.get_rocation)
         self._process_cache.start()
 
     @tasks.loop(seconds=10)
     async def _process_cache(self):
         # キャッシュを処理します。
         # 十個ずつRaisedされた順でサーバー一覧のキャッシュを作っていく。
-        i, now = 0, OrderedDict()
+        i, now, count = 0, OrderedDict(), 0
         for guild_id, data in sorted(
             list(self.data.to_dict().items()), key=lambda x: x[1].get("raised", 0.0)
         ):
-            i += 1
-            now[guild_id] = data
-            if i == SIZE_PER_INDEX:
-                self._sorted_cache.insert(0, now)
-                now, i = OrderedDict(), 0
+            if "invite" in data and data.get("description"):
+                now[guild_id] = data
+                if guild := self.bot.get_guild(guild_id):
+                    now[guild_id]["name"] = guild.name
+                else:
+                    del now[guild_id]
+                    del self.data[guild_id]
+                    continue
+                i += 1
+                if i == SIZE_PER_INDEX:
+                    self._sorted_cache.insert(0, now)
+                    now, i = OrderedDict(), 0
+                count += 1
+                if count == 50:
+                    break
         if i != SIZE_PER_INDEX:
             self._sorted_cache.insert(0, now)
             now = OrderedDict()
@@ -97,7 +109,7 @@ class Rocations(commands.Cog):
         try: return self._sorted_cache[page]
         except KeyError: ...
 
-    @commands.group()
+    @commands.group(aliases=("rocal", "サーバー掲示板"))
     @commands.cooldown(1, 5, commands.BucketType.guild)
     async def rocations(self, ctx: UnionContext):
         if not ctx.invoked_subcommand:
