@@ -5,7 +5,8 @@ RT is a feature-rich bot with features that most bots have, plus more.　　
 It also has features that other bots don't have, such as a music player and TTS.  
 Connect to RT, Discord's Bot account, to start RT's service.  
 It also communicates with `rt-backend` via WebSocket for web authentication and so on.  
-If you don't know about RT, have a look at [here](https://rt-bot.com).
+If you don't know about RT, have a look at [here](https://rt-bot.com).  
+(日本語版のreadmeは[こちら](https://github.com/RT-Team/rt-bot/blob/main/readme.ja.md))
 
 ## LICENSE
 `BSD 4-Clause License` (The `LICENSE` file has more details.)
