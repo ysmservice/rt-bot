@@ -374,12 +374,12 @@ class Level(commands.Cog):
 
     @notification.command("global", aliases=("g", "グローバル"))
     async def nof_global(self, ctx: commands.Context, onoff: bool):
-        self.data.l[ctx.guild.id].nof = onoff
+        self.data.g[ctx.guild.id].nof = onoff
 
     @notification.command("server", aliases=("l", "local", "サーバー"))
     @commands.has_guild_permissions(administrator=True)
     async def nof_local(self, ctx: commands.Context, onoff: bool):
-        self.data.g[ctx.guild.id].nof = onoff
+        self.data.l[ctx.guild.id].nof = onoff
 
     def calc(self, exp: int, level: int) -> bool:
         "レベルの計算を行います。"
@@ -420,7 +420,7 @@ class Level(commands.Cog):
         "レベルアップ時の処理を行う。"
         # 通知を行う。
         if (self.data.l[message.guild.id].get("nof", False)
-                and self.data.g[message.author.id].get("nof", False)):
+                or self.data.g[message.author.id].get("nof", False)):
             await message.add_reaction(self.EMOJIS[mode])
         # ローカルならレベル報酬を行う。
         if mode == "l":
