@@ -1,5 +1,7 @@
 # RT Dashboard - Setting
 
+from __future__ import annotations
+
 from typing import Union, Optional, Literal, overload, get_origin, get_args
 
 from asyncio import Event, wait_for, TimeoutError as AioTimeoutError
