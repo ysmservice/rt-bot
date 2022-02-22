@@ -57,6 +57,8 @@ bot._load = False
 bot.load_extension("cogs._first")
 # スラッシュマネージャーを設定する。
 bot.load_extension("rtlib.slash")
+# onamiを読み込む。
+bot.load_extension("onami")
 
 
 @bot.listen()
@@ -67,7 +69,6 @@ async def on_ready():
 
     # 拡張を読み込む。
     setup(bot)
-    bot.load_extension("jishaku")
     bot.load_extension("cogs._oldrole")
     for name in listdir("cogs"):
         if not name.startswith(("_", ".")):

@@ -335,12 +335,12 @@ class Bump(commands.Cog, DataManager):
 
                 # bump/up実行者を取得して回数を一上げる。
                 try:
-                    user_id = int(
-                        desc[
-                            2:
-                            desc.find("," if data["mode"] == "bump" else "\n") - 1
-                        ]
-                    )
+                    user_id = desc[
+                        2:desc.find("," if data["mode"] == "bump" else "\n") - 1
+                    ]
+                    if user_id.startswith("!"):
+                        user_id = user_id[1:]
+                    user_id = int(uesr_id)
                 except ValueError:
                     if data["mode"] != "bump":
                         return

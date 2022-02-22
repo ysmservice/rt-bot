@@ -158,12 +158,15 @@ class Help(commands.Cog):
             # もしカテゴリー一覧を表示すればいいだけなら。
             url = "http://0.0.0.0" if self.bot.test else "https://rt-bot.com/help.html"
             embed = discord.Embed(
-                title="Help - カテゴリー選択",
+                title={
+                    "ja": "Help - カテゴリー選択", "en": "Help - Category Select"
+                },
                 description={
                     "ja": f"カテゴリーを選択するとそのカテゴリーにあるコマンドが表示されます。\nまたこちらからも見れます：{url}" \
-                        "\nヘルプの見方は[こちら](https://rt-team.github.io/notes/help)を見るとヘルプをよく理解できるようになれるかもしれません。" \
+                        "\nヘルプの見方は[こちら](https://rt-team.github.io/ja/notes/help)を見るとヘルプをよく理解できるようになれるかもしれません。" \
                         "それとスラッシュコマンドは少し特殊なので[こちら](https://rt-team.github.io/notes/slash_table)を確認してください。",
-                    "en": f"Selecting a category will show you the commands in that category. \nYou can also see them here: {url}"
+                    "en": f"Selecting a category will show you the commands in that category. \nYou can also see them here: {url}\n" \
+                        "You may be able to understand the help better by looking at [here](https://rt-team.github.io/en/notes/help)."
                 }, color=self.bot.colors["normal"]
             )
             view = self.make_view(

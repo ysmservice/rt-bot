@@ -151,19 +151,21 @@ class GlobalBan(commands.Cog, DataManager):
         !lang en
         --------
         Show you gban list."""
+        await ctx.trigger_typing()
         embeds = []
 
         for i, row in enumerate(await self.getall()):
             if row:
-                user = await self.bot.fetch_user(row[0])
-                if user:
-                    embeds.append(
-                        discord.Embed(
-                            title=f"{i} {user.name}",
-                            description=f"ID:{user.id}\n{row[1]}",
-                            color=self.bot.colors["normal"]
-                        )
+                user = self.bot.get_user(row[0])
+                embeds.append(
+                    discord.Embed(
+                        title=f"{i} {getattr(user, 'name', 'Not Found...')}",
+                        description=f"ID: `{row[0]}`\n{row[1]}",
+                        color=self.bot.colors["normal"]
                     )
+                )
+                if user is None:
+                    embeds[-1].set_footer(text="このユーザーの名前を知りたい場合はuserinfoコマンドを使用してください。")
 
         if embeds:
             await ctx.reply(embed=embeds[0], view=EmbedPage(data=embeds))
