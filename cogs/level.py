@@ -164,7 +164,7 @@ class Level(commands.Cog):
         if (mode == "server" and (
             data := self.data.l[ctx.guild.id].get("data")
         ) is not None) or (data := {
-            key: value.get("level", 0)
+            key: value.get("level", dict(level=0, exp=0))
             for key, value in self.data.g.to_dict().items()
         }):
             fields, embeds = [], []
