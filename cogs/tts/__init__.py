@@ -147,7 +147,6 @@ class TTSCog(commands.Cog, name="TTS"):
             await ctx.reply({"ja": "接続しました。", "en": "Connected!"})
 
     @tts.command(aliases=("l", "さようなら"))
-    @check
     async def leave(self, ctx: UnionContext):
         """!lang ja
         --------
@@ -164,7 +163,11 @@ class TTSCog(commands.Cog, name="TTS"):
         Aliases
         -------
         l"""
-        self.clean(self.now[ctx.guild.id])
+        if ctx.guild.id in self.now:
+            self.clean(self.now[ctx.guild.id])
+        else:
+            try: await ctx.guild.voice_client.disconnect()
+            except Exception: ...
         await ctx.reply("Bye!")
 
     @tts.command(aliases=("v", "声", "agent"))
