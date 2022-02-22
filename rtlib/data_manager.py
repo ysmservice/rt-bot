@@ -57,8 +57,9 @@ class Table:
     __allocation__: Optional[str] = None
     __key__: Optional[Key] = None
 
-    def __init__(self, bot: RT, heritance: bool = False):
+    def __init__(self, bot: RT, immediately_sync: bool = False, heritance: bool = False):
         assert self.__allocation__ is not None, "割り振りを設定してください。"
+        self.immediately_sync = immediately_sync
         self.cog: DataManager = bot.cogs["DataManager"]
         self.bot = bot
 
@@ -86,6 +87,9 @@ class Table:
         "このデータにある辞書を返します。この関数が返すものに値は書き込まないでください。"
         return self.cog.data[self.name] if self.__key__ is None \
             else self.cog.data[self.name][self.__key__]
+
+    def sync(self):
+        self.cog.sync(self.name)
 
     def _assert_key(self) -> Optional[NoReturn]:
         assert self.__key__ is not None, "キーが設定されていません。"
@@ -202,14 +206,20 @@ class DataManager(commands.Cog):
                     await self._update(cursor, table, key, data)
                     data.changed = False
 
-    def sync(self):
+    def sync(self, table: Optional[str] = None):
         "同期を行います。注意：キャッシュのデータが優先されます。"
-        if self.data:
-            self.print("Now syncing...")
-            for table, datas in list(self.data.items()):
+        if table is None:
+            if self.data[table]:
                 self.bot.loop.create_task(
-                    self._sync(table, datas), name=f"[{self.__cog_name__}] Sync: {table}"
+                    self._sync(table, self.data[table]), name=f"[{self.__cog_name__}] Sync: {table}"
                 )
+        else:
+            if self.data:
+                self.print("Now syncing...")
+                for table, datas in list(self.data.items()):
+                    self.bot.loop.create_task(
+                        self._sync(table, datas), name=f"[{self.__cog_name__}] Sync: {table}"
+                    )
 
     # @tasks.loop(seconds=10)
     @tasks.loop(minutes=10)
