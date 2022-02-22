@@ -65,7 +65,7 @@ class Level(commands.Cog):
             }
         }
     )
-    async def level(self, ctx: commands.Context):
+    async def level(self, ctx: commands.Context, user_name_id = None):
         """!lang ja
         --------
         レベル機能です。RTのいるサーバーで一定数しゃべるとレベルが上がります。
@@ -87,6 +87,8 @@ class Level(commands.Cog):
         Aliases
         -------
         lv"""
+        if user_name_id is None:
+            user_name_id = ctx.author.id
         if not ctx.invoked_subcommand:
             await ctx.reply(
                 embed=discord.Embed(
