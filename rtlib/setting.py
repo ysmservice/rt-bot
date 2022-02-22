@@ -17,6 +17,7 @@ from ujson import dumps
 
 from rtlib.rt_module.src.setting import CommandData, CommandRunData
 from rtlib import RT
+from rtutil import clean_content
 
 
 def Setting(*args, **kwargs):
@@ -93,6 +94,8 @@ class Context:
             if self.replied_content.footer:
                 embed += f"\n{self.replied_content.footer.text}"
             self.replied_content = embed
+        if self.guild is not None:
+            self.replied_content = clean_content(self.replied_content, self.guild)
         self.bot.print(
             "[SettingManager]", "[Reply]",
             f"Command: {self.command}, Author: {self.author}, Guild: {self.guild}, Channel: {self.channel}"
