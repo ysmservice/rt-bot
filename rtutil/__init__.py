@@ -54,3 +54,26 @@ async def get_webhook(
 ) -> Optional[discord.Webhook]:
     "ウェブフックを取得します。"
     return discord.utils.get(await channel.webhooks(), name=name)
+
+
+class FakeMessageForCleanContent:
+    def __init__(
+        self, guild: Optional[discord.Guild], content: str
+    ):
+        self.guild, self.content = guild, content
+        self.mentions = self._get("member", "")
+        self.role_mentions, self.channel_mentions = \
+            self._get("role"), self._get("channel")
+
+    def _get(self, get_mode, mentions_mode=None):
+        return [
+            getattr(self.guild, f"get_{get_mode}")(mention)
+            for mention in getattr(
+                self, f"raw_{f'{get_mode}_' if mentions_mode is None else mentions_mode}mentions"
+            )
+        ]
+for name in ("clean_content", "raw_mentions", "raw_role_mentions", "raw_channel_mentions"):
+    setattr(FakeMessageForCleanContent, name, getattr(discord.Message, name))
+def clean_content(content: str, guild: discord.Guild) -> str:
+    "渡された文字列を綺麗にします。"
+    return FakeMessageForCleanContent(guild, content).clean_content
