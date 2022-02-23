@@ -145,7 +145,7 @@ class Rocations(commands.Cog):
     @rocations.command()
     @check
     async def tags(self, ctx: UnionContext, *, tags: str):
-        assert (tags := tags.split("/")) <= 10, {"ja": "多すぎます。", "en": "I can't set it up that well."}
+        assert (tags := tags.split("/")) <= 7, {"ja": "多すぎます。", "en": "I can't set it up that well."}
         await self._update(
             "UPDATE <t> SET tags = %s WHERE GuildID = %s;", (tags, ctx.guild.id)
         )
