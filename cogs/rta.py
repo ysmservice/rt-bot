@@ -136,7 +136,13 @@ class RTA(commands.Cog):
                 )
             )
         else:
-            await ctx.reply("設定を解除しました。")
+            await ctx.reply(
+                embed=discord.Embed(
+                    title="success",
+                    description=f"{channel.mention}のRTA通知を解除しました",
+                    color=self.bot.Colors.normal
+                )
+            )
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
