@@ -78,7 +78,7 @@ class Level(commands.Cog):
         user_id : int, optional
             対象のユーザーのIDです。  
             指定しなかった場合はコマンドを実行したユーザーとなります。  
-            RTのいるユーザーしかユーザー指定はできません。
+            RTのいるサーバーしかユーザー指定はできません。
 
         Aliases
         -------
