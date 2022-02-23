@@ -91,6 +91,13 @@ class Level(commands.Cog):
         The global level is common and allows you to know your position in the world.
         Local level can be managed on a server-by-server basis (e.g., when you reach a certain level, your position will be raised).
 
+        Parameters
+        ----------
+        user_id : int, optional
+            The ID of the target user.  
+            If it is not specified, it is the user where the command was executed.  
+            Only the user of the server where the RT is located can be specified as a server.
+
         Aliases
         -------
         lv"""
