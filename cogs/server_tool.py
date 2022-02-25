@@ -367,7 +367,7 @@ class ServerTool(commands.Cog):
 
         try:
             embed = discord.Embed(
-                title="抽選" if target is None \
+                title="抽選" if not ctx.message.embeds \
                     else f"{ctx.message.embeds[0].title} - 抽選",
                 description=", ".join(
                     member.mention

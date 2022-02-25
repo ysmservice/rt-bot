@@ -132,7 +132,7 @@ class Stamp(commands.Cog, DataManager):
                     )
 
             if embeds:
-                kwargs = {"view": EmbedPage(data=embeds), "embed": embeds.embeds[0]}
+                kwargs = {"view": EmbedPage(data=embeds), "embed": embeds[0]}
                 if p == 1:
                     del kwargs["view"]
             else:

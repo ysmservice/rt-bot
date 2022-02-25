@@ -48,7 +48,7 @@ INFO_GITHUB = """* [RT-Team](https://github.com/RT-Team)
 * [RT-Bot](https://github.com/RT-Team/rt-bot)
 * [RT-Backend](https://github.com/RT-Team/rt-backend)
 * [RT-Frontend](https://github.com/RT-Team/rt-frontend)"""
-INFO_CREDIT = "[ここをご覧ください。](https://rt-bot.com/credit)"
+INFO_CREDIT = "[ここをご覧ください。](https://rt-bot.com/credit.html)"
 
 THANKYOU_TEMPLATE = cleandoc(
     """RTの導入ありがとうございます。

@@ -340,7 +340,7 @@ class Bump(commands.Cog, DataManager):
                     ]
                     if user_id.startswith("!"):
                         user_id = user_id[1:]
-                    user_id = int(uesr_id)
+                    user_id = int(user_id)
                 except ValueError:
                     if data["mode"] != "bump":
                         return
