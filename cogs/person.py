@@ -228,11 +228,14 @@ class Person(commands.Cog):
             user_id = int(user_name_id)
             user = None
         except ValueError:
-            for guild in self.bot.guilds:
-                user = discord.utils.get(guild.members, name=user_name_id)
-                if user:
-                    break
             member = discord.utils.get(ctx.guild.members, name=user_name_id)
+            if not member:
+                for guild in self.bot.guilds:
+                    user = discord.utils.get(guild.members, name=user_name_id)
+                    if user:
+                        break
+            else:
+                user = member
         else:
             user = await self.bot.fetch_user(user_id)
             member = ctx.guild.get_member(user_id)
@@ -261,7 +264,10 @@ class Person(commands.Cog):
             ).strftime('%Y-%m-%d %H:%M:%S')
         )
         embed.add_field(
-            name="Avatar URL",
+            name={
+                "ja": "アバターURL",
+                "en": "Avatar URL"
+            },
             value=embed.thumbnail.url.replace("?size=1024", "") \
                 if embed.thumbnail.url else "ありません。",
             inline=False
@@ -273,7 +279,7 @@ class Person(commands.Cog):
             embed = discord.Embed(
                 title={
                     "ja": "このサーバーでの情報",
-                    "en": "..."
+                    "en": "Information in this server"
                 },
                 description=(
                     "@everyone, "+ ", ".join(
@@ -284,19 +290,19 @@ class Person(commands.Cog):
             )
             embed.add_field(
                 name={"ja": "表示名",
-                        "en": "..."},
+                      "en": "Display name"},
                 value=member.display_name
             )
             embed.add_field(
                 name={"ja": "参加日時",
-                        "en": "..."},
+                      "en": "Member joined at"},
                 value=(member.joined_at + timedelta(hours=9)
                 ).strftime('%Y-%m-%d %H:%M:%S')
             )
             if member.voice:
                 embed.add_field(
                     name={"ja": "接続中のボイスチャンネル",
-                        "en": "..."},
+                          "en": "Connecting voice channel"},
                     value=f"<#{member.voice.channel.id}>"
                 )
             embeds.append(embed)
