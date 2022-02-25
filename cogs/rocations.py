@@ -12,23 +12,18 @@ from discord.ext import commands
 import discord
 
 from aiomysql import Pool, Cursor
+from ujson import dumps
 
-from rtlib.slash import UnionContext
+from rtlib.slash import Context, UnionContext
 from rtlib import RT
 
 
 # データ型等
-class Nice(TypedDict):
-    user_id: int
-    user_name: str
-    message: Optional[str]
-
-
 class Server(TypedDict):
     description: str
     tags: list[str]
     invite: str
-    nices: list[Nice]
+    nices: dict[str, Optional[str]]
     raised: float
     name: str
     language: str
@@ -48,6 +43,7 @@ def check(function: CheckFT) -> CheckFT:
         try:
             return await function(self, ctx, *args, **kwargs)
         except Exception as e:
+            if ctx.bot.test: raise
             await ctx.reply(
                 {"ja": f"エラーが発生しました。\nサーバーを登録をしていますか？\nErrorCode: `{e}`",
                  "en": f"An error has occurred.\nAre you registering a server? \nErrorCode: `{e}`."}
@@ -75,7 +71,7 @@ class Rocations(commands.Cog):
                 await cursor.execute(
                     f"""CREATE TABLE IF NOT EXISTS {self.TABLE} (
                         GuildID BIGINT PRIMARY KEY NOT NULL, description TEXT, tags JSON,
-                        nices JSON, invite TEXT, raised FLOAT, language TEXT
+                        nices JSON, invite TEXT, raised BIGINT, language TEXT
                     );"""
                 )
 
@@ -83,7 +79,7 @@ class Rocations(commands.Cog):
     @commands.cooldown(1, 5, commands.BucketType.guild)
     async def rocations(self, ctx: UnionContext):
         if not ctx.invoked_subcommand:
-            await ctx.reply("使用方法が違います。")
+            await ctx.reply({"ja": "使用方法が違います。", "en": "It's wrong way to use this command."})
 
     async def _exists(self, cursor: Cursor, guild_id: int) -> bool:
         # 渡されたサーバーIDのRocationが存在するかどうかをチェックします。
@@ -118,11 +114,19 @@ class Rocations(commands.Cog):
                 else:
                     await cursor.execute(
                         f"INSERT INTO {self.TABLE} VALUES (%s, %s, %s, %s, %s, %s, %s);",
-                        (ctx.guild.id, description, "[]", "[]",
-                         await self._get_invite(ctx), time(),
+                        (ctx.guild.id, description, "[]", r"{}",
+                         await self._get_invite(ctx), int(time()),
                          self.bot.cogs["Language"].get(ctx.guild.id))
                     )
-                    await ctx.reply("Ok")
+                    await ctx.reply(embed=discord.Embed(
+                        title="Rocations", description={
+                            "ja": "公開しました。\nhttps://rt-bot.com/rocations?search=879992881664901130",
+                            "en": "Published!\nhttps://rt-bot.com/rocations?search=879992881664901130"
+                        }, color=self.bot.Colors.normal
+                    ).set_footer(text={
+                        "ja": "Tips: サーバーの表示順位は3時間55分06秒に一度`/raise`で上げられるよ。",
+                        "en": "Tips: You can use `/raise` to raise the server's display order once every 3 hours, 55 minutes, and 06 seconds."
+                    }))
 
     @rocations.command(aliases=("del", "rm", "remove", "削除"))
     @commands.cooldown(1, 30, commands.BucketType.guild)
@@ -145,9 +149,10 @@ class Rocations(commands.Cog):
     @rocations.command()
     @check
     async def tags(self, ctx: UnionContext, *, tags: str):
-        assert (tags := tags.split("/")) <= 7, {"ja": "多すぎます。", "en": "I can't set it up that well."}
+        assert len(tags := tags.split(",")) <= 7, {"ja": "多すぎます。", "en": "I can't set it up that well."}
+        assert all(len(tag) <= 25 for tag in tags), {"ja": "タグは25文字以内にしてください。", "en": "Tags should be no longer than 25 characters."}
         await self._update(
-            "UPDATE <t> SET tags = %s WHERE GuildID = %s;", (tags, ctx.guild.id)
+            "UPDATE <t> SET tags = %s WHERE GuildID = %s;", (dumps(tags), ctx.guild.id)
         )
         await ctx.reply("Ok")
 
@@ -176,6 +181,7 @@ class Rocations(commands.Cog):
     @commands.cooldown(1, 10, commands.BucketType.user)
     @check
     async def raise_(self, ctx: UnionContext):
+        await ctx.trigger_typing()
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cursor:
                 await cursor.execute(
@@ -186,7 +192,7 @@ class Rocations(commands.Cog):
                 if (elapsed := (now := time()) - raised) > RAISE_TIME:
                     await cursor.execute(
                         f"UPDATE {self.TABLE} SET raised = %s WHERE GuildID = %s;",
-                        (now, ctx.guild.id)
+                        (int(now), ctx.guild.id)
                     )
                     await ctx.reply({
                         "ja": "Raised! 表示順位をあげました。",
@@ -194,7 +200,7 @@ class Rocations(commands.Cog):
                     })
                 else:
                     await ctx.reply({
-                        "ja": f"まだRaiseできません！\n<t:{elapsed:=int(RAISE_TIME-elapsed)}:R>にRaiseができるようになります。",
+                        "ja": f"まだRaiseできません！\n<t:{(elapsed:=int(time()+(RAISE_TIME-elapsed)))}:R>にRaiseができるようになります。",
                         "en": f"Can't Raise yet!\nYou will be able to Raise when the time is <t:{elapsed}:R>."
                     })
 
@@ -203,6 +209,10 @@ class Rocations(commands.Cog):
     @check
     async def raise_alias(self, ctx: UnionContext):
         await self.raise_(ctx)
+
+    @discord.slash_command("raise", description="Rocationsでのサーバー表示順位を上げます。")
+    async def raise_slash(self, interaction: discord.Interaction):
+        await self.raise_(Context(self.bot, interaction, self.raise_alias, "rt!raise"))
 
 
 def setup(bot):
