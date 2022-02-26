@@ -325,7 +325,7 @@ class Captcha(commands.Cog, DataManager):
             )
         else:
             if ctx.guild.id in self.queue:
-                del self.queue[guild_id]
+                del self.queue[ctx.guild.id]
             await ctx.reply("Ok")
 
     @captcha.command("timeout", aliases=["タイムアウト", "t"])
