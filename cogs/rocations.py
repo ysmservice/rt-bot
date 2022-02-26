@@ -362,7 +362,6 @@ class Rocations(commands.Cog):
 
     @rocations.command("raise")
     @commands.cooldown(1, 10, commands.BucketType.user)
-    @check
     async def raise_(self, ctx: UnionContext):
         """!lang ja
         --------
@@ -400,7 +399,6 @@ class Rocations(commands.Cog):
 
     @commands.command("raise")
     @commands.cooldown(1, 10, commands.BucketType.user)
-    @check
     async def raise_alias(self, ctx: UnionContext):
         await self.raise_(ctx)
 
