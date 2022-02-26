@@ -12,7 +12,7 @@ from discord.ext import commands
 import discord
 
 from aiomysql import Pool, Cursor
-from ujson import dumps
+from ujson import loads, dumps
 
 from rtlib.slash import Context, UnionContext
 from rtlib import RT
@@ -64,6 +64,24 @@ class Rocations(commands.Cog):
         self.bot.loop.create_task(
             self._prepare_table(), name="Create Rocations table"
         )
+        self.bot.rtc.set_event(self.get_rocations)
+
+    async def get_rocations(self, row: int):
+        "渡されたデータベースの列のデータからRocationsを取得します。バックエンド用"
+        guild = self.bot.get_guild(row[0])
+        nices = loads(row[3])
+        reviews = []
+        for user_id, nice in filter(lambda x: x[1], nices.items()):
+            user = self.bot.get_user(int(user_id)) or \
+                {"name": "名無しの権兵衛", "avatar": ""}
+            if not isinstance(user, dict):
+                user = {"avatar": getattr(user.avatar, "url", ""), "name": user.name}
+            reviews.append({"user": user, "message": nice})
+        return {
+            "name": guild.name, "icon": getattr(guild.icon, "url", ""), "niceCount": len(nices),
+            "description": row[1], "tags": loads(row[2]), "reviews": reviews, "invite": row[4],
+            "raised": row[5]
+        }
 
     async def _prepare_table(self):
         # テーブルの準備をする。
