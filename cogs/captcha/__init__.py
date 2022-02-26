@@ -141,7 +141,9 @@ class Captcha(commands.Cog, DataManager):
         ] = defaultdict(dict)
         self.queue_remover.start()
         self.view = View(self, timeout=None)
-        self.bot.add_view(self.view)
+        if not getattr(self.bot, "_captcha_view", False):
+            self.bot._captcha_view = True
+            self.bot.add_view(self.view)
         self.captchas = Captchas(
             ImageCaptcha(self), WordCaptcha(self),
             WebCaptcha(self), ClickCaptcha(self)
