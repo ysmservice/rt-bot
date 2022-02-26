@@ -182,16 +182,10 @@ class BotGeneral(commands.Cog):
             value=f"{self._get_ping()}ms"
         )
         # Backendとの通信状況を調べる。
-        if self.bot.backend:
-            start = time()
-            async with self.bot.session.get(
-                f"{self.bot.get_url()}/api/ping"
-            ) as r:
-                if await r.text() == "pong":
-                    embed.add_field(
-                        name="Backend Connection Latency",
-                        value="%.1fms" % round((time() - start) * 1000, 1)
-                    )
+        embed.add_field(
+            name="Backend Connection Latency",
+            value="%.1fms" % self.bot.cogs["RTLife"].data["backendLatency"][-1]
+        )
         await ctx.reply(embed=embed)
 
     @executor_function
