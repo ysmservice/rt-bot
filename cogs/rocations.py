@@ -184,8 +184,8 @@ class Rocations(commands.Cog):
                             "en": f"Published!\nhttps://rt-bot.com/rocations?search={ctx.guild.id}"
                         }, color=self.bot.Colors.normal
                     ).set_footer(text={
-                        "ja": "Tips: サーバーの表示順位は3時間55分06秒に一度`/raise`で上げられるよ。",
-                        "en": "Tips: You can use `/raise` to raise the server's display order once every 3 hours, 55 minutes, and 06 seconds."
+                        "ja": "Tips: サーバーの表示順位は3時間55分06秒に一度`rt!raise`で上げられるよ。",
+                        "en": "Tips: You can use `rt!raise` to raise the server's display order once every 3 hours, 55 minutes, and 06 seconds."
                     }))
 
     @rocations.command(aliases=("del", "rm", "remove", "削除"))
