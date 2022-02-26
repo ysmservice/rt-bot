@@ -141,9 +141,7 @@ class Captcha(commands.Cog, DataManager):
         ] = defaultdict(dict)
         self.queue_remover.start()
         self.view = View(self, timeout=None)
-        if not getattr(self.bot, "_captcha_view", False):
-            self.bot._captcha_view = True
-            self.bot.add_view(self.view)
+        self.bot.add_view(self.view)
         self.captchas = Captchas(
             ImageCaptcha(self), WordCaptcha(self),
             WebCaptcha(self), ClickCaptcha(self)
@@ -162,6 +160,7 @@ class Captcha(commands.Cog, DataManager):
             "ja": "認証機能", "en": "Captcha"
         }, parent="ServerSafety"
     )
+    @commands.has_guild_permissions(manage_roles=True)
     async def captcha(self, ctx: commands.Context):
         """!lang ja
         --------
