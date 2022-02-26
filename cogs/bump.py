@@ -92,14 +92,9 @@ class Bump(commands.Cog, DataManager):
             "time": 3600
         },
         716496407212589087: {
-            "mode": "bump",
-            "description": ["表示順をアップしたよ", "Bump done", "Bumpeado", "Bump effectué"],
-            "time": 5
-        },
-        716496407212589087: {
-            "mode": "up",
-            "description": ["dissoku"],
-            "time": 5
+            "mode": "raise",
+            "description": ["Raised"],
+            "time": 14106
         }
     }
     BUMP_COLOR = 0x00a3af
@@ -182,7 +177,14 @@ class Bump(commands.Cog, DataManager):
         await self.write("up", ctx.guild.id, onoff, role)
         await ctx.reply("Ok", replace_language=False)
 
+    @commands.command(extras=get_extras("raise"))
+    @commands.has_guild_permissions(administrator=True)
+    async def raisenof(self, ctx, onoff: bool, *, role: discord.Role = None):
+        await self.write("raise", ctx.guild.id, onoff, role)
+        await ctx.reply("Ok", replace_language=False)
+
     up._callback.__doc__ = bump.callback.__doc__.replace("bump", "up").replace("Bump", "Up")
+    up._callback.__doc__ = bump.callback.__doc__.replace("bump", "raise").replace("Bump", "Raise")
 
     async def make_ranking(self, user_id: int, mode: str) -> discord.Embed:
         rows = await self.execute(
@@ -215,33 +217,6 @@ class Bump(commands.Cog, DataManager):
         del i, str_i
         return embed
 
-    @commands.command(
-        extras={
-            "headding": {
-                "ja": "Up ランキング",
-                "en": "Up ranking"
-            }, "parent": "Individual"
-        }, name="uppers", aliases=["ur", "uprank", "あっぷらんく"]
-    )
-    @commands.cooldown(1, 4, commands.BucketType.user)
-    async def up_ranking(self, ctx):
-        """!lang ja
-        --------
-        DissokuのUpのランキングです。
-
-        Aliases
-        -------
-        ur, uprank, あっぷらんく
-
-        !lang en
-        --------
-        Show you Dissoku Up ranking.
-
-        Aliases
-        -------
-        ur, uprank"""
-        await self.bump_ranking(ctx, mode="up")
-
     def cog_unload(self):
         self.notification.cancel()
 
@@ -250,6 +225,8 @@ class Bump(commands.Cog, DataManager):
             "SELECT * FROM bump WHERE Mode = %s",
             (mode,)
         )
+
+    REPLIES = {"bump": "!d bump", "up": "/dissoku up", "raise": "/raise"}
 
     @tasks.loop(seconds=10)
     async def notification(self):
@@ -279,8 +256,8 @@ class Bump(commands.Cog, DataManager):
                                 kwargs["embed"] = discord.Embed(
                                     title=f"Time to {mode}!",
                                     description=f"{mode}の時間です。\n" \
-                                        + ("`!d bump`" if mode == "bump" else "`/dissoku up`") \
-                                        + "でこのサーバーの表示順位を上げよう！",
+                                        f"`{self.REPLIES[mode]}`" \
+                                        "でこのサーバーの表示順位を上げよう！",
                                     color=self.bot.colors["normal"]
                                 )
                                 try:
@@ -313,13 +290,13 @@ class Bump(commands.Cog, DataManager):
             # もしDissokuなら数秒後に再取得してもう一度この関数on_messageを呼び出す。
             self.bot.loop.create_task(self.delay_on_message(5, message))
             return
-        if not message.guild or not data or not message.embeds:
+        if not message.guild or not data or (data["mode"] != "raise" and not message.embeds):
             return
 
-        desc = message.embeds[0].description
+        desc = message.content if data["mode"] == "raise" else message.embeds[0].description
         check = desc and any(
             word in desc for word in data["description"]
-        ) if data["mode"] == "bump" else (
+        ) if data["mode"] != "up" else (
             message.embeds[0].fields
             and "をアップしたよ" in message.embeds[0].fields[0].name
         )
@@ -333,21 +310,6 @@ class Bump(commands.Cog, DataManager):
                 new["channel"] = message.channel.id
                 await self.save(message.guild.id, data["mode"], new)
 
-                # bump/up実行者を取得して回数を一上げる。
-                try:
-                    user_id = desc[
-                        2:desc.find("," if data["mode"] == "bump" else "\n") - 1
-                    ]
-                    if user_id.startswith("!"):
-                        user_id = user_id[1:]
-                    user_id = int(user_id)
-                except ValueError:
-                    if data["mode"] != "bump":
-                        return
-                else:
-                    count = await self.load_ranking(user_id, data["mode"])
-                    await self.save_ranking(user_id, data["mode"], count + 1)
-
                 # 通知の設定をしたとメッセージを送る。
                 try:
                     await message.channel.send(
@@ -359,7 +321,7 @@ class Bump(commands.Cog, DataManager):
                         )
                     )
                 except discord.Forbidden:
-                    pass
+                    ...
 
 
 def setup(bot):

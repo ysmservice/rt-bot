@@ -38,6 +38,7 @@ CheckFT = TypeVar("CheckFT")
 def check(function: CheckFT) -> CheckFT:
     "宣伝が有効になっているか"
     @wraps(function)
+    @commands.has_guild_permissions(administrator=True)
     async def new(self: Rocations, ctx: UnionContext, *args, **kwargs):
         await ctx.trigger_typing()
         try:
@@ -75,9 +76,26 @@ class Rocations(commands.Cog):
                     );"""
                 )
 
-    @commands.group(aliases=("rocal", "サーバー掲示板"))
+    @commands.group(aliases=("rocal", "サーバー掲示板"), extras={
+        "headding": {"ja": "サーバー掲示板", "en": "Server BBS"}, "parent": "RT"
+    })
     @commands.cooldown(1, 5, commands.BucketType.guild)
     async def rocations(self, ctx: UnionContext):
+        """!lang ja
+        --------
+        RTのウェブサイトにある[Rocations](https://rt-bot.com/rocations)というサーバー掲示板にサーバーを載せたりするためのコマンドです。
+
+        Aliases
+        -------
+        rocal, サーバー掲示板
+
+        !lang en
+        --------
+        This command is used to put the server on the server bulletin board called [Rocations](https://rt-bot.com/rocations) on the RT website.
+
+        Aliases
+        -------
+        rocal"""
         if not ctx.invoked_subcommand:
             await ctx.reply({"ja": "使用方法が違います。", "en": "It's wrong way to use this command."})
 
@@ -102,7 +120,49 @@ class Rocations(commands.Cog):
 
     @rocations.command(aliases=("登録", "reg", "add"))
     @commands.cooldown(1, 30, commands.BucketType.guild)
+    @commands.has_guild_permissions(administrator=True)
     async def register(self, ctx: UnionContext, *, description):
+        """!lang ja
+        --------
+        Rocationsにサーバーを登録します。
+
+        Parameters
+        ----------
+        description : str
+            サーバーの説明文です。  
+            2000文字まで設定が可能で、マークダウンに対応しています。
+
+        Notes
+        -----
+        マークダウンの書き方については[こちら](https://qiita.com/Qiita/items/c686397e4a0f4f11683d)が参考になると思います。  
+        一部対応していない記法がありますがご了承ください。  
+        ですので画像を埋め込むことができます。  
+        (HTML埋め込みはできません)
+
+        Aliases
+        -------
+        add, reg, 登録
+
+        !lang en
+        --------
+        Registers a server with Rocations.
+
+        Parameters
+        ----------
+        description : str
+            The description of the server.  
+            Up to 2000 characters can be set, and markdown is supported.
+
+        Notes
+        -----
+        For more information on how to write markdown, please refer to [here](https://qiita.com/Qiita/items/c686397e4a0f4f11683d).  
+        Please note that there are some notations that are not supported.  
+        So you can embed picture to description.  
+        (HTML embedding is not supported).
+
+        Aliases
+        -------
+        add, reg"""
         await ctx.trigger_typing()
         self._assert_description(description)
         async with self.pool.acquire() as conn:
@@ -130,7 +190,23 @@ class Rocations(commands.Cog):
 
     @rocations.command(aliases=("del", "rm", "remove", "削除"))
     @commands.cooldown(1, 30, commands.BucketType.guild)
+    @commands.has_guild_permissions(administrator=True)
     async def delete(self, ctx: UnionContext):
+        """!lang ja
+        --------
+        サーバー掲示板からサーバーを削除します。
+
+        Aliases
+        -------
+        del, rm, remove, 削除
+
+        !lang en
+        --------
+        Delete server from Rocations.
+
+        Aliases
+        -------
+        del, rm, remove"""
         await ctx.trigger_typing()
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cursor:
@@ -146,9 +222,50 @@ class Rocations(commands.Cog):
             async with conn.cursor() as cursor:
                 await cursor.execute(query.replace("<t>", self.TABLE), args)
 
-    @rocations.command()
+    @rocations.command(aliases=("t", "タグ"))
     @check
     async def tags(self, ctx: UnionContext, *, tags: str):
+        """!lang ja
+        --------
+        サーバーにタグを設定します。
+
+        Parameters
+        ----------
+        tags : str
+            カンマ(`,`)で分けたタグです。
+
+        Notes
+        -----
+        タグは25文字以内で7個までタグを登録することができます。
+
+        Examples
+        --------
+        `rt!rocations tags game,Minecraft,Apex`
+
+        Aliases
+        -------
+        タグ, t
+
+        !lang en
+        --------
+        Sets a tag for the server.
+
+        Parameters
+        ----------
+        tags : str
+            The tags are separated by commas (`,`).
+
+        Notes
+        -----
+        You can register up to 7 tags with a maximum of 25 characters.
+
+        Aliases
+        -------
+        t
+
+        Examples
+        --------
+        `rt!rocations tags game,Minecraft,Apex`"""
         assert len(tags := tags.split(",")) <= 7, {"ja": "多すぎます。", "en": "I can't set it up that well."}
         assert all(len(tag) <= 25 for tag in tags), {"ja": "タグは25文字以内にしてください。", "en": "Tags should be no longer than 25 characters."}
         await self._update(
@@ -156,9 +273,35 @@ class Rocations(commands.Cog):
         )
         await ctx.reply("Ok")
 
-    @rocations.command()
+    @rocations.command(aliases=("desc", "説明"))
     @check
     async def description(self, ctx: UnionContext, *, description: str):
+        """!lang ja
+        --------
+        サーバーの説明を更新します。
+
+        Parameters
+        ----------
+        description : str
+            サーバーの説明です。  
+            マークダウンに対応しています。
+
+        Aliases
+        -------
+        desc, 説明
+
+        !lang en
+        --------
+        Setting description of server.
+
+        Parameters
+        ----------
+        description : str
+            Server's description
+
+        Aliases
+        -------
+        desc"""
         self._assert_description(description)
         await self._update(
             "UPDATE <t> SET description = %s WHERE GuildID = %s;", (
@@ -167,9 +310,27 @@ class Rocations(commands.Cog):
         )
         await ctx.reply("Ok")
 
-    @rocations.command()
+    @rocations.command(aliases=("i", "招待"))
     @commands.cooldown(1, 180, commands.BucketType.guild)
+    @check
     async def invite(self, ctx: UnionContext):
+        """!lang ja
+        --------
+        招待リンクを新しくします。  
+        もしバニティリンクが存在する場合はそれが使用されます。
+
+        Aliases
+        -------
+        i, 招待
+
+        !lang en
+        --------
+        Update invite link.  
+        If vanity link is avaliable, RT use that.
+
+        Aliases
+        -------
+        i"""
         await self._update(
             "UPDATE <t> SET invite = %s WHERE GuildID = %s;", (
                 await self._get_invite(ctx), ctx.guild.id
@@ -181,6 +342,17 @@ class Rocations(commands.Cog):
     @commands.cooldown(1, 10, commands.BucketType.user)
     @check
     async def raise_(self, ctx: UnionContext):
+        """!lang ja
+        --------
+        サーバー掲示板での表示順位を上げます。  
+        3時間55分06秒に一回このコマンドを動かすことができます。  
+        また、`/raise`か`rt!raise`でもこのコマンドを実行することができます。
+
+        !lang en
+        --------
+        Increases the display rank on the server board.  
+        You can run this command once every 3 hours 55 minutes 06 seconds.  
+        You can also run this command with `/raise` or `rt!raise`."""
         await ctx.trigger_typing()
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cursor:
