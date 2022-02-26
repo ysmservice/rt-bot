@@ -8,7 +8,6 @@ from inspect import cleandoc
 from itertools import chain
 from random import choice
 from time import time
-import subprocess
 import speedtest
 
 from discord.ext import commands, tasks
@@ -217,8 +216,8 @@ class BotGeneral(commands.Cog):
         message = await ctx.send(embed=embed)
         data = await self._speedtest()
         embed = discord.Embed(title="速度回線テスト")
-        embed.add_field(name="ダウンロード", value=data["download"])
-        embed.add_field(name="アップロード", value=data["upload"])
+        embed.add_field(name="ダウンロード", value=f'{data["download"]/1048576}Mbps')
+        embed.add_field(name="アップロード", value=f'{data["upload"]/1048576}Mbps')
         await message.edit(embed=embed)
 
     @commands.command(
