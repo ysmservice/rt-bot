@@ -100,7 +100,7 @@ class RTCGeneralFeatures(commands.Cog):
         return self.bot.cogs["Language"].get(user_id)
 
     def cog_unload(self):
-        self.bot.loop.create_task(self.bot.rtc.ws.close())
+        self.bot.loop.create_task(self.bot.rtc.close())
         self.bot.rtc.task.cancel()
         del self.bot.rtc
 
@@ -121,7 +121,7 @@ def setup(bot: RT):
         @bot.listen()
         async def on_close(_):
             if self.ws is not None and not self.ws.closed:
-                await self.ws.close(reason="Bot終了のため。")
+                await self.close(reason="Bot終了のため。")
 
         async def communicate():
             # 接続をします。

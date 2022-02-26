@@ -44,7 +44,7 @@ def check(function: CheckFT) -> CheckFT:
         try:
             return await function(self, ctx, *args, **kwargs)
         except Exception as e:
-            if ctx.bot.test: raise
+            if ctx.bot.test or isinstance(e, AssertionError): raise
             await ctx.reply(
                 {"ja": f"エラーが発生しました。\nサーバーを登録をしていますか？\nErrorCode: `{e}`",
                  "en": f"An error has occurred.\nAre you registering a server? \nErrorCode: `{e}`."}
@@ -180,8 +180,8 @@ class Rocations(commands.Cog):
                     )
                     await ctx.reply(embed=discord.Embed(
                         title="Rocations", description={
-                            "ja": "公開しました。\nhttps://rt-bot.com/rocations?search=879992881664901130",
-                            "en": "Published!\nhttps://rt-bot.com/rocations?search=879992881664901130"
+                            "ja": f"公開しました。\nhttps://rt-bot.com/rocations?search={ctx.guild.id}",
+                            "en": f"Published!\nhttps://rt-bot.com/rocations?search={ctx.guild.id}"
                         }, color=self.bot.Colors.normal
                     ).set_footer(text={
                         "ja": "Tips: サーバーの表示順位は3時間55分06秒に一度`/raise`で上げられるよ。",
