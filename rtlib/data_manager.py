@@ -106,7 +106,7 @@ class Table:
 
     def __getitem__(self: TableSelfT, key: Key) -> TableSelfT:
         assert self.__key__ is None, "既にキーは設定されています。"
-        new = self.__class__(self.bot, True)
+        new = self.__class__(self.bot, heritance=True)
         new.__key__ = key
         return new
 
