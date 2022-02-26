@@ -140,8 +140,11 @@ class Captcha(commands.Cog, DataManager):
             int, dict[int, tuple[float, bool, QueueDataT]]
         ] = defaultdict(dict)
         self.queue_remover.start()
-        self.view = View(self, timeout=None)
-        self.bot.add_view(self.view)
+        if hasattr(self.bot, "_captcha_view"):
+            self.view = self.bot._captcha_view
+        else:
+            self.bot._captcha_view = self.view = View(self, timeout=None)
+            self.bot.add_view(self.view)
         self.captchas = Captchas(
             ImageCaptcha(self), WordCaptcha(self),
             WebCaptcha(self), ClickCaptcha(self)
