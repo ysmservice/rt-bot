@@ -72,7 +72,7 @@ class Person(commands.Cog):
         Counts the number of messages in the executed channel.
         If there are more than 5000, `more than 5000` is displayed."""
         message = await ctx.reply(
-            f"{self.bot.cogs['MusicNormal'].EMOJIS['loading']} Counting..."
+            {"ja": "数え中...", "en": "Counting..."}
         )
         count = len(
             [mes async for mes in ctx.channel.history(limit=5000)
