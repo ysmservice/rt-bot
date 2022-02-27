@@ -142,6 +142,7 @@ class Captcha(commands.Cog, DataManager):
         self.queue_remover.start()
         if hasattr(self.bot, "_captcha_view"):
             self.view = self.bot._captcha_view
+            self.view.cog = self
         else:
             self.bot._captcha_view = self.view = View(self, timeout=None)
             self.bot.add_view(self.view)
