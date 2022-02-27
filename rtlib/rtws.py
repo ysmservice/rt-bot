@@ -1,28 +1,24 @@
-# RT - RT Communicate, Description: バックエンドと通信をするためのものです。
+# RT - RT WebSocket, Description: バックエンドと通信をするためのものです。
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal, Union, Optional
 
-from asyncio import sleep
-
 from discord.ext import commands
 import discord
 
-from websockets import connect
-
-from .rt_module.src import rtc, rtc_feature_types as rft
+from .rt_module.src import rtws, rtws_feature_types as rft
 
 if TYPE_CHECKING:
     from .typed import RT
 
 
-class RTCGeneralFeatures(commands.Cog):
+class RTWSGeneralFeatures(commands.Cog):
     def __init__(self, bot: RT):
         self.bot = bot
         for name, value in map(lambda name: (name, getattr(self, name)), dir(self)):
             if name.startswith("get"):
-                self.bot.rtc.set_event(value)
+                self.bot.rtws.set_event(value)
 
     async def get_user(self, user_id: int) -> Optional[rft.User]:
         if user := self.bot.get_user(user_id):
@@ -100,43 +96,28 @@ class RTCGeneralFeatures(commands.Cog):
         return self.bot.cogs["Language"].get(user_id)
 
     def cog_unload(self):
-        self.bot.loop.create_task(self.bot.rtc.close())
-        self.bot.rtc.task.cancel()
-        del self.bot.rtc
+        if self.bot.rtws.is_connected(): self.bot.loop.create_task(
+            self.bot.rtws.close(1000, "再接続または停止のため切断しました。"),
+            name="Disconnect RTWebSocket"
+        )
+        self.bot.rtws.task.cancel()
+        del self.bot.rtws
 
 
-class ExtendedRTC(rtc.RTConnection):
+class ExtendedRTWebSocket(rtws.RTWebSocket):
 
     bot: RT
 
-    def logger(self, mode: str, *args, **kwargs) -> None:
-        return self.bot.print("[RTConnection]", f"[{mode}]", *args, **kwargs)
+    def log(self, mode: str, *args, **kwargs):
+        return self.bot.print("[RTWebSocket]", f"[{mode}]", *args, **kwargs)
 
 
 def setup(bot: RT):
-    if not hasattr(bot, "rtc"):
-        bot.rtc = self = ExtendedRTC("Bot", loop=bot.loop)
+    if not hasattr(bot, "rtws"):
+        bot.rtws = self = ExtendedRTWebSocket("Bot", loop=bot.loop)
         self.bot = bot
 
-        @bot.listen()
-        async def on_close(_):
-            if self.ws is not None and not self.ws.closed:
-                await self.close(reason="Bot終了のため。")
-
-        async def communicate():
-            # 接続をします。
-            while not bot.is_closed():
-                await bot.wait_until_ready()
-                try:
-                    await self.communicate(
-                        await connect(f"ws://{bot.get_ip()}/api/rtc"), ping=True
-                    )
-                except OSError:
-                    ...
-                self.logger("info", "Disconnected from backend")
-                self.logger("info", "Reconnect in three seconds")
-                self.ready.clear()
-                await sleep(3)
-
-        bot.rtc.task = bot.loop.create_task(communicate(), name="RTConnection")
-    bot.add_cog(RTCGeneralFeatures(bot))
+        bot.rtws.task = bot.loop.create_task(
+            self.start(f"ws://{bot.get_ip()}/api/rtws"), name="RTWebSocket"
+        )
+    bot.add_cog(RTWSGeneralFeatures(bot))

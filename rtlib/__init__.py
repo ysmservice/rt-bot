@@ -62,7 +62,7 @@ def setup(bot, only: Union[Tuple[str, ...], List[str]] = []):
             except commands.ExtensionAlreadyLoaded:
                 pass
     bot.load_extension("rtlib.websocket")
-    bot.load_extension("rtlib.rtc")
+    bot.load_extension("rtlib.rtws")
     bot.load_extension("rtlib.setting")
 
 

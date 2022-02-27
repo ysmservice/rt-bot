@@ -65,7 +65,7 @@ class Rocations(commands.Cog):
         self.bot.loop.create_task(
             self._prepare_table(), name="Create Rocations table"
         )
-        self.bot.rtc.set_event(self.get_rocations)
+        self.bot.rtws.set_event(self.get_rocations)
 
     async def get_rocations(self, rows: list[Sequence[Any]]):
         "渡されたデータベースの列のデータからRocationsを取得します。バックエンド用"

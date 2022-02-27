@@ -21,7 +21,7 @@ class RTLife(commands.Cog):
             "botPoolSize": [], "botTaskCount": [], "backendPoolSize": [], "backendTaskCount": []
         }
         self.bot = bot
-        self.bot.rtc.set_event(self.get_status)
+        self.bot.rtws.set_event(self.get_status)
         self.update_status.start()
 
     @executor_function

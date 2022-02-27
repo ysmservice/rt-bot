@@ -9,7 +9,7 @@ from aiomysql import Pool
 
 from .mysql_manager import MySQLManager
 from data import data, Colors, is_admin
-from .rtc import ExtendedRTC
+from .rtws import ExtendedRTWebSocket
 
 
 class RT(commands.AutoShardedBot):
@@ -23,10 +23,10 @@ class RT(commands.AutoShardedBot):
     is_admin: is_admin # type: ignore
     colors: dict
     Colors: Colors
-    rtc: ExtendedRTC
+    rtws: ExtendedRTWebSocket
 
     def print(self, *args, **kwargs) -> None:
-        return print(f"[Backend]", *args, **kwargs)
+        return print(f"[RT.Bot]", *args, **kwargs)
 
     def get_ip(self) -> str:
         return "localhost" if self.test else "146.59.153.178"

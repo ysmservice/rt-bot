@@ -118,8 +118,8 @@ class SettingManager(commands.Cog):
         self.data: dict[str, CommandData] = {}
         self.helps: dict[str, dict[str, str]] = {}
         self.commands: dict[str, commands.Command] = {}
-        self.bot.rtc.set_event(self.get_help)
-        self.bot.rtc.set_event(self.run, "dashboard.run")
+        self.bot.rtws.set_event(self.get_help)
+        self.bot.rtws.set_event(self.run, "dashboard.run")
 
     def session(self):
         "`aiohttp.ClientSession`の準備をする。"
@@ -130,7 +130,7 @@ class SettingManager(commands.Cog):
         return default.default if isinstance(default, discord.SlashOption) else default
 
     async def get_help(self, name: str) -> Optional[str]:
-        "ヘルプを取得します。RTCで使うためのものです。"
+        "ヘルプを取得します。RTWSで使うためのものです。"
         return self.helps.get(name)
 
     def extract_category(self, command: commands.Command) -> str:
@@ -214,11 +214,11 @@ class SettingManager(commands.Cog):
     @commands.Cog.listener()
     async def on_update_api(self):
         try:
-            await wait_for(self.bot.rtc.ready.wait(), timeout=10)
+            await wait_for(self.bot.rtws.wait_until_ready(), timeout=10)
         except AioTimeoutError:
             ...
         else:
-            await self.bot.rtc.request("dashboard.update", self.data)
+            await self.bot.rtws.request("dashboard.update", self.data)
 
     async def run(self, data: CommandRunData) -> tuple[Literal["Error", "Ok"], str]:
         "コマンドを走らせます。"
