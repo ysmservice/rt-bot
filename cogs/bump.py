@@ -226,7 +226,7 @@ class Bump(commands.Cog, DataManager):
             (mode,)
         )
 
-    REPLIES = {"bump": "!d bump", "up": "/dissoku up", "raise": "/raise"}
+    REPLIES = {"bump": "!d bump", "up": "/dissoku up", "raise": "rt!raise"}
 
     @tasks.loop(seconds=10)
     async def notification(self):

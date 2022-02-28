@@ -140,8 +140,12 @@ class Captcha(commands.Cog, DataManager):
             int, dict[int, tuple[float, bool, QueueDataT]]
         ] = defaultdict(dict)
         self.queue_remover.start()
-        self.view = View(self, timeout=None)
-        self.bot.add_view(self.view)
+        if hasattr(self.bot, "_captcha_view"):
+            self.view = self.bot._captcha_view
+            self.view.cog = self
+        else:
+            self.bot._captcha_view = self.view = View(self, timeout=None)
+            self.bot.add_view(self.view)
         self.captchas = Captchas(
             ImageCaptcha(self), WordCaptcha(self),
             WebCaptcha(self), ClickCaptcha(self)
@@ -160,6 +164,7 @@ class Captcha(commands.Cog, DataManager):
             "ja": "認証機能", "en": "Captcha"
         }, parent="ServerSafety"
     )
+    @commands.has_guild_permissions(manage_roles=True)
     async def captcha(self, ctx: commands.Context):
         """!lang ja
         --------
@@ -325,7 +330,7 @@ class Captcha(commands.Cog, DataManager):
             )
         else:
             if ctx.guild.id in self.queue:
-                del self.queue[guild_id]
+                del self.queue[ctx.guild.id]
             await ctx.reply("Ok")
 
     @captcha.command("timeout", aliases=["タイムアウト", "t"])
