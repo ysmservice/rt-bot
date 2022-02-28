@@ -118,6 +118,6 @@ def setup(bot: RT):
         self.bot = bot
 
         bot.rtws.task = bot.loop.create_task(
-            self.start(f"ws://{bot.get_ip()}/api/rtws"), name="RTWebSocket"
+            self.start(f"ws://{bot.get_ip()}/api/rtws", okstatus=()), name="RTWebSocket"
         )
     bot.add_cog(RTWSGeneralFeatures(bot))
