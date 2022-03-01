@@ -404,7 +404,9 @@ class Rocations(commands.Cog):
 
     @discord.slash_command("raise", description="Rocationsでのサーバー表示順位を上げます。")
     async def raise_slash(self, interaction: discord.Interaction):
-        await self.raise_(Context(self.bot, interaction, self.raise_alias, "rt!raise"))
+        ctx = Context(self.bot, interaction, self.raise_alias, "rt!raise")
+        ctx.reply_noresponse_edit = True
+        await self.raise_(ctx)
 
 
 def setup(bot):
