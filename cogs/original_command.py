@@ -1,68 +1,87 @@
 # RT - Original Command
 
+from __future__ import annotations
+
 from discord.ext import commands
 import discord
 
-from rtlib import DatabaseManager
+from aiomysql import Pool, Cursor
+
+from rtutil import DatabaseManager
 
 
 class DataManager(DatabaseManager):
 
-    DB = "OriginalCommand"
+    TABLE = "OriginalCommand"
 
-    def __init__(self, db):
-        self.db = db
+    def __init__(self, pool: Pool):
+        self.pool = pool
 
-    async def init_table(self, cursor) -> None:
-        await cursor.create_table(
-            self.DB, {
-                "GuildID": "BIGINT", "Command": "TEXT",
-                "Content": "TEXT", "Reply": "TINYINT"
-            }
+    async def _prepare_table(self, cursor: Cursor = None) -> None:
+        await cursor.execute(
+            """CREATE TEABLE OriginalCommand IF NOT EXISTS (
+                GuildID BIGINT, Command TEXT,
+                Content TEXT, Reply TINYINT
+            );"""
         )
 
-    async def write(
-        self, cursor, guild_id: int, command: str,
-        content: str, reply: bool
-    ) -> None:
-        target = dict(GuildID=guild_id, Command=command)
-        change = dict(Content=content, Reply=reply)
-        if await cursor.exists(self.DB, target):
-            await cursor.update_data(self.DB, change, target)
-        else:
-            target.update(change)
-            await cursor.insert_data(self.DB, target)
+    async def _exists(self, cursor, guild_id: int, command: str) -> tuple[bool, str]:
+        # コマンドが存在しているかを確認します。
+        condition = "GuildID = %s AND Command = %s"
+        await cursor.execute(
+            f"SELECT * FROM {self.TABLE} WHERE {condition};",
+            (guild_id, command)
+        )
+        return bool(await cursor.fetchone()), condition
 
-    async def delete(self, cursor, guild_id: int, command: str) -> None:
-        target = dict(GuildID=guild_id, Command=command)
-        if await cursor.exists(self.DB, target):
-            print(target)
-            await cursor.delete(self.DB, target)
+    async def write(
+        self, guild_id: int, command: str,
+        content: str, reply: bool, cursor: Cursor = None
+    ) -> None:
+        "書き込みます。"
+        if (c := await self._exists(cursor, guild_id, command))[0]:
+            await cursor.execute(
+                f"UPDATE {self.TABLE} SET Content = %s, Reply = %s WHERE {c[1]};",
+                (content, reply, guild_id, command)
+            )
+        else:
+            await cursor.execute(
+                f"INSERT INTO {self.TABLE} VALUES (%s, %s, %s, %s);",
+                (guild_id, command, content, reply)
+            )
+
+    async def delete(self, guild_id: int, command: str, cursor: Cursor = None) -> None:
+        "データを削除します"
+        if (c := await self._exists(cursor, guild_id, command))[0]:
+            await cursor.execute(
+                f"DELETE FROM {self.TABLE} WHERE GuildID = %s AND Command = %s;",
+                (guild_id, command)
+            )
         else:
             raise KeyError("そのコマンドが見つかりませんでした。")
 
-    async def read(self, cursor, guild_id: int) -> list:
-        target = {"GuildID": guild_id}
-        if await cursor.exists(self.DB, target):
-            return [row async for row in cursor.get_datas(self.DB, target)]
-        else:
-            return []
+    async def read(self, guild_id: int, cursor: Cursor = None) -> list:
+        "データを読み込みます。"
+        await cursor.execute(
+            f"SELECT * FROM {self.TABLE} WHERE GuildID = %s;",
+            (guild_id,)
+        )
+        return await cursor.fetchall()
 
-    async def read_all(self, cursor) -> list:
-        return [row async for row in cursor.get_datas(self.DB, {})]
+    async def read_all(self, cursor: Cursor = None) -> list:
+        "全てのデータを読み込みます。"
+        await cursor.execute(f"SELECT * FROM {self.TABLE};")
+        return await cursor.fetchall()
 
 
 class OriginalCommand(commands.Cog, DataManager):
     def __init__(self, bot):
         self.bot = bot
         self.data = {}
-        self.bot.loop.create_task(self.on_ready())
 
     async def on_ready(self):
-        super(commands.Cog, self).__init__(
-            self.bot.mysql
-        )
-        await self.init_table()
+        super(commands.Cog, self).__init__(self.bot.mysql.pool)
+        await self._prepare_table()
         await self.update_cache()
 
     async def update_cache(self):
