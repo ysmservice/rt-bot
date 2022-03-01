@@ -293,9 +293,9 @@ class Ticket(commands.Cog, DataManager):
         # リアクションを追加/削除した人の名前でチケットチャンネル名を作る。
         channel_name = self.make_channel_name(payload.member.display_name)
         # リアクションを押した人が既にチャンネルを作成している場合はそのチャンネルを取得する。
-        channel = discord.utils.get(
+        channel = discord.utils.find(
+            lambda c: c.name == channel_name and c.category and not c.category.name.endswith("RTAC"),
             payload.message.guild.text_channels,
-            name=channel_name
         )
 
         if channel:
