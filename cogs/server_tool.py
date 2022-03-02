@@ -616,7 +616,7 @@ class ServerTool(commands.Cog):
                 )):
                     cache = channel.topic[channel.topic.find("rt>star")+7:]
                     try: require = int(cache if (index := cache.find("\n")) == -1 else cache[:index])
-                    except ValueError: requrie = 1
+                    except ValueError: require = 1
                     if count < require: return
                     embeds = []
                     embeds.append(
