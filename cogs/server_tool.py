@@ -610,13 +610,14 @@ class ServerTool(commands.Cog):
                         if user.id == self.bot.user.id: return
                         else: count += 1
             else:
-                require = ch.topic[ch.topic.find("rt>star")+7:]
-                try: require = int(cache if (index := cache.find("\n")) == -1 else cache[:index])
-                except ValueError: requrie = 1
                 if (channel := discord.utils.find(
                     lambda ch: ch.topic and "rt>star" in ch.topic,
                     payload.message.guild.text_channels
-                )) and count >= require:
+                )):
+                    require = channel.topic[channel.topic.find("rt>star")+7:]
+                    try: require = int(cache if (index := cache.find("\n")) == -1 else cache[:index])
+                    except ValueError: requrie = 1
+                    if count < require: return
                     embeds = []
                     embeds.append(
                         discord.Embed(
