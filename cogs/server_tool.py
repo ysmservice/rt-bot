@@ -637,7 +637,7 @@ class ServerTool(commands.Cog):
                         finally:
                             embeds[i].set_image(url=attachment.url)
                     if payload.message.embeds:
-                        embeds.extends(payload.message.embeds)
+                        embeds.extend(payload.message.embeds)
                     if embeds:
                         await channel.send(content=payload.message.jump_url, embeds=embeds)
                         # スターボードにすでにあることを次スターがついた際にわかるようにスターを付けておく。
