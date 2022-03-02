@@ -602,17 +602,21 @@ class ServerTool(commands.Cog):
 
         if (emoji := str(payload.emoji)) in self.EMOJIS["star"]:
             # スターボード
+            count = 0
             for reaction in payload.message.reactions:
                 if str(reaction.emoji) in self.EMOJIS["star"]:
                     async for user in reaction.users():
                         # もしRTがスターをつけてるなら既にスターボードに乗っているのでやめる。
-                        if user.id == self.bot.user.id:
-                            return
+                        if user.id == self.bot.user.id: return
+                        else: count += 1
             else:
+                require = ch.topic[ch.topic.find("rt>star")+7:]
+                try: require = int(cache if (index := cache.find("\n")) == -1 else cache[:index])
+                except ValueError: requrie = 1
                 if (channel := discord.utils.find(
                     lambda ch: ch.topic and "rt>star" in ch.topic,
                     payload.message.guild.text_channels
-                )):
+                )) and count >= require:
                     embeds = []
                     embeds.append(
                         discord.Embed(
