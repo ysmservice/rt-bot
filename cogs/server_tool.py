@@ -614,7 +614,7 @@ class ServerTool(commands.Cog):
                     lambda ch: ch.topic and "rt>star" in ch.topic,
                     payload.message.guild.text_channels
                 )):
-                    require = channel.topic[channel.topic.find("rt>star")+7:]
+                    cache = channel.topic[channel.topic.find("rt>star")+7:]
                     try: require = int(cache if (index := cache.find("\n")) == -1 else cache[:index])
                     except ValueError: requrie = 1
                     if count < require: return
