@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from os.path import exists
 from asyncio import all_tasks
 from time import time
 
@@ -9,18 +10,24 @@ from discord.ext import commands, tasks
 
 from onami.functools import executor_function
 from psutil import virtual_memory, cpu_percent
+from aiofiles import open as aioopen
+from ujson import load, dumps
 
 from rtlib import RT
 
 
 class RTLife(commands.Cog):
     def __init__(self, bot: RT):
-        self.data = {
-            "botCpu": [], "botMemory": [], "backendCpu": [], "backendMemory": [],
-            "users": [], "guilds": [], "voicePlaying": [], "backendLatency": [], "discordLatency": [],
-            "botPoolSize": [], "botTaskCount": [], "backendPoolSize": [], "backendTaskCount": []
-        }
         self.bot = bot
+        if exists("data/rtlife.json"):
+            with open("data/rtlife.json", "r") as f:
+                self.data = load(f)
+        else:
+            self.data = {
+                "botCpu": [], "botMemory": [], "backendCpu": [], "backendMemory": [],
+                "users": [], "guilds": [], "voicePlaying": [], "backendLatency": [], "discordLatency": [],
+                "botPoolSize": [], "botTaskCount": [], "backendPoolSize": [], "backendTaskCount": []
+            }
         self.bot.rtws.set_event(self.get_status)
         self.update_status.start()
 
@@ -86,6 +93,8 @@ class RTLife(commands.Cog):
         else:
             count = self.data["backendLatency"][-1] if self.data["backendLatency"] else 0.0
         await self.count(data, await self.process_psutil(), count, len(all_tasks()))
+        async with aioopen("data/rtlife.json", "w") as f:
+            await f.write(dumps(self.data))
 
     def get_status(self, _):
         return self.data
