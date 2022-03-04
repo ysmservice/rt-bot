@@ -184,7 +184,7 @@ class Bump(commands.Cog, DataManager):
         await ctx.reply("Ok", replace_language=False)
 
     up._callback.__doc__ = bump.callback.__doc__.replace("bump", "up").replace("Bump", "Up")
-    up._callback.__doc__ = bump.callback.__doc__.replace("bump", "raise").replace("Bump", "Raise")
+    raisenof._callback.__doc__ = bump.callback.__doc__.replace("bump", "raise").replace("Bump", "Raise")
 
     async def make_ranking(self, user_id: int, mode: str) -> discord.Embed:
         rows = await self.execute(
