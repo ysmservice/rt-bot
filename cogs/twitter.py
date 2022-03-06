@@ -10,10 +10,10 @@ from asyncio import Event
 from discord.ext import commands
 import discord
 
-from tweepy.asynchronous import AsyncStream
 from tweepy import API, OAuth1UserHandler
-from tweepy.errors import NotFound
+from tweepy.asynchronous import AsyncStream
 from tweepy.models import Status
+from tweepy.errors import NotFound, Forbidden
 
 from jishaku.functools import executor_function
 
@@ -236,14 +236,23 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
             for username in list(self.users.keys()):
                 try:
                     follow.append(await self.get_user_id(username))
-                except NotFound:
+                except Exception as e:
                     for channel_id in self.users[username]:
                         if channel := self.bot.get_channel(channel_id):
                             self.users[username].remove(channel_id)
-                            await channel.send(
-                                "Twitter通知をしようとしましたがエラーが発生しました。\n" \
-                                f"{username.replace('@', '＠')}のユーザーが見つかりませんでした。"
-                            )
+                            if isinstance(e, Forbidden) and "suspen" in str(e):
+                                await channel.send(
+                                    "Twitter通知を試みましたが、ユーザーが凍結か何か起きているため通知できませんでした。"
+                                )
+                            elif isinstance(e, NotFound):
+                                await channel.send(
+                                    "Twitter通知を試みましたが、ユーザーが見つからないため通知できませんでした。"
+                                )
+                            else:
+                                await channel.send(
+                                    f"Twitter通知を試みましたが、何らかのエラーにより失敗しました。\nCode: `{e}`"
+                                )
+                                continue
                         await self.delete(discord.Object(channel_id), username)
             self.filter(follow=follow)
 
