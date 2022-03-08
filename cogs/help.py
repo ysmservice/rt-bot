@@ -164,9 +164,13 @@ class Help(commands.Cog):
                 description={
                     "ja": f"カテゴリーを選択するとそのカテゴリーにあるコマンドが表示されます。\nまたこちらからも見れます：{url}" \
                         "\nヘルプの見方は[こちら](https://rt-team.github.io/ja/notes/help)を見るとヘルプをよく理解できるようになれるかもしれません。" \
-                        "それとスラッシュコマンドは少し特殊なので[こちら](https://rt-team.github.io/notes/slash_table)を確認してください。",
+                        "それとスラッシュコマンドは少し特殊なので[こちら](https://rt-team.github.io/notes/slash_table)を確認してください。\n" \
+                        "RTを使用した場合は[利用規約](https://rt-bot.com/terms.html)に同意したことになります。\n" \
+                        "また、プライバシーポリシーは[こちら](https://rt-bot.com/privacy.html)から確認できます。",
                     "en": f"Selecting a category will show you the commands in that category. \nYou can also see them here: {url}\n" \
-                        "You may be able to understand the help better by looking at [here](https://rt-team.github.io/en/notes/help)."
+                        "You may be able to understand the help better by looking at [here](https://rt-team.github.io/en/notes/help).\n" \
+                        "By using RT, you agree to the [Terms of Use](https://rt-bot.com/terms.html).\n" \
+                        "You can also view our privacy policy at [here](https://rt-bot.com/privacy.html)."
                 }, color=self.bot.colors["normal"]
             )
             view = self.make_view(
