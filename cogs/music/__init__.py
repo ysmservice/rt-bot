@@ -187,6 +187,7 @@ class MusicCog(commands.Cog, name="Music"):
             del self.now[ctx.guild.id]
         # 接続していない場合は接続してPlayerを準備する。
         if ctx.guild.id not in self.now:
+            assert ctx.author.voice is not None, "あなたがVCに接続していなければ実行できません。"
             self.now[ctx.guild.id] = Player(
                 self, ctx.guild, await ctx.author.voice.channel.connect()
             )
