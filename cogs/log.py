@@ -113,6 +113,15 @@ class Log(commands.Cog):
         embed.add_field(name="ユーザーID", value=str(member.id))
         embed.set_thumbnail(url=getattr(member.avatar, "url", ""))
         return embed
+    
+    @commands.Cog.listener()
+    @log()
+    async def on_message_edit(self, before, after):
+        embed = discord.Embed(title="メッセージ編集", color=self.c)
+        embed.set_author(icon_url=getattr(after.author.icon, "url"))
+        embed.add_field(name="Before", value=before.content)
+        embed.add_field(name="After", value=after.content)
+        return embed
 
     @commands.Cog.listener()
     @log("payload")
