@@ -330,6 +330,7 @@ class Context:
         else:
             self._remove_invalid_args(kwargs, self.interaction.response.send_message)
             await self.interaction.response.send_message(**kwargs)
+        return await self.interaction.original_message()
 
 # スラッシュコマンドのテストと登録とその他を入れるコグ
 class SlashManager(commands.Cog):
