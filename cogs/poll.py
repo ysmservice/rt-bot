@@ -58,6 +58,12 @@ class Poll(commands.Cog):
         self.view = CloseButton(color=self.bot.Colors.normal)
         self.bot.add_view(self.view)
         self.panel_updater.start()
+        
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if message.content.startswith("投票rt "):
+            message.content = message.content.replace("投票rt", "rt!poll")
+            await self.bot.process_commands(message)
 
     @commands.command(
         extras={"headding": {"ja": "投票パネルを作成します。", "en": "..."},
