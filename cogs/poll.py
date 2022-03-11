@@ -62,7 +62,8 @@ class Poll(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.content.startswith("投票rt "):
-            await self.bot.process_command(message.content.replace("投票rt", "rt!poll"))
+            message.content = message.content.replace("投票rt", "rt!poll")
+            await self.bot.process_commands(message)
 
     @commands.command(
         extras={"headding": {"ja": "投票パネルを作成します。", "en": "..."},
