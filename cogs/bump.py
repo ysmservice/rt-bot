@@ -287,7 +287,7 @@ class Bump(commands.Cog, DataManager):
 
         data = self.IDS.get(message.author.id)
         if not retry and data and data["mode"] != "bump":
-            # もしDissokuなら数秒後に再取得してもう一度この関数on_messageを呼び出す。
+            # もしDissoku/rocationsなら数秒後に再取得してもう一度この関数on_messageを呼び出す。
             self.bot.loop.create_task(self.delay_on_message(5, message))
             return
         if not message.guild or not data or (data["mode"] != "raise" and not message.embeds):

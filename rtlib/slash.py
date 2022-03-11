@@ -3,6 +3,7 @@
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Optional, Union, Literal, get_origin
 
+from asyncio import sleep
 from inspect import signature
 from datetime import datetime
 from functools import wraps
@@ -33,7 +34,13 @@ discord.ApplicationSubcommand.description = discord.ApplicationSubcommand.descri
 
 def check(command: commands.Command):
     "スラッシュにふさわしいかチェックする関数です。"
-    return (
+    if "jishaku" in command.qualified_name or "onami" in command.qualified_name:
+        command.__original_kwargs__["extras"] = {
+            "parent": "Admin", "headding": {"ja": command.description, "en": command.description}
+        }
+        command._callback.__doc__ = f"""!lang ja\n--------\n{command.callback.__doc__
+        }\n\n!lang en\n--------\n{command.callback.__doc__}"""
+    return ((
         ((
             "category" in command.__original_kwargs__ 
             or "parent" in command.extras
@@ -42,7 +49,7 @@ def check(command: commands.Command):
             or "headding" in command.extras
             or command.description != ""
         ) or command.parent)
-    ) and "jishaku" not in command.qualified_name
+    ) and "jishaku" not in command.qualified_name) or "slash" in command.__original_kwargs__
 
 
 def camel2snake(text: str) -> str:
@@ -304,6 +311,8 @@ class Context:
 
         self.reply_edit = reply_edit
         self.reply_noresponse_edit = reply_noresponse_edit
+        self._extended = True
+        self.message.channel.send.__dict__["_extended"] = self._trigger_typing
 
     def _remove_invalid_args(self, kwargs: dict, original):
         for key in list(kwargs.keys()):
@@ -311,9 +320,12 @@ class Context:
                 # `discord.InteractionResponse.send_message`にない引数の値は消しておく。
                 del kwargs[key]
 
-    async def trigger_typing(self):
+    async def _trigger_typing(self):
         await self.interaction.response.defer()
         self.reply_noresponse_edit = True
+
+    async def trigger_typing(self):
+        await self._trigger_typing()
 
     async def reply(
         self, *args, reply_edit: bool = False,
@@ -330,6 +342,16 @@ class Context:
         else:
             self._remove_invalid_args(kwargs, self.interaction.response.send_message)
             await self.interaction.response.send_message(**kwargs)
+
+
+original_tt = discord.abc.Messageable.trigger_typing
+async def new_tt(self: Union[discord.abc.Messageable, commands.Context]):
+    if getattr(self.send, "_extended", False):
+        await self.send._extended()
+    else:
+        await original_tt(self)
+discord.abc.Messageable.trigger_typing = new_tt
+
 
 # スラッシュコマンドのテストと登録とその他を入れるコグ
 class SlashManager(commands.Cog):
@@ -387,7 +409,7 @@ class SlashManager(commands.Cog):
                             )
                         ):
                             setattr(ctx, name, value)
-                    return await self.bot.invoke(ctx.message)
+                    return await self.bot.invoke(ctx)
         # コマンドフレームワークのコマンド実行以外のInteractionなら元々のやつに渡す。
         await self.bot.process_application_commands(interaction)
 
@@ -446,6 +468,8 @@ class SlashManager(commands.Cog):
         headding={"ja": "テスト見出し", "en": "..."}, category="SlashTest"
     )
     async def test(self, ctx, test: Union[str, int]):
+        await ctx.trigger_typing()
+        await sleep(3)
         await ctx.reply("This is the test")
 
     @commands.group(

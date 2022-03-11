@@ -47,10 +47,15 @@ class UserMusics(Table):
     playlists: dict[str, list[MusicDict]]
 
 
+def kwargs(headding: dict[str, str], **kwargs) -> dict:
+    kwargs["extras"] = {}
+    kwargs["extras"]["headding"] = headding
+    kwargs["extras"]["parent"] = "Music"
+    return kwargs
+
+
 DecoT = TypeVar("DecoT")
-def check(
-    headding: dict[str, str], check_state: bool = True, check_dj: bool = True
-) -> Callable[[DecoT], DecoT]:
+def check(check_state: bool = True, check_dj: bool = True) -> Callable[[DecoT], DecoT]:
     """音楽再生コマンドにつけるデコレータです。
     権限の確認等を行います。また、見出しをつけます。"""
     def decorator(func):
@@ -81,9 +86,6 @@ def check(
             else:
                 # チェックが済んだならメインを実行する。
                 return await original(self, ctx, *args, **kwargs)
-        func.__original_kwargs__["extras"] = {}
-        func.__original_kwargs__["extras"]["headding"] = headding
-        func.__original_kwargs__["extras"]["parent"] = "Music"
         func._callback = new
         return func
     return decorator
@@ -110,8 +112,8 @@ class MusicCog(commands.Cog, name="Music"):
         "指定されたGuildIDの音楽プレイヤーを返します。ただのエイリアス"
         return self.now.get(guild_id)
 
-    @check({"ja": "音楽再生をします。", "en": "Play music"}, False)
-    @commands.command(aliases=["p", "再生"])
+    @check(False)
+    @commands.command(aliases=["p", "再生"], **kwargs({"ja": "音楽再生をします。", "en": "Play music"}))
     async def play(self, ctx: UnionContext, *, song: str = discord.SlashOption(
         "song", PDETAILS := "曲のURLまたは検索ワード｜Song url or search term"
     )):
@@ -259,8 +261,8 @@ class MusicCog(commands.Cog, name="Music"):
             )
             await self.now[ctx.guild.id].play()
 
-    @check({"ja": "切断をします。", "en": "Disconnect"})
-    @commands.command(aliases=["stop", "dis", "切断"])
+    @check()
+    @commands.command(aliases=["stop", "dis", "切断"], **kwargs({"ja": "切断をします。", "en": "Disconnect"}))
     async def disconnect(self, ctx: UnionContext, force: bool = False):
         """!lang ja
         --------
@@ -292,8 +294,8 @@ class MusicCog(commands.Cog, name="Music"):
                 await ctx.guild.voice_client.disconnect(force=force)
         await ctx.reply(f"{EMOJIS.stop} Bye!")
 
-    @check({"ja": "スキップをします。", "en": "Skip"})
-    @commands.command(aliases=["s", "スキップ"])
+    @check()
+    @commands.command(aliases=["s", "スキップ"], **kwargs({"ja": "スキップをします。", "en": "Skip"}))
     async def skip(self, ctx: UnionContext):
         """!lang ja
         --------
@@ -313,8 +315,10 @@ class MusicCog(commands.Cog, name="Music"):
         self.now[ctx.guild.id].skip()
         await ctx.reply(f"{EMOJIS.skip} Skipped")
 
-    @check({"ja": "ループの設定をします。", "en": "Toggle loop"})
-    @commands.command(aliases=["rp", "loop", "ループ"])
+    @check()
+    @commands.command(
+        aliases=["rp", "loop", "ループ"], **kwargs({"ja": "ループの設定をします。", "en": "Toggle loop"})
+    )
     async def repeate(self, ctx: UnionContext, mode: Literal["none", "all", "one", "auto"] = "auto"):
         """!lang ja
         --------
@@ -350,8 +354,8 @@ class MusicCog(commands.Cog, name="Music"):
             }
         await ctx.reply(content)
 
-    @check({"ja": "シャッフルします。", "en": "Shuffle"})
-    @commands.command(aliases=["sfl", "シャッフル"])
+    @check()
+    @commands.command(aliases=["sfl", "シャッフル"], **kwargs({"ja": "シャッフルします。", "en": "Shuffle"}))
     async def shuffle(self, ctx: UnionContext):
         """!lang ja
         --------
@@ -363,8 +367,8 @@ class MusicCog(commands.Cog, name="Music"):
         self.now[ctx.guild.id].shuffle()
         await ctx.reply(f"{EMOJIS.shuffle} Shuffled")
 
-    @check({"ja": "一時停止します。", "en": "Pause"})
-    @commands.command(aliases=["ps", "resume", "一時停止"])
+    @check()
+    @commands.command(aliases=["ps", "resume", "一時停止"], **kwargs({"ja": "一時停止します。", "en": "Pause"}))
     async def pause(self, ctx: UnionContext):
         """!lang ja
         --------
@@ -379,8 +383,8 @@ class MusicCog(commands.Cog, name="Music"):
             f"{EMOJIS.pause} Paused"
         )
 
-    @check({"ja": "音量を変更します。", "en": "Change volume"})
-    @commands.command(aliases=["vol", "音量"])
+    @check()
+    @commands.command(aliases=["vol", "音量"], **kwargs({"ja": "音量を変更します。", "en": "Change volume"}))
     async def volume(self, ctx: UnionContext, volume: Optional[float] = None):
         """!lang ja
         --------
@@ -416,11 +420,10 @@ class MusicCog(commands.Cog, name="Music"):
             self.now[ctx.guild.id].volume = volume
             await ctx.reply("🔈 Changed")
 
-    @check(
-        {"ja": "現在再生中の曲を表示します。", "en": "Displays the currently playing music."},
-        True, False
+    @check(True, False)
+    @commands.command(
+        aliases=["現在"], **kwargs({"ja": "現在再生中の曲を表示します。", "en": "Displays the currently playing music."})
     )
-    @commands.command(aliases=["現在"])
     async def now(self, ctx: UnionContext):
         """!lang ja
         --------
@@ -442,11 +445,12 @@ class MusicCog(commands.Cog, name="Music"):
             embed=self.now[ctx.guild.id].now.make_embed(True), view=view
         )
 
-    @check(
-        {"ja": "現在登録されているキューを表示します。", "en": "Displays currently queues registered."},
-        True, False
+    @check(True, False)
+    @commands.command(
+        aliases=["キュー", "qs"], **kwargs(
+            {"ja": "現在登録されているキューを表示します。", "en": "Displays currently queues registered."}
+        )
     )
-    @commands.command(aliases=["キュー", "qs"])
     async def queues(self, ctx: UnionContext):
         """!lang ja
         --------
@@ -459,8 +463,12 @@ class MusicCog(commands.Cog, name="Music"):
         view = Queues(self, self.now[ctx.guild.id].queues)
         view.message = await ctx.reply(embed=view.data[0], view=view)
 
-    @check({"ja": "プレイリスト", "en": "Playlist"}, False)
-    @commands.group(aliases=["pl", "プレイリスト", "再生リスト"])
+    @check(False)
+    @commands.group(
+        aliases=["pl", "プレイリスト", "再生リスト"], **kwargs(
+            {"ja": "プレイリスト", "en": "Playlist"}
+        )
+    )
     async def playlist(self, ctx: UnionContext):
         """!lang ja
         ---------
@@ -670,8 +678,8 @@ class MusicCog(commands.Cog, name="Music"):
         p"""
         await self._run_playlist_command(ctx, "PlayPlaylistSelect")
 
-    @check({"ja": "DJの設定をします。", "en": "Setting dj"}, False)
-    @commands.command(aliases=["だーじぇー"])
+    @check(False)
+    @commands.command(aliases=["だーじぇー"], **kwargs({"ja": "DJの設定をします。", "en": "Setting dj"}))
     @commands.has_guild_permissions(manage_roles=True)
     async def dj(self, ctx: UnionContext, *, role: Union[discord.Role, bool]):
         """!lang ja
