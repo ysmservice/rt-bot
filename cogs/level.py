@@ -65,20 +65,13 @@ class Level(commands.Cog):
             }
         }
     )
-    async def level(self, ctx: commands.Context, user_id = None):
+    async def level(self, ctx: commands.Context):
         """!lang ja
         --------
         レベル機能です。RTのいるサーバーで一定数しゃべるとレベルが上がります。
         グローバルレベルとローカルレベルという2種類のレベリング方式があります。
         グローバルレベルは共通で、全世界での自分の位置を知ることができます。
         ローカルレベルはサーバーごとで管理(一定レベルに達したら役職をあげるなど)できます。
-        
-        Parameters
-        ----------
-        user_id : int, optional
-            対象のユーザーのIDです。  
-            指定しなかった場合はコマンドを実行したユーザーとなります。  
-            RTのいるサーバーしかユーザー指定はできません。
 
         Aliases
         -------
@@ -91,18 +84,9 @@ class Level(commands.Cog):
         The global level is common and allows you to know your position in the world.
         Local level can be managed on a server-by-server basis (e.g., when you reach a certain level, your position will be raised).
 
-        Parameters
-        ----------
-        user_id : int, optional
-            The ID of the target user.  
-            If it is not specified, it is the user where the command was executed.  
-            Only the user of the server where the RT is located can be specified as a server.
-
         Aliases
         -------
         lv"""
-        if user_id is None:
-            user_id = ctx.author.id
         if not ctx.invoked_subcommand:
             await ctx.reply(
                 embed=discord.Embed(

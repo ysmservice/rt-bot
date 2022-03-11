@@ -19,7 +19,7 @@ class DataManager(DatabaseManager):
 
     async def _prepare_table(self, cursor: Cursor = None) -> None:
         await cursor.execute(
-            """CREATE TABLE OriginalCommand IF NOT EXISTS (
+            """CREATE TABLE IF NOT EXISTS OriginalCommand (
                 GuildID BIGINT, Command TEXT,
                 Content TEXT, Reply TINYINT
             );"""
