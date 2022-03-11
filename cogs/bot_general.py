@@ -422,7 +422,7 @@ class BotGeneral(commands.Cog):
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
         try:
-            await guild.owner.send(THANKYOU_TEMPLATE)
+            await guild.owner.send(THANKYOU_TEMPLATE, view=self.thx_view)
         except:
             tentative = None
             for channel in guild.text_channels:
