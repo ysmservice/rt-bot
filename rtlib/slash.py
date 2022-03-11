@@ -342,6 +342,7 @@ class Context:
         else:
             self._remove_invalid_args(kwargs, self.interaction.response.send_message)
             await self.interaction.response.send_message(**kwargs)
+        return await self.interaction.original_message()
 
 
 original_tt = discord.abc.Messageable.trigger_typing

@@ -602,17 +602,22 @@ class ServerTool(commands.Cog):
 
         if (emoji := str(payload.emoji)) in self.EMOJIS["star"]:
             # スターボード
+            count = 0
             for reaction in payload.message.reactions:
                 if str(reaction.emoji) in self.EMOJIS["star"]:
                     async for user in reaction.users():
                         # もしRTがスターをつけてるなら既にスターボードに乗っているのでやめる。
-                        if user.id == self.bot.user.id:
-                            return
+                        if user.id == self.bot.user.id: return
+                        else: count += 1
             else:
                 if (channel := discord.utils.find(
                     lambda ch: ch.topic and "rt>star" in ch.topic,
                     payload.message.guild.text_channels
                 )):
+                    cache = channel.topic[channel.topic.find("rt>star")+7:]
+                    try: require = int(cache if (index := cache.find("\n")) == -1 else cache[:index])
+                    except ValueError: require = 1
+                    if count < require: return
                     embeds = []
                     embeds.append(
                         discord.Embed(
@@ -632,7 +637,7 @@ class ServerTool(commands.Cog):
                         finally:
                             embeds[i].set_image(url=attachment.url)
                     if payload.message.embeds:
-                        embeds.extends(payload.message.embeds)
+                        embeds.extend(payload.message.embeds)
                     if embeds:
                         await channel.send(content=payload.message.jump_url, embeds=embeds)
                         # スターボードにすでにあることを次スターがついた際にわかるようにスターを付けておく。

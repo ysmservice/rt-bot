@@ -47,8 +47,8 @@ class Tools(commands.Cog):
         await sleep(number)
         await ctx.reply("Loading楽しかった？")
 
-    OKES = ["+", "-", "*", "/", "."]
-    OKCHARS = list(map(str, range(9))) + OKES
+    OKES = ["+", "-", "*", "/", ".", "(", ")"]
+    OKCHARS = list(map(str, range(10))) + OKES
 
     def safety(self, word):
         word = word.replace("**", "*")
@@ -80,7 +80,7 @@ class Tools(commands.Cog):
         ----------
         expression : str
             Expression"""
-        if len(expression) < 15:
+        if len(expression) < 25:
             await ctx.reply(f"計算結果：`{await self.bot.loop.run_in_executor(None, eval, self.safety(expression))}`")
         else:
             raise commands.BadArgument("計算範囲が大きすぎます！頭壊れます。")
