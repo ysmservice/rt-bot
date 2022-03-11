@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Union
 
 from collections import defaultdict
 from asyncio import Event
+from os.path import exists
 
 from discord.ext import commands
 import discord
@@ -16,6 +17,8 @@ from tweepy.models import Status
 from tweepy.errors import NotFound, Forbidden
 
 from jishaku.functools import executor_function
+from aiofiles import open as aioopen
+from ujson import load, dumps
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
@@ -116,6 +119,14 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
     def __init__(self, bot: "Backend"):
         self.bot = bot
         self.ready = Event()
+
+        self.user_cache = {}
+        if exists("data/twitter.json"):
+            with open("data/twitter.json", "r") as f:
+                self.user_cache = load(f)
+        else:
+            with open("data/twitter.json", "w") as f:
+                f.write(r"{}")
 
         if "twitter" in self.bot.secret:
             oauth = OAuth1UserHandler(
@@ -219,10 +230,24 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
                     f"Twitter通知をしようとしましたが失敗しました。\nエラーコード：`{e}`"
                 )
 
+    async def write_user_cache(self):
+        async with aioopen("data/twitter.json", "w") as f:
+            await f.write(dumps(self.user_cache))
+
     @executor_function
-    def get_user_id(self, username: str) -> str:
-        "ユーザー名からユーザーのIDを取得するコルーチン関数です。"
-        return self.api.get_user(screen_name=username).id_str
+    def _get_user_id(self, username: str) -> tuple[str, bool]:
+        write = False
+        if username not in self.user_cache:
+            # キャッシュに既にあるのならそれを使う。
+            self.user_cache[username] = self.api.get_user(screen_name=username).id_str
+            write = True
+        return self.user_cache[username], write
+
+    async def get_user_id(self, username: str) -> str:
+        "ユーザー名からユーザーのIDを取得する関数です。"
+        if (data := await self._get_user_id(username))[1]:
+            await self.write_user_cache()
+        return data[0]
 
     async def start_stream(self, disconnect: bool = False) -> None:
         "Twitterのストリームを開始します。"
@@ -335,11 +360,14 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
         s"""
         await ctx.trigger_typing()
         try:
+            if username in self.user_cache:
+                del self.user_cache[username]
             if onoff:
                 await self.get_user_id(username)
                 await self.write(ctx.channel, username)
             else:
                 await self.delete(ctx.channel, username)
+                await self.write_user_cache()
         except AssertionError:
             await ctx.reply(
                 {"ja": "既に設定されています。\nまたは設定しすぎです。",
