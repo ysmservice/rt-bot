@@ -160,9 +160,11 @@ class Captcha(commands.Cog, DataManager):
         return self.bot.print("[Captcha]", *args, **kwargs)
 
     @commands.group(
-        aliases=["auth", "cta", "認証"], headding={
+        aliases=["auth", "cta", "認証"], extras={
+            "headding": {
             "ja": "認証機能", "en": "Captcha"
-        }, parent="ServerSafety"
+            }, "parent": "ServerSafety"
+        }
     )
     @commands.has_guild_permissions(manage_roles=True)
     async def captcha(self, ctx: commands.Context):
