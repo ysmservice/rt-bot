@@ -6,6 +6,7 @@ from collections.abc import Callable, Coroutine
 from typing import TypeVar, Literal, Union, Optional, Any
 
 from functools import wraps
+from asyncio import sleep
 
 import discord.ext.commands as commands
 import discord
@@ -189,11 +190,19 @@ class MusicCog(commands.Cog, name="Music"):
             del self.now[ctx.guild.id]
         # 接続していない場合は接続してPlayerを準備する。
         if ctx.guild.id not in self.now:
-            assert ctx.author.voice is not None, "あなたがVCに接続していなければ実行できません。/ \
-                                                  You have to connect to Voice to use this command."
-            self.now[ctx.guild.id] = Player(
-                self, ctx.guild, await ctx.author.voice.channel.connect()
-            )
+            assert ctx.author.voice is not None, {
+                "ja": "あなたがVCに接続していなければ実行できません。",
+                "en": "You have to connect to Voice to use this command."
+            }
+            try:
+                vc = await ctx.author.voice.channel.connect()
+            except discord.ClientException as e:
+                if "Already" in str(e):
+                    await ctx.author.voice.channel.disconnect()
+                    await sleep(1.5)
+                    vc = await ctx.author.voice.channel.connect()
+                else: raise
+            self.now[ctx.guild.id] = Player(self, ctx.guild, vc)
             self.now[ctx.guild.id].channel = ctx.channel
 
         status: Any = {}
