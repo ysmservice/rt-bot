@@ -67,11 +67,14 @@ def setup(bot, only: Union[Tuple[str, ...], List[str]] = []):
 
 
 # discord.ext.tasksのタスクがデータベースの操作失敗によって止まることがないようにする。
-default = tasks.Loop.__init__
-def _init(self, *args, **kwargs):
-    default(self, *args, **kwargs)
-    self.add_exception_type(OperationalError)
-tasks.Loop.__init__ = _init
+if not getattr(tasks.Loop, "_rtlib_extended", False):
+    default = tasks.Loop.__init__
+    def _init(self, *args, **kwargs):
+        default(self, *args, **kwargs)
+        self.add_exception_type(OperationalError)
+        self.add_exception_type(discord.DiscordServerError)
+    tasks.Loop.__init__ = _init
+    tasks.Loop._rtlib_extended = True
 
 
 def sendKwargs(ctx, **kwargs):
