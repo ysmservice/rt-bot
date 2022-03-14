@@ -21,6 +21,7 @@ Example: `rt>autopublic check` (any message sent to a channel with this in the t
 """)
 }
 
+
 class AutoPublic(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -32,7 +33,7 @@ class AutoPublic(commands.Cog):
                 "ChannelPlugin", "AutoPublic",
                 lang, *CHP_HELP[lang]
             )
-        
+
     @commands.Cog.listener()
     async def on_message(self, message):
         if not hasattr(message.channel, "topic"):
@@ -46,6 +47,7 @@ class AutoPublic(commands.Cog):
                     option = line.split()[0]
                     if option == "check":
                         await message.add_reaction("✅")
-                
+
+
 def setup(bot):
-    bot.add_cog(Autopublic(bot))
+    bot.add_cog(AutoPublic(bot))
