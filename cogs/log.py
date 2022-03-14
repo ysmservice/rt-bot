@@ -7,6 +7,7 @@ from asyncio import sleep
 from datetime import datetime, timedelta
 from functools import wraps
 
+
 CHP_HELP = {
     "ja": ("ログ機能。",
 """# ログプラグイン - log
@@ -14,6 +15,7 @@ CHP_HELP = {
 例：`rt>log` (これをトピックに入れたチャンネルにログが送られます)"""),
     "en": ("...", """...""")
 }
+
 
 def log(mode: str = "normal", force: bool = False):
     # ログ用のデコレータです。
@@ -118,7 +120,7 @@ class Log(commands.Cog):
     @log()
     async def on_message_edit(self, before, after):
         embed = discord.Embed(title="メッセージ編集", color=self.c)
-        embed.set_author(icon_url=getattr(after.author.icon, "url", ""))
+        embed.set_author(icon_url=getattr(after.author.avatar, "url", ""))
         embed.add_field(name="Before", value=before.content)
         embed.add_field(name="After", value=after.content)
         return embed

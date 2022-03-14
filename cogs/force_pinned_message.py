@@ -316,7 +316,9 @@ class ForcePinnedMessage(commands.Cog, DataManager):
             if member is None:
                 member = self.bot.get_user(fpm[0])
             content = fpm[3]
-            if content.startswith("<") and content.endswith(">"):
+            if isinstance(content, dict):
+                kwargs = {"embed": discord.Embed.from_dict(content)}
+            elif content.startswith("<") and content.endswith(">"):
                 try:
                     kwargs = {"embed": discord.Embed.from_dict(loads(content[1:-1]))}
                 except ValueError:

@@ -18,6 +18,7 @@ cogs/tts/outputs
 !cogs/tts/outputs/readme.md
 cogs/tts/routine
 youtube-cookies.txt
+data/cookies.txt
 data/*.json
 auth.json
 

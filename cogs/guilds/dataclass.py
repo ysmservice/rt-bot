@@ -1,1 +1,0 @@
-# RT.Guilds - Data Class
