@@ -120,7 +120,7 @@ class Log(commands.Cog):
     @log()
     async def on_message_edit(self, before, after):
         embed = discord.Embed(title="メッセージ編集", color=self.c)
-        embed.set_author(icon_url=getattr(after.author.avatar, "url", ""))
+        embed.set_author(name=after.author.name, icon_url=getattr(after.author.avatar, "url", ""))
         embed.add_field(name="Before", value=before.content)
         embed.add_field(name="After", value=after.content)
         return embed
