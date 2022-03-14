@@ -294,7 +294,7 @@ class Context:
     def __init__(
         self, bot: commands.Bot, interaction: discord.Interaction,
         command: commands.Command, content: str, reply_edit: bool = False,
-        reply_noresponse_edit: bool = False
+        reply_noresponse_edit: bool = False, prefix=""
     ):
         self.interaction = interaction
         self.author, self.channel = interaction.user, interaction.channel
@@ -304,7 +304,7 @@ class Context:
         self.typing, self.trigger_typing = self.channel.typing, self.channel.trigger_typing
 
         self.invoked_subcommand, self._state = False, bot._connection
-        self.bot, self.prefix = bot, "/"
+        self.bot, self.prefix = bot, "/" or prefix
         self.cog, self.command = command.cog, command
         self.content, self.ctx = content, self
         self.edited_at, self.created_at = None, datetime.now(utc)
@@ -312,7 +312,6 @@ class Context:
         self.reply_edit = reply_edit
         self.reply_noresponse_edit = reply_noresponse_edit
         self._extended = True
-        self.message.channel.send.__dict__["_extended"] = self._trigger_typing
 
     def _remove_invalid_args(self, kwargs: dict, original):
         for key in list(kwargs.keys()):
@@ -345,13 +344,9 @@ class Context:
         return await self.interaction.original_message()
 
 
-original_tt = discord.abc.Messageable.trigger_typing
-async def new_tt(self: Union[discord.abc.Messageable, commands.Context]):
-    if getattr(self.send, "_extended", False):
-        await self.send._extended()
-    else:
-        await original_tt(self)
-discord.abc.Messageable.trigger_typing = new_tt
+def _dummy_context(prefix, view, bot, message):
+    message.view = view
+    return message
 
 
 # スラッシュコマンドのテストと登録とその他を入れるコグ
@@ -399,9 +394,9 @@ class SlashManager(commands.Cog):
                             content += f" {data['name']}"
                     # Contextを準備してコマンドフレームワークのコマンドを実行する。
                     ctx = Context(self.bot, interaction, command, content)
-                    processed_ctx = await self.bot.get_context(ctx)
+                    processed_ctx = await self.bot.get_context(ctx, cls=_dummy_context)
                     ctx.view = processed_ctx.view
-                    ctx.args, ctx.kwargs = processed_ctx.args, processed_ctx.kwargs
+                    ctx.args, ctx.kwargs = [], []
                     for name, value in processed_ctx.__dict__.items():
                         if not name.startswith(
                             (
