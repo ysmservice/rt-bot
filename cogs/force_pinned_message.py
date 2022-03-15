@@ -319,8 +319,12 @@ class ForcePinnedMessage(commands.Cog, DataManager):
             if isinstance(content, dict):
                 kwargs = {"embed": discord.Embed.from_dict(content)}
             elif content.startswith("<") and content.endswith(">"):
+                data = loads(content[1:-1])
                 try:
-                    kwargs = {"embed": discord.Embed.from_dict(loads(content[1:-1]))}
+                    if isinstance(data, dict):
+                        kwargs = {"embed": discord.Embed.from_dict(data)}
+                    else:
+                        raise ValueError("")
                 except ValueError:
                     kwargs = {"content": content}
             else:
