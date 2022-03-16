@@ -3,7 +3,7 @@
 from discord.ext import commands
 import discord
 
-from typing import Optional, Tuple, List, Union
+from typing import Optional, Tuple, List
 
 from datetime import timedelta
 from random import randint
@@ -171,7 +171,7 @@ class Person(commands.Cog):
         aliases=["ui", "search_user", "ゆーざーいんふぉ！", "<-これかわいい！"]
     )
     @commands.cooldown(1, 4, commands.BucketType.user)
-    async def userinfo(self, ctx, *, user_name_id: Optional[Union[int, str]] = None):
+    async def userinfo(self, ctx, *, user_name_id = None):
         """!lang ja
         --------
         指定されたユーザーの名前またはユーザーIDからユーザー情報を取得します。
@@ -215,24 +215,23 @@ class Person(commands.Cog):
         `rt!userinfo tasuren`"""
         await ctx.trigger_typing()
         # もしuser_name_idが指定されなかった場合は実行者のIDにする。
+        user, member = None, None
         if user_name_id is None:
             user = member = ctx.author
         else:
             try:
                 user = await commands.UserConverter().convert(ctx, user_name_id)
             except commands.BadArgument:
-                pass
+                if user_name_id.isdigit():
+                    try:
+                        user = await self.bot.fetch_user(int(user_name_id))
+                    except discord.NotFound:
+                        pass
             else:
                 try:
                     member = await commands.MemberConverter().convert(ctx, user_name_id)
                 except commands.BadArgument:
                     pass
-            finally:
-                if isinstance(user_name_id, int):
-                    try:
-                        user = await self.bot.fetch_user(user_name_id)
-                    except discord.NotFound:
-                        pass
 
         assert user is not None, "そのユーザーが見つかりませんでした。"
         # ユーザー情報のEmbedを作る。
