@@ -3,7 +3,7 @@
 from discord.ext import commands
 import discord
 
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Union
 
 from datetime import timedelta
 from random import randint
@@ -171,7 +171,7 @@ class Person(commands.Cog):
         aliases=["ui", "search_user", "ゆーざーいんふぉ！", "<-これかわいい！"]
     )
     @commands.cooldown(1, 4, commands.BucketType.user)
-    async def userinfo(self, ctx, *, user_name_id = None):
+    async def userinfo(self, ctx, *, user_name_id: Optional[Union[int, str]] = None):
         """!lang ja
         --------
         指定されたユーザーの名前またはユーザーIDからユーザー情報を取得します。
@@ -217,28 +217,22 @@ class Person(commands.Cog):
         # もしuser_name_idが指定されなかった場合は実行者のIDにする。
         if user_name_id is None:
             user_name_id = ctx.author.id
-        if isinstance(user_name_id, str):
-            if "@" in user_name_id:
-                user_name_id = user_name_id \
-                    .replace("<", "").replace(">", "") \
-                    .replace("@", "").replace("!", "")
-
-        # ユーザーオブジェクトを取得する。
-        try:
-            user_id = int(user_name_id)
-            user = None
-        except ValueError:
-            member = discord.utils.get(ctx.guild.members, name=user_name_id)
-            if not member:
-                for guild in self.bot.guilds:
-                    user = discord.utils.get(guild.members, name=user_name_id)
-                    if user:
-                        break
-            else:
-                user = member
         else:
-            user = await self.bot.fetch_user(user_id)
-            member = ctx.guild.get_member(user_id)
+            try:
+                user = await commands.UserConverter().convert(ctx, user_name_id)
+            except commands.BadArgument:
+                pass
+            else:
+                try:
+                    member = await commands.MemberConverter().convert(ctx, user_name_id)
+                except commands.BadArgument:
+                    pass
+            finally:
+                if isinstance(user_name_id, int):
+                    try:
+                        user = await self.bot.fetch_user(user_name_id)
+                    except discord.NotFound:
+                        pass
 
         assert user is not None, "そのユーザーが見つかりませんでした。"
         # ユーザー情報のEmbedを作る。
