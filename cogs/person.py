@@ -216,7 +216,7 @@ class Person(commands.Cog):
         await ctx.trigger_typing()
         # もしuser_name_idが指定されなかった場合は実行者のIDにする。
         if user_name_id is None:
-            user_name_id = ctx.author.id
+            user = member = ctx.author
         else:
             try:
                 user = await commands.UserConverter().convert(ctx, user_name_id)
