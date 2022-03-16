@@ -60,9 +60,9 @@ class Mines(commands.Cog):
                                  and m.channel == ctx.channel)
 
             if mes.content == "exit":
-                return await ctx.reply({"ja":"終了","en":"finished"})
+                return await me.edit({"ja":"終了","en":"finished"})
             if mes.content == "answer":
-                await ctx.reply("```\n" + game.get_answer(" ") + "\n```")
+                await me.edit("```\n" + game.get_answer(" ") + "\n```")
                 continue
 
             x, y = mes.content.split()
@@ -84,13 +84,13 @@ class Mines(commands.Cog):
                 title="あなたの負けです。",
                 description="\n```\n" + game.get_answer(" ") + "\n```"
             )
-            return await ctx.reply(embed=embed)
+            return await me.edit(embed=embed)
         elif kek == 301:
             embed = discord.Embed(
                 title="あなたの勝ちです。",
                 description="\n```\n" + game.get_answer(" ") + "\n```"
             )
-            return await ctx.reply(embed=embed)
+            return await me.edit(embed=embed)
 
     @commands.command()
     async def msd(self, ctx, a: discord.Member):
