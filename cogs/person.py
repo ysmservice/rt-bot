@@ -215,30 +215,23 @@ class Person(commands.Cog):
         `rt!userinfo tasuren`"""
         await ctx.trigger_typing()
         # もしuser_name_idが指定されなかった場合は実行者のIDにする。
+        user, member = None, None
         if user_name_id is None:
-            user_name_id = ctx.author.id
-        if isinstance(user_name_id, str):
-            if "@" in user_name_id:
-                user_name_id = user_name_id \
-                    .replace("<", "").replace(">", "") \
-                    .replace("@", "").replace("!", "")
-
-        # ユーザーオブジェクトを取得する。
-        try:
-            user_id = int(user_name_id)
-            user = None
-        except ValueError:
-            member = discord.utils.get(ctx.guild.members, name=user_name_id)
-            if not member:
-                for guild in self.bot.guilds:
-                    user = discord.utils.get(guild.members, name=user_name_id)
-                    if user:
-                        break
-            else:
-                user = member
+            user = member = ctx.author
         else:
-            user = await self.bot.fetch_user(user_id)
-            member = ctx.guild.get_member(user_id)
+            try:
+                user = await commands.UserConverter().convert(ctx, user_name_id)
+            except commands.BadArgument:
+                if user_name_id.isdigit():
+                    try:
+                        user = await self.bot.fetch_user(int(user_name_id))
+                    except discord.NotFound:
+                        pass
+            else:
+                try:
+                    member = await commands.MemberConverter().convert(ctx, user_name_id)
+                except commands.BadArgument:
+                    pass
 
         assert user is not None, "そのユーザーが見つかりませんでした。"
         # ユーザー情報のEmbedを作る。
