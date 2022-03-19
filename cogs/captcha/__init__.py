@@ -180,6 +180,10 @@ class Captcha(commands.Cog, DataManager):
         もし認証対象から外されるまでの時間や外された際にキックをするかどうかの設定をする場合は`timeout`を設定してください。  
         (下の方にヘルプがあります。)
 
+        Notes
+        -----
+        上手くいかない際は[これ](https://rt-team.github.io/ja/trouble/captcha)と[これ](https://rt-team.github.io/ja/trouble/role)をご確認ください。
+
         !lang en
         --------
         Captcha function.  
@@ -190,7 +194,11 @@ class Captcha(commands.Cog, DataManager):
         People who have joined before you set this command will not be authenticated, so you will have to manually grant them a position.  
         By default, if you leave the server for an hour after joining, you will be deauthenticated.  
         If you want to specify how long it takes to be deauthorized, or if you want to kick people when they are deauthorized, set the `timeout`.  
-        (Help is available at the bottom of this page.)"""
+        (Help is available at the bottom of this page.)
+
+        Notes
+        -----
+        If it does not work, please check [this](https://rt-team.github.io/en/trouble/captcha) and [this](https://rt-team.github.io/en/trouble/role)"""
         if not ctx.invoked_subcommand:
             await ctx.reply(
                 {"ja": "使用方法が違います。", "en": "It is wrong way to use this command."}
