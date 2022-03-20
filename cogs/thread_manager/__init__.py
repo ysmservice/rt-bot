@@ -20,6 +20,7 @@ class ThreadManager(commands.Cog, DataManager):
         self.bot = bot
         self.pool: "Pool" = self.bot.mysql.pool
         self.bot.loop.create_task(self.on_help_reload())
+        self.cache = []
         super(commands.Cog, self).__init__(self)
 
     @commands.group(
@@ -246,6 +247,103 @@ class ThreadManager(commands.Cog, DataManager):
         await ctx.channel.remove_user(user)
         await ctx.reply("Ok")
 
+    @threading.group(
+        description="スレッドアーカイブ解除と作成通知を設定します。",
+        aliases=("nof", "通知")
+    )
+    async def notification(self, ctx):
+        """!lang ja
+        --------
+        スレッドのアーカイブ解除と作成通知を行います。
+        `rt!threading notification`で現在設定されている通知設定を表示します。
+
+        Aliases
+        -------
+        nof, 通知
+
+        !lang en
+        --------
+        Thread unarchiving and creation notifications.
+        Displays the currently configured notification settings in `rt!threading notification`.
+
+        Aliases
+        -------
+        nof"""
+        if not ctx.invoked_subcommand:
+            if self.check_notification_onoff(ctx.guild.id):
+                await ctx.reply(embed=discord.Embed(
+                    title="スレッド通知",
+                    description="\n".join(
+                        f"<#{channel_id}>：<@&{role_id}>"
+                        for channel_id, role_id in self.notification[ctx.guild.id].channels
+                    ), color=self.bot.colors["normal"]
+                ))
+            else:
+                await ctx.reply("まだ設定されていません。 / Not set yet.")
+
+    def prepare_notification(self, ctx):
+        if "channels" not in self.notification[ctx.guild.id]:
+            self.notification[ctx.guild.id].channels = []
+
+    @notification.command("set", aliases=("s", "設定"))
+    async def set_notification(self, ctx, *, role: discord.Role):
+        """!lang ja
+        --------
+        実行したチャンネルにスレッド通知を設定します。
+
+        Parameters
+        ----------
+        role : ロールのメンションか名前またはID
+            通知時にメンションするロール
+
+        Aliases
+        -------
+        s, 設定
+
+        !lang en
+        --------
+        Sets thread notification to the executed channel.
+
+        Parameters
+        ----------
+        role : Mention or name or ID of the role
+            Roles to be mented during notification
+
+        Aliases
+        -------
+        s"""
+        self.prepare_notification(ctx)
+        assert len(self.notification[ctx.guild.id].channels) < 10, {
+            "ja": "これ以上設定できません。", "en": "No further settings are possible."
+        }
+        self.notification[ctx.guild.id].channels.append((ctx.channel.id, role.id))
+        await ctx.reply("Ok")
+
+    @notification.command("delete", aliaes=("del", "rm", "remove", "削除"))
+    async def delete_notification(self, ctx):
+        """!lang ja
+        --------
+        実行したチャンネルのスレッド通知設定を解除します。
+
+        Aliases
+        -------
+        del, remove, rm, 削除
+
+        !lang en
+        --------
+        Cancels the thread notification setting for the executed channel.
+
+        Aliases
+        -------
+        del, remove, rm"""
+        self.prepare_notification(ctx)
+        assert [t for t in self.notification[ctx.guild.id].channels if t[0] == ctx.channel.id], {
+            "ja": "設定されていません。", "en": "Not set yet."
+        }
+        for index, t in enumerate(self.notification[ctx.guild.id].channels):
+            if t[0] == ctx.channel.id:
+                del self.notification[ctx.guild.id].channels[index]
+
     @kick.error
     async def on_addkick_error(self, ctx, error):
         if isinstance(error, AssertionError):
@@ -272,7 +370,7 @@ class ThreadManager(commands.Cog, DataManager):
                 )
 
     @commands.Cog.listener()
-    async def on_thread_update(self, _, after: discord.Thread):
+    async def on_thread_update(self, before: discord.Thread, after: discord.Thread):
         if (after.archived and not after.locked
             and after.parent.id in await (
                 self.get_data(after.guild.id)
@@ -280,6 +378,28 @@ class ThreadManager(commands.Cog, DataManager):
         ):
                 # 自動ロックされたならロックを解除する。
                 await after.edit(archived=False)
+        if (before.archived and not after.archived) or (before.locked and not after.locked):
+            # アーカイブ解除時には通知を行う。
+            if after.guild.id in self.cache:
+                self.cache.remove(after.guild.id)
+            else:
+                self.cache.append(after.guild.id)
+                await self.process_notification(after, "アーカイブ解除通知")
+                await sleep(5)
+                if after.guild.id in self.cache:
+                    self.cache.remove(after.guild.id)
+
+    @commands.Cog.listener()
+    async def on_thread_join(self, thread: discord.Thread):
+        if discord.utils.get(thread.members, id=self.bot.user.id) is None:
+            if thread.guild.id in self.cache:
+                self.cache.remove(thread.guild.id)
+            else:
+                self.cache.append(thread.guild.id)
+                await self.process_notification(thread, "スレッド作成通知")
+                await sleep(5)
+                if thread.guild.id in self.cache:
+                    self.cache.remove(thread.guild.id)
 
     @commands.Cog.listener()
     async def on_help_reload(self):

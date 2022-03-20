@@ -1,23 +1,30 @@
 # RT.thread_manager - Data Class
 
-from typing import TYPE_CHECKING, Union, Dict, Callable
+from typing import TYPE_CHECKING, Union, Dict, Optional
 
 import discord
 
 from asyncio import Event, wait_for, TimeoutError
 from functools import wraps
 
+from rtlib import Table
+
 from .constants import DB, MAX_CHANNELS
 
 if TYPE_CHECKING:
-    from aiomysql import Cursor, Pool
     from .__init__ import ThreadManager
+
+
+class ThreadNotification(Table):
+    __allocation__ = "GuildID"
+    channels: list[tuple[int, int]]
 
 
 class DataManager:
     def __init__(self, cog: "ThreadManager"):
         self.cog, self.pool = cog, cog.pool
         self.cog.bot.loop.create_task(self.prepare_table())
+        self.notification = ThreadNotification(self.cog.bot)
 
     async def prepare_table(self) -> None:
         """テーブルを準備する。"""
@@ -29,6 +36,16 @@ class DataManager:
                     );"""
                 )
 
+    def check_notification_onoff(self, guild_id: int) -> bool:
+        return "channels" in self.notification[guild_id]
+
+    async def process_notification(self, thread: discord.Thread, mode: str) -> None:
+        if self.check_notification_onoff(thread.guild.id):
+            for tentative in self.notification[thread.guild.id].channels:
+                if tentative[0] == thread.parent_id:
+                    await thread.send(f"<@&{tentative[1]}>, {mode}")
+                    break
+
     def get_data(self, guild_id: int) -> "GuildData":
         """サーバーのデータクラスを取得します。"""
         return GuildData(self.cog, guild_id)
@@ -39,7 +56,7 @@ def wait_ready(coro):
     @wraps(coro)
     async def new_coro(self: "GuildData", *args, **kwargs):
         try:
-            await wait_for(self.lock.wait(), 3, loop=self.cog.bot.loop)
+            await wait_for(self.lock.wait(), 6, loop=self.cog.bot.loop)
         except TimeoutError:
             raise TimeoutError("データベースに嫌われてしまいました。悲しいです。")
         else:
