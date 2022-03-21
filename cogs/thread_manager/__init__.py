@@ -78,9 +78,9 @@ class ThreadManager(commands.Cog, DataManager):
                     "ja": "スレッド監視対象チャンネル",
                     "en": "Inspection Target Channels"
                 }, description="\n".join(
-                    f"・{channel.mention}"
-                    for channel in (await self.get_data(ctx.guild.id)
-                        .get_channels()).values()
+                    f"・<#{channel_id}>"
+                    for channel_id in (await self.get_data(ctx.guild.id)
+                        .get_channels()).keys()
                 ), color=self.bot.colors["normal"]
             )
         )
