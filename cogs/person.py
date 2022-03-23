@@ -311,7 +311,7 @@ class Person(commands.Cog):
         # 作ったEmbedを送信する。
         await ctx.send(embeds=embeds)
 
-    async def yahoo(self, keyword: str) -> Tuple[str, List[Tuple[str, str]]]:
+    async def yahoo(self, keyword: str) -> tuple[str, list[tuple[str, str]]]:
         "yahooで検索を行います。"
         results = []
         url = 'https://search.yahoo.co.jp/search?p=' + \
