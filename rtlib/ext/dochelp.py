@@ -65,16 +65,47 @@ async def soudayo(ctx, mode="便乗"):
 
 # 上のコマンドにあるドキュメンテーションがヘルプリストに自動で追加されます。"""
 
+from __future__ import annotations
+
+from collections.abc import Callable
+
+from inspect import ismethod
+from functools import wraps
+
 from discord.ext import commands
 import discord
 
 from aiofiles import open as async_open
 from ujson import loads, dumps
-from typing import Dict, List
-from inspect import ismethod
-from copy import copy
 
 from .util import DocParser
+from data import PERMISSION_TEXTS
+
+
+def make_permission_help(
+    perms: dict[str, bool], option: Callable[[str], str] = lambda x: x
+) -> str:
+    "権限のヘルプを作ります。"
+    return f'`{"`, `".join(option(perm) for perm, is_enable in perms.items() if is_enable)}`'
+
+
+# 権限一覧をヘルプに追加するように改造する。
+def make_new_hp(original):
+    @wraps(original)
+    def new_hp(**perms):
+        decorator = original(**perms)
+        @wraps(decorator)
+        def new_decorator(func):
+            if func.__doc__ and "!lang en" in func.__doc__:
+                func.__doc__ = func.__doc__.replace("!lang en", f"Permissions\n        -----------\n        {make_permission_help(perms, lambda perm: PERMISSION_TEXTS.get(perm, perm))}\n\n        !lang en")
+                func.__doc__ += f"\n\n        Permissions\n        -----------\n        {make_permission_help(perms)}"
+                if func.__name__ == "captcha":
+                    print(func.__doc__)
+            return decorator(func)
+        return new_decorator
+    return new_hp
+commands.has_permissions = make_new_hp(commands.has_permissions)
+commands.has_guild_permissions = make_new_hp(commands.has_guild_permissions)
 
 
 class DocHelp(commands.Cog):
@@ -84,8 +115,8 @@ class DocHelp(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.data: dict = {}
-        self.tree: Dict[str, List[str]] = {}
-        self.categories: Dict[str, str] = {}
+        self.tree: dict[str, list[str]] = {}
+        self.categories: dict[str, str] = {}
 
         self.dp = DocParser()
         self.indent_type = " "
@@ -109,7 +140,7 @@ class DocHelp(commands.Cog):
             self.bot.dispatch("command_add", command)
             await self.on_command_add_kari(command)
 
-    def convert_embed(self, command_name: str, doc: str, **kwargs) -> List[discord.Embed]:
+    def convert_embed(self, command_name: str, doc: str, **kwargs) -> list[discord.Embed]:
         """渡されたコマンド名とヘルプ(マークダウン)をEmbedにします。
         Parameters
         ----------
@@ -187,14 +218,12 @@ class DocHelp(commands.Cog):
                 if command.name not in self.categories:
                     self.categories[command.name] = category
                     self.tree[command.name] = []
+                self.data[category][command.name] = {}
                 # コマンドのデータを作っていく。
-                self.data[category][command.name] = {
-                    lang: {} for lang in self.ALLOW_LANGUAGES
-                }
                 for lang in data:
                     self.data[category][command.name][lang] = [
                         extras.get("headding", {}).get(lang, "..."),
-                        copy(data[lang])
+                        data[lang]
                     ]
             elif (parent := command.root_parent):
                 parent = parent.name

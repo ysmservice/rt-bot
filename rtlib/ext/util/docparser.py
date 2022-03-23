@@ -2,6 +2,8 @@
 
 from typing import Literal, Optional, Union, Callable, Tuple
 
+from inspect import cleandoc
+
 
 class DocParser:
     """ドキュメントをパースするためのクラスです。"""
@@ -15,7 +17,8 @@ class DocParser:
             "Raises": "### 起こり得るエラー",
             "Returns": "### 実行結果",
             "See Also": "### 関連事項",
-            "Aliases": "### エイリアス"
+            "Aliases": "### エイリアス",
+            "Permissions": "### 権限"
         },
         "en": {
             "Parameters": "### Argments",
@@ -25,7 +28,8 @@ class DocParser:
             "Raises": "### Possible errors",
             "Returns": "### Result",
             "See Also": "### See Also",
-            "Aliases": "### Aliases"
+            "Aliases": "### Aliases",
+            "Permissions": "### Permissions"
         }
     }
     ITEM_REPLACE_TEXTS = {
@@ -166,10 +170,7 @@ class DocParser:
             "code": False
         }
 
-        for line in doc.splitlines():
-            # もしインデントがあるならインデントを削除しておく。
-            if line != "":
-                line = line[indent*first_indent_count:]
+        for line in cleandoc(doc).splitlines():
             if "```" in line:
                 now["code"] = not now["code"]
 
