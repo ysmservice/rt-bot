@@ -1,16 +1,20 @@
 # RT - Blocker
 
-from typing import Union, Literal, Dict, List
+from __future__ import annotations
+
+from typing import Union, Literal
+
+from collections import defaultdict
+from collections.abc import Iterator
 
 from discord.ext import commands
 import discord
 
-from collections import defaultdict
 from aiomysql import Pool, Cursor
 from ujson import loads, dumps
 
 from rtutil import DatabaseManager
-from rtlib import RT, setting
+from rtlib import RT, Table, setting
 
 from .automod.modutils import emoji_count
 
@@ -18,8 +22,8 @@ from .automod.modutils import emoji_count
 class DataManager(DatabaseManager):
 
     TABLE = "Blocker"
-    Mode = Literal["emoji", "stamp"]
-    cache: Dict[int, Dict[Mode, List[int]]] = {}
+    Mode = Literal["emoji", "stamp", "reaction"]
+    cache: dict[int, dict[Mode, list[int]]] = {}
     MAX_ROLES = 15
 
     def __init__(self, cog: "Blocker"):
@@ -92,6 +96,9 @@ class DataManager(DatabaseManager):
         await self._update(cursor, guild_id, mode, [])
 
 
+Role = Union[discord.Role, discord.Object, Literal[0]]
+
+
 class Blocker(commands.Cog, DataManager):
     def __init__(self, bot: RT):
         self.bot = bot
@@ -128,19 +135,19 @@ class Blocker(commands.Cog, DataManager):
 
     HELP = ("ServerSafety", "blocker")
 
-    @blocker.command(aliases=["設定", "t"])
+    @blocker.command("toggle", aliases=["設定", "t"])
     @commands.has_guild_permissions(manage_messages=True)
     @commands.cooldown(1, 10, commands.BucketType.guild)
     @setting.Setting("guild", "Emoji Blocker 0", HELP)
-    async def toggle(self, ctx: commands.Context, *, mode: DataManager.Mode):
+    async def _toggle(self, ctx: commands.Context, *, mode: DataManager.Mode):
         """!lang ja
         --------
-        絵文字またはスタンプのブロックの有効/無効の切り替えをします。  
+        リアクションか絵文字またはスタンプのブロックの有効/無効の切り替えをします。  
         ですが、有効にしても対象のロールを追加しなければ意味がありませんので、削除対象のロールの設定を忘れずに。
 
         Parameters
         ----------
-        mode : emoji または stamp
+        mode : emoji または stamp または reaction
             削除するものです。
 
         Aliases
@@ -149,23 +156,20 @@ class Blocker(commands.Cog, DataManager):
 
         !lang en
         --------
-        Enable/disable the blocking of emoji or stamps.  
+        Enable/disable the blocking of emoji or stamps or reaction.  
         But even if you enable it, it will be useless if you don't add the target role, so don't forget to set the target role for deletion.
 
         Parameters
         ----------
-        mode : emoji / stamp
+        mode : emoji / stamp / reaction
             It is what RT will delete.
 
         Aliases
         -------
         t"""
         await ctx.trigger_typing()
-        onoff = await self.write(ctx.guild.id, mode)
-        await ctx.reply(
-            {"ja": f"設定を{'有効' if onoff else '無効'}にしました。",
-             "en": f"I set {'enable' if onoff else 'disable'} to {mode} block setting."}
-        )
+        await self.write(ctx.guild.id, mode)
+        await ctx.reply("Ok")
 
     @blocker.group(
         aliases=["ロール", "役職", "r"], headding={
@@ -209,14 +213,12 @@ class Blocker(commands.Cog, DataManager):
                         )
                 await ctx.reply(embed=embed)
 
-    Role = Union[discord.Role, discord.Object, Literal[0]]
-
     @role.command(aliases=["追加", "a"])
     @commands.cooldown(1, 8, commands.BucketType.guild)
     @commands.has_guild_permissions(manage_messages=True)
     @setting.Setting("guild", "Emoji Blocker 2", HELP)
     async def add(
-        self, ctx: commands.Context, mode: DataManager.Mode, *, role: Role
+        self, ctx: commands.Context, mode: DataManager.Mode, *, role: "Role"
     ):
         """!lang ja
         --------
@@ -224,8 +226,8 @@ class Blocker(commands.Cog, DataManager):
 
         Parameters
         ----------
-        mode : emoji / stamp
-            絵文字かスタンプどっちの時での設定かです。
+        mode : emoji / stamp / reaction
+            絵文字かスタンプかリアクションどっちの時での設定かです。
         role : 役職名,IDまたはメンション
             設定する役職です。
 
@@ -239,8 +241,8 @@ class Blocker(commands.Cog, DataManager):
 
         Parameters
         ----------
-        mode : emoji / stamp
-            Emoji or Stamp
+        mode : emoji / stamp / reaction
+            Emoji or Stamp or reaction
         role : role's name, role's ID or role mention
             Target role
 
@@ -259,7 +261,7 @@ class Blocker(commands.Cog, DataManager):
     @commands.has_guild_permissions(manage_messages=True)
     @setting.Setting("guild", "Emoji Blocker 3", HELP)
     async def remove(
-        self, ctx: commands.Context, mode: DataManager.Mode, *, role: Role
+        self, ctx: commands.Context, mode: DataManager.Mode, *, role: "Role"
     ):
         """!lang ja
         --------
@@ -281,32 +283,44 @@ class Blocker(commands.Cog, DataManager):
 
     HEADDING = "[RT.Blocker]"
 
+    def is_should_check(self, author: discord.Member) -> Iterator[str]:
+        "ブロックをすべきかを確かめます。"
+        for mode, roles in list(self.cache[author.guild.id].items()):
+            if any(
+                author.get_role(role_id) or role_id == 0
+                for role_id in roles
+            ):
+                yield mode
+
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if (message.guild and isinstance(message.author, discord.Member)
-#                and not message.author.guild_permissions.administrator
                 and message.guild.id in self.cache):
             # ブロックをするかをチェックする。
-            for mode, roles in list(self.cache[message.guild.id].items()):
-                if any(
-                    message.author.get_role(role_id) or role_id == 0
-                    for role_id in roles
-                ):
-                    content = ""
-                    if mode == "emoji" and emoji_count(message.content):
-                        # 絵文字のブロックをする。
-                        content = "絵文字送信ブロック対象のため"
-                    elif mode == "stamp" and message.stickers:
-                        # スタンプのブロックをする。。
-                        content = "スタンプ送信ブロック対象のため"
-                    if content:
-                        # メッセージを削除する。
-                        await message.delete()
-                        await message.author.send(
-                            f"あなたの{message.guild.name}で送った{'以下の' if message.content else ''}メッセージはあなたが{content}削除されました。"
-                            + (f"\n>>> {message.content}" if message.content else '')
-                        )
-                        break
+            for mode in self.is_should_check(message.author):
+                content = ""
+                if mode == "emoji" and emoji_count(message.content):
+                    # 絵文字のブロックをする。
+                    content = "絵文字送信ブロック対象のため"
+                elif mode == "stamp" and message.stickers:
+                    # スタンプのブロックをする。。
+                    content = "スタンプ送信ブロック対象のため"
+                if content:
+                    # メッセージを削除する。
+                    await message.delete()
+                    await message.author.send(
+                        f"あなたの{message.guild.name}で送った{'以下の' if message.content else ''}メッセージはあなたが{content}削除されました。"
+                        + (f"\n>>> {message.content}" if message.content else '')
+                    )
+                    break
+
+    @commands.Cog.listener()
+    async def on_full_reaction_add(self, payload: discord.RawReactionActionEvent):
+        if payload.guild_id is not None and payload.guild_id in self.cache:
+            for mode in self.is_should_check(payload.member):
+                if mode == "reaction":
+                    await payload.message.remove_reaction(payload.emoji, payload.member)
+                    break
 
 
 def setup(bot):
