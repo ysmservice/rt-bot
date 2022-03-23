@@ -7,7 +7,7 @@ from random import choice
 from discord.ext import commands
 import discord
 
-from rtlib import mysql, DatabaseManager
+from rtlib import RT, mysql, DatabaseManager
 from rtlib.page import EmbedPage
 from rtlib.ext import componesy
 from data import is_admin
@@ -61,7 +61,7 @@ class DataManager(DatabaseManager):
 
 
 class GlobalBan(commands.Cog, DataManager):
-    def __init__(self, bot):
+    def __init__(self, bot: RT):
         self.bot = bot
         self.bot.loop.create_task(self.on_ready())
 
@@ -140,6 +140,44 @@ class GlobalBan(commands.Cog, DataManager):
         await ctx.trigger_typing()
         await self.onoff_guild(ctx.guild.id, not await self.get_onoff(ctx.guild.id))
         await ctx.reply("Ok")
+
+    @gban.command(aliases=("c", "チェック", "確認"))
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def check(self, ctx, *, user: discord.User):
+        """!lang ja
+        --------
+        指定したユーザーがGBANされているか確認します。
+
+        Parameters
+        ----------
+        user : ユーザーIDか名前かメンション
+            チェックするユーザーです。
+
+        Aliases
+        -------
+        c, チェック, 確認
+
+        !lang en
+        --------
+        Checks if the specified user is GBANed.
+
+        Parameters
+        ----------
+        user : user ID or name or mention
+            User to be checked.
+
+        Aliases
+        -------
+        c"""
+        await ctx.trigger_typing()
+        data = await self.get(user.id)
+        await ctx.reply(embed=discord.Embed(
+            title={
+                "ja": f"その人はGBAN{'されています' if data else 'されていません'}",
+                "en": f"GBanned{'' if data else ' yet'}"
+            }, description=data[1] if data else "...",
+            color=self.bot.Colors.error if data else self.bot.Colors.normal
+        ))
 
     @gban.command("list")
     @commands.cooldown(1, 60, commands.BucketType.user)
