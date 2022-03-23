@@ -73,6 +73,7 @@ class Mines(commands.Cog):
                 kek = game.set(int(x), int(y))
             except ValueError:
                 pass
+            if kek in (410, 301): break
             try:
                 await mes.delete()
             except BaseException:
