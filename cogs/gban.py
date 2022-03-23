@@ -143,7 +143,7 @@ class GlobalBan(commands.Cog, DataManager):
 
     @gban.command(aliases=("c", "チェック", "確認"))
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def check(self, ctx, *, user: discord.User):
+    async def check(self, ctx, *, user: Union[discord.User, discord.Object]):
         """!lang ja
         --------
         指定したユーザーがGBANされているか確認します。
