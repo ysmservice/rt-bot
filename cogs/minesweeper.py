@@ -37,6 +37,9 @@ class Mines(commands.Cog):
         -------
         ms, MS
         """
+        if hasattr(ctx, "interaction"):
+            await ctx.reply("マインスイーパーを開始します。")
+            ctx.send = ctx.channel.send
         self.games[str(ctx.author.id)] = Ms(x, y, bomb)
         kek, mes, me = 200, ctx.message, False
         l = len(ctx.message.content.split())
@@ -50,7 +53,7 @@ class Mines(commands.Cog):
                 description="".join(("`1 4`のように横何番目と何行目で送信してください。\n爆弾数：",
                                      str(game.bomb), "\n```\n", game.get(" "), "\n```"))
             ).set_footer(text="exitと送信すると終了します。")
-            me = await ctx.reply(embed=embed)
+            me = await ctx.send(ctx.author.mention, embed=embed)
 
             mes = await self.bot.wait_for(
                 'message',
