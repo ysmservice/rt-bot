@@ -1,18 +1,26 @@
 # RT - Person
 
-from discord.ext import commands
-import discord
+from __future__ import annotations
 
-from typing import Optional, Tuple, List
+from typing import Optional
 
 from datetime import timedelta
 from random import randint
 from re import findall
 import asyncio
 
+from discord.ext import commands
+import discord
+
 from aiohttp import ClientSession
 from bs4 import BeautifulSoup
-from emoji import emoji_lis
+
+from rtlib import RT, Table
+
+
+class Yahoo(Table):
+    __allocation__ = "GuildID"
+    onoff: bool
 
 
 class Person(commands.Cog):
@@ -30,9 +38,10 @@ class Person(commands.Cog):
         "search": "<:search:876360747440017439>"
     }
 
-    def __init__(self, bot):
+    def __init__(self, bot: RT):
         self.bot = bot
         self.session = ClientSession()
+        self.ydata = Yahoo(self.bot)
 
     async def search_message(
         self, channel: discord.TextChannel,
@@ -435,9 +444,30 @@ class Person(commands.Cog):
     async def on_close(self, loop):
         self.cog_unload(loop=loop)
 
+    @commands.command(aliases=("yt", "とは"), extras={
+        "headding": {"ja": "〜〜とはでYahoo検索", "en": "..."},
+        "parent": "ServerUseful"
+    })
+    @commands.has_guild_permissions(administrator=True)
+    async def yahootoha(self, ctx):
+        """!lang ja
+        --------
+        `〜〜とは`と入力した際にYahoo検索を行うボタンリアクションを付けることをするかしないかを切り替えます。
+        デフォルトで有効です。
+
+        !lang en
+        --------
+        ..."""
+        self.ydata[ctx.guild.id].onoff = self.ydata[ctx.guild.id].to_dict().get("onoff", False)
+        await ctx.reply("Ok")
+
+    def is_yt_onoff(self, guild_id: int) -> bool:
+        return self.ydata[guild_id].to_dict().get("onoff", True)
+
     @commands.Cog.listener()
     async def on_message(self, message):
-        if not message.guild or message.author.bot:
+        if not message.guild or message.author.bot or not self.is_yt_onoff(message.guild.id) \
+                or message.content in ("あとは", "とは", "あとは？"):
             return
 
         # もし`OOOとは。`に当てはまるなら押したら検索を行うリアクションを付ける。
