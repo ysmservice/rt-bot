@@ -305,16 +305,16 @@ class BotGeneral(commands.Cog):
         elif isinstance(error, (commands.MemberNotFound,
                         commands.UserNotFound)):
             title = "400 Bad Request"
-            description = {"ja": "指定されたユーザーが見つかりませんでした。",
-                           "en": "I can't found that user."}
+            description = {"ja": f"指定されたユーザー:{error.argument}が見つかりませんでした。",
+                           "en": f"The user not found:{error.argument}."}
         elif isinstance(error, commands.ChannelNotFound):
             title = "400 Bad Request"
-            description = {"ja": "指定されたチャンネルが見つかりませんでした。",
-                           "en": "I can't found that channel"}
+            description = {"ja": f"指定されたチャンネル:{error.argument}が見つかりませんでした。",
+                           "en": f"The channel not found:{error.argument}."}
         elif isinstance(error, commands.RoleNotFound):
             title = "400 Bad Request"
-            description = {"ja": "指定されたロールが見つかりませんでした。",
-                           "en": "I can't found that role."}
+            description = {"ja": f"指定されたロール:{error.argument}が見つかりませんでした。",
+                           "en": f"The role not found:{error.argument}."}
         elif isinstance(error, commands.BadBoolArgument):
             title = "400 Bad Request"
             description = {"ja": ("指定された真偽値が無効です。\n"
@@ -347,8 +347,8 @@ class BotGeneral(commands.Cog):
             }
         elif isinstance(error, commands.MissingRole):
             title = "403 Forbidden"
-            description = {"ja": "あなたはこのコマンドの実行に必要な役職を持っていないため、このコマンドを実行できません。",
-                           "en": "You can't do this command. Because you need permission"}
+            description = {"ja": f"あなたはこのコマンドの実行に必要な役職:{error.missing_role}を持っていないため、このコマンドを実行できません。",
+                           "en": f"You have to have the role:{error.argument} to run this command."}
         elif isinstance(error, commands.CheckFailure):
             title = "403 Forbidden"
             description = {"ja": "あなたはこのコマンドを実行することができません。",
