@@ -1,8 +1,8 @@
 [![Discord Bots](https://top.gg/api/widget/status/716496407212589087.svg)](https://top.gg/bot/716496407212589087) [![Discord Bots](https://top.gg/api/widget/servers/716496407212589087.svg)](https://top.gg/bot/716496407212589087) ![Discord](https://img.shields.io/discord/718641964672876614?label=support&logo=discord)
 # RT Bot
 This is the RT Bot of Discord's Bot.  
-RT is a feature-rich bot with features that most bots have, plus more.　　
-It also has features that other bots don't have, such as a music player and TTS.  
+RT is a feature-rich bot with features that most bots have.  
+It also has features that other bots don't have.  
 Connect to RT, Discord's Bot account, to start RT's service.  
 It also communicates with `rt-backend` via WebSocket for web authentication and so on.  
 If you don't know about RT, have a look at [here](https://rt-bot.com).  
