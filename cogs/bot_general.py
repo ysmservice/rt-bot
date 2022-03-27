@@ -7,6 +7,7 @@ from collections import defaultdict
 from inspect import cleandoc
 from itertools import chain
 from random import choice
+from io import StringIO
 from time import time
 import speedtest
 
@@ -107,6 +108,7 @@ class BotGeneral(commands.Cog):
 
     def __init__(self, bot: RT):
         self.bot, self.rt = bot, bot.data
+        self.errors = []
 
         if not hasattr(self, "thx_view"):
             self.thx_view = EnglishThxTemplateView(timeout=None)
@@ -115,6 +117,7 @@ class BotGeneral(commands.Cog):
         self.wslatency = "..."
         self.cache: defaultdict[int, dict[str, float]] = defaultdict(dict)
         self.remove_cache.start()
+        self.error_log_to_discord.start()
 
         self.make_embed_template()
 
@@ -371,6 +374,7 @@ class BotGeneral(commands.Cog):
             error_message = "".join(
                 TracebackException.from_exception(error).format()
             )
+            self.errors.append(error_message)
 
             print(error_message)
 
@@ -409,6 +413,18 @@ class BotGeneral(commands.Cog):
         except Exception as e:
             kwargs["content"] = str(e)
             await ctx.send(**kwargs)
+
+    @tasks.loop(hours=2)
+    async def error_log_to_discord(self):
+        # discordの特定のチャンネルにエラーを送信します。
+        if len(self.errors) == 0:
+            return
+        error_logs = set(self.errors)
+        await self.bot.get_channel(739110499987226624).send(
+            embed=discord.Embed(title="エラーログ", description=f"この2時間に発生したエラーの回数:{len(self.errors)}"),
+            file=StringIO("\n\n".join(error_logs))
+        )
+        self.errors = []
 
     def get_help_url(self, category: str, name: str) -> str:
         return f"https://rt-bot.com/help.html?g={category}&c={name}"
