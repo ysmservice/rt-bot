@@ -375,6 +375,7 @@ class BotGeneral(commands.Cog):
                 TracebackException.from_exception(error).format()
             )
             self.errors.append(error_message)
+            self.errors = list(set(self.errors))
 
             print(error_message)
 
@@ -419,10 +420,9 @@ class BotGeneral(commands.Cog):
         # discordの特定のチャンネルにエラーを送信します。
         if len(self.errors) == 0:
             return
-        error_logs = set(self.errors)
         await self.bot.get_channel(739110499987226624).send(
             embed=discord.Embed(title="エラーログ", description=f"この2時間に発生したエラーの回数:{len(self.errors)}"),
-            file=discord.File(StringIO("\n\n".join(error_logs)))
+            file=discord.File(StringIO("\n\n".join(self.errors)))
         )
         self.errors = []
 
