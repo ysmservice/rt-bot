@@ -422,7 +422,7 @@ class BotGeneral(commands.Cog):
         error_logs = set(self.errors)
         await self.bot.get_channel(739110499987226624).send(
             embed=discord.Embed(title="エラーログ", description=f"この2時間に発生したエラーの回数:{len(self.errors)}"),
-            file=StringIO("\n\n".join(error_logs))
+            file=discord.File(StringIO("\n\n".join(error_logs)))
         )
         self.errors = []
 
