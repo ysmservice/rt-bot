@@ -108,7 +108,7 @@ class BotGeneral(commands.Cog):
 
     def __init__(self, bot: RT):
         self.bot, self.rt = bot, bot.data
-        self.errors = []
+        self.errors = set()
 
         if not hasattr(self, "thx_view"):
             self.thx_view = EnglishThxTemplateView(timeout=None)
@@ -374,8 +374,7 @@ class BotGeneral(commands.Cog):
             error_message = "".join(
                 TracebackException.from_exception(error).format()
             )
-            self.errors.append(error_message)
-            self.errors = list(set(self.errors))
+            self.errors.add(error_message)
 
             print(error_message)
 
@@ -424,7 +423,7 @@ class BotGeneral(commands.Cog):
             embed=discord.Embed(title="エラーログ", description=f"この2時間に発生したエラーの回数:{len(self.errors)}"),
             file=discord.File(StringIO("\n\n".join(self.errors)))
         )
-        self.errors = []
+        self.errors = set()
 
     def get_help_url(self, category: str, name: str) -> str:
         return f"https://rt-bot.com/help.html?g={category}&c={name}"
