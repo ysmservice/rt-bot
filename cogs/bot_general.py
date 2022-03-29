@@ -126,10 +126,6 @@ class BotGeneral(commands.Cog):
         self._start_time = time()
         self.status_updater.start()
 
-    @commands.Cog.listener()
-    async def on_ready(self):
-        self.on_error_channel = self.bot.get_channel(ERROR_CHANNEL)
-
     def _get_ping(self) -> str:
         # pingを返します。
         return "%.1f" % round(self.bot.latency * 1000, 1)
@@ -419,7 +415,7 @@ class BotGeneral(commands.Cog):
         # discordの特定のチャンネルにエラーを送信します。
         if len(self.errors) == 0:
             return
-        await self.bot.get_channel(739110499987226624).send(
+        await self.bot.get_channel(ERROR_CHANNEL).send(
             embed=discord.Embed(title="エラーログ", description=f"この2時間に発生したエラーの回数:{len(self.errors)}"),
             file=discord.File(StringIO("\n\n".join(self.errors)))
         )
