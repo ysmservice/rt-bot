@@ -123,7 +123,7 @@ class View(discord.ui.View):
                 )
         else:
             await interaction.response.send_message(
-                "あなたは認証対象ではありません。", ephemeral=True
+                "あなたは認証対象ではありません。\n放置した場合こうなります。\nもしなぜこうなるのかわからないのなら以下をご覧ください。\nhttps://rt-team.github.io/ja/trouble/captcha", ephemeral=True
             )
 
 
@@ -171,7 +171,7 @@ class Captcha(commands.Cog, DataManager):
         """!lang ja
         --------
         認証機能です。  
-        [セルフBot](https://rt-team.github.io/notes/what_is_self_bot)による荒らし対策に有効です。
+        [セルフBot](https://rt-team.github.io/ja/notes/what_is_self_bot)による荒らし対策に有効です。
 
         Warnings
         --------
