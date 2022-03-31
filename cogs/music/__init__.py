@@ -124,9 +124,9 @@ class MusicCog(commands.Cog, name="Music"):
 
         Notes
         -----
-        対応しているものはYouTubeとニコニコ動画とSoundCloudです。
-        また、YouTubeの再生リストそしてニコニコ動画のマイリストの全ての曲の再生にも対応しています。
-        もし他の曲の再生中にこのコマンドを実行した場合はキューといういわゆる再生予定リストに登録されます。
+        YouTubeとニコニコ動画とSoundCloudに対応しています。
+        また、YouTubeの再生リストやニコニコ動画のマイリストの再生にも対応しています。
+        もし他の曲の再生中にこのコマンドを実行した場合はキューという再生予定リストに登録されます。
 
         Parameters
         ----------
@@ -310,7 +310,7 @@ class MusicCog(commands.Cog, name="Music"):
     async def skip(self, ctx: UnionContext):
         """!lang ja
         --------
-        スキップをします。
+        曲のスキップをします。
 
         Aliases
         -------
@@ -333,7 +333,7 @@ class MusicCog(commands.Cog, name="Music"):
     async def repeate(self, ctx: UnionContext, mode: Literal["none", "all", "one", "auto"] = "auto"):
         """!lang ja
         --------
-        ループ切り替えをします。
+        ループの設定を切り替えます。
 
         Aliases
         -------
