@@ -613,7 +613,7 @@ class MusicCog(commands.Cog, name="Music"):
         Parameters
         ----------
         url : str
-            追加する曲またはYouTubeの再生リストまたはニコニコ動画のマイリストのURLです。
+            追加する曲,YouTubeの再生リスト,ニコニコ動画のマイリストのどれかのURLです。
 
         Aliases
         -------
