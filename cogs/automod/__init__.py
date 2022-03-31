@@ -94,7 +94,7 @@ class AutoMod(commands.Cog, DataManager):
         Warnings
         --------
         しっかりとヘルプを読んで設定をしましょう。  
-        さもないと痛い目にあいます。
+        でないと痛い目にあいます。
 
         Aliases
         -------
@@ -171,10 +171,10 @@ class AutoMod(commands.Cog, DataManager):
     ):
         """!lang ja
         -------
-        スパム検知をしない例外チャンネルを設定します。  
-        このコマンドで登録したスパム検知例外チャンネルではスパムをしてもなにもRTがしないようになります。  
-        スパム検知例外チャンネルはNekoBotなどの画像Botのコマンドを使うようのチャンネル等に設定しましょう。  
-        また、設定した際はそのチャンネルにスローモードをつけるなどをするのを推奨します。
+        spam(高速でメッセージを送信すること)の検知をしない例外チャンネルを設定します。  
+        登録したチャンネルでは、spamをしてもRTがなにもしないようになります。  
+        spam検知例外チャンネルはNekoBotなどの画像Botのコマンドを使うためのチャンネル等に設定しましょう。  
+        また、設定した際はそのチャンネルにスローモードをつけるなど対策を取ることを推奨します。
 
         Parameters
         ----------
@@ -227,9 +227,8 @@ class AutoMod(commands.Cog, DataManager):
         """!lang ja
         -------
         警告数の設定をします。  
-        警告数というのは要するに処罰されるかもしれない度です。  
-        スパムをすると警告数が徐々に上がります。  
-        そして最終的に設定されている警告数まで達した際にタイムアウトまたはBANをくらいます。
+        RTがspamを検知したときに自動で警告数がたまっていきます。  
+        そして最終的に設定されている警告数まで達した際にユーザーはタイムアウトまたはBANされます。
 
         Notes
         -----
@@ -281,19 +280,19 @@ class AutoMod(commands.Cog, DataManager):
         """!lang ja
         --------
         警告数処罰レベルを設定します。  
-        このコマンドを使うことでどれくらい警告数が上がったらBAN/タイムアウトをするかを設定することができます。
+        どれくらい警告数が上がったらBAN/タイムアウトをするかを設定することができます。
 
         Parameters
         ----------
         mode : ban または timeout
-            `ban`にした場合はBANで`timeout`にした場合はタイムアウトとして設定します。
+            `ban`にした場合はBANで`timeout`にした場合はタイムアウトに対する警告数を設定します。
         warn : float
             どれだけ警告数が上がったら`mode`引数の処罰を執行するかです。
 
         Notes
         -----
         デフォルトでは警告数が4になった際にタイムアウトで5になった際にBANが発生します。  
-        もしあなたがスパムするやつがいたらタイムアウトではなくメッセージも消したいという場合は、設定でBANを4にしてタイムアウトを5等にしましょう。
+        もしスパムする人をタイムアウトせずにBANしたいという場合は、設定でBANの数をタイムアウトの数より少なくしましょう。
 
         Aliases
         -------
@@ -327,7 +326,7 @@ class AutoMod(commands.Cog, DataManager):
     async def set(self, ctx: commands.Context, warn: float, *, member: discord.Member):
         """!lang ja
         -------
-        特定のメンバーの警告数を特定の数に設定します。
+        指定したメンバーの警告数を特定の数に設定します。
 
         Parameters
         ----------
@@ -362,7 +361,7 @@ class AutoMod(commands.Cog, DataManager):
     async def check(self, ctx: commands.Context, *, member: discord.Member):
         """!lang ja
         --------
-        指定されたメンバーの警告数を確認します。
+        指定したメンバーの警告数を確認します。
 
         Parameters
         ----------
@@ -433,7 +432,7 @@ class AutoMod(commands.Cog, DataManager):
         Parameters
         ----------
         mode : add または remove または list
-            例外を追加するか削除するか例外リストを表示するのどれかです。
+            例外を追加するか削除するか現在指定されている例外のリストを表示するのどれかです。
         obj : ロール/メンバー/テキストチャンネルのメンションか名前またはID, optional
             例外として追加するロール,メンバー,テキストチャンネルです。  
             もし`mode`引数を`list`とした場合はこれは省略可能です。
@@ -546,8 +545,8 @@ class AutoMod(commands.Cog, DataManager):
 
         Parameters
         ----------
-        seconds : 何秒かoff
-            何秒かoffでoffにした場合はこの機能を無効にします。
+        seconds : 秒数かoff
+            offにした場合はこの機能を無効に、秒数を指定した場合はその秒数で設定します。
 
         Aliases
         -------
@@ -580,7 +579,7 @@ class AutoMod(commands.Cog, DataManager):
         Parameters
         ----------
         count : offまたは個数
-            何個送ったらダメかです。  
+            何個送ったらメッセージを削除するかです。  
             `off`にした場合はこの機能を無効にします。
 
         Aliases
