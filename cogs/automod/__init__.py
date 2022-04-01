@@ -94,7 +94,7 @@ class AutoMod(commands.Cog, DataManager):
         Warnings
         --------
         しっかりとヘルプを読んで設定をしましょう。  
-        でないと痛い目にあいます。
+        さもないと痛い目にあいます。
 
         Aliases
         -------
