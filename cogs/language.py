@@ -279,8 +279,8 @@ class Language(commands.Cog):
         language : 言語コード, `ja`または`en`
             変更対象の言語コードです。  
             現在は日本語である`ja`と英語である`en`に対応しています。
-        mode : server or user
-            サーバー全体に設定するか自分にユーザー
+        mode : serverまたはuser、デフォルトはuser
+            サーバー全体に適応するか自分だけ変更するかです。
 
         Raises
         ------
@@ -288,7 +288,7 @@ class Language(commands.Cog):
 
         Examples
         --------
-        `rt!language ja`"""
+        `rt!language ja`で言語を日本語に変更できます。"""
         # 言語コードが使えない場合はValueErrorを発生する。
         if language not in self.LANGUAGES:
             code = "invalid language code is inserted. 無効な言語コードです。"
