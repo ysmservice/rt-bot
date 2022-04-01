@@ -158,12 +158,12 @@ class ShortURL(commands.Cog, DataManager):
                     await self.get(custom)
                 except AssertionError:
                     break
-                else:
-                    return await ctx.reply("申し訳ありませんが、何らかの理由で作成に失敗しました。\nもう一度やってみてください。")
 
         try:
             await self.add(ctx.author.id, url, custom)
         except AssertionError:
+            if custom is None:
+                return await ctx.reply("申し訳ありませんが、何らかの理由で作成に失敗しました。\nもう一度やってみてください。")
             await ctx.reply("その短縮URLは既に存在するので作れません。")
         else:
             await ctx.reply(f"短縮しました。>>>http://rtbo.tk/{custom}")
