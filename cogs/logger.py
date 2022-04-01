@@ -53,9 +53,40 @@ class SystemLog(commands.Cog):
             self.authors = []
             self.guilds = []
 
-    @commands.command()
+    @commands.command(
+        extras={
+            "headding":{"ja":"直近1分間のコマンド実行ログを見ます。", "en":"View commands logs."},
+            "parent":"Admin"
+        }
+    )
     @commands.is_owner()
     async def command_logs(self, ctx, mode=None):
+        """!lang ja
+        --------
+        直近1分間のコマンド実行ログを見ることができます。また、実行ログのループ操作もできます。
+        
+        Parameters
+        ----------
+        mode: startやstop、restartなど
+            logging_loop.○○の○○に入れられる文字列を入れて下さい。
+        
+        Warnings
+        --------
+        もちろん実行は管理者専用です。
+        
+        !lang en
+        --------
+        View command logs. Also it can control loop of logs.
+        
+        Parameters
+        ----------
+        mode: start/stop, or restart
+            Put the string which can be put in logging_loop.●●.
+        
+        Warnings
+        --------
+        Of cource it can only be used by admin.
+        """
         if mode:
             getattr(self.logging_loop, mode)()
             await ctx.message.add_reaction("✅")
