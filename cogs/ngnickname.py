@@ -49,7 +49,7 @@ class NGNickName(commands.Cog):
                         else:
                             await after.send(
                                 "<:error:878914351338246165> あなたのそのニックネームは" \
-                                f"`{after.guild.name}`で有効ではありません。\n" \
+                                f"`{after.guild.name}`で禁止する設定になっています。\n" \
                                 "お手数ですが別のものにしてください。\n" \
                                 f"検知した禁止ワード：`{word}`"
                             )
@@ -66,7 +66,7 @@ class NGNickName(commands.Cog):
     async def ngnick(self, ctx):
         """!lang ja
         -------
-        ニックネームに含められないNGニックネームを設定します。  
+        ニックネームに含めることができないNGワード(NGニックネーム)を設定します。  
         `rt!ngnick`で現在登録しているNGニックネームの一覧を表示します。
 
         Aliases
@@ -75,7 +75,7 @@ class NGNickName(commands.Cog):
 
         Notes
         -----
-        サーバーのオーナーのニックネームは、RTに管理者権限があっても更新は権限の仕様上できません。
+        サーバーのオーナーのニックネームは、RTに管理者権限があってもdiscordの仕様上RTが規制することができません。
 
         !lang en
         --------
@@ -111,7 +111,7 @@ class NGNickName(commands.Cog):
         Examples
         --------
         `rt!ngnick add tasuren`  
-        tasurenが本当のサーバーのオーナーなのでこれは禁止します。
+        tasurenが本当のサーバーのオーナーなのでなりすましを禁止するとき。
 
         Aliases
         -------
