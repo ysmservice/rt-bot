@@ -136,10 +136,10 @@ class Bump(commands.Cog, DataManager):
         Parameters
         ----------
         onoff : bool
-            on/offです。
+            onにするかoffにするかです。
         role : 役職名またはメンション, optional
             通知する際にメンションする役職です。  
-            オプションで選択しなくても大丈夫です。
+            選択しなくても実行できます。
 
         Examples
         --------
