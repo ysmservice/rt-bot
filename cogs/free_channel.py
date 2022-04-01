@@ -64,12 +64,12 @@ class FreeChannel(commands.Cog):
         --------
         実行したチャンネルをフリーチャンネル作成専用のチャンネルにします。  
         このコマンドを実行したチャンネルに`text:チャンネル名`と送るとチャンネルが作られる感じです。  
-        ボイスチャンネルの場合は`voice:チャンネル名`にすれば良いです。  
+        ボイスチャンネルの場合は`voice:チャンネル名`を送ると作成されます。  
 
         Warnings
         --------
         このコマンドを実行できるのは`チャンネル管理`権限を持っている人のみです。  
-        また作成されるフリーチャンネルはこのコマンドを実行したチャンネルのカテゴリー内です。  
+        また、作成されるフリーチャンネルはこのチャンネルのカテゴリー内です。  
         よってこのコマンドはカテゴリーの中にあるチャンネルでのみ実行可能です。
 
         Parameters
@@ -176,6 +176,14 @@ The name of the created voice channel will include the ID of the person who crea
         channel=discord.TextChannel
     )
     async def remove_(self, ctx):
+        """!lang ja
+        --------
+        実行したチャンネルがフリーチャンネル作成用チャンネルの場合、その設定を解除します。
+        
+        !lang en
+        --------
+        Remove settings of freechannel registration channel if the channel was it.
+        """
         if (ctx.channel.topic and "RTフリーチャンネル" in ctx.channel.topic
                 and "作成者" not in ctx.channel.topic):
             await ctx.channel.edit(topic=None)
@@ -273,7 +281,7 @@ The name of the created voice channel will include the ID of the person who crea
                 if len(now[mode]) >= max_channel:
                     await message.channel.send(
                         {"ja": f"{message.author.mention}, あなたはチャンネルをこれ以上作れません。",
-                         "en": f"{message.author.mention}, ..."},
+                         "en": f"{message.author.mention}, You can't make channels any more."},
                          delete_after=5, target=message.author.id
                     )
                     return 
@@ -292,7 +300,7 @@ The name of the created voice channel will include the ID of the person who crea
                 await coro
                 await message.channel.send(
                     {"ja": f"{message.author.mention}, {mode[0]}チャンネルを作成しました。",
-                     "en": f"{message.author.mention}, {mode[1]}..."},
+                     "en": f"{message.author.mention}, Complated making {mode[1]} channel."},
                     delete_after=5, target=message.author.id
                 )
 
