@@ -77,6 +77,28 @@ class Moderation(commands.Cog):
         }, aliases=["キック", "きっく", "KICK"]
     )
     async def kick(self, ctx, *, members):
+        """!lang ja
+        --------
+        メンバーをキックできます。
+
+        Parameters
+        ----------
+        members : メンバーのメンションか名前
+            誰をBANするかです。  
+            カンマで区切って複数人指定もできます。
+
+        !lang en
+        --------
+        Kick members.
+
+        Parameters
+        ----------
+        members : Mention or Name of members
+            Target members.
+
+        Examples
+        --------
+        `rt!ban @tasuren @tasuren-sub`"""
         await self.ban(ctx, members=members, mode="kick")
 
     kick._callback.__doc__ = ban._callback.__doc__.replace("ban", "kick").replace("BAN", "Kick") \
