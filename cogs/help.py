@@ -163,8 +163,8 @@ class Help(commands.Cog):
                 },
                 description={
                     "ja": f"カテゴリーを選択するとそのカテゴリーにあるコマンドが表示されます。\nまたこちらからも見れます：{url}" \
-                        "\nヘルプの見方は[こちら](https://rt-team.github.io/ja/notes/help)を見るとヘルプをよく理解できるようになれるかもしれません。" \
-                        "それとスラッシュコマンドは少し特殊なので[こちら](https://rt-team.github.io/notes/slash_table)を確認してください。\n" \
+                        "\n[こちら](https://rt-team.github.io/ja/notes/help)を見るとヘルプをよく理解できるようになれるかもしれません。" \
+                        "そしてスラッシュコマンドは少し特殊なので[こちら](https://rt-team.github.io/notes/slash_table)を確認してください。\n" \
                         "RTを使用した場合は[利用規約](https://rt-bot.com/terms.html)に同意したことになります。\n" \
                         "また、プライバシーポリシーは[こちら](https://rt-bot.com/privacy.html)から確認できます。",
                     "en": f"Selecting a category will show you the commands in that category. \nYou can also see them here: {url}\n" \
@@ -262,7 +262,7 @@ class Help(commands.Cog):
         """!lang ja
         --------
         コマンドの使い方が載っているヘルプを表示します。  
-        またコマンドの見方は[ここ](https://rt-team.github.io/notes/help)を見るとよくわかるかもしれません。
+        また、[ここ](https://rt-team.github.io/notes/help)を見るとコマンドの見方がよくわかるかもしれません。
 
         Parameters
         ----------
@@ -282,7 +282,11 @@ class Help(commands.Cog):
         ----------
         word : command name/search word, optional
             The command name of the help to be displayed.  
-            If a word that is not a command name is specified, a search will be performed."""
+            If a word that is not a command name is specified, a search will be performed.
+        
+        Aliases
+        -------
+        `h`"""
         await self._help(ctx, word)
 
 
