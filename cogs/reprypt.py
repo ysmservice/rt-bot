@@ -16,7 +16,7 @@ class Reprypt(commands.Cog):
     @commands.group(
         extras={
             "headding": {"ja": "Repryptを使用して文章を暗号化/復号化します。",
-                         "en": "..."},
+                         "en": "Encryption/Decryption by Reprypt."},
             "parent": "Individual"
         },
         name="reprypt"
@@ -58,12 +58,12 @@ class Reprypt(commands.Cog):
 
         Notes
         -----
-        これにはAPIがあります。  
+        この機能にはAPIがあります。  
         URI:`/api/reprypt` POST/OPTIONS
         ```json
         {
             "mode": "encrypt",
-            "content": "復号化する暗号",
+            "content": "暗号化する文字列",
             "password": "パスワード"
         }
         ```
@@ -95,7 +95,7 @@ class Reprypt(commands.Cog):
         ```json
         {
             "mode": "encrypt",
-            "content": "Cipher to decrypt",
+            "content": "String to encrypt",
             "password": "password"
         }
         ```"""
@@ -128,7 +128,7 @@ class Reprypt(commands.Cog):
 
         Notes
         -----
-        これにはAPIがあります。  
+        この機能にはAPIがあります。  
         URI:`/api/reprypt` POST/OPTIONS
         ```json
         {
