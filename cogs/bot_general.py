@@ -322,7 +322,7 @@ class BotGeneral(commands.Cog):
                                   + "Valid boolean value:`on/off`, `true/false`, `True/False`")}
         elif isinstance(error, commands.MissingRequiredArgument):
             title = "400 Bad Request"
-            description = {"ja": f"引数{error.param.name}が足りないためコマンドを実行できません。"
+            description = {"ja": f"引数{error.param.name}が足りないためコマンドを実行できません。",
                            "en": f"{error.param.name} is a required argument that is missing."}
         elif isinstance(
             error, (commands.BadArgument,
