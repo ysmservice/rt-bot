@@ -75,7 +75,7 @@ class NoIconNotice(commands.Cog, DataManager):
         ----------
         text : str, default ""
             送信する文字列です。
-            もし何も入力しなかった場合はオフにすると解釈されます。
+            もし何も入力しなかった場合は機能をオフにします。
 
         Aliases
         -------
