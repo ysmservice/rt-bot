@@ -113,7 +113,7 @@ class OriginalCommand(commands.Cog, DataManager):
     async def command(self, ctx):
         """!lang ja
         --------
-        自動返信、オリジナルコマンド機能です。  
+        自動返信、オリジナルコマンド機能です。特定のメッセージに指定した内容で返信します。  
         `rt!command`で登録されているコマンドの確認が可能です。
 
         Aliases
@@ -158,7 +158,7 @@ class OriginalCommand(commands.Cog, DataManager):
         Parameters
         ----------
         command : str
-            コマンド名です。
+            コマンド名です。この名前で反応するようになります。
         auto_reply : bool
             部分一致で返信をするかどうかです。  
             これをonにするとcommandがメッセージに含まれているだけで反応します。  
