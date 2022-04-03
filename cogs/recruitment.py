@@ -31,14 +31,15 @@ class Recruitment(commands.Cog):
         Parameters
         ----------
         title : str
-            募集パネルのタイトルです。
+            募集パネルのタイトルです。  
+            タイトルに空白を含める際は`"`で囲んでください。
         max : int
-            募集する人数の最大数です。
+            募集する人数です。
         deadline : int
-            何日後に締め切りにするかです。  
+            締め切りまでの日数です。  
             0にすると無期限となります。
         description : str, optional
-            募集パネルの説明欄です。
+            募集パネルの説明です。なくても構いません。
 
         Examples
         --------
