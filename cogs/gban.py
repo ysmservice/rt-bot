@@ -130,6 +130,7 @@ class GlobalBan(commands.Cog, DataManager):
             )
 
     @gban.command()
+    @commands.has_guild_permissions(administrator=True)
     async def onoff(self, ctx):
         """!lang ja
         --------
