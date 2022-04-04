@@ -101,7 +101,7 @@ class RoleLinker(commands.Cog, DataManager):
     async def link(self, ctx, target: discord.Role, link_role: discord.Role, reverse: bool = False):
         """!lang ja
         --------
-        役職リンクを設定します。  
+        ロールリンクを設定します。  
         15個まで登録可能です。
 
         Parameters
@@ -111,7 +111,7 @@ class RoleLinker(commands.Cog, DataManager):
         link_role : 役職のメンションまたは名前
             リンクする役職です。
         reverse : bool, default off
-            役職が付与されたら指定したlink_roleを剥奪するのように通常の逆にするかどうかです。  
+            役職が付与されたら指定したlink_roleを剥奪する、というように通常の逆にするかどうかです。  
             onまたはoffを入れます。
 
         Examples
@@ -121,8 +121,8 @@ class RoleLinker(commands.Cog, DataManager):
 
         Notes
         -----
-        reverseをonにする場合は対象の役職を既にロールリンカーに登録されている役職に設定することはできません。  
-        理由はこうしなければループを作ることが可能になりRTを妨害できてしまうからです。ご了承ください。
+        reverseをonにする際、既に1つでもロールリンカーに登録されている役職を対象に設定することは出来ません。  
+        理由は大量のつけ外しを行うことによってRTにAPI制限がかかることを防ぐためです。ご了承ください。
 
         !lang en
         --------
@@ -171,7 +171,7 @@ class RoleLinker(commands.Cog, DataManager):
         """!lang ja
         --------
         linkの逆です。  
-        役職リンクを解除します。
+        ロールリンクを解除します。
 
         Parameters
         ----------
