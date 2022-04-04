@@ -70,8 +70,8 @@ class RTLife(commands.Cog):
                 count = data[1][1]
             if count is not None:
                 self.data[key].append(count)
-                if len(self.data[key]) >= 10008:
-                    del self.data[key][0]
+                if len(self.data[key]) >= 1008:
+                    self.data[key] = self.data[key][-1008:]
 
     # @tasks.loop(seconds=10)
     @tasks.loop(minutes=10)

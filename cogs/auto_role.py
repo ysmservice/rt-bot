@@ -74,7 +74,7 @@ class AutoRole(commands.Cog, DataManager):
 
         Examples
         --------
-        `rtautorole on 初心者`
+        `rt!autorole on 初心者`
 
         Aliases
         -------
@@ -94,7 +94,7 @@ class AutoRole(commands.Cog, DataManager):
 
         Examples
         --------
-        `rtautorole on beginner`.
+        `rt!autorole on beginner`.
 
         Aliases
         -------

@@ -7,6 +7,7 @@ from collections import defaultdict
 from inspect import cleandoc
 from itertools import chain
 from random import choice
+from io import StringIO
 from time import time
 import speedtest
 
@@ -107,6 +108,7 @@ class BotGeneral(commands.Cog):
 
     def __init__(self, bot: RT):
         self.bot, self.rt = bot, bot.data
+        self.errors = set()
 
         if not hasattr(self, "thx_view"):
             self.thx_view = EnglishThxTemplateView(timeout=None)
@@ -115,6 +117,7 @@ class BotGeneral(commands.Cog):
         self.wslatency = "..."
         self.cache: defaultdict[int, dict[str, float]] = defaultdict(dict)
         self.remove_cache.start()
+        self.error_log_to_discord.start()
 
         self.make_embed_template()
 
@@ -122,10 +125,6 @@ class BotGeneral(commands.Cog):
         self._now_status_index = 0
         self._start_time = time()
         self.status_updater.start()
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        self.on_error_channel = self.bot.get_channel(ERROR_CHANNEL)
 
     def _get_ping(self) -> str:
         # pingを返します。
@@ -305,25 +304,28 @@ class BotGeneral(commands.Cog):
         elif isinstance(error, (commands.MemberNotFound,
                         commands.UserNotFound)):
             title = "400 Bad Request"
-            description = {"ja": "指定されたユーザーが見つかりませんでした。",
-                           "en": "I can't found that user."}
+            description = {"ja": f"指定されたユーザー:{error.argument}が見つかりませんでした。",
+                           "en": f"The user not found:{error.argument}."}
         elif isinstance(error, commands.ChannelNotFound):
             title = "400 Bad Request"
-            description = {"ja": "指定されたチャンネルが見つかりませんでした。",
-                           "en": "I can't found that channel"}
+            description = {"ja": f"指定されたチャンネル:{error.argument}が見つかりませんでした。",
+                           "en": f"The channel not found:{error.argument}."}
         elif isinstance(error, commands.RoleNotFound):
             title = "400 Bad Request"
-            description = {"ja": "指定されたロールが見つかりませんでした。",
-                           "en": "I can't found that role."}
+            description = {"ja": f"指定されたロール:{error.argument}が見つかりませんでした。",
+                           "en": f"The role not found:{error.argument}."}
         elif isinstance(error, commands.BadBoolArgument):
             title = "400 Bad Request"
             description = {"ja": ("指定された真偽値が無効です。\n"
                                   + "有効な真偽値：`on/off`, `true/false`, `True/False`"),
                            "en": ("The specified boolean value is invalid\n"
                                   + "Valid boolean value:`on/off`, `true/false`, `True/False`")}
+        elif isinstance(error, commands.MissingRequiredArgument):
+            title = "400 Bad Request"
+            description = {"ja": f"引数{error.param.name}が足りないためコマンドを実行できません。",
+                           "en": f"{error.param.name} is a required argument that is missing."}
         elif isinstance(
             error, (commands.BadArgument,
-                commands.MissingRequiredArgument,
                 commands.ArgumentParsingError,
                 commands.TooManyArguments,
                 commands.BadUnionArgument,
@@ -347,8 +349,8 @@ class BotGeneral(commands.Cog):
             }
         elif isinstance(error, commands.MissingRole):
             title = "403 Forbidden"
-            description = {"ja": "あなたはこのコマンドの実行に必要な役職を持っていないため、このコマンドを実行できません。",
-                           "en": "You can't do this command. Because you need permission"}
+            description = {"ja": f"あなたはこのコマンドの実行に必要な役職:{error.missing_role}を持っていないため、このコマンドを実行できません。",
+                           "en": f"You have to have the role:{error.argument} to run this command."}
         elif isinstance(error, commands.CheckFailure):
             title = "403 Forbidden"
             description = {"ja": "あなたはこのコマンドを実行することができません。",
@@ -368,6 +370,7 @@ class BotGeneral(commands.Cog):
             error_message = "".join(
                 TracebackException.from_exception(error).format()
             )
+            self.errors.add(error_message)
 
             print(error_message)
 
@@ -406,6 +409,17 @@ class BotGeneral(commands.Cog):
         except Exception as e:
             kwargs["content"] = str(e)
             await ctx.send(**kwargs)
+
+    @tasks.loop(hours=2)
+    async def error_log_to_discord(self):
+        # discordの特定のチャンネルにエラーを送信します。
+        if len(self.errors) == 0:
+            return
+        await self.bot.get_channel(ERROR_CHANNEL).send(
+            embed=discord.Embed(title="エラーログ", description=f"この2時間に発生したエラーの回数:{len(self.errors)}"),
+            file=discord.File(StringIO("\n\n".join(self.errors)))
+        )
+        self.errors = set()
 
     def get_help_url(self, category: str, name: str) -> str:
         return f"https://rt-bot.com/help.html?g={category}&c={name}"
