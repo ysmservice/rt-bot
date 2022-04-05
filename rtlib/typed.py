@@ -7,9 +7,11 @@ from discord.ext import commands
 from aiohttp import ClientSession
 from aiomysql import Pool
 
-from .mysql_manager import MySQLManager
 from data import data, Colors, is_admin
+
+from .mysql_manager import MySQLManager
 from .rtws import ExtendedRTWebSocket
+from .cacher import CacherPool
 
 
 class RT(commands.AutoShardedBot):
@@ -24,6 +26,7 @@ class RT(commands.AutoShardedBot):
     colors: dict
     Colors: Colors
     rtws: ExtendedRTWebSocket
+    cachers: CacherPool
 
     def print(self, *args, **kwargs) -> None:
         return print(f"[RT.Bot]", *args, **kwargs)

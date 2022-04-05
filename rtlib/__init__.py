@@ -12,6 +12,7 @@ from . import mysql_manager as mysql
 from .data_manager import Table
 from .ext import componesy
 from .typed import RT, sendableString
+from .cacher import CacherPool, Cacher, Cache
 
 
 DatabaseManager = mysql.DatabaseManager
@@ -64,6 +65,7 @@ def setup(bot, only: Union[Tuple[str, ...], List[str]] = []):
     bot.load_extension("rtlib.websocket")
     bot.load_extension("rtlib.rtws")
     bot.load_extension("rtlib.setting")
+    bot.cachers = CacherPool()
 
 
 # discord.ext.tasksのタスクがデータベースの操作失敗によって止まることがないようにする。

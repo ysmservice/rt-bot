@@ -98,7 +98,7 @@ class IntervalDataManager(DatabaseManager):
             (channel_id, minutes, minutes)
         )
 
-    async def read(self, channel_id: int, cursor: Cursor) -> float:
+    async def read(self, channel_id: int, cursor: Cursor = None) -> float:
         "インターバルを取得します。見つからなければ`5.0`が返されます。"
         await cursor.execute(
             f"SELECT Minutes FROM {self.TABLE} WHERE ChannelID = %s;",
