@@ -108,12 +108,12 @@ class RTA(commands.Cog):
         ----------
         channel : チャンネル名かメンション、ID
             通知を行うチャンネルです。  
-            もしない場合は実行したチャンネルに通知されます。
+            もしこの引数を指定しなかった場合は実行したチャンネルに通知されます。
 
         Notes
         -----
         もう一度このコマンドを実行するとRTA設定をOffにできます。
-            
+
         !lang en
         --------
         Set channel which recording the leaving RTA.
