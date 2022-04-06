@@ -137,10 +137,10 @@ class ShortURL(commands.Cog, DataManager):
         url : str
             対象のURLです。
         custom : str, optional
-            短縮URLをカスタムする場合に使います。  
+            短縮URLをカスタマイズする場合に使います。  
             例えば`tasuren`にすれば`http://rtbo.tk/tasuren`のように短縮されます。  
-            これはひらがななどは使えないので英数字にしてください。  
-            空白の場合はランダムな六文字の英文字となります。
+            ひらがななどは使用できないので英数字にしてください。  
+            空白の場合はランダムな六文字のアルファベットとなります。
 
         Examples
         --------
