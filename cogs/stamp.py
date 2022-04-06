@@ -217,7 +217,7 @@ class Stamp(commands.Cog, DataManager):
         rm, remove, del"""
         if name in self.cache.get(ctx.guild.id, {}):
             await self.delete(ctx.guild.id, name)
-            await self.update_cache(ctx.guild.id)
+            del self.cache[message.guild.id][name]
             await ctx.reply("Ok")
         else:
             await ctx.reply(
