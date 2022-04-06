@@ -85,7 +85,7 @@ class Today(commands.Cog, DataManager):
     @commands.command(
         extras={
             "headding": {
-                "ja": "今日は何の日を表示、通知します。",
+                "ja": "「今日は何の日」を表示、通知します。",
                 "en": "Sorry, This command is not supported."
             }, "parent": "Entertainment"
         }
@@ -94,19 +94,20 @@ class Today(commands.Cog, DataManager):
     async def today(self, ctx, setting: bool = None):
         """!lang ja
         --------
-        今日は何の日を表示または通知します。
+        「今日は何の日」を表示または通知します。
 
         Parameters
         ----------
         setting : bool, default False
             通知を設定するかどうかです。  
-            これはデフォルトではoffとなっておりこれをoffにすると今日は何の日を表示します。  
-            もしこれをonにすると実行したチャンネルに通知を送るように設定をします。
+            onにすると実行したチャンネルに毎日午前9時に通知を送るように設定をします。  
+            offにすると通知をオフにしてその日の分の「今日は何の日」を表示します。  
+            デフォルトはoffです。
 
         Examples
         --------
-        `rt!today` 今日は何の日を表示します。
-        `rt!today on` 実行したチャンネルに毎日朝九時に今日は何の日を送信します。"""
+        `rt!today` 「今日は何の日」を表示します。
+        `rt!today on` 実行したチャンネルに毎日午前9時に「今日は何の日」を送信します。"""
         if setting is None:
             await ctx.reply(embed=await self.get_today())
         elif ctx.author.guild_permissions.manage_channels:
