@@ -91,7 +91,8 @@ class NgWord(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!ngword add あほー`
+        `rt!ngword add あああ`  
+        この場合、`あああ`を含むメッセージが削除されます。
 
         Notes
         -----
@@ -133,11 +134,12 @@ class NgWord(commands.Cog, DataManager):
         """!lang ja
         --------
         NGワードを削除します。  
-        NGワードを追加する際に実行したコマンドの逆です。
+        NGワードを追加する際に実行したコマンドの逆です。これも改行で一括削除できます。
 
         Examples
         --------
-        `rt!ngword remove みすった NGワード`
+        `rt!ngword remove あああ`  
+        この場合`あああ`を含むメッセージが削除されないようになります。
 
         !lang en
         --------

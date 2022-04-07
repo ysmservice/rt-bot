@@ -137,7 +137,7 @@ class GlobalChat(commands.Cog, DataManager):
         """!lang ja
         --------
         グローバルチャット機能です。  
-        グローバルチャットとは他サーバーのチャンネルをRTを経由してつなげるようなものです。
+        いくつかのサーバーのチャンネルをRTを経由してつなげることができます。
 
         Aliases
         -------
@@ -184,7 +184,7 @@ class GlobalChat(commands.Cog, DataManager):
     async def delete_(self, ctx):
         """!lang ja
         --------
-        実行したチャンネルに設定されているグローバルチャットを削除します。  
+        実行したチャンネルに設定されているグローバルチャットを削除(全チャンネルの接続の解除)します。  
         グローバルチャット作成者でないと削除はできません。
 
         Aliases

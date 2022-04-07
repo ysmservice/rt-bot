@@ -158,7 +158,7 @@ class Rocations(commands.Cog):
         -----
         マークダウンの書き方については[こちら](https://qiita.com/Qiita/items/c686397e4a0f4f11683d)が参考になると思います。  
         一部対応していない記法がありますがご了承ください。  
-        ですので画像を埋め込むことができます。  
+        画像を埋め込むことはできます。  
         (HTML埋め込みはできません)
 
         Aliases
@@ -258,7 +258,7 @@ class Rocations(commands.Cog):
 
         Notes
         -----
-        タグは25文字以内で7個までタグを登録することができます。
+        タグは1つ25文字以内で7個までタグを登録することができます。
 
         Examples
         --------
@@ -288,7 +288,7 @@ class Rocations(commands.Cog):
         Examples
         --------
         `rt!rocations tags game,Minecraft,Apex`"""
-        assert len(tags := tags.split(",")) <= 7, {"ja": "多すぎます。", "en": "I can't set it up that well."}
+        assert len(tags := tags.split(",")) <= 7, {"ja": "タグが多すぎます。", "en": "I can't set it up that well."}
         assert all(len(tag) <= 25 for tag in tags), {"ja": "タグは25文字以内にしてください。", "en": "Tags should be no longer than 25 characters."}
         await self._update(
             "UPDATE <t> SET tags = %s WHERE GuildID = %s;", (dumps(tags), ctx.guild.id)
@@ -338,7 +338,7 @@ class Rocations(commands.Cog):
     async def invite(self, ctx: UnionContext):
         """!lang ja
         --------
-        招待リンクを新しくします。  
+        掲示板に乗せる招待リンクを更新します。  
         もしバニティリンクが存在する場合はそれが使用されます。
 
         Aliases

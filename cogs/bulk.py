@@ -48,7 +48,7 @@ class Bulk(commands.Cog):
     async def bulk(self, ctx):
         """!lang ja
         --------
-        一括でメンバー全員に役職を付与したりメッセージの送信をしたりできます。
+        一括でメンバー全員へ役職の付与やメッセージの送信ができます。
         
         !lang en
         --------
@@ -68,7 +68,7 @@ class Bulk(commands.Cog):
     async def send(self, ctx, target: GuildRole, *, content):
         """!lang ja
         --------
-        指定されたメッセージを実行したサーバーにいるメンバー全員に送信します。
+        指定されたメッセージを実行したサーバーにいる指定したメンバーに送信します。
         
         Parameters
         ----------
@@ -151,7 +151,7 @@ class Bulk(commands.Cog):
     async def role(self, ctx):
         """!lang ja
         --------
-        ロールの一括系コマンドグループです。
+        ロールの一括系コマンドのグループです。
 
         !lang en
         --------
@@ -204,8 +204,8 @@ class Bulk(commands.Cog):
     async def manage(self, ctx, mode: Mode, target: GuildRole, *, role: discord.Role):
         """!lang ja
         --------
-        実行したサーバーにいるメンバー全員に指定された役職を付与または剥奪をします。
-        
+        実行したサーバーにいる指定したメンバーに指定された役職を付与または剥奪をします。
+
         Parameters
         ----------
         mode : add または remove

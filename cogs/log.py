@@ -11,7 +11,7 @@ from functools import wraps
 CHP_HELP = {
     "ja": ("ログ機能。",
 """# ログプラグイン - log
-これは`rt>log`をチャンネルのトピックに入れることでログをを表示することのできる機能です。  
+`rt>log`をチャンネルのトピックに入れることでログを表示することができます。  
 例：`rt>log` (これをトピックに入れたチャンネルにログが送られます)"""),
     "en": ("...", """...""")
 }
@@ -81,10 +81,10 @@ class Log(commands.Cog):
     @commands.Cog.listener()
     @log()
     async def on_message(self, message):
-        if message.content and ("@everyone" in message.content or "@here" in message.content):
+        if message.content and (ever:=("@everyone" in message.content) or "@here" in message.content):
             return discord.Embed(
                 title="全員メンション",
-                description=f"{message.author} ({message.author.id})が全員あてメンションをしました。",
+                description=f"{message.author} ({message.author.id})が{'everyone' if ever else 'here'}メンションをしました。",
                 color=self.c
             )
 

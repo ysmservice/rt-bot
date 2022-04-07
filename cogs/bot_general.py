@@ -23,7 +23,7 @@ from rtlib import RT
 from .server_tool import PERMISSION_TEXTS
 
 
-ERROR_CHANNEL = 842744343911596062
+ERROR_CHANNEL = 948163533743476796
 
 INFO_DESC = {
     "ja": """どうもRTという新時代Botです。

@@ -66,7 +66,8 @@ class ChannelStatus(commands.Cog, DataManager):
     async def status(self, ctx, *, text):
         """!lang ja
         --------
-        テキストチャンネルにメンバー数などを表示させます。  
+        テキストチャンネルの名前を指定したものに固定します。  
+        5分ごとに更新され、メンバー数などの変数を利用するとステータスのようになります。  
         実行したチャンネルに設定されます。
 
         Parameters

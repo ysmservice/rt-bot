@@ -33,7 +33,7 @@ class Enjoy(commands.Cog):
     async def minecraft(self, ctx, *, user):
         """!lang ja
         --------
-        MinecraftのユーザーのスキンとUUIDを調べます。
+        Minecraft Java版のユーザーのスキンとUUIDを検索します。
 
         Parameters
         ----------
@@ -206,7 +206,7 @@ class Enjoy(commands.Cog):
     async def game_package(self, ctx, mode):
         """!lang ja
         --------
-        ゲームのパッケージを作ります。  
+        ゲームのパッケージ画像を作ります。  
         好きな画像を添付することで[例]のような画像を作ることができます。
 
         Parameters
@@ -246,8 +246,8 @@ class Enjoy(commands.Cog):
         at = ctx.message.attachments[0]
         if not at.filename.endswith(self.GAME_SUPPORT_EXTS):
             return await ctx.reply(
-                {"ja": "そのファイルタイプは対応していません。",
-                 "en": "Sorry, I don't know that file type."}
+                {"ja": f"そのファイルタイプは対応していません。\nサポートしている拡張子:{', '.join(self.GAME_SUPPORT_EXTS)}",
+                 "en": f"Sorry, I don't know that file type.\nSupported file type:{', '.join(self.GAME_SUPPORT_EXTS)}"}
             )
         await ctx.trigger_typing()
         input_path = f"{self.GAME_BASE_PATH}input_{ctx.author.id}.{at.filename[at.filename.rfind('.'):]}"

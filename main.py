@@ -30,7 +30,7 @@ intents.typing = False
 intents.members = True
 bot = RT(
     data["prefixes"][argv[-1]], help_command=None, intents=intents,
-    allowed_mentions=discord.AllowedMentions(everyone=False, users=False),
+    allowed_mentions=discord.AllowedMentions(everyone=False, users=False, replied_user=False),
     activity=discord.Game("起動準備"), status=discord.Status.dnd
 )
 bot.secret = secret

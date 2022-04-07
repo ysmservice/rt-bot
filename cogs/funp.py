@@ -187,8 +187,8 @@ class Funp(commands.Cog, DataManager):
         Warnings
         --------
         NSFWカテゴリーにはあなたを不快にさせたりする画像がある可能性があります。  
-        それともし誰かのいたずらによりNSFWカテゴリーではないカテゴリーを閲覧する際にNSFWな画像がでてきた場合はサポートサーバーまでお知らせください。  
-        これらのことが考えられるので実行は自己責任です。"""
+        それともし誰かのいたずらによりモラルやdiscord利用規約に反する画像が出てきた場合はサポートサーバーまでお知らせください。  
+        以上の理由から実行は自己責任となります。ご注意ください。"""
         mode = self.get_mode(mode)
         if mode in self.MODES["nsfw"] and not getattr(ctx.channel, "nsfw", False):
             await ctx.reply(
