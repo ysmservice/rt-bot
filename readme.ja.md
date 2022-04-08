@@ -1,23 +1,28 @@
 <!--[![Discord Bots](https://top.gg/api/widget/status/716496407212589087.svg)](https://top.gg/bot/716496407212589087) [![Discord Bots](https://top.gg/api/widget/servers/716496407212589087.svg)](https://top.gg/bot/716496407212589087) ![Discord](https://img.shields.io/discord/718641964672876614?label=suppoFree-rt&logo=discord)-->
-# Free-RT Bot
-これはDiscordのボットで、無料RTです。
-Discordには「RT bot」があり、tasurenへの課金に利用できますので、お金に余裕のある方はRTを使ってください。
-Free RTは、ほとんどのbotが持っている機能を備えた、機能豊富なbotです。
-また、他のbotにはない機能もあります。
-DiscordのBotアカウントであるFree RTに接続すると、Free RTのサービスを開始することができます。
-また、WebSocketでrt-backendと通信し、Web認証などを行います(ただし、現在は行っておらず、作成中です。近日中に公開予定です)。
-RTについて知らない方はこちらを見てください。
-Free RTについて知らない人はここを見てみましょう。(ホームページ作成中です、お待ちください)
+
+# free RT Bot
+discordのBotであるRTのフリー版です。  
+RTはもともと無料で利用できましたが、有料になったためこのリポジトリが作成されました。  
+RTはBotが1台だけで済むように作成された多機能で便利なBotです。  
+ウェブ認証などのために`rt-backend`とWebSocketで通信も行います。(なおfreeRTでは現在は開発者が調整中のため使用できません。できるようになるまでお待ちください。)  
+RTについて知らない人は[ここ](https://rt-bot.com/)を見てみましょう。  
+free RTについて知らない人はここ (webサイト作成中なのでお待ちください...)を見てみましょう。
 
 ## LICENSE
 `BSD 4-Clause License` (`LICENSE`ファイルに詳細があります。)
 
 ## Contributing
-[contributing.md](https://github.com/free-RT/rt-bot/blob/main/contributing/)をご覧ください。
+[contributing](https://github.com/free-RT/rt-bot/blob/main/contributing)をご覧ください。
+
+## Free RT 開発状況
+現在free RTはまだ開発段階で正式には稼働していません。もうしばらくお待ちください。  
+また、稼働し始めた場合でも一部機能が制限された状態で開始する可能性があります。ご了承ください。  
+なおこのbotは複数の有志開発者たちによって開発・運営されています。そのためRT本体より更新が遅かったりする場合がございます。  
+もしfreeではないRTが良いのであれば有料になります。開発者のtasurenに送金をして安定したRTを使用してください。
 
 ## Installation
-### 依存性
-必要
+### Depedencies
+必要なものです。
 
 * Python 3.10
 * MySQL または MariaDB
