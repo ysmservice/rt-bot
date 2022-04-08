@@ -2,6 +2,7 @@
     "token": {
         "test": "テスト用BotのTOKEN、実行時に引数にtestと渡された際に使用されます。",
         "production": "本番環境用のTOKEN",
+        "sub": "ふりーりつたんのTOKEN"
     },
     "secret": "シークレットキー, テスト時ならなんだっていい。本番の場合は長い方が良い。",
     "topgg": "TopGGのTOKENです。テスト用Botのみ入力省略可です。",
