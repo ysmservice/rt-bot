@@ -1,10 +1,10 @@
-[![Discord Bots](https://top.gg/api/widget/status/716496407212589087.svg)](https://top.gg/bot/716496407212589087) [![Discord Bots](https://top.gg/api/widget/servers/716496407212589087.svg)](https://top.gg/bot/716496407212589087) ![Discord](https://img.shields.io/discord/718641964672876614?label=support&logo=discord)
-# RT Bot
-DiscordのBotのRTのBotです。  
-RTというのはこのBotだけで済むようなBotを目指す多機能で便利なBotです。  
-DiscordのBotアカウントであるRTに接続してRTのサービスを開始します。  
+<!--[![Discord Bots](https://top.gg/api/widget/status/716496407212589087.svg)](https://top.gg/bot/716496407212589087) [![Discord Bots](https://top.gg/api/widget/servers/716496407212589087.svg)](https://top.gg/bot/716496407212589087) ![Discord](https://img.shields.io/discord/718641964672876614?label=suppoFree-rt&logo=discord)-->
+# Free-Free-RT Bot
+DiscordのBotのFree-RTのBotです。  
+Free-RTというのはこのBotだけで済むようなBotを目指す多機能で便利なBotです。  
+DiscordのBotアカウントであるFree-RTに接続してFree-RTのサービスを開始します。  
 ウェブ認証などのために`rt-backend`とWebSocketで通信も行います。  
-RTについて知らない人は[ここ](https://rt-bot.com)を見てみましょう。
+Free-RTについて知らない人は[ここ]()を見てみましょう。
 
 ## LICENSE
 `BSD 4-Clause License` (`LICENSE`ファイルに詳細があります。)
@@ -32,3 +32,4 @@ RTについて知らない人は[ここ](https://rt-bot.com)を見てみまし�
 ※ もし読み上げを動かしたいのなら`cogs/tts`にある`readme.md`を読んでください。
 ### 本番の実行
 起動コマンドは`sudo -E python3 main.py production`で`auth.json`のTOKENで`production`のTOKENが必要となります。
+
