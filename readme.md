@@ -15,7 +15,7 @@ If you don't know about Free RT, have a look at [here]() (Making website, please
 `BSD 4-Clause License` (The `LICENSE` file has more details.)
 
 ## CONTRIBUTION
-See [contributing.md](https://github.com/free-RT/rt-bot/blob/main/contributing.md).
+See [contributing](https://github.com/free-RT/rt-bot/blob/main/contributing/).
 
 ## Installation.
 ## Dependencies.
