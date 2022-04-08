@@ -23,7 +23,7 @@ from rtlib import RT
 from .server_tool import PERMISSION_TEXTS
 
 
-ERROR_CHANNEL = 948163533743476796
+ERROR_CHANNEL = 961870556548984862
 
 INFO_DESC = {
     "ja": """どうもRTという新時代Botです。
@@ -42,8 +42,8 @@ INFO_ITEMS = (("INVITE", {"ja": "招待リンク", "en": "invite link"}),
               ("URL", {"ja": "RTのウェブサイト", "en": "RT offical website"}),
               ("GITHUB", {"ja": "GitHub", "en": "GitHub"}),
               ("CREDIT", {"ja": "クレジット", "en": "Credit"}))
-INFO_INVITE = "https://discord.com/api/oauth2/authorize?client_id=716496407212589087&permissions=8&redirect_uri=https%3A%2F%2Frt-bot.com&response_type=code&scope=bot%20applications.commands"
-INFO_SS, INFO_URL = "https://discord.gg/ugMGw5w", "https://rt-bot.com"
+INFO_INVITE = "https://discord.com/api/oauth2/authorize?client_id=961521106227974174&permissions=8&scope=bot%20applications.commandss"
+INFO_SS, INFO_URL = "https://discord.gg/VHwJ3CBuWw", "https://rt-bot.com"
 INFO_GITHUB = """* [RT-Team](https://github.com/RT-Team)
 * [RT-Bot](https://github.com/RT-Team/rt-bot)
 * [RT-Backend](https://github.com/RT-Team/rt-backend)
@@ -57,7 +57,7 @@ THANKYOU_TEMPLATE = cleandoc(
 
     **RT 情報**
     公式ウェブサイト：https://rt-bot.com
-    サポートサーバー：https://discord.com/invite/ugMGw5w
+    サポートサーバー：https://discord.gg/VHwJ3CBuWw
     チュートリアル　：https://rt-team.github.io/ja/notes/tutorial
     プリフィックス　：`rt!`, `Rt!`, `RT!`, `rt.`, `Rt.`, `RT.`, `りつ！`, `りつ.`
 
@@ -84,7 +84,7 @@ class EnglishThxTemplateView(discord.ui.View):
 
                 **RT Info**.
                 Official website: https://rt-bot.com
-                Support server: https://discord.com/invite/ugMGw5w
+                Support server: https://discord.gg/VHwJ3CBuWw
                 Tutorial: https://rt-team.github.io/en/notes/tutorial
                 Prefixes: `rt!`, `Rt!`, `RT!`, `rt.`, `Rt.`, `RT.`, `りつ！`, `りつ.`
 
