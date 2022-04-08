@@ -1,20 +1,23 @@
 <!--[![Discord Bots](https://top.gg/api/widget/status/716496407212589087.svg)](https://top.gg/bot/716496407212589087) [![Discord Bots](https://top.gg/api/widget/servers/716496407212589087.svg)](https://top.gg/bot/716496407212589087) ![Discord](https://img.shields.io/discord/718641964672876614?label=suppoFree-rt&logo=discord)-->
 # Free-RT Bot
-DiscordのBotのFree-RTのBotです。  
-Free-RTというのはこのBotだけで済むようなBotを目指す多機能で便利なBotです。  
-DiscordのBotアカウントであるFree-RTに接続してFree-RTのサービスを開始します。  
-ウェブ認証などのために`rt-backend`とWebSocketで通信も行います。  
-Free-RTについて知らない人は[ここ]()を見てみましょう。
+これはDiscordのボットで、無料RTです。
+Discordには「RT bot」があり、tasurenへの課金に利用できますので、お金に余裕のある方はRTを使ってください。
+Free RTは、ほとんどのbotが持っている機能を備えた、機能豊富なbotです。
+また、他のbotにはない機能もあります。
+DiscordのBotアカウントであるFree RTに接続すると、Free RTのサービスを開始することができます。
+また、WebSocketでrt-backendと通信し、Web認証などを行います(ただし、現在は行っておらず、作成中です。近日中に公開予定です)。
+RTについて知らない方はこちらを見てください。
+Free RTについて知らない人はここを見てみましょう。(ホームページ作成中です、お待ちください)
 
 ## LICENSE
 `BSD 4-Clause License` (`LICENSE`ファイルに詳細があります。)
 
 ## Contributing
-`contributing.md`をご覧ください。
+(https://github.com/free-RT/rt-bot/blob/main/contributing.md)[contributing.md]をご覧ください。
 
 ## Installation
 ### 依存性
-必要なものです。
+必要
 
 * Python 3.10
 * MySQL または MariaDB
