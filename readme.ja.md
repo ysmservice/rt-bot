@@ -13,7 +13,7 @@ Free RTについて知らない人はここを見てみましょう。(ホーム
 `BSD 4-Clause License` (`LICENSE`ファイルに詳細があります。)
 
 ## Contributing
-(https://github.com/free-RT/rt-bot/blob/main/contributing.md)[contributing.md]をご覧ください。
+[contributing.md](https://github.com/free-RT/rt-bot/blob/main/contributing/)をご覧ください。
 
 ## Installation
 ### 依存性
