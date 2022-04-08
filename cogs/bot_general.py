@@ -42,7 +42,7 @@ INFO_ITEMS = (("INVITE", {"ja": "招待リンク", "en": "invite link"}),
               ("URL", {"ja": "RTのウェブサイト", "en": "RT offical website"}),
               ("GITHUB", {"ja": "GitHub", "en": "GitHub"}),
               ("CREDIT", {"ja": "クレジット", "en": "Credit"}))
-INFO_INVITE = "https://discord.com/api/oauth2/authorize?client_id=961521106227974174&permissions=8&scope=bot%20applications.commandss"
+INFO_INVITE = "https://discord.com/api/oauth2/authorize?client_id=961521106227974174&permissions=8&scope=bot%20applications.commands"
 INFO_SS, INFO_URL = "https://discord.gg/VHwJ3CBuWw", "https://rt-bot.com"
 INFO_GITHUB = """* [RT-Team](https://github.com/RT-Team)
 * [RT-Bot](https://github.com/RT-Team/rt-bot)
