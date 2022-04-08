@@ -1,18 +1,21 @@
 <!--[![Discord Bots](https://top.gg/api/widget/status/716496407212589087.svg)](https://top.gg/bot/716496407212589087) [![Discord Bots](https://top.gg/api/widget/servers/716496407212589087.svg)](https://top.gg/bot/716496407212589087) ![Discord](https://img.shields.io/discord/718641964672876614?label=support&logo=discord)-->
+<!-- To do: この部分をFreeRTのbotや公式サーバーのものにする。-->
+(日本語版のreadmeは[こちら](https://github.com/free-RT/rt-bot/blob/main/readme.ja.md))
 # Free RT Bot
-This is the Free RT Bot of Discord's Bot.  
+This is an Discord's bot, Free RT.  
+There is 'RT bot' in discord and we can use it for paying to tasuren, so please use RT if you have enough money.  
 Free RT is a feature-rich bot with features that most bots have.  
 It also has features that other bots don't have.  
 Connect to Free RT, Discord's Bot account, to start Free RT's service.  
-It also communicates with `rt-backend` via WebSocket for web authentication and so on.  
-If you don't know about Free RT, have a look at [here]().  
-(日本語版のreadmeは[こちら](https://github.com/free-RT/rt-bot/blob/main/readme.ja.md))
+It also communicates with `rt-backend` via WebSocket for web authentication and so on.(But now do not and we are making. It will be coming soon.)  
+If you don't know about RT, have a look at [here](https://rt-bot.com/).  
+If you don't know about Free RT, have a look at [here]() (Making website, please wait...).  
 
 ## LICENSE
 `BSD 4-Clause License` (The `LICENSE` file has more details.)
 
 ## CONTRIBUTION
-See `contributing.md`.
+See [contributing.md](https://github.com/free-RT/rt-bot/blob/main/contributing.md).
 
 ## Installation.
 ## Dependencies.
