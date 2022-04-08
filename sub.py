@@ -1,9 +1,9 @@
-"""りつたん！ (C) 2020 RT-Team
+"""ふりーりつたん！ (C) 2022 Free-RT
 LICENSE : ./LICENSE
 README  : ./readme.md
 """
 
-desc = """りつたん - (C) 2021 RT-Team
+desc = """ふりーりつたん - (C) 2022 Free-RT
 少女起動中..."""
 print(desc)
 
@@ -90,3 +90,4 @@ setup(bot)
 
 
 bot.run(TOKEN)
+

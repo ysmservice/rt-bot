@@ -1,12 +1,12 @@
-[![Discord Bots](https://top.gg/api/widget/status/716496407212589087.svg)](https://top.gg/bot/716496407212589087) [![Discord Bots](https://top.gg/api/widget/servers/716496407212589087.svg)](https://top.gg/bot/716496407212589087) ![Discord](https://img.shields.io/discord/718641964672876614?label=support&logo=discord)
+<!--[![Discord Bots](https://top.gg/api/widget/status/716496407212589087.svg)](https://top.gg/bot/716496407212589087) [![Discord Bots](https://top.gg/api/widget/servers/716496407212589087.svg)](https://top.gg/bot/716496407212589087) ![Discord](https://img.shields.io/discord/718641964672876614?label=support&logo=discord)-->
 # Free RT Bot
 This is the Free RT Bot of Discord's Bot.  
-RT is a feature-rich bot with features that most bots have.  
+Free RT is a feature-rich bot with features that most bots have.  
 It also has features that other bots don't have.  
-Connect to RT, Discord's Bot account, to start RT's service.  
+Connect to Free RT, Discord's Bot account, to start Free RT's service.  
 It also communicates with `rt-backend` via WebSocket for web authentication and so on.  
-If you don't know about RT, have a look at [here](https://rt-bot.com).  
-(日本語版のreadmeは[こちら](https://github.com/RT-Team/rt-bot/blob/main/readme.ja.md))
+If you don't know about Free RT, have a look at [here]().  
+(日本語版のreadmeは[こちら](https://github.com/free-RT/rt-bot/blob/main/readme.ja.md))
 
 ## LICENSE
 `BSD 4-Clause License` (The `LICENSE` file has more details.)
