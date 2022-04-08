@@ -1,9 +1,9 @@
-"""RT Backend (C) 2020 RT-Team
+"""RT Backend (C) 2022 Free-RT
 LICENSE : ./LICENSE
 README  : ./readme.md
 """
 
-print("RT Discord Bot (C) 2020 RT-Team\nNow loading...")
+print("Free-RT Discord Bot (C) 2022 Free-RT\nNow loading...")
 
 from os import listdir
 from sys import argv
@@ -81,7 +81,7 @@ async def on_ready():
                     raise e
             else:
                 bot.print("[Extension]", "Loaded", name)
-    bot.print("Completed to boot RT")
+    bot.print("Completed to boot Free-RT")
 
     bot.dispatch("full_ready")
     bot._load = True
@@ -101,3 +101,4 @@ logger.addHandler(handler)
 
 
 bot.run(secret["token"][argv[-1]])
+
