@@ -1,6 +1,6 @@
 [![Discord Bots](https://top.gg/api/widget/status/716496407212589087.svg)](https://top.gg/bot/716496407212589087) [![Discord Bots](https://top.gg/api/widget/servers/716496407212589087.svg)](https://top.gg/bot/716496407212589087) ![Discord](https://img.shields.io/discord/718641964672876614?label=support&logo=discord)
 # Free RT Bot
-This is the RT Bot of Discord's Bot.  
+This is the Free RT Bot of Discord's Bot.  
 RT is a feature-rich bot with features that most bots have.  
 It also has features that other bots don't have.  
 Connect to RT, Discord's Bot account, to start RT's service.  
