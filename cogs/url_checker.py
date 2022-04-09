@@ -1,4 +1,4 @@
-# RT - Url Checker
+# Free RT - Url Checker
 
 from typing import TYPE_CHECKING, List
 
@@ -83,7 +83,7 @@ class UrlChecker(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!securl http://tasuren.f5.si`
+        `rf!securl http://tasuren.f5.si`
 
         Aliases
         -------
@@ -100,7 +100,7 @@ class UrlChecker(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!check http://tasuren.f5.si`
+        `rf!check http://tasuren.f5.si`
 
         Aliases
         -------

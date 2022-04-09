@@ -1,4 +1,4 @@
-# RT - Level
+# Free RT - Level
 
 from __future__ import annotations
 
@@ -203,7 +203,7 @@ class Level(commands.Cog):
         """!lang ja
         --------
         レベル報酬関連の設定をします。
-        `rt!level reward`で現在の設定を表示できます。
+        `rf!level reward`で現在の設定を表示できます。
         ※設定できるのはローカルレベルのみです。
 
         Aliases
@@ -213,7 +213,7 @@ class Level(commands.Cog):
         !lang en
         --------
         Configure settings related to level rewards.
-        You can use `rt!level reward` to display the current settings.
+        You can use `rf!level reward` to display the current settings.
         Only the local level can be set.
 
         Aliases

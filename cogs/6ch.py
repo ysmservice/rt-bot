@@ -1,4 +1,4 @@
-# RT Ext - 6ch
+# Free RT Ext - 6ch
 
 from aiofiles import open as async_open
 from ujson import load, dumps
@@ -110,7 +110,7 @@ class SixChannel(commands.Cog):
 
     @sixch.command(name="del", aliases=["delete", "remove", "rm"])
     async def _del(self, ctx):
-        await ctx.reply("`rt!info`からサポートサーバーにて管理者に問い合わせてください。")
+        await ctx.reply("`rf!info`からサポートサーバーにて管理者に問い合わせてください。")
 
     @sixch.command(aliases=["nick"])
     async def nickname(self, ctx, *, name):
@@ -128,7 +128,7 @@ class SixChannel(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.author.bot or message.content.startswith("rt!"):
+        if message.author.bot or message.content.startswith("rf!"):
             return
 
         for name in self.data["thread"]:

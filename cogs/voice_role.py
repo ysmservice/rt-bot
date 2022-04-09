@@ -1,4 +1,4 @@
-# RT - Voice Role
+# Free RT - Voice Role
 
 from typing import Union
 
@@ -97,14 +97,14 @@ class VoiceRole(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!voicerole 雑談部屋 雑談中`
+        `rf!voicerole 雑談部屋 雑談中`
 
         Notes
         -----
         設定を削除する際は設定時と同じコマンドでできます。  
         この機能で設定できるボイスロールの数は三十個までです。  
         また削除されている役職の付与または剥奪をRTがしようとした場合はその設定は削除されます。  
-        また全てのチャンネルに設定したい場合は`rt!vrall 役職の名前またはメンション`で設定をすることができます。  
+        また全てのチャンネルに設定したい場合は`rf!vrall 役職の名前またはメンション`で設定をすることができます。  
         それとAPI制限防止のため役職の付与または剥奪が数秒遅れることがあります。  
         そして素早く接続切断を繰り返した場合は行われないことがあります。
 
@@ -139,7 +139,7 @@ class VoiceRole(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!voicerole chat room chatting
+        `rf!voicerole chat room chatting
 
         Notes
         -----

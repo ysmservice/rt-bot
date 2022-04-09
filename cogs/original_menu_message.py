@@ -1,4 +1,4 @@
-# RT - Original Menu Message
+# Free RT - Original Menu Message
 
 from typing import Callable, Coroutine
 
@@ -144,7 +144,7 @@ class OriginalMenuMessage(commands.Cog, DataManager):
         Examples
         --------
         ```
-        rt!menu $質問をする前に 1ページ目
+        rf!menu $質問をする前に 1ページ目
         自分でGoogleなどである程度調べてわからない債に質問してください。
         $質問をする前に 2ページ目
         敬語を使って質問しましょう。
@@ -170,7 +170,7 @@ class OriginalMenuMessage(commands.Cog, DataManager):
         Examples
         --------
         ```
-        rt!menu $Before asking questions, page one.
+        rf!menu $Before asking questions, page one.
         Ask yourself questions about bonds that you don't know by doing some research on Google.
         $Before I ask you a question, page two.
         Let's ask questions using honorific expressions.

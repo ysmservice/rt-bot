@@ -1,4 +1,4 @@
-# RT - Bulk
+# Free RT - Bulk
 
 from typing import Union, Literal, List
 
@@ -82,7 +82,7 @@ class Bulk(commands.Cog):
         Examples
         --------
         ```
-        rt!bulk send @ゲーマー **来月開催する予定のゲーム大会について**
+        rf!bulk send @ゲーマー **来月開催する予定のゲーム大会について**
         このゲーム大会では以下のゲームのスコアを競います。
         * MinecraftのPvP
         * Apex
@@ -104,7 +104,7 @@ class Bulk(commands.Cog):
         Examples
         --------
         ```
-        rt!bulk send @Gamer **About the tournament of the games in next month**
+        rf!bulk send @Gamer **About the tournament of the games in next month**
         You will compete with these score:
         * Minecraft(PvP)
         * Apex

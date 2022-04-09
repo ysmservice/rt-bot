@@ -1,4 +1,4 @@
-# RT - AFK
+# Free RT - AFK
 
 from typing import TYPE_CHECKING, TypedDict, Optional, Dict
 
@@ -224,7 +224,7 @@ class AFK(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!afk set 現在説教タイムのため返信ができません。`
+        `rf!afk set 現在説教タイムのため返信ができません。`
 
         Aliases
         -------
@@ -241,7 +241,7 @@ class AFK(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!afk set Cannot reply due to current sermon time.`
+        `rf!afk set Cannot reply due to current sermon time.`
 
         Aliases
         -------
@@ -300,7 +300,7 @@ class AFK(commands.Cog, DataManager):
         --------
         例えば寝る時間にAFKを設定したいのなら以下のようにすることで毎晩十一時にAFKを自動で設定することができます。
         ```
-        rt!afk plus set 23:00 現在tasurenは営業しておりません。
+        rf!afk plus set 23:00 現在tasurenは営業しておりません。
         またのお越しをお待ちしております。
         ```
 
@@ -326,7 +326,7 @@ class AFK(commands.Cog, DataManager):
         --------
         For example, if you want to set AFK at bedtime, you can use the following to set AFK automatically at 11:00 every night.
         ```
-        rt!afk plus set 23:00 Currently tasuren is not open for business.
+        rf!afk plus set 23:00 Currently tasuren is not open for business.
         We look forward to seeing you again.
         ```
 

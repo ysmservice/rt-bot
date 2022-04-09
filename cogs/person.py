@@ -1,4 +1,4 @@
-# RT - Person
+# Free RT - Person
 
 from __future__ import annotations
 
@@ -117,7 +117,7 @@ class Person(commands.Cog):
 
         Examples
         --------
-        `rt!autoreaction how 👍 👎`
+        `rf!autoreaction how 👍 👎`
 
         Aliases
         -------
@@ -136,7 +136,7 @@ class Person(commands.Cog):
 
         Examples
         --------
-        `rt!autoreaction how 👍 👎`
+        `rf!autoreaction how 👍 👎`
 
         Aliases
         -------
@@ -200,7 +200,7 @@ class Person(commands.Cog):
 
         Examples
         --------
-        `rt!userinfo tasuren`
+        `rf!userinfo tasuren`
 
         !lang en
         --------
@@ -221,7 +221,7 @@ class Person(commands.Cog):
 
         Examples
         --------
-        `rt!userinfo tasuren`"""
+        `rf!userinfo tasuren`"""
         await ctx.trigger_typing()
         # もしuser_name_idが指定されなかった場合は実行者のIDにする。
         user, member = None, None
@@ -454,7 +454,7 @@ class Person(commands.Cog):
         --------
         `〜〜とは`と入力した際にYahoo検索を行うボタンリアクションを付ける機能の有効化・無効化ができます。
         デフォルトでは有効になっています。  
-        また、この機能をオフにしても`rt!yahoo <検索する言葉>`でyahoo検索は可能です。
+        また、この機能をオフにしても`rf!yahoo <検索する言葉>`でyahoo検索は可能です。
 
         !lang en
         --------

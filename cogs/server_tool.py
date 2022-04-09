@@ -1,4 +1,4 @@
-# RT - Server Tool
+# Free RT - Server Tool
 
 from typing import Union
 
@@ -305,7 +305,7 @@ class ServerTool(commands.Cog):
 
         Examples
         --------
-        `rt!lottery 3 メンバー`
+        `rf!lottery 3 メンバー`
         メンバーの中から三人抽選します。
 
         !lang en
@@ -374,7 +374,7 @@ class ServerTool(commands.Cog):
 
         Examples
         --------
-        `rt!slowmode 2`
+        `rf!slowmode 2`
 
         Aliases
         -------
@@ -392,7 +392,7 @@ class ServerTool(commands.Cog):
 
         Examples
         --------
-        `rt!slowmode 2`.
+        `rf!slowmode 2`.
 
         Aliases
         -------
@@ -497,7 +497,7 @@ class ServerTool(commands.Cog):
 
         Examples
         --------
-        `rt!purge 10`
+        `rf!purge 10`
 
         Notes
         -----
@@ -529,7 +529,7 @@ class ServerTool(commands.Cog):
 
         Examples
         --------
-        `rt!purge 10`.
+        `rf!purge 10`.
 
         Notes
         -----
@@ -663,7 +663,7 @@ class ServerTool(commands.Cog):
 
         Examples
         --------
-        `rt!members 雑談`
+        `rf!members 雑談`
         雑談というロールを持っている人またはチャンネルを見れる人の名前を列挙します。
 
         Aliases
@@ -682,7 +682,7 @@ class ServerTool(commands.Cog):
 
         Examples
         --------
-        `rt!members chit chat`
+        `rf!members chit chat`
         List the names of people who have the role "chat" or who can see the channel."""
         members = channel.members if channel else ctx.guild.members
         if members:

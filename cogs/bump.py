@@ -1,4 +1,4 @@
-# RT - Bump
+# Free RT - Bump
 
 from typing import Any, Literal
 
@@ -79,7 +79,7 @@ def get_extras(mode: str) -> dict:
 
 
 class Bump(commands.Cog, DataManager):
-
+    
     IDS = {
         302050872383242240: {
             "mode": "bump",
@@ -143,7 +143,7 @@ class Bump(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!bump on Bump係`
+        `rf!bump on Bump係`
 
         Notes
         -----
@@ -163,7 +163,7 @@ class Bump(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!bump on BumpMan`
+        `rf!bump on BumpMan`
 
         Notes
         -----
@@ -226,7 +226,7 @@ class Bump(commands.Cog, DataManager):
             (mode,)
         )
 
-    REPLIES = {"bump": "/bump", "up": "/dissoku up", "raise": "rt!raise"}
+    REPLIES = {"bump": "/bump", "up": "/dissoku up", "raise": "rf!raise"}
 
     @tasks.loop(seconds=10)
     async def notification(self):

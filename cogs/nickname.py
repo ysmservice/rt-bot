@@ -1,4 +1,4 @@
-# RT - Nickname Panel
+# Free RT - Nickname Panel
 
 from discord.ext import commands, tasks
 import discord
@@ -62,7 +62,7 @@ class NicknamePanel(commands.Cog):
         Examples
         --------
         ```
-        rt!nickpanel 通話中切り替え
+        rf!nickpanel 通話中切り替え
         +通話中
         +聞き専通話中
         私は誰
@@ -89,7 +89,7 @@ class NicknamePanel(commands.Cog):
         Examples
         --------
         ```
-        rt!nickpanel Toggle in-call
+        rf!nickpanel Toggle in-call
         +Calling
         +listening-only call
         Who am I?

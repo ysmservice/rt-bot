@@ -1,4 +1,4 @@
-# RT - Voice Channel
+# Free RT - Voice Channel
 
 from typing import TYPE_CHECKING, Union, Literal, Tuple, Dict, List
 

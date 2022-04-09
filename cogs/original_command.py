@@ -1,4 +1,4 @@
-# RT - Original Command
+# Free RT - Original Command
 
 from __future__ import annotations
 
@@ -114,7 +114,7 @@ class OriginalCommand(commands.Cog, DataManager):
         """!lang ja
         --------
         自動返信、オリジナルコマンド機能です。特定のメッセージに指定した内容で返信します。  
-        `rt!command`で登録されているコマンドの確認が可能です。
+        `rf!command`で登録されているコマンドの確認が可能です。
 
         Aliases
         -------
@@ -123,7 +123,7 @@ class OriginalCommand(commands.Cog, DataManager):
         !lang en
         --------
         Auto reply, original command.  
-        You can do `rt!command` to see commands which has registered.
+        You can do `rf!command` to see commands which has registered.
 
         Aliases
         -------
@@ -168,8 +168,8 @@ class OriginalCommand(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!command set ようこそ off ようこそ！RTサーバーへ！！`
-        `rt!command set そうだよ on そうだよ(便乗)`
+        `rf!command set ようこそ off ようこそ！RTサーバーへ！！`
+        `rf!command set そうだよ on そうだよ(便乗)`
 
         Aliases
         -------
@@ -192,8 +192,8 @@ class OriginalCommand(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!command set Welcome! off Welcome to RT Server!!`
-        `rt!command set Yes on Yes (free ride)`"""
+        `rf!command set Welcome! off Welcome to RT Server!!`
+        `rf!command set Yes on Yes (free ride)`"""
         await ctx.trigger_typing()
         if len(self.data.get(ctx.guild.id, ())) == 50:
             await ctx.reply(

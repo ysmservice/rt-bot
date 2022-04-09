@@ -1,4 +1,4 @@
-# RT - Log Extension
+# Free RT - Log Extension
 
 from discord.ext import commands
 import discord
@@ -11,8 +11,8 @@ from functools import wraps
 CHP_HELP = {
     "ja": ("ログ機能。",
 """# ログプラグイン - log
-`rt>log`をチャンネルのトピックに入れることでログを表示することができます。  
-例：`rt>log` (これをトピックに入れたチャンネルにログが送られます)"""),
+`rf>log`をチャンネルのトピックに入れることでログを表示することができます。  
+例：`rf>log` (これをトピックに入れたチャンネルにログが送られます)"""),
     "en": ("...", """...""")
 }
 
@@ -35,7 +35,7 @@ def log(mode: str = "normal", force: bool = False):
                 channel = discord.utils.find(
                     lambda ch: (
                         "log-rt" in ch.name
-                        or (ch.topic and "rt>log" in ch.topic)
+                        or (ch.topic and "rf>log" in ch.topic)
                     ), guild.text_channels
                 )
 
