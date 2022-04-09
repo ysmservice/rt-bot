@@ -1,7 +1,7 @@
 # rtutilとrtlibについて
 rtutilとrtlibは共にRTに関するお役立ちツールが集まったもの、と考えてください。  
 freeRTにおいて何かそのようなツールを作る際には**rtutil**に作成してください。  
-この2つに関しては統一を目指しています。  
+この2つに関しては統一を目指しています。
 
 ## libにあるもの
 * webhook_send (`channel.webhook_send`を使える機能)

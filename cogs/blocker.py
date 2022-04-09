@@ -171,9 +171,12 @@ class Blocker(commands.Cog, DataManager):
         await ctx.reply("Ok")
 
     @blocker.group(
-        aliases=["ロール", "役職", "r"], headding={
-            "ja": "文字ブロックで削除対象とするロールの設定リストを表示します。",
-            "en": "Displays the configuration list of roles to be deleted in the character block."
+        aliases=["ロール", "役職", "r"], 
+        extras={
+            "headding": {
+                "ja": "文字ブロックで削除対象とするロールの設定リストを表示します。",
+                "en": "Displays the configuration list of roles to be deleted in the character block."
+            }
         }
     )
     @setting.Setting("guild", "Emoji Blocker 1", HELP)

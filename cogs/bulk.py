@@ -60,8 +60,10 @@ class Bulk(commands.Cog):
     BULK_HELP = ("ServerTool", "bulk")
 
     @bulk.command(
-        headding={
-            "ja": "一括でメッセージを送信します。", "en": "Send messages in bulk."
+        extras={
+            "headding": {
+                "ja": "一括でメッセージを送信します。", "en": "Send messages in bulk."
+            }
         }
     )
     @setting.Setting("guild", "Bulk Send", BULK_HELP)
@@ -158,9 +160,11 @@ class Bulk(commands.Cog):
         This is the batch system command group for roles."""
 
     @role.command(
-        headding={
-            "ja": "一括で役職の権限を全て設定または解除します。",
-            "en": "Sets or removes all permissions of a role in a batch."
+        extras={
+            "headding": {
+                "ja": "一括で役職の権限を全て設定または解除します。",
+                "en": "Sets or removes all permissions of a role in a batch."
+            }
         }
     )
     @setting.Setting("guild", "Bulk Role Edit", BULK_HELP)
@@ -195,9 +199,11 @@ class Bulk(commands.Cog):
         await ctx.reply("Ok")
 
     @role.command(
-        headding={
-            "ja": "一括で役職の付与/剥奪を行います。",
-            "en": "Add/remove role in batches."
+        extras={
+            "headding": {
+                "ja": "一括で役職の付与/剥奪を行います。",
+                "en": "Add/remove role in batches."
+            }
         }
     )
     @setting.Setting("guild", "Bulk Role Add/Remove", BULK_HELP)

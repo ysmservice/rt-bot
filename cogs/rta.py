@@ -73,10 +73,14 @@ class RTA(commands.Cog):
             "RTA", "あーるてぃーえー", "即抜け",
             "rta_notification", "rta-notification", "RTA-notification", "RTA_notification",
             "rta_notice", "rta-notice", "RTA-notice", "RTA_notice"
-        ], headding={
-            "ja":"即抜けRTA通知の設定",
-            "en":"Set recording RTA channel"
-        }, parent="ServerUseful"
+        ],
+        extras={
+            "headding": {
+                "ja": "即抜けRTA通知の設定",
+                "en": "Set recording RTA channel"
+            },
+            "parent": "ServerUseful"
+        }
     )
     @commands.has_guild_permissions(kick_members=True)
     async def rta(self, ctx):

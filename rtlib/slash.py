@@ -461,7 +461,7 @@ class SlashManager(commands.Cog):
         await interaction.response.send_message("test")
 
     @commands.command(
-        headding={"ja": "テスト見出し", "en": "..."}, category="SlashTest"
+        extras={"headding": {"ja": "テスト見出し", "en": "..."}}, category="SlashTest"
     )
     async def test(self, ctx, test: Union[str, int]):
         await ctx.trigger_typing()
@@ -469,7 +469,7 @@ class SlashManager(commands.Cog):
         await ctx.reply("This is the test")
 
     @commands.group(
-        headding={"ja": "テストグループ", "en": "..."}, category="SlashTest"
+        extras={"headding": {"ja": "テストグループ", "en": "..."}}, category="SlashTest"
     )
     async def test_group(self, ctx):
         ...
