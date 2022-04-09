@@ -1,4 +1,4 @@
-# RT - Stamp
+# Free RT - Stamp
 
 from typing import Optional
 

@@ -1,5 +1,4 @@
-
-# RT - MineSweeper Game Extension
+# Free RT - MineSweeper Game Extension
 
 import discord
 from discord.ext import commands

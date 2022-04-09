@@ -1,4 +1,4 @@
-# RT - NG Word
+# Free RT - NG Word
 
 from __future__ import annotations
 
@@ -59,12 +59,12 @@ class NgWord(commands.Cog, DataManager):
         """!lang ja
         --------
         NGワード機能です。  
-        `rt!ngword`で登録されているNGワードのリストを表示します。
+        `rf!ngword`で登録されているNGワードのリストを表示します。
 
         !lang en
         --------
         NG Word feature.
-        Run `rt!ngword` to display ngwords registered."""
+        Run `rf!ngword` to display ngwords registered."""
         if not ctx.invoked_subcommand:
             embed = discord.Embed(
                 title={"ja": "NGワードリスト", "en": "NG Words"},
@@ -91,7 +91,7 @@ class NgWord(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!ngword add あああ`  
+        `rf!ngword add あああ`  
         この場合、`あああ`を含むメッセージが削除されます。
 
         Notes
@@ -110,7 +110,7 @@ class NgWord(commands.Cog, DataManager):
         Examples
         --------
         ```
-        rt!ngword add ahoy
+        rf!ngword add ahoy
         Ahoy
         idiot
         Idiot
@@ -138,7 +138,7 @@ class NgWord(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!ngword remove あああ`  
+        `rf!ngword remove あああ`  
         この場合`あああ`を含むメッセージが削除されないようになります。
 
         !lang en
@@ -148,7 +148,7 @@ class NgWord(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!ngword remove Badngword"""
+        `rf!ngword remove Badngword"""
         await ctx.trigger_typing()
         for word in words.splitlines():
             self.remove(ctx.guild.id, word)

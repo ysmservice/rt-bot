@@ -1,4 +1,4 @@
-# RT - Tenki
+# Free RT - Tenki
 
 from discord.ext import commands, easy, tasks
 import discord

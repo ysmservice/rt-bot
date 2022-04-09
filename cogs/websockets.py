@@ -1,4 +1,4 @@
-# RT - WebSockets
+# Free RT - WebSockets
 
 from typing import Union
 

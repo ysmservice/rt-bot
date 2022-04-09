@@ -1,4 +1,4 @@
-# RT - Tools For Dashboard
+# Free RT - Tools For Dashboard
 
 from typing import Literal
 
@@ -105,7 +105,7 @@ class Tools(commands.Cog):
 
     @commands.command(
         "RTを追い出します。", headding={
-            "ja": "RTをサーバーから追い出します。", "en": "Kick RT"
+            "ja": "Free RTをサーバーから追い出します。", "en": "Kick RT"
         }
     )
     @commands.has_guild_permissions(administrator=True)

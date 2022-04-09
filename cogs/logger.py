@@ -1,4 +1,4 @@
-# RT - Logger
+# Free RT - Logger
 
 import collections
 import logging
@@ -27,7 +27,7 @@ class SystemLog(commands.Cog):
         author = collections.Counter(self.authors).most_common()[0]
         guild = collections.Counter(self.guilds).most_common()[0]
         e = discord.Embed(
-            title="RT command log",
+            title="Free RT command log",
             description=f"1分間で{len(self.names)}回のコマンド実行(以下、実行最多記録)",
             color=self.bot.Colors.unknown
         )

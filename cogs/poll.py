@@ -1,4 +1,4 @@
-# RT - Poll (Vote)
+# Free RT - Poll (Vote)
 
 from typing import Callable, Tuple, List, Dict
 
@@ -62,7 +62,7 @@ class Poll(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.content.startswith("投票rt "):
-            message.content = message.content.replace("投票rt", "rt!poll")
+            message.content = message.content.replace("投票rt", "rf!poll")
             await self.bot.process_commands(message)
 
     @commands.command(
@@ -92,7 +92,7 @@ class Poll(commands.Cog):
         Examples
         --------
         ```
-        rt!poll 好きな人は？ on
+        rf!poll 好きな人は？ on
         😊 tasuren
         ミスティックガール
         吹雪ちゃん
@@ -122,7 +122,7 @@ class Poll(commands.Cog):
         Examples
         --------
         ```
-        rt!poll "Who's your favorite?" on
+        rf!poll "Who's your favorite?" on
         😊 tasuren
         Mystic Girl
         Hubuki-chan

@@ -1,4 +1,4 @@
-# RT - Language
+# Free RT - Language
 
 from typing import Literal, Union, List, Tuple
 
@@ -267,8 +267,8 @@ class Language(commands.Cog):
 
         Examples
         --------
-        `rt!language en` to set your language to English.
-        Set the language of the entire server to English, as executed by `rt!language en server`.
+        `rf!language en` to set your language to English.
+        Set the language of the entire server to English, as executed by `rf!language en server`.
 
         !lang en
         --------
@@ -288,7 +288,7 @@ class Language(commands.Cog):
 
         Examples
         --------
-        `rt!language ja`で言語を日本語に変更できます。"""
+        `rf!language ja`で言語を日本語に変更できます。"""
         # 言語コードが使えない場合はValueErrorを発生する。
         if language not in self.LANGUAGES:
             code = "invalid language code is inserted. 無効な言語コードです。"

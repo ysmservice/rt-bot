@@ -1,4 +1,4 @@
-# RT - RT Life
+# Free RT - RT Life
 
 from __future__ import annotations
 

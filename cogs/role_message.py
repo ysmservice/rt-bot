@@ -1,4 +1,4 @@
-# RT - Role Message
+# Free RT - Role Message
 
 from typing import TYPE_CHECKING, Optional, Optional, Union, Literal, Tuple, List
 
@@ -366,7 +366,7 @@ class RoleMessage(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!rolemessage ignore add ロールA ロールB`
+        `rf!rolemessage ignore add ロールA ロールB`
         ロールBが付与されているメンバーにロールAが付与または剥奪された際にロールメッセージを送信しないようにします。
 
         !lang en
@@ -382,7 +382,7 @@ class RoleMessage(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!rolemessage ignore add "role A" "role B"`.
+        `rf!rolemessage ignore add "role A" "role B"`.
         Do not send a role message to a member with role B when role A is granted or revoked."""
         await self.add_ignore(ctx.guild.id, role.id, ignore_role.id)
         await ctx.reply("Ok")

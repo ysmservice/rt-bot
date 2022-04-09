@@ -1,4 +1,4 @@
-# RT - Recruitment
+# Free RT - Recruitment
 
 from discord.ext import commands, tasks
 import discord
@@ -44,7 +44,7 @@ class Recruitment(commands.Cog):
         Examples
         --------
         ```
-        rt!recruitment りつちゃんにナンパする人募集します。 3 3
+        rf!recruitment りつちゃんにナンパする人募集します。 3 3
         集合場所：RTサーバー
         希望人材：かっこいい奴
         ```
@@ -74,7 +74,7 @@ class Recruitment(commands.Cog):
         Examples
         --------
         ```
-        rt!recruitment "Recruiting people to pick up Ritsu-chan." 3 3
+        rf!recruitment "Recruiting people to pick up Ritsu-chan." 3 3
         Meeting place: RT server
         Desired Talent: Cool guys.
         ```
