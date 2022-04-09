@@ -1,4 +1,4 @@
-# RT - Auto Role
+# Free RT - Auto Role
 
 from discord.ext import commands
 import discord
@@ -74,7 +74,7 @@ class AutoRole(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!autorole on 初心者`
+        `rf!autorole on 初心者`
 
         Aliases
         -------
@@ -94,7 +94,7 @@ class AutoRole(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!autorole on beginner`.
+        `rf!autorole on beginner`.
 
         Aliases
         -------

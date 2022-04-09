@@ -1,24 +1,24 @@
 <!--[![Discord Bots](https://top.gg/api/widget/status/716496407212589087.svg)](https://top.gg/bot/716496407212589087) [![Discord Bots](https://top.gg/api/widget/servers/716496407212589087.svg)](https://top.gg/bot/716496407212589087) ![Discord](https://img.shields.io/discord/718641964672876614?label=suppoFree-rt&logo=discord)-->
 
-# free RT Bot
+# Free RT Bot
 discordのBotであるRTのフリー版です。  
 RTはもともと無料で利用できましたが、有料になったためこのリポジトリが作成されました。  
 RTはBotが1台だけで済むように作成された多機能で便利なBotです。  
-ウェブ認証などのために`rt-backend`とWebSocketで通信も行います。(なおfreeRTでは現在は開発者が調整中のため使用できません。できるようになるまでお待ちください。)  
+ウェブ認証などのために`rt-backend`とWebSocketで通信も行います。(なおFreeRTでは現在は開発者が調整中のため使用できません。できるようになるまでお待ちください。)  
 RTについて知らない人は[ここ](https://rt-bot.com/)を見てみましょう。  
-free RTについて知らない人はここ (webサイト作成中なのでお待ちください...)を見てみましょう。
+Free RTについて知らない人はここ (webサイト作成中なのでお待ちください...)を見てみましょう。
 
 ## LICENSE
 `BSD 4-Clause License` (`LICENSE`ファイルに詳細があります。)
 
 ## Contributing
-[contributing](https://github.com/free-RT/rt-bot/blob/main/contributing)をご覧ください。
+[contributing](https://github.com/Free-RT/rt-bot/blob/main/contributing)をご覧ください。
 
 ## Free RT 開発状況
-現在free RTはまだ開発段階で正式には稼働していません。もうしばらくお待ちください。  
+現在Free RTはまだ開発段階で正式には稼働していません。もうしばらくお待ちください。  
 また、稼働し始めた場合でも一部機能が制限された状態で開始する可能性があります。ご了承ください。  
 なおこのbotは複数の有志開発者たちによって開発・運営されています。そのためRT本体より更新が遅かったりする場合がございます。  
-もしfreeではないRTが良いのであれば有料になります。開発者のtasurenに送金をして安定したRTを使用してください。
+もしFreeではないRTが良いのであれば有料になります。開発者のtasurenに送金をして安定したRTを使用してください。
 
 ## Installation
 ### Depedencies

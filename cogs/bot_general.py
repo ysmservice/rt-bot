@@ -1,4 +1,4 @@
-# RT - Bog General
+# Free RT - Bog General
 
 from __future__ import annotations
 
@@ -26,12 +26,12 @@ from .server_tool import PERMISSION_TEXTS
 ERROR_CHANNEL = 961870556548984862
 
 INFO_DESC = {
-    "ja": """どうもRTという新時代Botです。
+    "ja": """どうもFree RTという新時代Botです。
 このBotは役職,投票,募集,チケットパネルやチャンネルステータスなどの定番機能はもちろん、声の変えれる読み上げやプレイリストのある音楽プレイヤーなどもある多機能Botです。
 そして荒らし対策として使える画像,ウェブ,合言葉認証やスパム対策機能まであります。
 またその他にもスレッド自動アーカイブ対策,自己紹介テンプレートに使える常に下にくるメッセージ,NSFW誤爆対策に使える自動画像スポイラーそしてボイスチャンネルロールなどあったら便利な機能もたくさんあります。
 さあ是非このBotを入れて他のBotを蹴り飛ばしましょう！""",
-    "en": """It's a new era Bot called RT.
+    "en": """It's a new era Bot called Free RT.
 This Bot is a multifunctional Bot with standard functions such as job title, voting, recruitment, ticket panel and channel status, as well as a music player with voice changing reading and playlists.
 And there are images, web, password authentication and spam prevention functions that can be used as a troll countermeasure.
 Other useful features include automatic thread archiving, always-on messages for self-introduction templates, an automatic image spoiler for NSFW detonation, and voice channel rolls.
@@ -59,7 +59,7 @@ THANKYOU_TEMPLATE = cleandoc(
     公式ウェブサイト：https://rt-bot.com
     サポートサーバー：https://discord.gg/VHwJ3CBuWw
     チュートリアル　：https://rt-team.github.io/ja/notes/tutorial
-    プリフィックス　：`rt!`, `Rt!`, `RT!`, `rt.`, `Rt.`, `RT.`, `りつ！`, `りつ.`
+    プリフィックス　：`rf!`, `Rf!`, `RF!`, `rf.`, `Rf.`, `RF.`, `りふ！`, `りふ.`
 
     **RT 利用規約**
     RTを利用した場合以下の利用規約に同意したことになります。

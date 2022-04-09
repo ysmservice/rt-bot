@@ -1,4 +1,4 @@
-# RT - Delay Lottery
+# Free RT - Delay Lottery
 
 from discord.ext import commands, tasks
 import discord

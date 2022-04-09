@@ -1,4 +1,4 @@
-# RT - Old Role Panel
+# Free RT - Old Role Panel
 
 from typing import Callable, Coroutine, Optional, Dict
 
@@ -199,7 +199,7 @@ class OldRolePanel(commands.Cog):
     ) -> None:
         await (send or payload.member.send)(
             content=extend(
-                f"rt!role {payload.message.embeds[0].title}\n" + "\n".join(
+                f"rf!role {payload.message.embeds[0].title}\n" + "\n".join(
                     (e + " " + getattr(
                         payload.message.guild.get_role(
                             int(m.split()[0][3:-1])

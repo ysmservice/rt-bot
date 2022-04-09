@@ -1,9 +1,9 @@
-"""ふりーりつたん！ (C) 2022 Free-RT
+"""ふりーりつたん！ (C) 2022 Free RT
 LICENSE : ./LICENSE
 README  : ./readme.md
 """
 
-desc = """ふりーりつたん - (C) 2022 Free-RT
+desc = """ふりーりつたん - (C) 2022 Free RT
 少女起動中..."""
 print(desc)
 

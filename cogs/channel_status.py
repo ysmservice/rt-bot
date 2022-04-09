@@ -1,4 +1,4 @@
-# RT - Channel Status
+# Free RT - Channel Status
 
 from discord.ext import commands, tasks
 import discord
@@ -87,7 +87,7 @@ class ChannelStatus(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!status メンバー数：!mb!`
+        `rf!status メンバー数：!mb!`
 
         !lang en
         --------
@@ -111,7 +111,7 @@ class ChannelStatus(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!status Members:!mb!`"""
+        `rf!status Members:!mb!`"""
         if text.lower() in ("false", "off", "disable", "0"):
             await self.delete(ctx.guild.id, ctx.channel.id)
             content = {"ja": "", "en": ""}
