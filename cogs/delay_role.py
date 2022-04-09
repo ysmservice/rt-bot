@@ -1,4 +1,4 @@
-# RT - Delay Role
+# Free RT - Delay Role
 
 from __future__ import annotations
 
@@ -94,7 +94,7 @@ class DelayRole(commands.Cog, DataManager):
         サーバーに入室したメンバーに、ロールを自動付与する機能である`autorole`の、遅延バージョンです。
         これは何秒後のようにしてロールを付与することができます。
 
-        Warnings
+        Warning
         --------
         この機能は関係ない人にもロールが付与されることがあります。
         (この関係ない人は、既に遅延時間を超えていない人は含まれません)
@@ -166,7 +166,7 @@ class DelayRole(commands.Cog, DataManager):
         ----------
         delay : int
             何秒遅延するかです。
-            もし日付等で指定したい場合は`rt!calc 式`で計算ができるのでそれを使ったりして秒数に計算してください。
+            もし日付等で指定したい場合は`rf!calc 式`で計算ができるのでそれを使ったりして秒数に計算してください。
             三十五秒以下にすると大幅に付与が遅れます。
         role : ロールの名前かメンションまたはID
             付与するロールです。
@@ -187,7 +187,7 @@ class DelayRole(commands.Cog, DataManager):
         ----------
         delay : int
             The number of seconds to delay.
-            If you want to specify a date, you can use `rt!calc expression` to calculate the number of seconds.
+            If you want to specify a date, you can use `rf!calc expression` to calculate the number of seconds.
             If it is less than 35 seconds, the grant is significantly delayed.
         role : role name, mentions or ID
             The role to be granted.

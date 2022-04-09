@@ -1,4 +1,4 @@
-# RT - Free Channel
+# Free RT - Free Channel
 
 from typing import Literal
 
@@ -127,24 +127,24 @@ class FreeChannel(commands.Cog):
 テキストチャンネル：このチャンネルで`text チャンネル名`
 ボイスチャンネル：このチャンネルで`voice チャンネル名`
 **#** 改名方法
-テキストチャンネル：そのフリーチャンネルで`rt!rename 改名後の名前`
-ボイスチャンネル：適当なチャンネルで`rt!rename ボイスチャンネル名 改名後の名前`
+テキストチャンネル：そのフリーチャンネルで`rf!rename 改名後の名前`
+ボイスチャンネル：適当なチャンネルで`rf!rename ボイスチャンネル名 改名後の名前`
 ※作成されるボイスチャンネルの名前には作成した人のIDが含まれますが、このIDは改名時にチャンネル名に入れる必要はないです。
 **#** 削除方法
-テキストチャンネル：そのフリーチャンネルで`rt!remove`
-ボイスチャンネル：適当なチャンネルで`rt!remove ボイスチャンネル名`
+テキストチャンネル：そのフリーチャンネルで`rf!remove`
+ボイスチャンネル：適当なチャンネルで`rf!remove ボイスチャンネル名`
 ※作成されるボイスチャンネルの名前には作成した人のIDが含まれますが、このIDは削除時にチャンネル名に入れる必要はないです。""",
             "en": """You can create a channel by sending the name of the channel you want.
 **#** How to create
 Text channel: `text channel name` in this channel
 Voice channel: `voice channel name` in this channel
 **#** How to rename
-Text channel: `rt!rename renamed name` in that free channel
-Voice channel: On a suitable channel, use `rt!rename voice channel name after renaming`.
+Text channel: `rf!rename renamed name` in that free channel
+Voice channel: On a suitable channel, use `rf!rename voice channel name after renaming`.
 The name of the created voice channel will include the ID of the person who created it, but this ID does not need to be included in the channel name when renaming it.
 **#** How to delete
-Text channel: `rt!remove` on that free channel
-Voice channel: `rt!remove voice channel name` on an appropriate channel.
+Text channel: `rf!remove` on that free channel
+Voice channel: `rf!remove voice channel name` on an appropriate channel.
 The name of the created voice channel will include the ID of the person who created it, but this ID does not need to be included in the channel name when removing it."""
         }
 
