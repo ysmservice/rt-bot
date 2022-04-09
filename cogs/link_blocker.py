@@ -213,8 +213,12 @@ class LinkBlocker(commands.Cog, DataManager):
             )
 
     @linkblock.command(
-        "list", aliases=["一覧", "l"], headding={
-            "ja": "URLブロッカーの例外リストです。", "en": "URL Blocker's ignore list"
+        "list", aliases=["一覧", "l"], 
+        extras={
+            "headding": {
+                "ja": "URLブロッカーの例外リストです。",
+                "en": "URL Blocker's ignore list"
+            }
         }
     )
     @setting.Setting("guild", "URL Blocker Ignore List", HELP)

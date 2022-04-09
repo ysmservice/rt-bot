@@ -117,8 +117,12 @@ class ShortURL(commands.Cog, DataManager):
     HELP = ("Individual", "url")
 
     @url.command(
-        aliases=["短縮", "add"], headding={
-            "ja": "URLを短縮します。", "en": "Shortens URL"
+        aliases=["短縮", "add"],
+        extras={
+            "headding":{
+                "ja": "URLを短縮します。",
+                "en": "Shortens URL"
+            }
         }
     )
     @setting.Setting("url", "URL Shorter", HELP)
@@ -200,9 +204,12 @@ class ShortURL(commands.Cog, DataManager):
             await ctx.reply(f"短縮しました。>>>http://rtbo.tk/{custom}")
 
     @url.command(
-        "list", aliases=["一覧"], headding={
-            "ja": "短縮したURLのリストを表示します。",
-            "en": "Displays shorted URLs"
+        "list", aliases=["一覧"], 
+        extras={
+            "headding": {
+                "ja": "短縮したURLのリストを表示します。",
+                "en": "Displays shorted URLs"
+            }
         }
     )
     @setting.Setting("url", "URL Shorter List", HELP)
@@ -233,8 +240,11 @@ class ShortURL(commands.Cog, DataManager):
             await ctx.reply("まだ何も短縮URLは登録されていません。")
 
     @url.command(
-        "remove", aliases=["rm", "delete", "del", "削除"], headding={
-            "ja": "短縮URLを削除します。", "en": "Remove shorted URL"
+        "remove", aliases=["rm", "delete", "del", "削除"], 
+        extras={
+            "headding": {
+                "ja": "短縮URLを削除します。", "en": "Remove shorted URL"
+            }
         }
     )
     @setting.Setting("url", "URL Shorter Remove", HELP)

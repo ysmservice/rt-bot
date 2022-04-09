@@ -74,8 +74,12 @@ class NgWord(commands.Cog, DataManager):
             await ctx.reply(embed=embed)
 
     @ngword.command(
-        name="add", aliases=["あどど"], headding={
-            "ja": "NGワードを追加します。", "en": "Remove NG Word"
+        name="add", aliases=["あどど"], 
+        extras={
+            "headding": {
+                "ja": "NGワードを追加します。",
+                "en": "Remove NG Word"
+            }
         }
     )
     @commands.has_guild_permissions(manage_messages=True)
@@ -125,8 +129,12 @@ class NgWord(commands.Cog, DataManager):
         await ctx.reply("Ok")
 
     @ngword.command(
-        name="remove", aliases=["りむーぶ", "rm", "delete", "del"], headding={
-            "ja": "NGワードを削除します。", "en": "Remove NG Word"
+        name="remove", aliases=["りむーぶ", "rm", "delete", "del"],
+        extras={
+            "headding": {
+                "ja": "NGワードを削除します。",
+                "en": "Remove NG Word"
+            }
         }
     )
     @commands.has_guild_permissions(manage_messages=True)

@@ -207,8 +207,12 @@ class AFK(commands.Cog, DataManager):
     HELP = ("Individual", "afk")
 
     @afk.command(
-        "set", aliases=["s", "設定"], headding={
-            "ja": "AFKを設定します。", "en": "Set AFK"
+        "set", aliases=["s", "設定"],
+        extras={
+            "headding": {
+                "ja": "AFKを設定します。",
+                "en": "Set AFK"
+            }
         }
     )
     @setting.Setting("afk", "0 AFK Set", HELP)
@@ -352,8 +356,11 @@ class AFK(commands.Cog, DataManager):
             )
 
     @plus.command(
-        aliases=["del", "削除"], headding={
-            "ja": "AFKプラスの設定を削除します。", "en": "Delete AFK Plus"
+        aliases=["del", "削除"],
+        extras={
+            "headding": {
+                "ja": "AFKプラスの設定を削除します。", "en": "Delete AFK Plus"
+            }
         }
     )
     @setting.Setting("afk", "3 AFK Plus Delete", HELP)
@@ -394,9 +401,12 @@ class AFK(commands.Cog, DataManager):
             await ctx.reply("Ok")
 
     @plus.command(
-        "list", aliases=["l", "一覧"], headding={
-            "ja": "AFK Plusの設定リストを表示します。",
-            "en": "Show you the settings of AFK Plus."
+        "list", aliases=["l", "一覧"],
+        extras={
+            "headding": {
+                "ja": "AFK Plusの設定リストを表示します。",
+                "en": "Show you the settings of AFK Plus."
+            }
         }
     )
     @setting.Setting("afk", "1 AFK Plus List", HELP)
