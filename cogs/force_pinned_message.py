@@ -1,4 +1,4 @@
-# RT - Force Pinned Message
+# Free RT - Force Pinned Message
 
 from typing import Optional, Tuple, Dict, List
 
@@ -161,7 +161,7 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         Examples
         --------
         ```
-        rt!pin on 自己紹介テンプレート：
+        rf!pin on 自己紹介テンプレート：
         名前：
         性別：
         一言：
@@ -172,12 +172,12 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         下に来るメッセージは数秒毎に更新されるので数秒は下に来ないことがあります。  
         以下のように最初に`# `を置いて`embed`コマンドの書き方を使えば埋め込みにすることができます。
         ```
-        rt!pin on # タイトル
+        rf!pin on # タイトル
         説明
         ## フィールド名
         フィールド内容
         ```
-        また、送信頻度を一時間に一回などのしたい場合は`rt!pinit <何分>`を実行すると送信頻度を調節できます。  
+        また、送信頻度を一時間に一回などのしたい場合は`rf!pinit <何分>`を実行すると送信頻度を調節できます。  
         もし、強制ピン留めのメッセージのアイコンをRTにしたい、もしくは名前をカスタマイズしたいと言う場合は、チャンネルトピックに以下を追加してください。
         ```
         # 送信者の名前をカスタマイズしたい場合 #
@@ -214,7 +214,7 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         Examples
         --------
         ```
-        rt!pin on Self-introduction template:
+        rf!pin on Self-introduction template:
         Name:
         Gender:
         Comment:

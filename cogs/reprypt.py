@@ -1,4 +1,4 @@
-# RT - Reprypt
+# Free RT - Reprypt
 
 from discord.ext import commands
 import discord
@@ -50,7 +50,7 @@ class Reprypt(commands.Cog):
 
         Examples
         --------
-        `rt!reprypt encrypt tasuren 私の極秘情報！`
+        `rf!reprypt encrypt tasuren 私の極秘情報！`
 
         Aliases
         -------
@@ -82,7 +82,7 @@ class Reprypt(commands.Cog):
 
         Examples
         --------
-        `rt!reprypt encrypt tasuren My top secret!`
+        `rf!reprypt encrypt tasuren My top secret!`
 
         Aliases
         -------
@@ -124,7 +124,7 @@ class Reprypt(commands.Cog):
 
         Examples
         --------
-        `rt!reprypt encrypt tasuren ByGqa44We55B1u56e5oYO65FC77x`
+        `rf!reprypt encrypt tasuren ByGqa44We55B1u56e5oYO65FC77x`
 
         Notes
         -----
@@ -155,7 +155,7 @@ class Reprypt(commands.Cog):
 
         Examples
         --------
-        `rt!reprypt encrypt tasuren ByGqa44We55B1u56e5oYO65FC77x`
+        `rf!reprypt encrypt tasuren ByGqa44We55B1u56e5oYO65FC77x`
 
         Notes
         -----

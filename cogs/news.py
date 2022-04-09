@@ -1,4 +1,4 @@
-# RT - News
+# Free RT - News
 
 from datetime import datetime
 from time import time

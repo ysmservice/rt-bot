@@ -1,4 +1,4 @@
-# RT - Locker
+# Free RT - Locker
 
 from discord.ext import commands, tasks
 import discord

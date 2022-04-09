@@ -1,4 +1,4 @@
-# RT - Twitter
+# Free RT - Twitter
 
 from __future__ import annotations
 
@@ -330,7 +330,7 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
 
         Examples
         --------
-        `rt!twitter set on tasuren1`
+        `rf!twitter set on tasuren1`
         RTの開発者のtasurenのTwitterの通知を有効にします。
 
         Aliases
@@ -352,7 +352,7 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
 
         Examples
         --------
-        `rt!twitter set on tasuren1`
+        `rf!twitter set on tasuren1`
         Enables Twitter notifications for the RT developer tasuren.
 
         Aliases

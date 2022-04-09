@@ -1,4 +1,4 @@
-# RT Chan - Info
+# Free RT Chan - Info
 
 from discord.ext import commands
 import discord
@@ -11,20 +11,20 @@ class Info(commands.Cog):
     @commands.command(
         "help", slash_command=True, aliases=[
             "h", "へるぷ", "ヘルプ", "invite", "info", "about"
-        ], description="りつたんの操作方法を表示します。"
+        ], description="ふりーりつたんの操作方法を表示します。"
     )
     async def help(self, ctx):
         await ctx.reply(
-            "どうも、りつたんだよ。\n詳細や招待や使い方はこちら：https://rt-team.github.io/rt-chan"
+            "どうも、ふりーりつたんだよ。\n詳細や招待や使い方はこちら：https://rt-team.github.io/rt-chan"
         )
 
     @commands.Cog.listener()
     async def on_full_ready(self):
         await self.bot.change_presence(
             activity=discord.Activity(
-                name="rt#help | 少女絶賛稼働中！",
+                name="rf#help | 少女絶賛稼働中！",
                 type=discord.ActivityType.watching,
-                state="りつたん"
+                state="ふりーりつたん"
             )
         )
 

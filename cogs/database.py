@@ -1,4 +1,4 @@
-# RT - Database Manager
+# Free RT - Database Manager
 
 from discord.ext import commands
 import discord
@@ -30,7 +30,7 @@ class DatabaseManager(commands.Cog):
 
         Notes
         -----
-        RTのデータベースへの接続に使用しているラッパーは`aiomysql`です。  
+        Free RTのデータベースへの接続に使用しているラッパーは`aiomysql`です。  
         その`aiomysql`のオプションで自動コミットするようにしています。
 
         Parameters

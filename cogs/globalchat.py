@@ -1,4 +1,4 @@
-# RT - Global Chat
+# Free RT - Global Chat
 
 from typing import TYPE_CHECKING
 

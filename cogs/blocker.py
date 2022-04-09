@@ -1,4 +1,4 @@
-# RT - Blocker
+# Free RT - Blocker
 
 from __future__ import annotations
 
@@ -95,7 +95,6 @@ class DataManager(DatabaseManager):
         self.cache[guild_id][mode].remove(role)
         await self._update(cursor, guild_id, mode, [])
 
-
 Role = Union[discord.Role, discord.Object, Literal[0]]
 
 
@@ -182,8 +181,8 @@ class Blocker(commands.Cog, DataManager):
         """!lang ja
         --------
         削除対象とするロールを管理するコマンドです。  
-        `rt!blocker role`と実行すると設定されているものの一覧が表示されます。  
-        これで設定しても`rt!blocker toggle`を実行するまでは何も起きません。
+        `rf!blocker role`と実行すると設定されているものの一覧が表示されます。  
+        これで設定しても`rf!blocker toggle`を実行するまでは何も起きません。
 
         Aliases
         -------
@@ -192,8 +191,8 @@ class Blocker(commands.Cog, DataManager):
         !lang en
         --------
         This command is used to manage the roles to be deleted.  
-        If you run `rt!blocker role`, a list of the configured roles will be displayed.    
-        If you set it up this way, nothing will happen until you run `rt!blocker toggle`.
+        If you run `rf!blocker role`, a list of the configured roles will be displayed.    
+        If you set it up this way, nothing will happen until you run `rf!blocker toggle`.
 
         Aliases
         -------

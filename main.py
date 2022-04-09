@@ -1,9 +1,9 @@
-"""RT Backend (C) 2022 Free-RT
+"""Free RT Backend (C) 2022 Free RT
 LICENSE : ./LICENSE
 README  : ./readme.md
 """
 
-print("Free-RT Discord Bot (C) 2022 Free-RT\nNow loading...")
+print("Free RT Discord Bot (C) 2022 Free RT\nNow loading...")
 
 from os import listdir
 from sys import argv
@@ -80,7 +80,7 @@ async def on_ready():
                     raise e
             else:
                 bot.print("[Extension]", "Loaded", name)  # ロードログの出力
-    bot.print("Completed to boot Free-RT")
+    bot.print("Completed to boot Free RT")
 
     bot.dispatch("full_ready")  # full_readyイベントを発火する
     bot._load = True  # 完全なロードが完了したことを表す

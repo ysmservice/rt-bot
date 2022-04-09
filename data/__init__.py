@@ -1,4 +1,4 @@
-# RTの基本データ。
+# Free RTの基本データ。
 
 from typing import Optional
 
@@ -16,18 +16,18 @@ class Colors:
 data = {
     "prefixes": {
         "test": [
-            "r2!", "R2!", "r2.", "R2.",
-            "りっちゃん２　", "りっちゃん2 ", "r2>"
+            "rf2!", "RF2!", "rf2.", "Rf2.",
+            "りふちゃん２　", "りふちゃん2 ", "rf2>"
         ],
         "production": [
-            "rt!", "Rt!", "RT!", "rt.", "Rt.",
-            "RT.", "りつ！", "りつ."
+            "rf!", "りふ！", "RF!", "rf.", "Rf.",
+            "RF.", "rF.", "りふ.", "Rf!", "rF!", "りふ!"
         ],
         "sub": [
-            "rt#", "りつちゃん ", "りつたん ", "りつ ",
-            "りつちゃん　", "りつたん　", "りつ　", "Rt#", "RT#"
+            "rf#", "りふちゃん ", "りふたん ", "りふ ",
+            "りふちゃん　", "りふたん　", "りふ　", "Rf#", "RF#", "rF#"
         ],
-        "alpha": ["r3!", "r3>"]
+        "alpha": ["rf3!", "rf3>"]
     },
     "colors": {name: getattr(Colors, name) for name in dir(Colors)},
     "admins": [

@@ -1,4 +1,4 @@
-# RT - Link Blocker
+# Free RT - Link Blocker
 
 from typing import TYPE_CHECKING, List
 
@@ -107,7 +107,7 @@ class LinkBlocker(commands.Cog, DataManager):
         """!lang ja
         --------
         URLが送信された時にメッセージを削除する機能です。  
-        `rt!linkblock`を実行することでオン/オフを切り替えることができます。
+        `rf!linkblock`を実行することでオン/オフを切り替えることができます。
 
         Aliases
         -------
@@ -116,7 +116,7 @@ class LinkBlocker(commands.Cog, DataManager):
         !lang en
         --------
         This feature will delete a message that included a URL.  
-        You can toggle on or off by running this command (`rt!linkblock`).
+        You can toggle on or off by running this command (`rf!linkblock`).
 
         Aliases
         -------

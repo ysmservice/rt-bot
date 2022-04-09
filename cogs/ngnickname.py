@@ -1,4 +1,4 @@
-# RT - Ng Nickname
+# Free RT - Ng Nickname
 
 from discord.ext import commands
 import discord
@@ -67,7 +67,7 @@ class NGNickName(commands.Cog):
         """!lang ja
         -------
         ニックネームに含めることができないNGワード(NGニックネーム)を設定します。  
-        `rt!ngnick`で現在登録しているNGニックネームの一覧を表示します。
+        `rf!ngnick`で現在登録しているNGニックネームの一覧を表示します。
 
         Aliases
         -------
@@ -80,7 +80,7 @@ class NGNickName(commands.Cog):
         !lang en
         --------
         Sets the NG nicknames that cannot be included in nicknames.  
-        Displays the list of NG nicknames currently registered with `rt!ngnick`.
+        Displays the list of NG nicknames currently registered with `rf!ngnick`.
 
         Aliases
         -------
@@ -110,7 +110,7 @@ class NGNickName(commands.Cog):
 
         Examples
         --------
-        `rt!ngnick add tasuren`  
+        `rf!ngnick add tasuren`  
         tasurenが本当のサーバーのオーナーなのでなりすましを禁止するとき。
 
         Aliases
@@ -128,7 +128,7 @@ class NGNickName(commands.Cog):
 
         Examples
         --------
-        `rt!ngnick add tasuren`.  
+        `rf!ngnick add tasuren`.  
         This is banned because tasuren is the real owner of the server."""
         await ctx.trigger_typing()
 

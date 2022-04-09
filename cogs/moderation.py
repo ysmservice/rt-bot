@@ -1,4 +1,4 @@
-# RT - Moderation
+# Free RT - Moderation
 
 from typing import Literal, List
 
@@ -47,7 +47,7 @@ class Moderation(commands.Cog):
 
         Examples
         --------
-        `rt!ban @tasuren @tasuren-sub`"""
+        `rf!ban @tasuren @tasuren-sub`"""
         members = [
             await commands.UserConverter().convert(ctx, member)
             for member in members.split(",")
@@ -98,7 +98,7 @@ class Moderation(commands.Cog):
 
         Examples
         --------
-        `rt!ban @tasuren @tasuren-sub`"""
+        `rf!ban @tasuren @tasuren-sub`"""
         await self.ban(ctx, members=members, mode="kick")
 
     kick._callback.__doc__ = ban._callback.__doc__.replace("ban", "kick").replace("BAN", "Kick") \

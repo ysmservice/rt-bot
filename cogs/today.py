@@ -1,4 +1,4 @@
-# RT - What day is today
+# Free RT - What day is today
 
 from discord.ext import commands, tasks
 import discord
@@ -106,8 +106,8 @@ class Today(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!today` 「今日は何の日」を表示します。
-        `rt!today on` 実行したチャンネルに毎日午前9時に「今日は何の日」を送信します。"""
+        `rf!today` 「今日は何の日」を表示します。
+        `rf!today on` 実行したチャンネルに毎日午前9時に「今日は何の日」を送信します。"""
         if setting is None:
             await ctx.reply(embed=await self.get_today())
         elif ctx.author.guild_permissions.manage_channels:

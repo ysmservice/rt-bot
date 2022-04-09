@@ -1,4 +1,4 @@
-# RT - No Icon Notice
+# Free RT - No Icon Notice
 
 from typing import Optional
 

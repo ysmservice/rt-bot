@@ -1,4 +1,4 @@
-# RT - Funp
+# Free RT - Funp
 
 from discord.ext import commands, easy
 import discord
@@ -177,7 +177,7 @@ class Funp(commands.Cog, DataManager):
         """!lang ja
         --------
         Funpを表示します。  
-        カテゴリーの指定をしない場合は`rt!funp`でも表示はできます。
+        カテゴリーの指定をしない場合は`rf!funp`でも表示はできます。
 
         Parameters
         ----------

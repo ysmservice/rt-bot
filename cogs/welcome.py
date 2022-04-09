@@ -1,4 +1,4 @@
-# RT - Welocme Message
+# Free RT - Welocme Message
 
 from typing import Literal
 
@@ -99,7 +99,7 @@ class Welcome(commands.Cog, DataManager):
         Examples
         --------
         ```
-        rt!welcome join $ment$, ようこそ！RTサーバーへ！！
+        rf!welcome join $ment$, ようこそ！RTサーバーへ！！
         あなたは$count$人目の参加者です。
         ```
 
@@ -134,7 +134,7 @@ class Welcome(commands.Cog, DataManager):
         Examples
         --------
         ```
-        rt!welcome join $ment$, Welcome to the RT server!
+        rf!welcome join $ment$, Welcome to the RT server!
         You are the $count$th participant.
         Welcome to the RT server!
         ```

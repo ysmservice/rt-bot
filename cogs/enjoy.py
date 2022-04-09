@@ -1,4 +1,4 @@
-# RT - Enjoy Cog
+# Free RT - Enjoy Cog
 
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ class Enjoy(commands.Cog):
 
         Examples
         --------
-        `rt!minecraft tasuren`
+        `rf!minecraft tasuren`
 
         Aliases
         -------
@@ -59,7 +59,7 @@ class Enjoy(commands.Cog):
 
         Examples
         --------
-        `rt!minecraft tasuren`
+        `rf!minecraft tasuren`
 
         Aliases
         -------
@@ -216,7 +216,7 @@ class Enjoy(commands.Cog):
 
         Examples
         --------
-        `rt!game ps4` ([NYN姉貴の画像](http://tasuren.syanari.com/RT/help/Entertainment/NYN姉貴.jpg)を添付して実行。)
+        `rf!game ps4` ([NYN姉貴の画像](http://tasuren.syanari.com/RT/help/Entertainment/NYN姉貴.jpg)を添付して実行。)
         -> [実行結果](http://tasuren.syanari.com/RT/help/Entertainment/ps4_NYN姉貴.png)
 
         !lang en
@@ -231,7 +231,7 @@ class Enjoy(commands.Cog):
 
         Examples
         --------
-        `rt!game ps4` ([NYN sister's image](http://tasuren.syanari.com/RT/help/Entertainment/NYN姉貴.jpg) is attached and executed.)
+        `rf!game ps4` ([NYN sister's image](http://tasuren.syanari.com/RT/help/Entertainment/NYN姉貴.jpg) is attached and executed.)
         -> [Execution result](http://tasuren.syanari.com/RT/help/Entertainment/ps4_NYN姉貴.png)"""
         if mode not in self.GAME_SUPPORT_MODES:
             return await ctx.reply(

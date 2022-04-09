@@ -1,4 +1,4 @@
-# RT - Token Remover
+# Free RT - Token Remover
 
 from typing import DefaultDict, List
 

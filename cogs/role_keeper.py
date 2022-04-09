@@ -1,4 +1,4 @@
-# RT - Role Keeper
+# Free RT - Role Keeper
 
 from typing import TYPE_CHECKING, Optional, List
 

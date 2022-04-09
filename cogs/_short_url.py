@@ -1,4 +1,4 @@
-# RT - Short URL
+# Free RT - Short URL
 
 from discord.ext import commands
 import discord
@@ -60,7 +60,6 @@ class DataManager(DatabaseManager):
         assert await cursor.exists(self.DB, target), "見つかりませんでした。"
         return (await cursor.get_data(self.DB, target))[1]
 
-
 CHARS = list(range(41, 91)) + list(range(61, 123))
 
 
@@ -118,7 +117,7 @@ class ShortURL(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!url short http://tasuren.f5.si tasuren`  
+        `rf!url short http://tasuren.f5.si tasuren`  
         tasurenのホームページを`http://rtbo.tk/tasuren`からアクセスできるようにする。
 
         Aliases
@@ -146,7 +145,7 @@ class ShortURL(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!url short http://tasuren.f5.si tasuren`  
+        `rf!url short http://tasuren.f5.si tasuren`  
         Make the home page of tasuren accessible from `http://rtbo.tk/tasuren`."""
         if len(await self.getall(ctx.author.id)) >= 15:
             await self.remove_last(ctx.author.id)

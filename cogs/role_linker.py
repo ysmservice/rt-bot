@@ -1,4 +1,4 @@
-# RT - Role Linker
+# Free RT - Role Linker
 
 from __future__ import annotations
 
@@ -75,13 +75,13 @@ class RoleLinker(commands.Cog, DataManager):
         --------
         ロールリンカー、役職が付与/削除された際に他の役職も付与/削除するようにする機能です。  
         認証機能にて複数の役職を付与するようにしたい際に使えます。  
-        `rt!linker`と実行することで登録されてるロールリンクの一覧を表示できます。
+        `rf!linker`と実行することで登録されてるロールリンクの一覧を表示できます。
 
         !lang en
         --------
         Ability to grant/delete other positions when they are granted/deleted.  
         It can be use when you want set captcha role multiple.
-        You can do `rt!linker` to see role link that registerd list."""
+        You can do `rf!linker` to see role link that registerd list."""
         if not ctx.invoked_subcommand:
             await ctx.reply(
                 embed=discord.Embed(
@@ -116,7 +116,7 @@ class RoleLinker(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!linker link 認証済み メンバー`
+        `rf!linker link 認証済み メンバー`
         認証済みの役職がついたらメンバーという役職をつけます。
 
         Notes
@@ -141,7 +141,7 @@ class RoleLinker(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!linker link authenticated member`.
+        `rf!linker link authenticated member`.
         If the role is authenticated, it will be given the role "member".
 
         Notes
