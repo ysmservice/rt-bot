@@ -411,7 +411,7 @@ class Person(commands.Cog):
 
     @commands.command(
         aliases=["おみくじ", "fortune", "cookie", "luck", "oj"],
-        extra={
+        extras={
             "headding": {"ja": "おみくじをします。"},
             "parent": "Entertainment"
         }
