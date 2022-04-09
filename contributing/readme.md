@@ -7,7 +7,7 @@
 いくつかの項目は長いため、ファイル別に分けています。
 * [RTの全体的な仕組み](./sikumi.md)
 * [Cogsについて](./about_cogs.md)
-* [rt-lib/utilsについて](./about_util_and_lib)
+* [rt-lib/utilsについて](./about_util_and_lib.md)
 * [free RTのpythonでの構文・記法](./syntax.md)
 
 ## コミットメッセージ
