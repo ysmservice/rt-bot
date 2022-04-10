@@ -11,7 +11,7 @@ from ujson import loads
 from pytz import utc
 
 
-with open("data/area_code.json", "r") as f:
+with open("data/area_code.json", "r",encoding="utf-8") as f:
     AREA_CODE = loads(f.read())
 
 
@@ -133,7 +133,7 @@ class Tenki(commands.Cog, DataManager):
         if data["forecasts"]:
             forecast = data["forecasts"][0]
             embed.add_field(
-                name=f"‌\n{forecast['dateLabel']} - {forecast['telop']}",
+                name=f"?\n{forecast['dateLabel']} - {forecast['telop']}",
                 value=forecast["detail"]["weather"], inline=False
             )
             embed.set_thumbnail(url=forecast["image"]["url"])
