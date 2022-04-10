@@ -1,17 +1,15 @@
 # rtutil - in old rtlib features
 
-from typing import Union, Tuple, List
+from __future__ import annotations
+
+from typing import Union
 
 from discord.ext import commands, tasks # type: ignore
 import discord
 
 from pymysql.err import OperationalError
 
-from rtlib.slash import Context as SlashContext
-from rtlib import mysql_manager as mysql
-from rtlib.data_manager import Table
-from rtlib.typed import RT, sendableString
-from rtlib.cacher import CacherPool, Cacher, Cache
+from rtlib.cacher import CacherPool
 
 
 async def webhook_send(
@@ -43,7 +41,7 @@ async def webhook_send(
             raise e
 
 
-def lib_setup(bot, only: Union[Tuple[str, ...], List[str]] = []):
+def lib_setup(bot, only: Union[tuple[str, ...], list[str]] = []):
     "rtlibにあるエクステンションを全てまたは指定されたものだけ読み込みます。"
     bot.load_extension("rtlib.data_manager")
     for name in ("on_send", "on_full_reaction", "dochelp", "debug", "on_cog_add"):
