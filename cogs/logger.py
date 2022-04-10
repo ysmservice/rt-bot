@@ -46,7 +46,7 @@ class SystemLog(commands.Cog):
     @tasks.loop(seconds=60)
     async def logging_loop(self):
         if len(self.names) != 0:
-            await self.bot.get_channel(926731137903104000) \
+            await self.bot.get_channel(961870556548984862) \
                 .send(embed=self._make_embed())
             self.names = []
             self.zero_parents = []
