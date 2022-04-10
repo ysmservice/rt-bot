@@ -205,7 +205,7 @@ class Music:
                 qs_d=urllib.parse.parse_qs(qs)
                 return cls(
                     cog, author, MusicTypes.ysmfilm, yf_gettitle(qs_d['id'][0]), url,
-                    "https://ysmfilm.wjg.jp/th.php?id="+qs_d['id'][0], yf_getduration(qs_d['id'][0])
+                    "https://ysmfilm.wjg.jp/th.php?id="+qs_d['id'][0], int(yf_getduration(qs_d['id'][0]).split(':')[0])*60+int(yf_getduration(qs_d['id'][0]).split(':')[1])
                 )
             else:
                 # YouTube
@@ -254,6 +254,8 @@ class Music:
             setattr(self, "on_close", self.video.close)
             return self.video.download_link
         elif self.music_type == MusicTypes.ysmfilm:
+            qs=urllib.parse.urlparse(self.url).query
+            qs_d=urllib.parse.parse_qs(qs)
             return "https://ysmfilm.wjg.jp/video/"+qs_d['id'][0]+".mp4"
         assert False, "あり得ないことが発生しました。"
 
