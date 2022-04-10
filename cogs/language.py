@@ -44,7 +44,7 @@ class Language(commands.Cog):
         self.pool = self.bot.mysql.pool
         self.bot.loop.create_task(self.on_ready())
 
-        with open("data/replies.json") as f:
+        with open("data/replies.json",encoding="utf-8") as f:
             self.replies = loads(f.read())
 
     def cog_unload(self):
