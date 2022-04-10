@@ -14,6 +14,8 @@ from jishaku.functools import executor_function
 from niconico import NicoNico, objects as niconico_objects
 from youtube_dl import YoutubeDL
 from requests import get
+import urllib.parse
+import urllib.request
 
 if __name__ == "__main__":
     from .__init__ import MusicCog
@@ -51,7 +53,7 @@ class MusicTypes:
     youtube = 2
     soundcloud = 3
     spotify = 4
-
+    ysmfilm = 5
 
 class MusicDict(TypedDict):
     "プレイリスト等に保存する際の音楽データの辞書の型です。"
@@ -65,6 +67,16 @@ class MusicDict(TypedDict):
 
 
 #   Utils
+def yf_gettitle(id):
+    searchurl="https://ysmfilm.wjg.jp/view_raw.php?id="+id
+    with urllib.request.urlopen(searchurl) as ut:
+        tit=ut.read().decode()
+    return tit
+def yf_getduration(id):
+    searchurl="https://ysmfilm.wjg.jp/duration.php?id="+id
+    with urllib.request.urlopen(searchurl) as ut:
+        tit=ut.read().decode()
+    return tit
 niconico = NicoNico()
 def make_niconico_music(
     cog: MusicCog, author: discord.Member, url: str, video: Union[
@@ -188,6 +200,13 @@ class Music:
                     cog, author, MusicTypes.soundcloud, data["title"], url,
                     data["thumbnail"], data["duration"]
                 )
+            elif "ysmfilm" in url:
+                qs=urllib.parse.urlparse(url).query
+                qs_d=urllib.parse.parse_qs(qs)
+                return cls(
+                    cog, author, MusicTypes.ysmfilm, yf_gettitle(qs_d['id'][0]), url,
+                    "https://ysmfilm.wjg.jp/th.php?id="+qs_d['id'][0], yf_getduration(qs_d['id'][0])
+                )
             else:
                 # YouTube
                 if not is_url(url):
@@ -234,6 +253,8 @@ class Music:
             self.video.connect()
             setattr(self, "on_close", self.video.close)
             return self.video.download_link
+        elif self.music_type == MusicTypes.ysmfilm:
+            return "https://ysmfilm.wjg.jp/video/"+qs_d['id'][0]+".mp4"
         assert False, "あり得ないことが発生しました。"
 
     async def make_source(self) -> Union[
@@ -308,9 +329,9 @@ class Music:
         if self.duration is None:
             return ""
         return "".join((
-            (base := "◾" * length
+            (base := "?" * length
             )[:(now := int(self.now / self.duration * length))],
-            "⬜", base[now:])
+            "?", base[now:])
         )
 
     def _init_start(self):
