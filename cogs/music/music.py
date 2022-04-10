@@ -205,7 +205,7 @@ class Music:
                 qs_d=urllib.parse.parse_qs(qs)
                 return cls(
                     cog, author, MusicTypes.ysmfilm, yf_gettitle(qs_d['id'][0]), url,
-                    "https://ysmfilm.wjg.jp/th.php?id="+qs_d['id'][0], int(yf_getduration(qs_d['id'][0]).split(':')[0])*60+int(yf_getduration(qs_d['id'][0]).split(':')[1])
+                    "https://ysmfilm.wjg.jp/th.php?id="+qs_d['id'][0], int(yf_getduration(qs_d['id'][0]).split(':')[0])*360+int(yf_getduration(qs_d['id'][0]).split(':')[1])*60+int(yf_getduration(qs_d['id'][0]).split(':')[2])
                 )
             else:
                 # YouTube
