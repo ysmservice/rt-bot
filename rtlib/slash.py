@@ -282,7 +282,7 @@ def new_from_callback(
             parameter._default = discord.SlashOption(
                 parameter.name, required=False, default=parameter.default
             )
-            self.options[parameter.name] = discord.CommandOption(parameter)
+            self.options[parameter.name] = discord.CommandOption(parameter, self)
     return self
 discord.ApplicationSubcommand._from_callback = new_from_callback
 
