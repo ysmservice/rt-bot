@@ -151,5 +151,5 @@ class Today(commands.Cog, DataManager):
             self.yet = True
 
 
-async def setup(bot):
-    await bot.add_cog(Today(bot))
+def setup(bot):
+    bot.add_cog(Today(bot))
