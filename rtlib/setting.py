@@ -148,7 +148,7 @@ class SettingManager(commands.Cog):
 
     def check_parent(self, command: commands.Commande) -> bool:
         "親コマンドがダッシュボードに追加しても良いものかどうかをチェックします。"
-        return "headding" in command.__original_kwargs__ or "headding" in command.extras
+        return "headding" in command.extras
 
     @commands.Cog.listener()
     async def on_command_add(self, command: discord.Command):
@@ -199,9 +199,7 @@ class SettingManager(commands.Cog):
             # データに格納する。
             self.data[command.qualified_name] = CommandData(kwargs=kwargs)
             if command.parent is None:
-                self.data[command.qualified_name]["headding"] = \
-                    command.__original_kwargs__.get("headding") \
-                    or command.extras.get("headding")
+                self.data[command.qualified_name]["headding"] = command.extras.get("headding")
                 self.data[command.qualified_name]["category"] = category
             self.data[command.qualified_name]["help"] = self.helps[command.qualified_name]
             # コマンドを保存しておく。
