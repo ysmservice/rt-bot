@@ -3,7 +3,7 @@
 from discord.ext import commands
 import discord
 
-from rtlib import DatabaseManager, setting
+from rtlib import DatabaseManager
 
 
 class DataManager(DatabaseManager):
@@ -58,7 +58,6 @@ class AutoRole(commands.Cog, DataManager):
     )
     @commands.cooldown(1, 10, commands.BucketType.guild)
     @commands.has_guild_permissions(administrator=True)
-    @setting.Setting("guild", "AutoRole")
     async def autorole(self, ctx, onoff: bool, *, role: discord.Role = None):
         """!lang ja
         --------

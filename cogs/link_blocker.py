@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, List
 from discord.ext import commands
 import discord
 
-from rtlib import RT, setting
+from rtlib import RT
 
 if TYPE_CHECKING:
     from aiomysql import Pool, Cursor
@@ -102,7 +102,6 @@ class LinkBlocker(commands.Cog, DataManager):
     )
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.has_guild_permissions(manage_messages=True)
-    @setting.Setting("guild", "URL Blocker")
     async def linkblock(self, ctx):
         """!lang ja
         --------
@@ -135,7 +134,6 @@ class LinkBlocker(commands.Cog, DataManager):
     MAX_CHANNELS = 25
 
     @linkblock.command(aliases=["a", "追加"])
-    @setting.Setting("guild", "URL Blocker Ignore Add", HELP)
     async def add(self, ctx):
         """!lang ja
         --------
@@ -171,7 +169,6 @@ class LinkBlocker(commands.Cog, DataManager):
             )
 
     @linkblock.command(aliases=["rm", "delete", "del", "削除"])
-    @setting.Setting("guild", "URL Blocker Ignore Remove", HELP)
     async def remove(self, ctx, channel_id: int = None):
         """!lang ja
         --------
@@ -221,7 +218,6 @@ class LinkBlocker(commands.Cog, DataManager):
             }
         }
     )
-    @setting.Setting("guild", "URL Blocker Ignore List", HELP)
     async def list_(self, ctx):
         """!lang ja
         --------

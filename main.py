@@ -55,7 +55,6 @@ bot.mysql = bot.data["mysql"] = mysql.MySQLManager(
 bot.pool = bot.mysql.pool  # bot.mysql.pool のエイリアス
 bot.colors = data["colors"]  # 下のColorsを辞書に変換したもの
 bot.Colors = Colors  # botで使う基本色が入っているclass
-bot._load = False  # 完全な(cogsなどの)ロードが完了していなおことを表す
 
 # 起動中だと教えられるようにするためのコグを読み込む
 bot.load_extension("cogs._first")
@@ -88,7 +87,6 @@ async def on_ready():
     bot.print("Completed to boot Free RT")
 
     bot.dispatch("full_ready")  # full_readyイベントを発火する
-    bot._load = True  # 完全なロードが完了したことを表す
 
 
 # loggingの準備

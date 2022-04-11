@@ -5,8 +5,7 @@ from typing import Literal, Union, List, Tuple
 from discord.ext import commands
 import discord
 
-from rtlib import RT, setting
-from data import is_admin
+from rtlib import RT
 
 from aiofiles import open as async_open
 from json import loads
@@ -192,7 +191,7 @@ class Language(commands.Cog):
         extras={"headding": {"ja": "言語データを再読込します。",
                              "en": "Reload language data."},
                 "parent": "Admin"})
-    @is_admin()
+    @commands.is_owner()
     async def reload_language(self, ctx):
         """言語データを再読込します。"""
         await ctx.trigger_typing()
@@ -246,7 +245,6 @@ class Language(commands.Cog):
             "parent": "RT"
         }
     )
-    @setting.Setting("user", "!Language")
     async def language(self, ctx, language: Literal["ja", "en"], mode: Literal["server", "user"] = "user"):
         """!lang ja
         --------

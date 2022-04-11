@@ -7,7 +7,6 @@ import discord
 
 from emoji import UNICODE_EMOJI_ENGLISH
 from asyncio import create_task
-from time import time
 
 
 class OldRolePanel(commands.Cog):
