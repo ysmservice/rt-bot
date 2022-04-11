@@ -7,7 +7,6 @@ from aiofiles import open as aioopen
 from aiofiles.os import remove
 
 from rtlib import RT
-from data import is_admin
 
 
 class DatabaseManager(commands.Cog):
@@ -18,7 +17,7 @@ class DatabaseManager(commands.Cog):
         description="渡された命令文でデータベースを操作します。",
         category="Admin", aliases=["db", "mysql", "execute", "実行"]
     )
-    @is_admin()
+    @commands.is_owner()
     async def sql(
         self, ctx, show: bool = discord.SlashOption("show", "実行結果を表示するかどうかです。"),
         *, cmd: str = discord.SlashOption("sql", "SQLの命令文です。")

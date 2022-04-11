@@ -8,7 +8,7 @@ from time import time
 from discord.ext import commands, tasks
 import discord
 
-from rtlib import RT, DatabaseManager as OldDatabaseManager, setting
+from rtlib import RT, DatabaseManager as OldDatabaseManager
 from rtutil import DatabaseManager, markord
 
 from aiomysql import Pool, Cursor

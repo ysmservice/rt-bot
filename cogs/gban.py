@@ -10,7 +10,6 @@ import discord
 from rtlib import RT, mysql, DatabaseManager
 from rtlib.page import EmbedPage
 from rtlib.ext import componesy
-from data import is_admin
 
 from .bot_general import INFO_SS
 
@@ -216,7 +215,7 @@ class GlobalBan(commands.Cog, DataManager):
             )
 
     @gban.command("add")
-    @is_admin()
+    @commands.is_owner()
     async def add_user_(self, ctx, user_id: int, *, reason):
         await ctx.trigger_typing()
         await self.add_user(user_id, reason)
@@ -239,7 +238,7 @@ class GlobalBan(commands.Cog, DataManager):
         await ctx.reply("追加しました。")
 
     @gban.command("remove")
-    @is_admin()
+    @commands.is_owner()
     async def remove_user_(self, ctx, user_id: int):
         await ctx.trigger_typing()
         await self.remove_user(user_id)

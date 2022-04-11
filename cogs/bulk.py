@@ -5,8 +5,6 @@ from typing import Union, Literal, List
 from discord.ext import commands
 import discord
 
-from rtlib import setting
-
 
 GuildRole = Union[discord.Role, Literal["everyone"]]
 Mode = Literal["add", "remove"]

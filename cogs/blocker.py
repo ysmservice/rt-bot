@@ -14,7 +14,7 @@ from aiomysql import Pool, Cursor
 from ujson import loads, dumps
 
 from rtutil import DatabaseManager
-from rtlib import RT, Table, setting
+from rtlib import RT
 
 from .automod.modutils import emoji_count
 

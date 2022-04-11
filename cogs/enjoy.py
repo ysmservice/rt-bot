@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup
 from PIL import Image
 
 from rtlib.page import EmbedPage
-from rtlib import RT, setting
+from rtlib import RT
 
 
 class Enjoy(commands.Cog):

@@ -170,10 +170,6 @@ The name of the created voice channel will include the ID of the person who crea
     @freechannel_.command(name="remove")
     @commands.cooldown(1, 300, commands.BucketType.user)
     @commands.has_permissions(manage_channels=True)
-    @setting.Setting(
-        "guild", "Free Channel 1 Remove", ("ServerPanel", "freechannel"),
-        channel=discord.TextChannel
-    )
     async def remove_(self, ctx):
         """!lang ja
         --------
