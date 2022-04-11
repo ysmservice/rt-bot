@@ -215,7 +215,6 @@ class AFK(commands.Cog, DataManager):
             }
         }
     )
-    @setting.Setting("afk", "0 AFK Set", HELP)
     async def set_(self, ctx: commands.Context, *, reason):
         """!lang ja
         --------
@@ -283,7 +282,6 @@ class AFK(commands.Cog, DataManager):
             "ja": "AFKプラスの設定をします。", "en": "Setting for AFK Plus"
         }
     )
-    @setting.Setting("afk", "2 AFK Plus Set", HELP)
     async def set_plus(self, ctx: commands.Context, mode, *, reason):
         """!lang ja
         --------
@@ -363,7 +361,6 @@ class AFK(commands.Cog, DataManager):
             }
         }
     )
-    @setting.Setting("afk", "3 AFK Plus Delete", HELP)
     async def delete(self, ctx: commands.Context, *, mode):
         """!lang ja
         --------
@@ -409,7 +406,6 @@ class AFK(commands.Cog, DataManager):
             }
         }
     )
-    @setting.Setting("afk", "1 AFK Plus List", HELP)
     async def list_(self, ctx: commands.Context):
         """!lang ja
         --------
