@@ -69,7 +69,6 @@ class DelayDelete(commands.Cog, DataManager):
         }
     )
     @commands.cooldown(1, 30, commands.BucketType.channel)
-    @setting.Setting("guild", "DelayDeleteMessage", channel=discord.TextChannel)
     async def delaydelete(self, ctx, minutes: int, *, content):
         """!lang ja
         --------

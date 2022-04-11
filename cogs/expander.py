@@ -88,7 +88,6 @@ class Expander(commands.Cog, DataManager):
         }
     )
     @commands.has_guild_permissions(administrator=True)
-    @setting.Setting("guild", "Message Link Expander", channel=discord.TextChannel)
     async def expand(self, ctx, onoff: bool, mode: Literal["g"] = "g"):
         """!lang ja
         --------

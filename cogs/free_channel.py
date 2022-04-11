@@ -58,7 +58,6 @@ class FreeChannel(commands.Cog):
     @freechannel_.command(aliases=["add", "rg"])
     @commands.cooldown(1, 300, commands.BucketType.user)
     @commands.has_permissions(manage_channels=True)
-    @setting.Setting("guild", "Free Channel 0 Register", channel=discord.TextChannel)
     async def register(self, ctx, max_channel: int = 4, lang: Literal["ja", "en"] = "ja"):
         """!lang ja
         --------

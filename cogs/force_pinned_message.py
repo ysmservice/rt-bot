@@ -137,7 +137,6 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         }, aliases=["ピン留め", "ぴんどめ", "fpm", "forcepinmessage"]
     )
     @commands.has_guild_permissions(manage_messages=True)
-    @setting.Setting("guild", "Force Pinned Message", channel=discord.TextChannel)
     async def pin(self, ctx: commands.Context, onoff: bool, *, content=""):
         """!lang ja
         --------

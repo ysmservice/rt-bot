@@ -29,7 +29,6 @@ class Enjoy(commands.Cog):
         }
     )
     @commands.cooldown(1, 15, commands.BucketType.user)
-    @setting.Setting("enjoy", "Minecraft Java User Skin")
     async def minecraft(self, ctx, *, user):
         """!lang ja
         --------
