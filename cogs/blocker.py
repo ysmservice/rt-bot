@@ -137,7 +137,6 @@ class Blocker(commands.Cog, DataManager):
     @blocker.command("toggle", aliases=["設定", "t"])
     @commands.has_guild_permissions(manage_messages=True)
     @commands.cooldown(1, 10, commands.BucketType.guild)
-    @setting.Setting("guild", "Emoji Blocker 0", HELP)
     async def _toggle(self, ctx: commands.Context, *, mode: DataManager.Mode):
         """!lang ja
         --------
@@ -179,7 +178,6 @@ class Blocker(commands.Cog, DataManager):
             }
         }
     )
-    @setting.Setting("guild", "Emoji Blocker 1", HELP)
     async def role(self, ctx: commands.Context):
         """!lang ja
         --------
@@ -218,7 +216,6 @@ class Blocker(commands.Cog, DataManager):
     @role.command(aliases=["追加", "a"])
     @commands.cooldown(1, 8, commands.BucketType.guild)
     @commands.has_guild_permissions(manage_messages=True)
-    @setting.Setting("guild", "Emoji Blocker 2", HELP)
     async def add(
         self, ctx: commands.Context, mode: DataManager.Mode, *, role: "Role"
     ):
@@ -261,7 +258,6 @@ class Blocker(commands.Cog, DataManager):
     @role.command(aliases=["削除", "rm"])
     @commands.cooldown(1, 8, commands.BucketType.guild)
     @commands.has_guild_permissions(manage_messages=True)
-    @setting.Setting("guild", "Emoji Blocker 3", HELP)
     async def remove(
         self, ctx: commands.Context, mode: DataManager.Mode, *, role: "Role"
     ):

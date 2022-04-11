@@ -66,7 +66,6 @@ class Bulk(commands.Cog):
             }
         }
     )
-    @setting.Setting("guild", "Bulk Send", BULK_HELP)
     async def send(self, ctx, target: GuildRole, *, content):
         """!lang ja
         --------
@@ -129,10 +128,10 @@ class Bulk(commands.Cog):
                 try:
                     e = discord.Embed(description=content)
                     e.set_author(name=ctx.author, icon_url=ctx.author.avatar.url)
-                    e.set_footer(text="RT一括送信 対象：" + ("全員" if isinstance(role, str) else f"{role.name}を持つ人"))
+                    e.set_footer(text="RT一括送信 対象：" + ("全員" if isinstance(target, str) else f"{target.name}を持つ人"))
                     await member.send(embed=e)
                     sent_count += 1
-                except (discord.HTTPException, discord.Forbidden) as e:
+                except (discord.HTTPException, discord.Forbidden):
                     failed_members.append(
                         (member, "権限不足またはメンバーがDMを許可していません。"))
                 except Exception as e:
@@ -167,7 +166,6 @@ class Bulk(commands.Cog):
             }
         }
     )
-    @setting.Setting("guild", "Bulk Role Edit", BULK_HELP)
     async def edit(self, ctx, mode: Mode, *, role: discord.Role):
         """!lang ja
         --------
@@ -206,7 +204,6 @@ class Bulk(commands.Cog):
             }
         }
     )
-    @setting.Setting("guild", "Bulk Role Add/Remove", BULK_HELP)
     async def manage(self, ctx, mode: Mode, target: GuildRole, *, role: discord.Role):
         """!lang ja
         --------
