@@ -15,7 +15,7 @@ class DatabaseManager(commands.Cog):
 
     @commands.command(
         description="渡された命令文でデータベースを操作します。",
-        category="Admin", aliases=["db", "mysql", "execute", "実行"]
+        extras={"parent":"Admin"}, aliases=["db", "mysql", "execute", "実行"]
     )
     @commands.is_owner()
     async def sql(
