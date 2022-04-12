@@ -1,4 +1,4 @@
-# rtutil - Converters
+# rtutil - Converters (新utils移行済み)
 
 from discord.ext import commands
 
