@@ -5,7 +5,7 @@ from typing import Literal
 from discord.ext import commands
 import discord
 
-from rtlib import RT, DatabaseManager, setting
+from rtlib import RT, DatabaseManager
 
 from re import findall
 
@@ -88,7 +88,6 @@ class Expander(commands.Cog, DataManager):
         }
     )
     @commands.has_guild_permissions(administrator=True)
-    @setting.Setting("guild", "Message Link Expander", channel=discord.TextChannel)
     async def expand(self, ctx, onoff: bool, mode: Literal["g"] = "g"):
         """!lang ja
         --------

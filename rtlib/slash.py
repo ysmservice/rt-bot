@@ -409,7 +409,10 @@ class SlashManager(commands.Cog):
         # コマンドフレームワークのコマンド実行以外のInteractionなら元々のやつに渡す。
         await self.bot.process_application_commands(interaction)
 
-    @commands.command(description="コマンドを実行します。 | Run command", category="RT")
+    @commands.command(
+        description="コマンドを実行します。 | Run command",
+        extras={"parent":"RT"}
+    )
     async def run(self, ctx: Context, *, content):
         """!lang ja
         --------
@@ -461,7 +464,9 @@ class SlashManager(commands.Cog):
         await interaction.response.send_message("test")
 
     @commands.command(
-        extras={"headding": {"ja": "テスト見出し", "en": "..."}}, category="SlashTest"
+        extras={
+            "headding": {"ja": "テスト見出し", "en": "..."},
+            "parent":"SlashTest"}
     )
     async def test(self, ctx, test: Union[str, int]):
         await ctx.trigger_typing()
@@ -469,7 +474,10 @@ class SlashManager(commands.Cog):
         await ctx.reply("This is the test")
 
     @commands.group(
-        extras={"headding": {"ja": "テストグループ", "en": "..."}}, category="SlashTest"
+        extras={
+            "headding": {"ja": "テストグループ", "en": "..."},
+            "parent":"SlashTest"
+        }
     )
     async def test_group(self, ctx):
         ...

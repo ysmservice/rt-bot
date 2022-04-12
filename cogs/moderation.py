@@ -5,7 +5,7 @@ from typing import Literal, List
 from discord.ext import commands
 import discord
 
-from rtlib import RT, setting
+from rtlib import RT
 
 
 class Moderation(commands.Cog):
@@ -21,7 +21,6 @@ class Moderation(commands.Cog):
         }, aliases=["バン", "ばん", "BAN"]
     )
     @commands.has_guild_permissions(ban_members=True)
-    @setting.Setting("guild", "BAN/Kick")
     async def ban(
         self, ctx, *, members: str = "カンマで区切ることでめんばーを複数指定可能です。",
         mode: Literal["kick", "ban"] = "ban"

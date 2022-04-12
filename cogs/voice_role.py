@@ -5,7 +5,7 @@ from typing import Union
 from discord.ext import commands, tasks
 import discord
 
-from rtlib import DatabaseManager, RT, setting
+from rtlib import DatabaseManager, RT
 
 
 class DataManager(DatabaseManager):
@@ -77,7 +77,6 @@ class VoiceRole(commands.Cog, DataManager):
             }, "parent": "ServerUseful"
         }
     )
-    @setting.Setting("guild", "Voice Role")
     async def voicerole(
         self, ctx, channel: Union[discord.VoiceChannel, discord.StageChannel],
         *, role: discord.Role
