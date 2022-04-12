@@ -15,8 +15,8 @@ from .typed import RT, sendableString
 from .cacher import CacherPool, Cacher, Cache
 
 # 非推奨だが一応使えるようにimportしておく。
-from rtutil import webhook_send, tasks_extend, send_kwargs
-from rtutil import lib_setup as setup
+from rtutil.oldrtlib import webhook_send, tasks_extend, send_kwargs
+from rtutil.oldrtlib import lib_setup as setup
 
 
 DatabaseManager = mysql.DatabaseManager
