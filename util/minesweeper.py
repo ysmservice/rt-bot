@@ -14,16 +14,18 @@ class MineSweeper:
         "マインスイーパーです。インスタンス化でデータの作成までを行います。"
         if xlen > 100 or ylen > 100:
             raise ValueError("xlen and ylen must be 100 or less.")
-        self.xlen, self.ylen = xlen, ylen
+        self.xlen: int = xlen
+        self.ylen: int = ylen
 
         if bombs > (xlen * ylen):
             raise ValueError("bombs must be less than numbers of all squares.")
-        self.bombs = bombs
+        self.bombs: int = bombs
 
-        self.logging = log
+        self.logging: bool = log
         if seed:
             random.seed(seed)
         self.make_data()
+        self.now_opened = []
 
     def make_data(self):
         "初期データをself.dataに2次元配列で作成します。0~8の数字は回りにある爆弾の数、9は爆弾を表します。"
@@ -39,10 +41,12 @@ class MineSweeper:
             for y_checking in len(t_data[x_checking]):
                 t_data[x_checking][y_chexking] = \
                     self.get_around_data(t_data, x_checking, y_checking).count(9)
-        self.data = t_data
+        self.data: tuple = tuple([tuple(i) for i in t_data])
+        if self.logging:
+            print(f"[rtutil][MineSweeper]maked data: {'\n'.join(self.data)}")
 
 
-    def get_around_data(self, t_data, x, y):
+    def get_around_data(self, t_data, x, y) -> tuple:
         "t_dataのx番目のy番目の周りの数(壁を越えていたら0)を取得したリストを返します。"
         if t_data[x][y] == 9:
             return (9, 9, 9, 9, 9, 9, 9, 9, 9)  # 9の数が9個なので問題ない。
@@ -58,8 +62,33 @@ class MineSweeper:
                 d.append(0)
             d.append(t_data[m[0]][m[1]])
 
-        return d
+        return tuple(d)
 
+    def open(self, x: int, y: int) -> tuple[int]:
+        """self.dataのx行目, y列目を取り出します。
+        タプル型が返され、1番目が結果(0=操作完了, 1=クリア, 2=ゲームオーバー、3=すでに引いている)で、
+        2番目が引いた数字になります。
+        """
+        assert x < self.xlen, "存在しない番地です。"
+        assert y < self.ylen, "存在しない番地です。"
+        # 実際のコマンドでは、通常この2つはコマンド処理側ではじかれるのでエラーは出ない。
 
+        number = self.data[x][y]
+        if self.logging:
+            print(f"[rtutil][Minesweeper] opened x : {x}, y : {y} -> {number}")
 
+        if (x, y) in self.now_opened:
+            # もう引いている。
+            return (3, number)
 
+        self.now_opened.append((x, y))
+
+        if number == 9:
+            # 爆弾を引いてゲームオーバー。
+            return (2, number)
+        elif len(self.now_opened) == (self.xlen * self.ylen - self.bombs):
+            # 爆弾以外すべて引いたのでゲームクリア。
+            return (1, number)
+        else:
+            # ゲームは続行。
+            return (0, number)
