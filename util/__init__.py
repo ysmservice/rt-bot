@@ -10,6 +10,7 @@ from .converters import (
     ObjectsConverter
 )
 from .markdowns import decoration_md, create_embed_from_md
+from . import olds
 
 
 __all__ = [
@@ -23,5 +24,6 @@ __all__ = [
     "RolesConverter",
     "ObjectsConverter",
     "decoration_md",
-    "create_embed_from_md"
+    "create_embed_from_md",
+    "olds"
 ]
