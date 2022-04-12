@@ -9,7 +9,7 @@ from pymysql.err import OperationalError
 
 # from .slash import Context as SlashContext
 # from .ext import componesy
-# from .cacher import CacherPool, Cacher, Cache
+from .cacher import CacherPool
 
 
 def similer(before: str, after: str, check_length: int) -> bool:
@@ -115,7 +115,7 @@ def setup(bot, only: Union[Tuple[str, ...], List[str]] = []):
     bot.load_extension("rtlib.websocket")
     bot.load_extension("rtlib.rtws")
     bot.load_extension("rtlib.setting")
-    # bot.cachers = CacherPool()
+    bot.cachers = CacherPool()
 
 
 # discord.ext.tasksのタスクがデータベースの操作失敗によって止まることがないようにする。
