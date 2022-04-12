@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup
 from PIL import Image
 
 from rtlib.page import EmbedPage
-from rtlib import RT, setting
+from rtlib import RT
 
 
 class Enjoy(commands.Cog):
@@ -29,7 +29,6 @@ class Enjoy(commands.Cog):
         }
     )
     @commands.cooldown(1, 15, commands.BucketType.user)
-    @setting.Setting("enjoy", "Minecraft Java User Skin")
     async def minecraft(self, ctx, *, user):
         """!lang ja
         --------

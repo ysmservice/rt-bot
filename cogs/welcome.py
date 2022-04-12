@@ -70,7 +70,6 @@ class Welcome(commands.Cog, DataManager):
     )
     @commands.cooldown(1, 8, commands.BucketType.guild)
     @commands.has_guild_permissions(administrator=True)
-    @setting.Setting("guild", "Welcome Message", channel=discord.TextChannel)
     async def welcome(self, ctx, mode: Literal["join", "remove"], *, content):
         """!lang ja
         --------
