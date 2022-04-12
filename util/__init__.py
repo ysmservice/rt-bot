@@ -12,6 +12,7 @@ from .converters import (
 )
 from . import olds
 from .minesweeper import MineSweeper
+from .securl import securl_check, securl_get_capture
 
 
 __all__ = [
@@ -27,5 +28,7 @@ __all__ = [
     "decoration_md",
     "create_embed_from_md",
     "olds",
-    "MineSweeper"
+    "MineSweeper",
+    "securl_check",
+    "securl_get_capture"
 ]
