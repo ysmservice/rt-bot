@@ -1,6 +1,7 @@
 # RT Utilities
 
 from .checks import isintable, has_any_roles, has_all_roles
+from .markdowns import decoration_md, create_embed_from_md
 from .converters import (
     MembersConverter,
     UsersConverter,
@@ -9,8 +10,8 @@ from .converters import (
     RolesConverter,
     ObjectsConverter
 )
-from .markdowns import decoration_md, create_embed_from_md
 from . import olds
+from .minesweeper import MineSweeper
 
 
 __all__ = [
@@ -25,5 +26,6 @@ __all__ = [
     "ObjectsConverter",
     "decoration_md",
     "create_embed_from_md",
-    "olds"
+    "olds",
+    "MineSweeper"
 ]
