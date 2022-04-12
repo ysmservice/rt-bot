@@ -13,6 +13,7 @@ from .converters import (
 from . import olds
 from .minesweeper import MineSweeper
 from .securl import securl_check, securl_get_capture
+from .views import TimeoutView
 
 
 __all__ = [
@@ -30,5 +31,6 @@ __all__ = [
     "olds",
     "MineSweeper",
     "securl_check",
-    "securl_get_capture"
+    "securl_get_capture",
+    "TimeoutView"
 ]
