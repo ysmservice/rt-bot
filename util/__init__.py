@@ -9,6 +9,7 @@ from .converters import (
     RolesConverter,
     ObjectsConverter
 )
+from .markdowns import decoration_md, create_embed_from_md
 
 
 __all__ = [
@@ -20,5 +21,7 @@ __all__ = [
     "TextChannelsConverter",
     "VoiceChannelsConverter",
     "RolesConverter",
-    "ObjectsConverter"
+    "ObjectsConverter",
+    "decoration_md",
+    "create_embed_from_md"
 ]
