@@ -12,12 +12,6 @@ from pymysql.err import OperationalError
 from .cacher import CacherPool
 
 
-def similer(before: str, after: str, check_length: int) -> bool:
-    "beforeがafterとcheck_lengthの文字数分似ているかどうかをチェックします。"
-    return any(after[i:i + check_length] in before
-               for i in range(len(after) - check_length))
-
-
 def role2obj(guild: discord.Guild, arg: str) -> list[Optional[discord.Role]]:
     "`役職1, 役職2, ...`のようになってるものをロールオブジェクトに変換します。"
     roles_raw, roles = arg.split(','), []

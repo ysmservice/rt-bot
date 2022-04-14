@@ -34,7 +34,7 @@ class MineSweeper:
             raw_data[i] = 9
         # 2次元配列に直す。
         t_data = [
-            [raw_data[x*y] for y in range(self.ylen)]
+            [raw_data[x*self.ylen + y] for y in range(self.ylen)]
             for x in range(self.xlen)
         ]
         for x_checking in len(t_data):

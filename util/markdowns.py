@@ -1,8 +1,8 @@
-# RT utils - markdowns
+# RT util - markdowns
 
 from discord import Embed
 
-def decoration_md(markdown: str, separate: int = 0) -> str:
+def decoration(markdown: str, separate: int = 0) -> str:
     """見出しが使われているマークダウンをDiscordで有効なものに変換します。  
     ただたんに`# ...`を`**#** ...`に変換して渡された数だけ後ろに改行を付け足すだけです。
     Parameters
@@ -26,7 +26,7 @@ def separate(text: str, character: str = "\n") -> Tuple[str, str]:
     return text[:(i:=text.find(character))], text[i+1:]
 
 
-def create_embed_from_md(markdown: str, **kwargs) -> Embed:
+def create_embed_from(markdown: str, **kwargs) -> Embed:
     """渡されたマークダウンの文字列をタイトルと説明とフィールドが設定されている`discord.Embed`に変換します。  
     見出しは三段階設定することができ、一段でタイトルで二段でフィールドそして三段で`**#** ...`のようになります。  
     もしフィールドの`inline`を`False`にしたい場合は`## !`のようにしてください。
@@ -56,7 +56,7 @@ def create_embed_from_md(markdown: str, **kwargs) -> Embed:
     ```"""
     kwargs["title"], fields = separate(markdown)
     fields, kwargs["title"] = fields.split("\n## "), kwargs["title"][2:]
-    kwargs["description"] = decoration_md(fields[0])
+    kwargs["description"] = decoration(fields[0])
     del fields[0]
     embed = Embed(**kwargs)
     for field in fields:
@@ -64,6 +64,6 @@ def create_embed_from_md(markdown: str, **kwargs) -> Embed:
         if name.startswith("!"):
             inline, name = False, name[1:]
         embed.add_field(
-            name=name, value=decoration_md(value), inline=inline
+            name=name, value=decoration(value), inline=inline
         )
     return embed
