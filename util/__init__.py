@@ -10,9 +10,7 @@ from .converters import (
     RolesConverter,
     ObjectsConverter
 )
-from . import olds
 from .minesweeper import MineSweeper
-from .securl import securl_check, securl_get_capture
 from .views import TimeoutView
 from .cacher import Cache, Cacher, CacherPool
 
@@ -31,8 +29,7 @@ __all__ = [
     "create_embed_from_md",
     "olds",
     "MineSweeper",
-    "securl_check",
-    "securl_get_capture",
+    "securl",
     "TimeoutView",
     "Cache",
     "Cacher",

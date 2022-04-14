@@ -40,7 +40,7 @@ class SecURLData(TypedDict, total=False):
     capturedDate: str
 
 
-async def securl_check(
+async def check(
     session: ClientSession, url: str, wait_time: int = 1,
     browser_width: int = 965, browser_height: int = 683,
     headers: dict = HEADERS
@@ -73,7 +73,7 @@ async def securl_check(
         return loads(await r.text())
 
 
-def securl_get_capture(
+def get_capture(
     data: SecURLData, full: bool = False
 ) -> str:
     """渡されたデータにある`img`のデータからURLを作ります。
