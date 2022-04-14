@@ -10,6 +10,7 @@ from .converters import (
     ObjectsConverter
 )
 from .minesweeper import MineSweeper
+from .page import EmbedPage
 from .views import TimeoutView
 from .cacher import Cache, Cacher, CacherPool
 from .webhooks import get_webhook, webhook_send
@@ -28,6 +29,7 @@ __all__ = [
     "markdowns",
     "olds",
     "MineSweeper",
+    "EmbedPage",
     "securl",
     "TimeoutView",
     "Cache",
