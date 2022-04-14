@@ -13,6 +13,7 @@ from .converters import (
 from .minesweeper import MineSweeper
 from .views import TimeoutView
 from .cacher import Cache, Cacher, CacherPool
+from .webhooks import get_webhook, webhook_send
 
 
 __all__ = [
@@ -33,5 +34,7 @@ __all__ = [
     "TimeoutView",
     "Cache",
     "Cacher",
-    "CacherPool"
+    "CacherPool",
+    "get_webhook",
+    "webhook_send"
 ]
