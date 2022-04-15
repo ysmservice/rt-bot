@@ -20,13 +20,6 @@ from rtlib import RT
 from rtutil import clean_content
 
 
-def Setting(*args, **kwargs):
-    "以前の設定デコレータの偽物"
-    def decorator(func):
-        return func
-    return decorator
-
-
 def _replaceln(content: str) -> str:
     return content.replace("\n", "  ")
 
@@ -135,9 +128,7 @@ class SettingManager(commands.Cog):
 
     def extract_category(self, command: commands.Command) -> str:
         "カテゴリーを取り出します。"
-        return command.__original_kwargs__.get(
-            "category", command.extras.get("parent", "Other")
-        )
+        return command.extras.get("parent", "Other")
 
     def extract_help(self, command: commands.Command, category: str) -> dict[str, str]:
         "ヘルプを取り出します。"
