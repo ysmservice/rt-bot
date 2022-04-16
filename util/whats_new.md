@@ -23,4 +23,16 @@ utilへの統合により以下の関数の名前が変更になりました。
 * rtutil.views.TimeoutView -> util.TimeoutView
 
 ### rtlib
-* 
+ほとんどそのまま移行してます。
+* rtlib.cacher -> util.cacher
+* rtlib.page -> util.page
+* rtlib.rtws -> util.rtws
+* rtlib.slash -> util.slash
+* rtlib.websocket -> util.websocket
+* rtlib.typed -> util.bot, util.typesの2つに分割
+* rtlib.ext -> いくつかの項目はutil.ext、残りはutilに直接移動
+* rtlib.mysql_manager -> rtlib.mysql_manager
+
+## 機能追加
+utilへの統合でいくつかの機能が追加されました。
+* util.

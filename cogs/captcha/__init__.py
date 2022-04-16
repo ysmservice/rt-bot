@@ -11,7 +11,6 @@ from time import time
 from discord.ext import commands, tasks
 import discord
 
-from aiohttp import ClientSession
 from ujson import dumps
 
 from rtlib import RT, Table
@@ -154,7 +153,7 @@ class Captcha(commands.Cog, DataManager):
 
     def session(self):
         "`aiohttp.ClientSession`を手に入れるためのものです。"
-        return ClientSession(loop=self.bot.loop, json_serialize=dumps)
+        return self.bot.session
 
     def print(self, *args, **kwargs) -> None:
         return self.bot.print("[Captcha]", *args, **kwargs)

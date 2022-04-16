@@ -6,8 +6,7 @@ from .converters import (
     UsersConverter,
     TextChannelsConverter,
     VoiceChannelsConverter,
-    RolesConverter,
-    ObjectsConverter
+    RolesConverter
 )
 from .minesweeper import MineSweeper
 from .page import EmbedPage
@@ -15,6 +14,14 @@ from .views import TimeoutView
 from .cacher import Cache, Cacher, CacherPool
 from .webhooks import get_webhook, webhook_send
 
+from .slash import Context as SlashContext
+from . import mysql_manager as mysql
+from .ext import view as componesy
+from .bot import RT
+from .types import sendableString
+
+from .olds import tasks_extend, sendKwargs
+from .olds import lib_setup as setup
 
 __all__ = [
     "isintable",
@@ -25,7 +32,6 @@ __all__ = [
     "TextChannelsConverter",
     "VoiceChannelsConverter",
     "RolesConverter",
-    "ObjectsConverter",
     "markdowns",
     "olds",
     "MineSweeper",
@@ -36,5 +42,13 @@ __all__ = [
     "Cacher",
     "CacherPool",
     "get_webhook",
-    "webhook_send"
+    "webhook_send",
+    "SlashContext",
+    "mysql",
+    "componesy",
+    "RT",
+    "sendableString",
+    "tasks_extend",
+    "sendKwargs"
+    "setup"
 ]

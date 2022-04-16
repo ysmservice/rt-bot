@@ -1,4 +1,4 @@
-"""自動ドキュメンテーションヘルプ管理エクステンション  
+"""自動ドキュメンテーションヘルプ管理  
 コマンドフレームワークで定義したコマンドのコルーチン関数にあるドキュメンテーションから、ヘルプリストを自動で生成するためのエクステンションです。  
 ヘルプメッセージの管理がとても楽になります。  
 `bot.load_extension("rtlib.ext.dochelp")`で有効化することができます。  
@@ -78,7 +78,7 @@ import discord
 from aiofiles import open as async_open
 from ujson import loads, dumps
 
-from .util import DocParser
+from .docperser import DocParser
 from data import PERMISSION_TEXTS
 
 

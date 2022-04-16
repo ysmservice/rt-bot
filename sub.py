@@ -18,7 +18,7 @@ from sys import argv
 import ujson
 import rtlib
 
-from data import data, is_admin, RTCHAN_COLORS
+from data import data, RTCHAN_COLORS
 
 
 with open("token.secret", "r", encoding="utf-8_sig") as f:
@@ -30,7 +30,7 @@ prefixes = data["prefixes"]["sub"]
 
 
 def setup(bot):
-    bot.admins = data["admins"]
+    bot.owner_ids = data["admins"]
 
     @bot.listen()
     async def on_close(loop):
@@ -77,13 +77,6 @@ bot.test = argv[1] != "production"
 
 bot.data = data
 bot.colors = RTCHAN_COLORS
-bot.is_admin = is_admin
-
-
-async def _is_owner(user):
-    return bot.is_admin(user.id)
-bot.is_owner = _is_owner
-del is_admin, _is_owner
 
 
 setup(bot)

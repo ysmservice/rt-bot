@@ -62,30 +62,34 @@ def clean_content(content: str, guild: discord.Guild) -> str:
 # discord.ext.easy = componesy # type: ignore
 
 
-def setup(bot, only: Union[Tuple[str, ...], List[str]] = []):
-    "rtlibにあるエクステンションを全てまたは指定されたものだけ読み込みます。"
-    bot.load_extension("rtlib.data_manager")
-    for name in ("on_send", "on_full_reaction", "dochelp", "debug", "on_cog_add"):
+def lib_setup(bot, only: Union[Tuple[str, ...], List[str]] = []):
+    "元rtlibにあるエクステンションを全てまたは指定されたものだけ読み込みます。"
+    # bot.load_extension("rtlib.data_manager")
+    for name in ("on_send", "on_full_reaction", "on_cog_add"):
         if name in only or only == []:
             try:
-                bot.load_extension("rtlib.ext." + name)
+                bot.load_extension("util.ext." + name)
             except commands.ExtensionAlreadyLoaded:
                 pass
-    bot.load_extension("rtlib.websocket")
-    bot.load_extension("rtlib.rtws")
-    bot.load_extension("rtlib.setting")
+    for name in ("dochelp", "rtws", "websocket", "debug", "settings"):
+        if name in only or only == []:
+            try:
+                bot.load_extension("util." + name)
+            except commands.ExtensionAlreadyLoaded:
+                pass
     bot.cachers = CacherPool()
 
 
 # discord.ext.tasksのタスクがデータベースの操作失敗によって止まることがないようにする。
-if not getattr(tasks.Loop, "_rtutil_extended", False):
-    default = tasks.Loop.__init__
-    def _init(self, *args, **kwargs):
-        default(self, *args, **kwargs)
-        self.add_exception_type(OperationalError)
-        self.add_exception_type(discord.DiscordServerError)
-    tasks.Loop.__init__ = _init
-    tasks.Loop._rtutil_extended = True
+def tasks_extend():
+    if not getattr(tasks.Loop, "_rtutil_extended", False):
+        default = tasks.Loop.__init__
+        def _init(self, *args, **kwargs):
+            default(self, *args, **kwargs)
+            self.add_exception_type(OperationalError)
+            self.add_exception_type(discord.DiscordServerError)
+        tasks.Loop.__init__ = _init
+        tasks.Loop._rtutil_extended = True
 
 
 def sendKwargs(ctx, **kwargs):

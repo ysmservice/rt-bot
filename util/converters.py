@@ -6,7 +6,7 @@ from discord.ext import commands
 class Multiple(commands.Converter):
     "`, `で区切って_originalでconvertしたlistを返すConverterの抽象クラスです。"
 
-    _original: commands.Converter = None  # type : ignore
+    _original: commands.Converter = None  # type: ignore
 
     async def convert(self, ctx: commands.Context, arg: str):
         return [await self._original().convert(ctx, word) for word in arg.split(", ")]

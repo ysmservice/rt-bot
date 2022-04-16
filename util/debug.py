@@ -12,7 +12,7 @@ import psutil
 def require_admin(coro):
     @wraps(coro)
     async def new_coro(self, ctx: commands.Context, *args, **kwargs):
-        if ctx.author.id in self.bot.admins:
+        if ctx.author.id in self.bot.owner_ids:
             return await coro(self, ctx, *args, **kwargs)
         else:
             return await ctx.reply(self.ON_NO_ADMIN)
@@ -49,8 +49,8 @@ class Debug(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        if not hasattr(self.bot, "admins"):
-            self.bot.admins = []
+        if not hasattr(self.bot, "owner_ids"):
+            self.bot.owner_ids = []
 
     @commands.group()
     async def debug(self, ctx):

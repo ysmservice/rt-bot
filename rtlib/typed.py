@@ -7,7 +7,7 @@ from discord.ext import commands
 from aiohttp import ClientSession
 from aiomysql import Pool
 
-from data import data, Colors, is_admin
+from data import data, Colors
 
 from .mysql_manager import MySQLManager
 from .rtws import ExtendedRTWebSocket
@@ -19,10 +19,8 @@ class RT(commands.AutoShardedBot):
     pool: Pool
     test: bool
     data: data # type: ignore
-    admins: List[int]
     session: ClientSession
     secret: dict
-    is_admin: is_admin # type: ignore
     colors: dict
     Colors: Colors
     rtws: ExtendedRTWebSocket

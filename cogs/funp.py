@@ -298,7 +298,7 @@ class Funp(commands.Cog, DataManager):
             指定しない場合は実行者が登録者としてコマンドが実行されます。  
             この引数はRTの管理者のみ指定可能です。"""
         mode = self.get_mode(mode)
-        if user_id and ctx.author.id not in self.bot.data["admins"]:
+        if user_id and ctx.author.id not in self.bot.owner_ids:
             return await ctx.reply(
                 "Error, ユーザーID指定は管理者のみです。"
             )
@@ -337,7 +337,7 @@ class Funp(commands.Cog, DataManager):
             指定しなかった場合は実行者が登録者として扱われます。
             管理者のみこの引数を指定できます。"""
         mode = self.get_mode(mode)
-        if user_id and ctx.author.id not in self.bot.data["admins"]:
+        if user_id and ctx.author.id not in self.bot.owner_ids:
             return await ctx.reply(
                 "Error, ユーザーID指定は管理者のみです。"
             )
