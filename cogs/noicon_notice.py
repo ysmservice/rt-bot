@@ -7,8 +7,8 @@ import discord
 
 from aiomysql import Pool, Cursor
 
-from rtutil import DatabaseManager
-from rtlib import RT
+from util import DatabaseManager
+from util import RT
 
 
 class DataManager(DatabaseManager):

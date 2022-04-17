@@ -43,7 +43,7 @@ class MineSweeper:
                     self.get_around_data(t_data, x_checking, y_checking).count(9)
         self.data: tuple = tuple([tuple(i) for i in t_data])
         if self.logging:
-            print(f"[rtutil][MineSweeper]maked data: {'\n'.join(self.data)}")
+            print(f"[util][MineSweeper]maked data: {'\n'.join(self.data)}")
 
 
     def get_around_data(self, t_data, x, y) -> tuple:
@@ -75,7 +75,7 @@ class MineSweeper:
 
         number = self.data[x][y]
         if self.logging:
-            print(f"[rtutil][Minesweeper] opened x : {x}, y : {y} -> {number}")
+            print(f"[util][Minesweeper] opened x : {x}, y : {y} -> {number}")
 
         if (x, y) in self.now_opened:
             # もう引いている。

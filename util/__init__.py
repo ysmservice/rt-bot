@@ -1,5 +1,7 @@
 # RT Utilities
 
+from .bot import RT
+from .cacher import Cache, Cacher, CacherPool
 from .checks import isintable, has_any_roles, has_all_roles
 from .converters import (
     MembersConverter,
@@ -8,22 +10,23 @@ from .converters import (
     VoiceChannelsConverter,
     RolesConverter
 )
+from .data_manager import DatabaseManager
+from .lib_data_manager import Table
 from .minesweeper import MineSweeper
-from .page import EmbedPage
-from .views import TimeoutView
-from .cacher import Cache, Cacher, CacherPool
-from .webhooks import get_webhook, webhook_send
-
-from .slash import Context as SlashContext
 from . import mysql_manager as mysql
-from .ext import view as componesy
-from .bot import RT
-from .types import sendableString
-
 from .olds import tasks_extend, sendKwargs
 from .olds import lib_setup as setup
+from .page import EmbedPage
+from .slash import Context as SlashContext
+from .types import sendableString
+from .views import TimeoutView
+from .webhooks import get_webhook, webhook_send
+
+from .ext import view as componesy
+
 
 __all__ = [
+    "RT",
     "isintable",
     "has_any_roles",
     "has_all_roles",
@@ -32,23 +35,28 @@ __all__ = [
     "TextChannelsConverter",
     "VoiceChannelsConverter",
     "RolesConverter",
+    "DatabaseManager",
+    "debug",
+    "dochelp",
+    "docperser",
+    "Table",
     "markdowns",
-    "olds",
     "MineSweeper",
+    "mysql",
+    "olds",
+    "tasks_extend",
+    "sendKwargs",
+    "setup",
     "EmbedPage",
+    "rtws",
     "securl",
+    "settings"
+    "slash",
+    "sendableString",
     "TimeoutView",
-    "Cache",
-    "Cacher",
-    "CacherPool",
     "get_webhook",
     "webhook_send",
-    "SlashContext",
-    "mysql",
-    "componesy",
-    "RT",
-    "sendableString",
-    "tasks_extend",
-    "sendKwargs"
-    "setup"
+    "websocket",
+    "ext",
+    "componesy"
 ]

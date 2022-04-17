@@ -5,7 +5,7 @@ from typing import Callable, Coroutine, Literal, Union, Any, Dict, Tuple, List
 from discord.ext import commands
 import discord
 
-from rtlib import RT
+from util import RT
 
 from .modutils import process_check_message, trial_new_member, trial_invite
 from .data_manager import GuildData, DataManager

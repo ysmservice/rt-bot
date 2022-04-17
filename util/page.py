@@ -6,7 +6,7 @@ from typing import Literal, Optional, Any
 
 import discord
 
-from rtutil.views import TimeoutView
+from . import TimeoutView
 
 
 class BasePage(TimeoutView):

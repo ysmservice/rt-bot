@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from discord.ext import commands
 
 if TYPE_CHECKING:
-    from rtlib import RT
+    from util import RT
 
 
 class First(commands.Cog):

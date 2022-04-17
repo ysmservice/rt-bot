@@ -3,7 +3,7 @@
 from discord.ext import commands
 import discord
 
-from rtlib import DatabaseManager
+from util import DatabaseManager
 
 
 class DataManager(DatabaseManager):

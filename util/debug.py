@@ -45,7 +45,7 @@ class Printer:
 class Debug(commands.Cog):
 
     ON_NO_ADMIN = "あなたはこのコマンドを実行することができません。"
-    OUTPUT_PATH = "_rtlib_debug_output.txt"
+    OUTPUT_PATH = "_util_debug_output.txt"
 
     def __init__(self, bot):
         self.bot = bot

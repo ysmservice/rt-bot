@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
     from tweepy.models import Status
     from aiomysql import Pool
-    from rtlib import Backend
+    from util import Backend
 
 
 class DataManager:

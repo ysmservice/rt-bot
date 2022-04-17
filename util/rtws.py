@@ -10,7 +10,7 @@ import discord
 from .rt_module.src import rtws, rtws_feature_types as rft
 
 if TYPE_CHECKING:
-    from .typed import RT
+    from .types import RT
 
 
 class RTWSGeneralFeatures(commands.Cog):

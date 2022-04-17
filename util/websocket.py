@@ -17,7 +17,7 @@ from websockets import exceptions as wsexceptions
 import websockets
 
 if TYPE_CHECKING:
-    from .typed import RT
+    from .types import RT
 
 
 WEBSOCKET_URI_BASE = "ws://localhost"

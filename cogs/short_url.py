@@ -3,7 +3,7 @@
 from discord.ext import commands
 import discord
 
-from rtlib import DatabaseManager, RT
+from util import DatabaseManager, RT
 
 from random import sample
 from time import time

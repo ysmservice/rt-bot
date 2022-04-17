@@ -6,7 +6,7 @@ import discord
 from aiofiles import open as aioopen
 from aiofiles.os import remove
 
-from rtlib import RT
+from util import RT
 
 
 class DatabaseManager(commands.Cog):

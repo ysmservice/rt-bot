@@ -9,8 +9,8 @@ from dataclasses import dataclass
 from discord.ext import commands
 import discord
 
-from rtlib.page import EmbedPage
-from rtlib import RT, Table
+from util.page import EmbedPage
+from util import RT, Table
 
 
 Exp, Level = NewType("Exp", int), NewType("Level", int)

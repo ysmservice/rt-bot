@@ -8,7 +8,7 @@ import discord
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
     from aiomysql import Pool
-    from rtlib import Backend
+    from util import Backend
 
 
 class DataManager:

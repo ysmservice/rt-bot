@@ -8,8 +8,8 @@
 ## 使用方法
 使えるイベントは`on_send`と`on_edit`です。
 ### 有効化
-`bot.load_extension("rtlib.ext.on_send")`で有効化することができます。  
-また`rtlib.setup`でもできます。
+`bot.load_extension("util.ext.on_send")`で有効化することができます。  
+また`util.setup`でもできます。
 ### イベント追加/削除
 追加：`bot.cogs["OnSend"].add_event(コルーチン関数, イベント名)`
 削除：`bot.cogs["OnSend"].remove_event(コルーチン関数, イベント名)`
@@ -21,7 +21,7 @@ async def on_send(channel, *args, **kwargs):
 
 ## 使用例
 ```python
-bot.load_extension("rtlib.ext.on_send")
+bot.load_extension("util.ext.on_send")
 
 async def on_send(channel, *args, **kwargs):
     # もし送信するのにembedがあればembedのフッターにテキストをつける。

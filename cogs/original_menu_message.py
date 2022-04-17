@@ -5,8 +5,8 @@ from typing import Callable, Coroutine
 from discord.ext import commands
 import discord
 
-from rtlib import RT, DatabaseManager
-from rtlib.ext import componesy
+from util import RT, DatabaseManager
+from util.ext import componesy
 from time import time
 
 

@@ -14,7 +14,7 @@ import discord
 
 from bs4 import BeautifulSoup
 
-from rtlib import RT, Table
+from util import RT, Table
 
 
 class Yahoo(Table):

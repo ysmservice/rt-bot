@@ -28,7 +28,7 @@ Required.
 ### Startup procedure: 1.
 1. install required items with `pip install -r requirements.txt` 2.
 2. write necessary TOKEN etc. to `auth.json` referring to `auth.template.json`. 3.
-Put the `rt-module` repository in `rtlib` and name the folder `rt_module`. 4.
+Put the `rt-module` repository in `util` and name the folder `rt_module`. 4.
 4. run the program in the `rt-backend` repository.
    (This is optional and you need to do it if you want to run something that requires a backend such as authentication. 5.)
 Run the tests with `python3 main.py test`.

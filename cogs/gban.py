@@ -7,9 +7,9 @@ from random import choice
 from discord.ext import commands
 import discord
 
-from rtlib import RT, mysql, DatabaseManager
-from rtlib.page import EmbedPage
-from rtlib.ext import componesy
+from util import RT, mysql, DatabaseManager
+from util.page import EmbedPage
+from util.ext import componesy
 
 from .bot_general import INFO_SS
 

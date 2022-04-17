@@ -6,8 +6,8 @@ from time import time
 from discord.ext import commands
 import discord
 
-from rtlib import DatabaseManager
-from rtlib.page import EmbedPage
+from util import DatabaseManager
+from util.page import EmbedPage
 
 
 class DataManager(DatabaseManager):

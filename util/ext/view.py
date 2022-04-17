@@ -24,14 +24,14 @@ def _if_not_exists_view(func):
 
 class View:
     """`discord.ui.View`を簡単に作れるクラスです。  
-    このクラスをそのままsendの引数のviewに渡す場合は`bot.load_extension("rtlib.ext.componesy")`を実行する必要があります。
+    このクラスをそのままsendの引数のviewに渡す場合は`bot.load_extension("util.ext.componesy")`を実行する必要があります。
     free RT: componesyCogは使用しないでください。「そのまま実行できる」状態を解除したいと考えています。"""
     def __init__(self, name: str, *args, **kwargs):
         self.name: str = name
         self.items: List[Callable] = []
         self.instance_items: List[Type[discord.ui.Item]] = []
         self._args, self._kwargs = args, kwargs
-        self._rtlib = True
+        self._util = True
 
     def add_item(self, item: Union[Callable, Type[discord.ui.Item], str], callback: Callable = None, **kwargs):
         """Viewにアイテムを追加します。  
@@ -123,16 +123,16 @@ class View:
 class Componesy(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        # if "OnSend" not in self.bot.cogs:
-            # self.bot.load_extension("rtlib.ext.on_send")
-        # for name in ("on_send", "on_edit", "on_interaction_response"):
-            # self.bot.cogs["OnSend"].add_event(self._new_send, name)
+        if "OnSend" not in self.bot.cogs:
+            self.bot.load_extension("util.ext.on_send")
+        for name in ("on_send", "on_edit", "on_interaction_response"):
+            self.bot.cogs["OnSend"].add_event(self._new_send, name)
 
     async def _new_send(self, channel, *args, **kwargs):
         # 何かしらの送信時にキーワード引数のviewがあるなら
         if (view := kwargs.get("view")):
             # Componesyによるものなら。
-            if getattr(view, "_rtlib", False):
+            if getattr(view, "_util", False):
                 # インスタンス済みのdiscord.ui.Viewにする。
                 kwargs["view"] = view.get_view()
         return args, kwargs

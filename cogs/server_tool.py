@@ -9,7 +9,7 @@ from random import sample
 from discord.ext import commands
 import discord
 
-from rtlib.page import EmbedPage
+from util.page import EmbedPage
 from data import PERMISSION_TEXTS
 
 

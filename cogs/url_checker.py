@@ -5,12 +5,12 @@ from typing import TYPE_CHECKING, List
 from discord.ext import commands
 import discord
 
-from rtutil import securl, DatabaseManager
+from util import securl, DatabaseManager
 from re import findall
 
 if TYPE_CHECKING:
     from aiomysql import Pool, Cursor
-    from rtlib import Backend
+    from util import Backend
 
 
 class DataManager(DatabaseManager):

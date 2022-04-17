@@ -14,9 +14,9 @@ from pytz import utc
 
 from ujson import dumps
 
-from rtutil.rt_module.src.setting import CommandData, CommandRunData
-from rtutil import RT
-from rtutil import clean_content
+from util.rt_module.src.setting import CommandData, CommandRunData
+from . import RT
+from .olds import clean_content
 
 
 def _replaceln(content: str) -> str:

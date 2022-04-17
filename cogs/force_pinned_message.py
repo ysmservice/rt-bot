@@ -8,8 +8,8 @@ from time import time
 from discord.ext import commands, tasks
 import discord
 
-from rtlib import RT, DatabaseManager as OldDatabaseManager
-from rtutil import DatabaseManager, markord
+from util import RT, DatabaseManager as OldDatabaseManager
+from util import DatabaseManager, markdowns
 
 from aiomysql import Pool, Cursor
 from ujson import loads, dumps
@@ -230,7 +230,7 @@ class ForcePinnedMessage(commands.Cog, DataManager):
             if content.startswith("# "):
                 # もし埋め込みならjsonにする。
                 content = "<" + dumps(
-                    markord.embed(
+                    markdowns.embed(
                         content, color=ctx.author.color
                     ).to_dict()
                 ) + ">"

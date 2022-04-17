@@ -13,7 +13,7 @@ import discord
 
 from ujson import dumps
 
-from rtlib import RT, Table
+from util import RT, Table
 
 from .image import ImageCaptcha, QueueData as ImageQueue
 from .web import WebCaptcha

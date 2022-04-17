@@ -16,9 +16,9 @@ import discord
 
 from jishaku.functools import executor_function
 
-from rtlib.page import EmbedPage
-from rtlib.ext import componesy
-from rtlib import RT
+from util.page import EmbedPage
+from util.ext import componesy
+from util import RT
 
 from .server_tool import PERMISSION_TEXTS
 

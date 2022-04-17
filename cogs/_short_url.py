@@ -3,7 +3,7 @@
 from discord.ext import commands
 import discord
 
-from rtlib import DatabaseManager, WebManager
+from util import DatabaseManager, WebManager
 
 from sanic.response import redirect
 from random import sample, choice

@@ -9,7 +9,7 @@ utilへの統合により以下の関数の名前が変更になりました。
 * rtutil.similer -> util.olds.similer
 * rtutil.has_roles -> util.has_any_roles
 * rtutil.role2obj -> util.olds.role2obj
-* rtutil.get_webhook -> util.olds.get_webhook
+* rtutil.get_webhook -> util.get_webhook
 * rtutil.clean_content -> util.olds.clean_content
 * rtutil.converters.xxx
     -> それぞれのコンバータが独立。  
@@ -17,7 +17,7 @@ utilへの統合により以下の関数の名前が変更になりました。
     TextChannels -> util.TextChannelsConverter  
     VoiceChannels -> util.VoiceChannelsConverter  
     Roles -> util.RolesConverter
-* rtutil.markord.xxx -> それぞれ独立(関数名も変更、詳細はmarkdowns.py)
+* rtutil.markord -> util.markdowns
 * rtutil.Minesweeper -> util.MineSweeper (内容が変更、詳細はminesweeper.py)
 * rtutil.securl -> 変更なし
 * rtutil.views.TimeoutView -> util.TimeoutView
@@ -31,8 +31,9 @@ utilへの統合により以下の関数の名前が変更になりました。
 * rtlib.websocket -> util.websocket
 * rtlib.typed -> util.bot, util.typesの2つに分割
 * rtlib.ext -> いくつかの項目はutil.ext、残りはutilに直接移動
-* rtlib.mysql_manager -> rtlib.mysql_manager
+* rtlib.mysql_manager -> util.mysql_manager
+* rtlib.Table (rtlib.data_manager.Table) -> util.Table (util.lib_data_manager.Table)
 
 ## 機能追加
 utilへの統合でいくつかの機能が追加されました。
-* util.
+* util.has_all_roles

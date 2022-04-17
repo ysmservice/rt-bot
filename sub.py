@@ -16,7 +16,7 @@ commands.Cog.route = lambda *args, **kwargs: lambda *args, **kwargs: (args, kwar
 from aiohttp import ClientSession
 from sys import argv
 import ujson
-import rtlib
+import util
 
 from data import data, RTCHAN_COLORS
 
@@ -37,13 +37,13 @@ def setup(bot):
         await bot.session.close()
         del bot.mysql
 
-    bot.mysql = bot.data["mysql"] = rtlib.mysql.MySQLManager(
+    bot.mysql = bot.data["mysql"] = util.mysql.MySQLManager(
         loop=bot.loop, user=secret["mysql"]["user"],
         host="146.59.153.178" if argv[1] == "production" else "localhost",
         password=secret["mysql"]["password"], db="mysql",
         pool = True, minsize=1, maxsize=30, autocommit=True)
 
-    rtlib.setup(bot)
+    util.setup(bot)
     bot.load_extension("jishaku")
 
     bot._loaded = False

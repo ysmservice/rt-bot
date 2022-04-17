@@ -3,7 +3,7 @@
 from discord.ext import commands, easy
 import discord
 
-from rtlib import DatabaseManager
+from util import DatabaseManager
 from random import choice
 
 

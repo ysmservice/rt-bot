@@ -8,7 +8,7 @@ from asyncio import sleep
 from typing import List
 import deep_translator
 
-from rtlib import RT
+from util import RT
 
 
 CHP_HELP = {

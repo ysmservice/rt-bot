@@ -5,8 +5,8 @@ from typing import TypedDict, Optional, Dict, Tuple
 from discord.ext import commands, tasks
 import discord
 
-from rtutil import DatabaseManager as RUDatabaseManager
-from rtlib import RT, DatabaseManager, websocket
+from util import DatabaseManager as RUDatabaseManager
+from util import RT, DatabaseManager, websocket
 
 from aiomysql import Pool, Cursor
 from ujson import loads, dumps

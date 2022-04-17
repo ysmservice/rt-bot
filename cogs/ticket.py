@@ -9,8 +9,8 @@ import discord
 
 from ujson import loads, dumps
 
-from rtutil.converters import Roles
-from rtlib import componesy
+from util import RolesConverter
+from util import componesy
 
 if TYPE_CHECKING:
     from aiomysql import Pool
@@ -155,7 +155,7 @@ class Ticket(commands.Cog, DataManager):
         }
     )
     @commands.has_permissions(manage_channels=True)
-    async def ticket(self, ctx, title, description, *, roles: Roles = []):
+    async def ticket(self, ctx, title, description, *, roles: RolesConverter = []):
         """!lang ja
         --------
         チケットチャンネル作成用のパネルを作成します。

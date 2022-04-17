@@ -5,7 +5,7 @@ from typing import Literal, Union, List, Tuple
 from discord.ext import commands
 import discord
 
-from rtlib import RT
+from util import RT
 
 from aiofiles import open as async_open
 from json import loads
@@ -59,7 +59,7 @@ class Language(commands.Cog):
         return lang
 
     async def _new_send(self, channel, *args, **kwargs):
-        # 元のsendにつけたしをする関数。rtlib.libs.on_sendを使う。
+        # 元のsendにつけたしをする関数。util.ext.on_sendを使う。
         # このsendが返信に使われたのなら返信先のメッセージの送信者(実行者)の言語設定を読み込む。
         lang = "ja"
         if isinstance(channel, discord.Message):

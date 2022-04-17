@@ -10,7 +10,7 @@ from time import time
 from discord.ext import tasks
 
 if TYPE_CHECKING:
-    from rtlib import RT
+    from util import RT
 
 
 DataT = TypeVar("DataT")

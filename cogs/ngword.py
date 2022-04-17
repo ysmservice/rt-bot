@@ -5,7 +5,7 @@ from __future__ import annotations
 from discord.ext import commands
 import discord
 
-from rtlib import RT, Table
+from util import RT, Table
 
 from .log import log
 

@@ -13,8 +13,8 @@ import discord
 from aiomysql import Pool, Cursor
 from ujson import loads, dumps
 
-from rtutil import DatabaseManager
-from rtlib import RT
+from util import DatabaseManager
+from util import RT
 
 from .automod.modutils import emoji_count
 

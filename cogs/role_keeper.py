@@ -9,7 +9,7 @@ from time import time
 
 if TYPE_CHECKING:
     from aiomysql import Pool
-    from rtlib import Backend
+    from util import Backend
 
 
 # データベースのテーブルです。
