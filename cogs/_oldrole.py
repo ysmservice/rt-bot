@@ -1,4 +1,4 @@
-# RT - Old Role Panel
+# Free RT - Old Role Panel
 
 from typing import Callable, Coroutine, Optional, Dict
 
@@ -7,7 +7,6 @@ import discord
 
 from emoji import UNICODE_EMOJI_ENGLISH
 from asyncio import create_task
-from time import time
 
 
 class OldRolePanel(commands.Cog):
@@ -42,7 +41,16 @@ class OldRolePanel(commands.Cog):
         リアクション方式の役職パネルを作成します。  
         古いやり方なため`role`の方を使うのを強く推奨します。  
         使い方はその新しい`role`と同じです。  
-        ※何個までしか役職を付与できないと言うのはこの古い役職パネルだと使えません。
+        ※役職の個数制限機能はこの古い役職パネルだと使えません。
+        
+        Parameters
+        ----------
+        title: タイトル
+            役職パネルのタイトルです。
+        content: 役職名(メンション)を1行ずつ区切って入力
+            役職パネルでつけ外しをすることができる役職の一覧です。  
+            1行に1つの役職名(もしくはメンション)を入れてください。  
+            また、役職名の前に絵文字を入れることでその絵文字で反応するようにさせることができます。
 
         See Also
         --------
@@ -190,7 +198,7 @@ class OldRolePanel(commands.Cog):
     ) -> None:
         await (send or payload.member.send)(
             content=extend(
-                f"rt!role {payload.message.embeds[0].title}\n" + "\n".join(
+                f"rf!role {payload.message.embeds[0].title}\n" + "\n".join(
                     (e + " " + getattr(
                         payload.message.guild.get_role(
                             int(m.split()[0][3:-1])

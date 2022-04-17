@@ -1,11 +1,11 @@
-# RT - Message Link Expander
+# Free RT - Message Link Expander
 
 from typing import Literal
 
 from discord.ext import commands
 import discord
 
-from rtlib import RT, DatabaseManager, setting
+from util import RT, DatabaseManager
 
 from re import findall
 
@@ -88,7 +88,6 @@ class Expander(commands.Cog, DataManager):
         }
     )
     @commands.has_guild_permissions(administrator=True)
-    @setting.Setting("guild", "Message Link Expander", channel=discord.TextChannel)
     async def expand(self, ctx, onoff: bool, mode: Literal["g"] = "g"):
         """!lang ja
         --------
@@ -103,11 +102,11 @@ class Expander(commands.Cog, DataManager):
         mode : str, default g
             サーバーでの設定かチャンネルでの設定かです。  
             もしこれをg以外にすると実行したチャンネルにonoffが設定されます。  
-            例えばこの機能がOnの状態で問い合わせチャンネルで`rt!expand off c`と実行すれば問い合わせチャンネルのみメッセージリンクが展開されなくなります。
+            例えばこの機能がOnの状態で問い合わせチャンネルで`rf!expand off c`と実行すれば問い合わせチャンネルのみメッセージリンクが展開されなくなります。
 
         Examples
         --------
-        `rt!expand off` デフォルトでOnなのでリンク展開されたくない方はこれを実行しましょう。
+        `rf!expand off` デフォルトでOnなのでリンク展開されたくない方はこれを実行しましょう。
 
         !lang en
         --------
@@ -122,11 +121,11 @@ class Expander(commands.Cog, DataManager):
         mode : str, default g
             Either the server or the channel setting.  
             If this is not g, onoff will be set on the channel where it is executed.  
-            For example, if this feature is on and you run `rt!expand off c` on a query channel, only the query channel will not expand message links.
+            For example, if this feature is on and you run `rf!expand off c` on a query channel, only the query channel will not expand message links.
 
         Examples
         --------
-        If you don't need this feature, you can use `rt!expand off`, which is on by default."""
+        If you don't need this feature, you can use `rf!expand off`, which is on by default."""
         if mode == "g":
             await self.write(ctx.guild.id, onoff)
         else:

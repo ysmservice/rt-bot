@@ -1,4 +1,4 @@
-# RT - Ticket
+# Free RT - Ticket
 
 from typing import TYPE_CHECKING, Union, Optional, Dict, List
 
@@ -9,8 +9,8 @@ import discord
 
 from ujson import loads, dumps
 
-from rtutil.converters import Roles
-from rtlib import componesy
+from util import RolesConverter
+from util import componesy
 
 if TYPE_CHECKING:
     from aiomysql import Pool
@@ -155,7 +155,7 @@ class Ticket(commands.Cog, DataManager):
         }
     )
     @commands.has_permissions(manage_channels=True)
-    async def ticket(self, ctx, title, description, *, roles: Roles = []):
+    async def ticket(self, ctx, title, description, *, roles: RolesConverter = []):
         """!lang ja
         --------
         チケットチャンネル作成用のパネルを作成します。
@@ -169,25 +169,25 @@ class Ticket(commands.Cog, DataManager):
             改行や空白を含めたい場合は`"`で文章を囲んでください。
         roles : 役職名または役職のメンション, optional
             作成されるチケットチャンネルを見ることのできる役職です。  
-            指定しない場合は管理者権限を持っている人とチケットチャンネル作成者本人のみが見れます。  
-            複数指定可能で`, `(半角のカンマと空白)で分けることでできます。
+            指定しない場合は管理者権限を持っている人とチケットチャンネルを作った人のみが見れます。  
+            `, `(半角のカンマと空白)で分けることで複数指定も可能です。
 
         Notes
         -----
         このコマンドはチャンネル管理権限がある人でしか実行できません。  
-        もしこのパネルを無効化したい場合は単純に作成したパネルを削除すれば良いです。  
-        チケットチャンネル作成時に何かメッセージを送信してほしい場合は、チケットのあるチャンネルで以下のコマンドで設定できます。
+        もしこのパネルを無効化したい場合は単純に作成したパネルのメッセージを削除すれば良いです。  
+        チケットチャンネル作成時に何かメッセージを送信してほしい場合は、チケットのあるチャンネルで以下のコマンドを実行して設定できます。
         ```
-        rt!tfm メッセージ内容 (もしオフにしたい場合は`off`)
+        rf!tfm メッセージ内容 (もしオフにしたい場合は`off`)
         ```
         ※一つのサーバーにつき一つまで設定が可能です。  
-        それと`rt!close`でチケットチャンネルを削除することができます。  
-        これは削除ではなくアーカイブするようにすることもできます。  
-        その場合はアーカイブ用のカテゴリーを作りそのカテゴリーの名前の最後に`RTAC`をつけてください。
+        また、チケットチャンネルを見れる人は`rf!close`でそのチャンネルを削除することができます。  
+        削除ではなくアーカイブするようにすることもできます。  
+        アーカイブしたい場合はアーカイブ用のカテゴリーを作りそのカテゴリーの名前の最後に`RTAC`をつけてください。
 
         Examples
         --------
-        `rt!ticket 問い合わせ モデレーター`
+        `rf!ticket 問い合わせ モデレーター`
 
         !lang en
         --------
@@ -211,15 +211,15 @@ class Ticket(commands.Cog, DataManager):
         If you want to disable this panel, you can simply delete the panel you created.  
         If you want some message to be sent when a ticket channel is created, you can set it in the channel with the ticket by using the following command.
         ```
-        rt!tfm Message content (or `off` if you want to turn it off)
+        rf!tfm Message content (or `off` if you want to turn it off)
         ```
-        You can also use `rt!close` to delete a ticket channel.  
+        You can also use `rf!close` to delete a ticket channel.  
         It can also be archived instead of deleted.  
         In that case, create a category for archiving and add `RTAC` to the end of the category name.
 
         Examples
         --------
-        `rt!ticket query moderator`"""
+        `rf!ticket query moderator`"""
         if ctx.guild and ctx.channel.category and str(ctx.channel.type) == "text":
             if roles:
                 await self.write_roles(ctx.channel.id, [role.id for role in roles])
@@ -340,8 +340,8 @@ class Ticket(commands.Cog, DataManager):
                     channel_name, overwrites=perms, topic=f"RTチケットチャンネル：{payload.member.id}"
                 )
                 await channel.send(
-                    {"ja": f"{payload.member.mention}, ここがあなたのチャンネルです。\n`rt!close`で閉じれます。",
-                     "en": f"{payload.member.mention}, Here is your channel!\nYou can close this channel by `rt!close`."},
+                    {"ja": f"{payload.member.mention}, ここがあなたのチャンネルです。\n`rf!close`で閉じれます。",
+                     "en": f"{payload.member.mention}, Here is your channel!\nYou can close this channel by `rf!close`."},
                     target=payload.member.id
                 )
                 if (first := await self.read(payload.guild_id)):

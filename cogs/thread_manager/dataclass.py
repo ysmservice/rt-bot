@@ -7,7 +7,7 @@ import discord
 from asyncio import Event, wait_for, TimeoutError
 from functools import wraps
 
-from rtlib import Table
+from util import Table
 
 from .constants import DB, MAX_CHANNELS
 

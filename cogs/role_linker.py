@@ -1,4 +1,4 @@
-# RT - Role Linker
+# Free RT - Role Linker
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from collections import defaultdict
 from discord.ext import commands
 import discord
 
-from rtlib import RT, Table
+from util import RT, Table
 
 
 class RoleLinkerData(Table):
@@ -75,13 +75,13 @@ class RoleLinker(commands.Cog, DataManager):
         --------
         ロールリンカー、役職が付与/削除された際に他の役職も付与/削除するようにする機能です。  
         認証機能にて複数の役職を付与するようにしたい際に使えます。  
-        `rt!linker`と実行することで登録されてるロールリンクの一覧を表示できます。
+        `rf!linker`と実行することで登録されてるロールリンクの一覧を表示できます。
 
         !lang en
         --------
         Ability to grant/delete other positions when they are granted/deleted.  
         It can be use when you want set captcha role multiple.
-        You can do `rt!linker` to see role link that registerd list."""
+        You can do `rf!linker` to see role link that registerd list."""
         if not ctx.invoked_subcommand:
             await ctx.reply(
                 embed=discord.Embed(
@@ -101,7 +101,7 @@ class RoleLinker(commands.Cog, DataManager):
     async def link(self, ctx, target: discord.Role, link_role: discord.Role, reverse: bool = False):
         """!lang ja
         --------
-        役職リンクを設定します。  
+        ロールリンクを設定します。  
         15個まで登録可能です。
 
         Parameters
@@ -111,18 +111,18 @@ class RoleLinker(commands.Cog, DataManager):
         link_role : 役職のメンションまたは名前
             リンクする役職です。
         reverse : bool, default off
-            役職が付与されたら指定したlink_roleを剥奪するのように通常の逆にするかどうかです。  
+            役職が付与されたら指定したlink_roleを剥奪する、というように通常の逆にするかどうかです。  
             onまたはoffを入れます。
 
         Examples
         --------
-        `rt!linker link 認証済み メンバー`
+        `rf!linker link 認証済み メンバー`
         認証済みの役職がついたらメンバーという役職をつけます。
 
         Notes
         -----
-        reverseをonにする場合は対象の役職を既にロールリンカーに登録されている役職に設定することはできません。  
-        理由はこうしなければループを作ることが可能になりRTを妨害できてしまうからです。ご了承ください。
+        reverseをonにする際、既に1つでもロールリンカーに登録されている役職を対象に設定することは出来ません。  
+        理由は大量のつけ外しを行うことによってRTにAPI制限がかかることを防ぐためです。ご了承ください。
 
         !lang en
         --------
@@ -141,7 +141,7 @@ class RoleLinker(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!linker link authenticated member`.
+        `rf!linker link authenticated member`.
         If the role is authenticated, it will be given the role "member".
 
         Notes
@@ -171,7 +171,7 @@ class RoleLinker(commands.Cog, DataManager):
         """!lang ja
         --------
         linkの逆です。  
-        役職リンクを解除します。
+        ロールリンクを解除します。
 
         Parameters
         ----------

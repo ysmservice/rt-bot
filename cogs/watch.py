@@ -1,4 +1,4 @@
-# RT - Watch
+# Free RT - Watch
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from time import time
 from discord.ext import commands, tasks
 import discord
 
-from rtlib import RT
+from util import RT
 
 
 @dataclass
@@ -68,12 +68,12 @@ class Watch(commands.Cog):
         """!lang ja
         --------
         時計です。
-        `rt!watch`で現在の時刻と日付を表示します。
+        `rf!watch`で現在の時刻と日付を表示します。
 
         !lang en
         --------
         This is a watch.
-        `rt!watch` to display date and time."""
+        `rf!watch` to display date and time."""
         if not ctx.invoked_subcommand:
             await ctx.reply(f"現在の時刻は<t:{int(time())}:F>です。")
 

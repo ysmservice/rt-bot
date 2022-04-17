@@ -1,11 +1,9 @@
-# RT - Bulk
+# Free RT - Bulk
 
 from typing import Union, Literal, List
 
 from discord.ext import commands
 import discord
-
-from rtlib import setting
 
 
 GuildRole = Union[discord.Role, Literal["everyone"]]
@@ -48,7 +46,7 @@ class Bulk(commands.Cog):
     async def bulk(self, ctx):
         """!lang ja
         --------
-        一括でメンバー全員に役職を付与したりメッセージの送信をしたりできます。
+        一括でメンバー全員へ役職の付与やメッセージの送信ができます。
         
         !lang en
         --------
@@ -60,15 +58,16 @@ class Bulk(commands.Cog):
     BULK_HELP = ("ServerTool", "bulk")
 
     @bulk.command(
-        headding={
-            "ja": "一括でメッセージを送信します。", "en": "Send messages in bulk."
+        extras={
+            "headding": {
+                "ja": "一括でメッセージを送信します。", "en": "Send messages in bulk."
+            }
         }
     )
-    @setting.Setting("guild", "Bulk Send", BULK_HELP)
     async def send(self, ctx, target: GuildRole, *, content):
         """!lang ja
         --------
-        指定されたメッセージを実行したサーバーにいるメンバー全員に送信します。
+        指定されたメッセージを実行したサーバーにいる指定したメンバーに送信します。
         
         Parameters
         ----------
@@ -82,7 +81,7 @@ class Bulk(commands.Cog):
         Examples
         --------
         ```
-        rt!bulk send @ゲーマー **来月開催する予定のゲーム大会について**
+        rf!bulk send @ゲーマー **来月開催する予定のゲーム大会について**
         このゲーム大会では以下のゲームのスコアを競います。
         * MinecraftのPvP
         * Apex
@@ -104,7 +103,7 @@ class Bulk(commands.Cog):
         Examples
         --------
         ```
-        rt!bulk send @Gamer **About the tournament of the games in next month**
+        rf!bulk send @Gamer **About the tournament of the games in next month**
         You will compete with these score:
         * Minecraft(PvP)
         * Apex
@@ -127,10 +126,10 @@ class Bulk(commands.Cog):
                 try:
                     e = discord.Embed(description=content)
                     e.set_author(name=ctx.author, icon_url=ctx.author.avatar.url)
-                    e.set_footer(text="RT一括送信 対象：" + ("全員" if isinstance(role, str) else f"{role.name}を持つ人"))
+                    e.set_footer(text="RT一括送信 対象：" + ("全員" if isinstance(target, str) else f"{target.name}を持つ人"))
                     await member.send(embed=e)
                     sent_count += 1
-                except (discord.HTTPException, discord.Forbidden) as e:
+                except (discord.HTTPException, discord.Forbidden):
                     failed_members.append(
                         (member, "権限不足またはメンバーがDMを許可していません。"))
                 except Exception as e:
@@ -151,19 +150,20 @@ class Bulk(commands.Cog):
     async def role(self, ctx):
         """!lang ja
         --------
-        ロールの一括系コマンドグループです。
+        ロールの一括系コマンドのグループです。
 
         !lang en
         --------
         This is the batch system command group for roles."""
 
     @role.command(
-        headding={
-            "ja": "一括で役職の権限を全て設定または解除します。",
-            "en": "Sets or removes all permissions of a role in a batch."
+        extras={
+            "headding": {
+                "ja": "一括で役職の権限を全て設定または解除します。",
+                "en": "Sets or removes all permissions of a role in a batch."
+            }
         }
     )
-    @setting.Setting("guild", "Bulk Role Edit", BULK_HELP)
     async def edit(self, ctx, mode: Mode, *, role: discord.Role):
         """!lang ja
         --------
@@ -195,17 +195,18 @@ class Bulk(commands.Cog):
         await ctx.reply("Ok")
 
     @role.command(
-        headding={
-            "ja": "一括で役職の付与/剥奪を行います。",
-            "en": "Add/remove role in batches."
+        extras={
+            "headding": {
+                "ja": "一括で役職の付与/剥奪を行います。",
+                "en": "Add/remove role in batches."
+            }
         }
     )
-    @setting.Setting("guild", "Bulk Role Add/Remove", BULK_HELP)
     async def manage(self, ctx, mode: Mode, target: GuildRole, *, role: discord.Role):
         """!lang ja
         --------
-        実行したサーバーにいるメンバー全員に指定された役職を付与または剥奪をします。
-        
+        実行したサーバーにいる指定したメンバーに指定された役職を付与または剥奪をします。
+
         Parameters
         ----------
         mode : add または remove

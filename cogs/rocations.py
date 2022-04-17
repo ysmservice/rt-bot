@@ -1,4 +1,4 @@
-# RT - rocations
+# Free RT - rocations
 
 from __future__ import annotations
 
@@ -15,8 +15,8 @@ import discord
 from aiomysql import Pool, Cursor
 from ujson import loads, dumps
 
-from rtlib.slash import Context, UnionContext
-from rtlib import RT
+from util.slash import Context, UnionContext
+from util import RT
 
 
 # データ型等
@@ -158,7 +158,7 @@ class Rocations(commands.Cog):
         -----
         マークダウンの書き方については[こちら](https://qiita.com/Qiita/items/c686397e4a0f4f11683d)が参考になると思います。  
         一部対応していない記法がありますがご了承ください。  
-        ですので画像を埋め込むことができます。  
+        画像を埋め込むことはできます。  
         (HTML埋め込みはできません)
 
         Aliases
@@ -206,8 +206,8 @@ class Rocations(commands.Cog):
                             "en": f"Published!\nhttps://rt-bot.com/rocations?search={ctx.guild.id}"
                         }, color=self.bot.Colors.normal
                     ).set_footer(text={
-                        "ja": "Tips: サーバーの表示順位は3時間55分06秒に一度`rt!raise`で上げられるよ。",
-                        "en": "Tips: You can use `rt!raise` to raise the server's display order once every 3 hours, 55 minutes, and 06 seconds."
+                        "ja": "Tips: サーバーの表示順位は3時間55分06秒に一度`rf!raise`で上げられるよ。",
+                        "en": "Tips: You can use `rf!raise` to raise the server's display order once every 3 hours, 55 minutes, and 06 seconds."
                     }))
 
     @rocations.command(aliases=("del", "rm", "remove", "削除"))
@@ -258,11 +258,11 @@ class Rocations(commands.Cog):
 
         Notes
         -----
-        タグは25文字以内で7個までタグを登録することができます。
+        タグは1つ25文字以内で7個までタグを登録することができます。
 
         Examples
         --------
-        `rt!rocations tags game,Minecraft,Apex`
+        `rf!rocations tags game,Minecraft,Apex`
 
         Aliases
         -------
@@ -287,8 +287,8 @@ class Rocations(commands.Cog):
 
         Examples
         --------
-        `rt!rocations tags game,Minecraft,Apex`"""
-        assert len(tags := tags.split(",")) <= 7, {"ja": "多すぎます。", "en": "I can't set it up that well."}
+        `rf!rocations tags game,Minecraft,Apex`"""
+        assert len(tags := tags.split(",")) <= 7, {"ja": "タグが多すぎます。", "en": "I can't set it up that well."}
         assert all(len(tag) <= 25 for tag in tags), {"ja": "タグは25文字以内にしてください。", "en": "Tags should be no longer than 25 characters."}
         await self._update(
             "UPDATE <t> SET tags = %s WHERE GuildID = %s;", (dumps(tags), ctx.guild.id)
@@ -338,7 +338,7 @@ class Rocations(commands.Cog):
     async def invite(self, ctx: UnionContext):
         """!lang ja
         --------
-        招待リンクを新しくします。  
+        掲示板に乗せる招待リンクを更新します。  
         もしバニティリンクが存在する場合はそれが使用されます。
 
         Aliases
@@ -367,13 +367,13 @@ class Rocations(commands.Cog):
         --------
         サーバー掲示板での表示順位を上げます。  
         3時間55分06秒に一回このコマンドを動かすことができます。  
-        また、`/raise`か`rt!raise`でもこのコマンドを実行することができます。
+        また、`/raise`か`rf!raise`でもこのコマンドを実行することができます。
 
         !lang en
         --------
         Increases the display rank on the server board.  
         You can run this command once every 3 hours 55 minutes 06 seconds.  
-        You can also run this command with `/raise` or `rt!raise`."""
+        You can also run this command with `/raise` or `rf!raise`."""
         await ctx.trigger_typing()
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cursor:
@@ -404,7 +404,7 @@ class Rocations(commands.Cog):
 
     @discord.slash_command("raise", description="Rocationsでのサーバー表示順位を上げます。")
     async def raise_slash(self, interaction: discord.Interaction):
-        ctx = Context(self.bot, interaction, self.raise_alias, "rt!raise")
+        ctx = Context(self.bot, interaction, self.raise_alias, "rf!raise")
         await ctx.trigger_typing()
         await self.raise_(ctx)
 

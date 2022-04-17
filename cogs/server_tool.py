@@ -1,4 +1,4 @@
-# RT - Server Tool
+# Free RT - Server Tool
 
 from typing import Union
 
@@ -9,7 +9,7 @@ from random import sample
 from discord.ext import commands
 import discord
 
-from rtlib.page import EmbedPage
+from util.page import EmbedPage
 from data import PERMISSION_TEXTS
 
 
@@ -59,7 +59,7 @@ class ServerTool(commands.Cog):
         Parameters
         ----------
         member : メンバーのメンションか名前または役職の名前またはメンション
-            対象のメンバーのメンションか名前または対象の役職の名前かメンションです。
+            対象のメンバーか役職の名前/メンションです。
 
         Aliases
         -------
@@ -182,8 +182,8 @@ class ServerTool(commands.Cog):
     async def timemachine(self, ctx, day: int = 1):
         """!lang ja
         --------
-        タイムマシンです。  
-        指定した日数前のメッセージの内容とメッセージリンクを表示します。
+        タイムマシン機能です。  
+        チャンネルを指定した日数分さかのぼったときのメッセージの内容とメッセージリンクを表示します。
 
         Parameters
         ----------
@@ -299,13 +299,13 @@ class ServerTool(commands.Cog):
         count : int
             当たり数です。
         role : 役職かチャンネルのメンションか名前, optional
-            抽選で選ばれる人で持っている必要のある役職です。  
-            選択しなくても大丈夫です。  
-            またチャンネルのメンションか名前の場合はそのチャンネルを見れる人となります。
+            抽選に参加するために持っていなければならない役職です。  
+            指定しなくても構いません。  
+            また、チャンネルのメンションか名前を入れた場合はそのチャンネルを見ることができる人が条件となります。
 
         Examples
         --------
-        `rt!lottery 3 メンバー`
+        `rf!lottery 3 メンバー`
         メンバーの中から三人抽選します。
 
         !lang en
@@ -364,16 +364,17 @@ class ServerTool(commands.Cog):
         """!lang ja
         --------
         チャンネルにスローモードを設定します。  
-        一秒などをスローモードで設定したい際に使えます。
+        細かい単位でスローモードで設定したい際に使えます。
 
         Parameters
         ----------
         time : int
-            スローモードを何秒で設定するかです。
+            スローモードを何秒で設定するかです。  
+            0.5秒などの端数は指定できません。
 
         Examples
         --------
-        `rt!slowmode 2`
+        `rf!slowmode 2`
 
         Aliases
         -------
@@ -391,7 +392,7 @@ class ServerTool(commands.Cog):
 
         Examples
         --------
-        `rt!slowmode 2`.
+        `rf!slowmode 2`.
 
         Aliases
         -------
@@ -496,7 +497,7 @@ class ServerTool(commands.Cog):
 
         Examples
         --------
-        `rt!purge 10`
+        `rf!purge 10`
 
         Notes
         -----
@@ -528,7 +529,7 @@ class ServerTool(commands.Cog):
 
         Examples
         --------
-        `rt!purge 10`.
+        `rf!purge 10`.
 
         Notes
         -----
@@ -657,11 +658,12 @@ class ServerTool(commands.Cog):
         ----------
         channel : 役職かチャンネルのメンションかIDまたは名前, optinal
             メンバー一覧を見たい対象の役職またはチャンネルです。  
-            選択しなかった場合はサーバー全体が対象となります。
+            選択しなかった場合はサーバー全体が対象となります。  
+            同じ名前のチャンネルやロールが複数ある場合、ロール->テキストチャンネル->ボイスチャンネル->スレッドの順に優先されます。
 
         Examples
         --------
-        `rt!members 雑談`
+        `rf!members 雑談`
         雑談というロールを持っている人またはチャンネルを見れる人の名前を列挙します。
 
         Aliases
@@ -680,7 +682,7 @@ class ServerTool(commands.Cog):
 
         Examples
         --------
-        `rt!members chit chat`
+        `rf!members chit chat`
         List the names of people who have the role "chat" or who can see the channel."""
         members = channel.members if channel else ctx.guild.members
         if members:

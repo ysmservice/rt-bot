@@ -1,4 +1,4 @@
-# RT - Force Pinned Message
+# Free RT - Force Pinned Message
 
 from typing import Optional, Tuple, Dict, List
 
@@ -8,8 +8,8 @@ from time import time
 from discord.ext import commands, tasks
 import discord
 
-from rtlib import RT, DatabaseManager as OldDatabaseManager, setting
-from rtutil import DatabaseManager, markord
+from util import RT, DatabaseManager as OldDatabaseManager
+from util import DatabaseManager, markdowns
 
 from aiomysql import Pool, Cursor
 from ujson import loads, dumps
@@ -137,13 +137,12 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         }, aliases=["ピン留め", "ぴんどめ", "fpm", "forcepinmessage"]
     )
     @commands.has_guild_permissions(manage_messages=True)
-    @setting.Setting("guild", "Force Pinned Message", channel=discord.TextChannel)
     async def pin(self, ctx: commands.Context, onoff: bool, *, content=""):
         """!lang ja
         --------
         いつも下にくるメッセージを作ることができます。  
         メッセージ削除権限を持つ人のみ実行可能です。  
-        別名強制ピン留めメッセージです。
+        別名`強制ピン留めメッセージ`です。
 
         Parameters
         ----------
@@ -161,7 +160,7 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         Examples
         --------
         ```
-        rt!pin on 自己紹介テンプレート：
+        rf!pin on 自己紹介テンプレート：
         名前：
         性別：
         一言：
@@ -170,19 +169,19 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         Notes
         -----
         下に来るメッセージは数秒毎に更新されるので数秒は下に来ないことがあります。  
-        以下のように最初に`# `を置いて`embed`コマンドの構文を使えば埋め込みにすることができます。
+        以下のように最初に`# `を置いて`embed`コマンドの書き方を使えば埋め込みにすることができます。
         ```
-        rt!pin on # タイトル
+        rf!pin on # タイトル
         説明
         ## フィールド名
         フィールド内容
         ```
-        また、送信頻度を一時間に一回などのしたい場合は`rt!pinit <何分>`のようにすれば良いです。  
-        もし、強制ピン留めのメッセージの送信者のアイコンをRTにしたいまたは名前をカスタムしたいと言う場合は、チャンネルトピックを以下のように設定すれば良いです。
+        また、送信頻度を一時間に一回などのしたい場合は`rf!pinit <何分>`を実行すると送信頻度を調節できます。  
+        もし、強制ピン留めのメッセージのアイコンをRTにしたい、もしくは名前をカスタマイズしたいと言う場合は、チャンネルトピックに以下を追加してください。
         ```
-        # もし送信者の名前をカスタムしたい場合 #
+        # 送信者の名前をカスタマイズしたい場合 #
         rt>fpm 名前
-        # もし送信者のアイコンをRTにしたい場合 #
+        # 送信者のアイコンをRTにしたい場合 #
         rt>fpm 名前 --rt-icon
         ```
 
@@ -214,7 +213,7 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         Examples
         --------
         ```
-        rt!pin on Self-introduction template:
+        rf!pin on Self-introduction template:
         Name:
         Gender:
         Comment:
@@ -231,7 +230,7 @@ class ForcePinnedMessage(commands.Cog, DataManager):
             if content.startswith("# "):
                 # もし埋め込みならjsonにする。
                 content = "<" + dumps(
-                    markord.embed(
+                    markdowns.embed(
                         content, color=ctx.author.color
                     ).to_dict()
                 ) + ">"

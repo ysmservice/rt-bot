@@ -1,12 +1,11 @@
-# RT - Free Channel
+# Free RT - Free Channel
 
 from discord.ext import commands, tasks
 import discord
 
 from aiomysql import Pool, Cursor
 
-from rtlib import RT
-from rtutil import DatabaseManager
+from util import RT, DatabaseManager
 
 
 class DataManager(DatabaseManager):

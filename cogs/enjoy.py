@@ -1,4 +1,4 @@
-# RT - Enjoy Cog
+# Free RT - Enjoy Cog
 
 from __future__ import annotations
 
@@ -12,8 +12,8 @@ from aiofiles.os import remove
 from bs4 import BeautifulSoup
 from PIL import Image
 
-from rtlib.page import EmbedPage
-from rtlib import RT, setting
+from util.page import EmbedPage
+from util import RT
 
 
 class Enjoy(commands.Cog):
@@ -29,11 +29,10 @@ class Enjoy(commands.Cog):
         }
     )
     @commands.cooldown(1, 15, commands.BucketType.user)
-    @setting.Setting("enjoy", "Minecraft Java User Skin")
     async def minecraft(self, ctx, *, user):
         """!lang ja
         --------
-        MinecraftのユーザーのスキンとUUIDを調べます。
+        Minecraft Java版のユーザーのスキンとUUIDを検索します。
 
         Parameters
         ----------
@@ -42,7 +41,7 @@ class Enjoy(commands.Cog):
 
         Examples
         --------
-        `rt!minecraft tasuren`
+        `rf!minecraft tasuren`
 
         Aliases
         -------
@@ -59,7 +58,7 @@ class Enjoy(commands.Cog):
 
         Examples
         --------
-        `rt!minecraft tasuren`
+        `rf!minecraft tasuren`
 
         Aliases
         -------
@@ -206,7 +205,7 @@ class Enjoy(commands.Cog):
     async def game_package(self, ctx, mode):
         """!lang ja
         --------
-        ゲームのパッケージを作ります。  
+        ゲームのパッケージ画像を作ります。  
         好きな画像を添付することで[例]のような画像を作ることができます。
 
         Parameters
@@ -216,7 +215,7 @@ class Enjoy(commands.Cog):
 
         Examples
         --------
-        `rt!game ps4` ([NYN姉貴の画像](http://tasuren.syanari.com/RT/help/Entertainment/NYN姉貴.jpg)を添付して実行。)
+        `rf!game ps4` ([NYN姉貴の画像](http://tasuren.syanari.com/RT/help/Entertainment/NYN姉貴.jpg)を添付して実行。)
         -> [実行結果](http://tasuren.syanari.com/RT/help/Entertainment/ps4_NYN姉貴.png)
 
         !lang en
@@ -231,7 +230,7 @@ class Enjoy(commands.Cog):
 
         Examples
         --------
-        `rt!game ps4` ([NYN sister's image](http://tasuren.syanari.com/RT/help/Entertainment/NYN姉貴.jpg) is attached and executed.)
+        `rf!game ps4` ([NYN sister's image](http://tasuren.syanari.com/RT/help/Entertainment/NYN姉貴.jpg) is attached and executed.)
         -> [Execution result](http://tasuren.syanari.com/RT/help/Entertainment/ps4_NYN姉貴.png)"""
         if mode not in self.GAME_SUPPORT_MODES:
             return await ctx.reply(
@@ -246,8 +245,8 @@ class Enjoy(commands.Cog):
         at = ctx.message.attachments[0]
         if not at.filename.endswith(self.GAME_SUPPORT_EXTS):
             return await ctx.reply(
-                {"ja": "そのファイルタイプは対応していません。",
-                 "en": "Sorry, I don't know that file type."}
+                {"ja": f"そのファイルタイプは対応していません。\nサポートしている拡張子:{', '.join(self.GAME_SUPPORT_EXTS)}",
+                 "en": f"Sorry, I don't know that file type.\nSupported file type:{', '.join(self.GAME_SUPPORT_EXTS)}"}
             )
         await ctx.trigger_typing()
         input_path = f"{self.GAME_BASE_PATH}input_{ctx.author.id}.{at.filename[at.filename.rfind('.'):]}"

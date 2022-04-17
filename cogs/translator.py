@@ -1,4 +1,4 @@
-# RT - Google Translator
+# Free RT - Google Translator
 
 from discord.ext import commands
 import discord
@@ -8,14 +8,14 @@ from asyncio import sleep
 from typing import List
 import deep_translator
 
-from rtlib import RT
+from util import RT
 
 
 CHP_HELP = {
     "ja": ("翻訳専用チャンネル機能。",
 """# 翻訳チャンネルプラグイン - translate
-これは`rt>translate <翻訳先言語コード>`をチャンネルのトピックに入れることで翻訳専用チャンネルにすることのできる機能です。  
-例：`rt>translate ja` (これをトピックに入れたチャンネルに送信したメッセージは全て日本語に翻訳されます。)  
+これは`rf>translate <翻訳先言語コード>`をチャンネルのトピックに入れることで翻訳専用チャンネルにすることのできる機能です。  
+例：`rf>translate ja` (これをトピックに入れたチャンネルに送信したメッセージは全て日本語に翻訳されます。)  
 
 ### 言語コード例
 ```
@@ -31,8 +31,8 @@ trans, ほんやく, 翻訳
 ### これもあるよ
 翻訳コマンドである`translate`で個人カテゴリーにあります。"""),
     "en": ("Dedicated translation channel function", """# translation channel plugin - translate
-This is a feature that allows you to make a channel dedicated to translation by putting `rt>translate <language code to translate to>` in the channel topic.  
-Example: `rt>translate ja` (all messages sent to a channel with this in the topic will be translated into Japanese).  
+This is a feature that allows you to make a channel dedicated to translation by putting `rf>translate <language code to translate to>` in the channel topic.  
+Example: `rf>translate ja` (all messages sent to a channel with this in the topic will be translated into Japanese).  
 
 ### Language code example
 ```
@@ -159,7 +159,7 @@ class Translator(commands.Cog):
             return
 
         for line in message.channel.topic.splitlines():
-            if line.startswith(("rt>translate", "rt>tran", "rt>翻訳", "rt>ほんやく")):
+            if line.startswith(("rf>translate", "rf>tran", "rf>翻訳", "rf>ほんやく")):
                 if 1 < len((splited := line.split())):
                     try:
                         message.content = f"{splited[1]} {message.content}"

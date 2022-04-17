@@ -1,9 +1,9 @@
-# RT - Delay Lottery
+# Free RT - Delay Lottery
 
 from discord.ext import commands, tasks
 import discord
 
-from rtlib import RT, DatabaseManager, setting
+from util import RT, DatabaseManager
 from time import time
 
 
@@ -85,17 +85,15 @@ class DelayLottery(commands.Cog, DataManager):
         }
     )
     @commands.cooldown(1, 30, commands.BucketType.channel)
-    @setting.Setting("guild", "Delay Lottery", channel=discord.TextChannel)
     async def dlottery(self, ctx, count: int, minutes: int, *, description):
         """!lang ja
         --------
-        リアクションをした人の中からしばらくした後に抽選をするパネルを作ります。
+        時間制限を付けて、リアクションをした人の中から抽選をするパネルを作ります。
 
         Notes
         -----
-        この機能は普通の実行した際にちゅうせんを行う`lottery`コマンドの進化版のようなものです。  
-        一つのサーバーにつき30個まで作ることができ、もしやっぱ抽選をしないという場合はバツのリアクションを押してください。  
-        この30個に抽選が終わったパネルはカウントに含まれません。
+        この機能は実行した際に抽選を行う`lottery`コマンドの進化版のようなものです。  
+        一つのサーバーにつき同時に30個まで作ることができ、もし抽選をやめる場合はバツのリアクションを押してください。  
 
         Parameters
         ----------
@@ -165,8 +163,8 @@ class DelayLottery(commands.Cog, DataManager):
             )
         except OverflowError:
             await ctx.reply(
-                {"ja": "これ以上作ることはできません。",
-                 "en": "I can't make any more."}
+                {"ja": "数が大きすぎてオーバーフローしました。",
+                 "en": "The number is too many to overflow."}
             )
             await mes.delete()
         else:

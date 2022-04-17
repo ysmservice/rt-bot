@@ -1,4 +1,4 @@
-# RT - Person
+# Free RT - Person
 
 from __future__ import annotations
 
@@ -12,10 +12,9 @@ import asyncio
 from discord.ext import commands
 import discord
 
-from aiohttp import ClientSession
 from bs4 import BeautifulSoup
 
-from rtlib import RT, Table
+from util import RT, Table
 
 
 class Yahoo(Table):
@@ -40,7 +39,7 @@ class Person(commands.Cog):
 
     def __init__(self, bot: RT):
         self.bot = bot
-        self.session = ClientSession()
+        self.session = self.bot.session
         self.ydata = Yahoo(self.bot)
 
     async def search_message(
@@ -109,15 +108,15 @@ class Person(commands.Cog):
         Parameters
         ----------
         message_content : str
-            リアクションをつけるメッセージにある文字列です。  
-            ここを`ch`または`channel`にした場合はチャンネルに設定されて、そのチャンネルに送ったメッセージ全部にその絵文字がつくようになります。  
-            これをオフにする際はチャンネルトピックにある`rt>ar`から始まる行を削除することでオフにできます。
+            リアクションをつけるメッセージに含む文字列です。  
+            ここを`ch`または`channel`にした場合はチャンネルに設定されて、そのチャンネルに送ったメッセージ全てにその絵文字がつくようになります。  
+            この機能はチャンネルトピックにある`rt>ar`から始まる行を削除することでオフにできます。
         emojis : str
-            絵文字です。
+            付与する絵文字です。
 
         Examples
         --------
-        `rt!autoreaction how 👍 👎`
+        `rf!autoreaction how 👍 👎`
 
         Aliases
         -------
@@ -136,7 +135,7 @@ class Person(commands.Cog):
 
         Examples
         --------
-        `rt!autoreaction how 👍 👎`
+        `rf!autoreaction how 👍 👎`
 
         Aliases
         -------
@@ -187,12 +186,12 @@ class Person(commands.Cog):
 
         Notes
         -----
-        ユーザー名の場合はRTが入っている何かしらのサーバーにいるユーザーでないと取得はできません。
+        ユーザー名の場合はRTと1つでもサーバーを共有しているユーザーでないと取得はできません。
 
         Parameters
         ----------
-        user : ユーザーIDまたはユーザー名
-            見たいユーザー情報のユーザーのIDまたは名前です。
+        user : ユーザーIDまたはユーザー名またはメンション
+            情報を見たいユーザーのID/名前/メンションです。
 
         Aliases
         -------
@@ -200,7 +199,7 @@ class Person(commands.Cog):
 
         Examples
         --------
-        `rt!userinfo tasuren`
+        `rf!userinfo tasuren`
 
         !lang en
         --------
@@ -221,7 +220,7 @@ class Person(commands.Cog):
 
         Examples
         --------
-        `rt!userinfo tasuren`"""
+        `rf!userinfo tasuren`"""
         await ctx.trigger_typing()
         # もしuser_name_idが指定されなかった場合は実行者のIDにする。
         user, member = None, None
@@ -411,7 +410,7 @@ class Person(commands.Cog):
 
     @commands.command(
         aliases=["おみくじ", "fortune", "cookie", "luck", "oj"],
-        extra={
+        extras={
             "headding": {"ja": "おみくじをします。"},
             "parent": "Entertainment"
         }
@@ -452,8 +451,9 @@ class Person(commands.Cog):
     async def yahootoha(self, ctx):
         """!lang ja
         --------
-        `〜〜とは`と入力した際にYahoo検索を行うボタンリアクションを付けることをするかしないかを切り替えます。
-        デフォルトで有効です。
+        `〜〜とは`と入力した際にYahoo検索を行うボタンリアクションを付ける機能の有効化・無効化ができます。
+        デフォルトでは有効になっています。  
+        また、この機能をオフにしても`rf!yahoo <検索する言葉>`でyahoo検索は可能です。
 
         !lang en
         --------

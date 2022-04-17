@@ -1,9 +1,9 @@
-# RT - Auto Role
+# Free RT - Auto Role
 
 from discord.ext import commands
 import discord
 
-from rtlib import DatabaseManager, setting
+from util import DatabaseManager
 
 
 class DataManager(DatabaseManager):
@@ -58,7 +58,6 @@ class AutoRole(commands.Cog, DataManager):
     )
     @commands.cooldown(1, 10, commands.BucketType.guild)
     @commands.has_guild_permissions(administrator=True)
-    @setting.Setting("guild", "AutoRole")
     async def autorole(self, ctx, onoff: bool, *, role: discord.Role = None):
         """!lang ja
         --------
@@ -74,7 +73,7 @@ class AutoRole(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!autorole on 初心者`
+        `rf!autorole on 初心者`
 
         Aliases
         -------
@@ -94,7 +93,7 @@ class AutoRole(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!autorole on beginner`.
+        `rf!autorole on beginner`.
 
         Aliases
         -------

@@ -1,12 +1,11 @@
-# RT - Language
+# Free RT - Language
 
 from typing import Literal, Union, List, Tuple
 
 from discord.ext import commands
 import discord
 
-from rtlib import RT, setting
-from data import is_admin
+from util import RT
 
 from aiofiles import open as async_open
 from json import loads
@@ -44,7 +43,7 @@ class Language(commands.Cog):
         self.pool = self.bot.mysql.pool
         self.bot.loop.create_task(self.on_ready())
 
-        with open("data/replies.json") as f:
+        with open("data/replies.json",encoding="utf-8") as f:
             self.replies = loads(f.read())
 
     def cog_unload(self):
@@ -60,7 +59,7 @@ class Language(commands.Cog):
         return lang
 
     async def _new_send(self, channel, *args, **kwargs):
-        # 元のsendにつけたしをする関数。rtlib.libs.on_sendを使う。
+        # 元のsendにつけたしをする関数。util.ext.on_sendを使う。
         # このsendが返信に使われたのなら返信先のメッセージの送信者(実行者)の言語設定を読み込む。
         lang = "ja"
         if isinstance(channel, discord.Message):
@@ -192,7 +191,7 @@ class Language(commands.Cog):
         extras={"headding": {"ja": "言語データを再読込します。",
                              "en": "Reload language data."},
                 "parent": "Admin"})
-    @is_admin()
+    @commands.is_owner()
     async def reload_language(self, ctx):
         """言語データを再読込します。"""
         await ctx.trigger_typing()
@@ -246,7 +245,6 @@ class Language(commands.Cog):
             "parent": "RT"
         }
     )
-    @setting.Setting("user", "!Language")
     async def language(self, ctx, language: Literal["ja", "en"], mode: Literal["server", "user"] = "user"):
         """!lang ja
         --------
@@ -267,8 +265,8 @@ class Language(commands.Cog):
 
         Examples
         --------
-        `rt!language en` to set your language to English.
-        Set the language of the entire server to English, as executed by `rt!language en server`.
+        `rf!language en` to set your language to English.
+        Set the language of the entire server to English, as executed by `rf!language en server`.
 
         !lang en
         --------
@@ -279,8 +277,8 @@ class Language(commands.Cog):
         language : 言語コード, `ja`または`en`
             変更対象の言語コードです。  
             現在は日本語である`ja`と英語である`en`に対応しています。
-        mode : server or user
-            サーバー全体に設定するか自分にユーザー
+        mode : serverまたはuser、デフォルトはuser
+            サーバー全体に適応するか自分だけ変更するかです。
 
         Raises
         ------
@@ -288,7 +286,7 @@ class Language(commands.Cog):
 
         Examples
         --------
-        `rt!language ja`"""
+        `rf!language ja`で言語を日本語に変更できます。"""
         # 言語コードが使えない場合はValueErrorを発生する。
         if language not in self.LANGUAGES:
             code = "invalid language code is inserted. 無効な言語コードです。"

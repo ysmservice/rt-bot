@@ -1,9 +1,9 @@
-# RT - Tenki
+# Free RT - Tenki
 
 from discord.ext import commands, easy, tasks
 import discord
 
-from rtlib import DatabaseManager
+from util import DatabaseManager
 
 from datetime import datetime, timedelta
 from asyncio import sleep
@@ -11,7 +11,7 @@ from ujson import loads
 from pytz import utc
 
 
-with open("data/area_code.json", "r") as f:
+with open("data/area_code.json", "r",encoding="utf-8") as f:
     AREA_CODE = loads(f.read())
 
 
@@ -104,8 +104,8 @@ class Tenki(commands.Cog, DataManager):
     async def tenki(self, ctx):
         """!lang ja
         --------
-        コマンドを実行した後に選択された天気を表示します。  
-        またこのコマンドを使って天気を表示した後に指定した時刻に毎日天気通知を送ることもできます。  
+        特定の地域の天気を表示します。  
+        コマンドを実行して出てきたメッセージのメニューを使って、指定した時刻に毎日天気通知を送るように設定することも可能です。  
         もし設定した天気通知をオフにしたい場合は`rt!tenkiset off`と実行してください。
 
         !lang en
@@ -133,7 +133,7 @@ class Tenki(commands.Cog, DataManager):
         if data["forecasts"]:
             forecast = data["forecasts"][0]
             embed.add_field(
-                name=f"‌\n{forecast['dateLabel']} - {forecast['telop']}",
+                name=f"?\n{forecast['dateLabel']} - {forecast['telop']}",
                 value=forecast["detail"]["weather"], inline=False
             )
             embed.set_thumbnail(url=forecast["image"]["url"])

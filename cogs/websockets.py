@@ -1,11 +1,11 @@
-# RT - WebSockets
+# Free RT - WebSockets
 
 from typing import Union
 
 from discord.ext import commands
 import discord
 
-from rtlib import RT, websocket
+from util import RT, websocket
 
 
 DISCORD = "/img/discord.jpg"

@@ -1,9 +1,9 @@
-# RT - Short URL
+# Free RT - Short URL
 
 from discord.ext import commands
 import discord
 
-from rtlib import DatabaseManager, WebManager
+from util import DatabaseManager, WebManager
 
 from sanic.response import redirect
 from random import sample, choice
@@ -60,7 +60,6 @@ class DataManager(DatabaseManager):
         assert await cursor.exists(self.DB, target), "見つかりませんでした。"
         return (await cursor.get_data(self.DB, target))[1]
 
-
 CHARS = list(range(41, 91)) + list(range(61, 123))
 
 
@@ -103,7 +102,7 @@ class ShortURL(commands.Cog, DataManager):
 
         Warnings
         --------
-        これは15個まで作成可能です。  
+        これは1人につき15個までしか作成できません。  
         15個以上作った場合は自動で一番古い短縮URLが無効になります。
 
         Parameters
@@ -118,7 +117,7 @@ class ShortURL(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!url short http://tasuren.f5.si tasuren`  
+        `rf!url short http://tasuren.f5.si tasuren`  
         tasurenのホームページを`http://rtbo.tk/tasuren`からアクセスできるようにする。
 
         Aliases
@@ -146,7 +145,7 @@ class ShortURL(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!url short http://tasuren.f5.si tasuren`  
+        `rf!url short http://tasuren.f5.si tasuren`  
         Make the home page of tasuren accessible from `http://rtbo.tk/tasuren`."""
         if len(await self.getall(ctx.author.id)) >= 15:
             await self.remove_last(ctx.author.id)
@@ -158,12 +157,12 @@ class ShortURL(commands.Cog, DataManager):
                     await self.get(custom)
                 except AssertionError:
                     break
-            else:
-                return await ctx.reply("すみませんが作れませんでした。\nもう一回やってみてください。")
-        
+
         try:
             await self.add(ctx.author.id, url, custom)
         except AssertionError:
+            if custom is None:
+                return await ctx.reply("申し訳ありませんが、何らかの理由で作成に失敗しました。\nもう一度やってみてください。")
             await ctx.reply("その短縮URLは既に存在するので作れません。")
         else:
             await ctx.reply(f"短縮しました。>>>http://rtbo.tk/{custom}")
@@ -219,7 +218,7 @@ class ShortURL(commands.Cog, DataManager):
         ----------
         custom : str
             The address of the shortened URL.  
-            `http://rtbo.tk/... ` or `.... `.
+            `http://rtbo.tk/... ` or `...`.
 
         Aliases
         -------

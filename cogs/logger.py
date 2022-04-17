@@ -1,4 +1,4 @@
-# RT - Logger
+# Free RT - Logger
 
 import collections
 import logging
@@ -6,7 +6,7 @@ import logging
 from discord.ext import commands, tasks
 import discord
 
-from rtlib import RT
+from util import RT
 
 
 class SystemLog(commands.Cog):
@@ -27,7 +27,7 @@ class SystemLog(commands.Cog):
         author = collections.Counter(self.authors).most_common()[0]
         guild = collections.Counter(self.guilds).most_common()[0]
         e = discord.Embed(
-            title="RT command log",
+            title="Free RT command log",
             description=f"1分間で{len(self.names)}回のコマンド実行(以下、実行最多記録)",
             color=self.bot.Colors.unknown
         )
@@ -46,16 +46,47 @@ class SystemLog(commands.Cog):
     @tasks.loop(seconds=60)
     async def logging_loop(self):
         if len(self.names) != 0:
-            await self.bot.get_channel(926731137903104000) \
+            await self.bot.get_channel(961870556548984862) \
                 .send(embed=self._make_embed())
             self.names = []
             self.zero_parents = []
             self.authors = []
             self.guilds = []
 
-    @commands.command()
+    @commands.command(
+        extras={
+            "headding":{"ja":"直近1分間のコマンド実行ログを見ます。", "en":"View commands logs."},
+            "parent":"Admin"
+        }
+    )
     @commands.is_owner()
     async def command_logs(self, ctx, mode=None):
+        """!lang ja
+        --------
+        直近1分間のコマンド実行ログを見ることができます。また、実行ログのループ操作もできます。
+        
+        Parameters
+        ----------
+        mode: startやstop、restartなど
+            logging_loop.○○の○○に入れられる文字列を入れて下さい。
+        
+        Warnings
+        --------
+        もちろん実行は管理者専用です。
+        
+        !lang en
+        --------
+        View command logs. Also it can control loop of logs.
+        
+        Parameters
+        ----------
+        mode: start/stop, or restart
+            Put the string which can be put in logging_loop.●●.
+        
+        Warnings
+        --------
+        Of cource it can only be used by admin.
+        """
         if mode:
             getattr(self.logging_loop, mode)()
             await ctx.message.add_reaction("✅")

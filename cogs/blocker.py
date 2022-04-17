@@ -1,4 +1,4 @@
-# RT - Blocker
+# Free RT - Blocker
 
 from __future__ import annotations
 
@@ -13,8 +13,8 @@ import discord
 from aiomysql import Pool, Cursor
 from ujson import loads, dumps
 
-from rtutil import DatabaseManager
-from rtlib import RT, Table, setting
+from util import DatabaseManager
+from util import RT
 
 from .automod.modutils import emoji_count
 
@@ -95,7 +95,6 @@ class DataManager(DatabaseManager):
         self.cache[guild_id][mode].remove(role)
         await self._update(cursor, guild_id, mode, [])
 
-
 Role = Union[discord.Role, discord.Object, Literal[0]]
 
 
@@ -138,12 +137,11 @@ class Blocker(commands.Cog, DataManager):
     @blocker.command("toggle", aliases=["設定", "t"])
     @commands.has_guild_permissions(manage_messages=True)
     @commands.cooldown(1, 10, commands.BucketType.guild)
-    @setting.Setting("guild", "Emoji Blocker 0", HELP)
     async def _toggle(self, ctx: commands.Context, *, mode: DataManager.Mode):
         """!lang ja
         --------
         リアクションか絵文字またはスタンプのブロックの有効/無効の切り替えをします。  
-        ですが、有効にしても対象のロールを追加しなければ意味がありませんので、削除対象のロールの設定を忘れずに。
+        ですが、有効にしても対象のロールを追加しなければ意味がないので、削除対象のロールの設定を忘れないようにしましょう。
 
         Parameters
         ----------
@@ -172,18 +170,20 @@ class Blocker(commands.Cog, DataManager):
         await ctx.reply("Ok")
 
     @blocker.group(
-        aliases=["ロール", "役職", "r"], headding={
-            "ja": "文字ブロックで削除対象とするロールの設定リストを表示します。",
-            "en": "Displays the configuration list of roles to be deleted in the character block."
+        aliases=["ロール", "役職", "r"], 
+        extras={
+            "headding": {
+                "ja": "文字ブロックで削除対象とするロールの設定リストを表示します。",
+                "en": "Displays the configuration list of roles to be deleted in the character block."
+            }
         }
     )
-    @setting.Setting("guild", "Emoji Blocker 1", HELP)
     async def role(self, ctx: commands.Context):
         """!lang ja
         --------
         削除対象とするロールを管理するコマンドです。  
-        `rt!blocker role`と実行すると設定されているものの一覧が表示されます。  
-        これで設定しても`rt!blocker toggle`を実行するまでは何も起きません。
+        `rf!blocker role`と実行すると設定されているものの一覧が表示されます。  
+        これで設定しても`rf!blocker toggle`を実行するまでは何も起きません。
 
         Aliases
         -------
@@ -192,8 +192,8 @@ class Blocker(commands.Cog, DataManager):
         !lang en
         --------
         This command is used to manage the roles to be deleted.  
-        If you run `rt!blocker role`, a list of the configured roles will be displayed.    
-        If you set it up this way, nothing will happen until you run `rt!blocker toggle`.
+        If you run `rf!blocker role`, a list of the configured roles will be displayed.    
+        If you set it up this way, nothing will happen until you run `rf!blocker toggle`.
 
         Aliases
         -------
@@ -216,7 +216,6 @@ class Blocker(commands.Cog, DataManager):
     @role.command(aliases=["追加", "a"])
     @commands.cooldown(1, 8, commands.BucketType.guild)
     @commands.has_guild_permissions(manage_messages=True)
-    @setting.Setting("guild", "Emoji Blocker 2", HELP)
     async def add(
         self, ctx: commands.Context, mode: DataManager.Mode, *, role: "Role"
     ):
@@ -259,13 +258,12 @@ class Blocker(commands.Cog, DataManager):
     @role.command(aliases=["削除", "rm"])
     @commands.cooldown(1, 8, commands.BucketType.guild)
     @commands.has_guild_permissions(manage_messages=True)
-    @setting.Setting("guild", "Emoji Blocker 3", HELP)
     async def remove(
         self, ctx: commands.Context, mode: DataManager.Mode, *, role: "Role"
     ):
         """!lang ja
         --------
-        `add`の逆です。
+        所有していると絵文字等を送信することができなくなるロールを削除します。
 
         Aliases
         -------

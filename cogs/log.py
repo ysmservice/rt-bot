@@ -1,4 +1,4 @@
-# RT - Log Extension
+# Free RT - Log Extension
 
 from discord.ext import commands
 import discord
@@ -11,8 +11,8 @@ from functools import wraps
 CHP_HELP = {
     "ja": ("ログ機能。",
 """# ログプラグイン - log
-これは`rt>log`をチャンネルのトピックに入れることでログをを表示することのできる機能です。  
-例：`rt>log` (これをトピックに入れたチャンネルにログが送られます)"""),
+`rf>log`をチャンネルのトピックに入れることでログを表示することができます。  
+例：`rf>log` (これをトピックに入れたチャンネルにログが送られます)"""),
     "en": ("...", """...""")
 }
 
@@ -35,7 +35,7 @@ def log(mode: str = "normal", force: bool = False):
                 channel = discord.utils.find(
                     lambda ch: (
                         "log-rt" in ch.name
-                        or (ch.topic and "rt>log" in ch.topic)
+                        or (ch.topic and "rf>log" in ch.topic)
                     ), guild.text_channels
                 )
 
@@ -62,7 +62,7 @@ class Log(commands.Cog):
 
     def __init__(self, bot):
         self.bot, self.data = bot, bot.data
-        self.team_id = self.data["admins"]
+        self.team_id = self.bot.owner_ids
         self.c = self.bot.colors["normal"]
         self.bot.loop.create_task(self.on_command_added())
 
@@ -81,10 +81,10 @@ class Log(commands.Cog):
     @commands.Cog.listener()
     @log()
     async def on_message(self, message):
-        if message.content and ("@everyone" in message.content or "@here" in message.content):
+        if message.content and (ever:=("@everyone" in message.content) or "@here" in message.content):
             return discord.Embed(
                 title="全員メンション",
-                description=f"{message.author} ({message.author.id})が全員あてメンションをしました。",
+                description=f"{message.author} ({message.author.id})が{'everyone' if ever else 'here'}メンションをしました。",
                 color=self.c
             )
 

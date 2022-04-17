@@ -1,4 +1,4 @@
-# RT - Global Ban
+# Free RT - Global Ban
 
 from typing import Union, Optional
 
@@ -7,10 +7,9 @@ from random import choice
 from discord.ext import commands
 import discord
 
-from rtlib import RT, mysql, DatabaseManager
-from rtlib.page import EmbedPage
-from rtlib.ext import componesy
-from data import is_admin
+from util import RT, mysql, DatabaseManager
+from util.page import EmbedPage
+from util.ext import componesy
 
 from .bot_general import INFO_SS
 
@@ -99,13 +98,14 @@ class GlobalBan(commands.Cog, DataManager):
     async def gban(self, ctx):
         """!lang ja
         --------
-        GBAN機能です。  
+        グローバルBAN機能です。  
         これは危険人物が入ってきたら自動でBANする機能です。  
-        危険人物を申請したい場合は対象の人物のIDと証拠と一緒にRTサーバーに問い合わせてください。  
-        必要な証拠はパソコンで撮影する場合は再読み込みの動作をしている動画である必要があります。  
+        危険人物を申請したい場合はRTサーバーで問い合わせてください(正当な理由と証拠が必要です)。  
+        必要な証拠はパソコンで撮影する場合はブラウザ版で再読み込みの動作をしている動画である必要があります。  
         (文字などを開発者ツールから編集し偽装することができるため。)  
         スマホまたはタブレットで撮影する場合はスクリーンショットで大丈夫です。  
         もし証拠を撮るのがめんどくさい場合で元のメッセージが削除されないであろうと考えられる場合は、RTの管理者に直接証拠を見てもらうことも可能です。
+        (おそらく見てもらうのが一番信用でき、さらに手っ取り早いです。)
 
         !lang en
         --------
@@ -215,7 +215,7 @@ class GlobalBan(commands.Cog, DataManager):
             )
 
     @gban.command("add")
-    @is_admin()
+    @commands.is_owner()
     async def add_user_(self, ctx, user_id: int, *, reason):
         await ctx.trigger_typing()
         await self.add_user(user_id, reason)
@@ -238,7 +238,7 @@ class GlobalBan(commands.Cog, DataManager):
         await ctx.reply("追加しました。")
 
     @gban.command("remove")
-    @is_admin()
+    @commands.is_owner()
     async def remove_user_(self, ctx, user_id: int):
         await ctx.trigger_typing()
         await self.remove_user(user_id)

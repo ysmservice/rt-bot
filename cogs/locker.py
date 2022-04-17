@@ -1,9 +1,9 @@
-# RT - Locker
+# Free RT - Locker
 
 from discord.ext import commands, tasks
 import discord
 
-from rtlib import mysql, DatabaseManager
+from util import mysql, DatabaseManager
 from typing import List
 from time import time
 
@@ -98,9 +98,9 @@ class Locker(commands.Cog, DataManager):
         Parameters
         ----------
         auto_unlock : int, default 0
-            何分後に自動アンロックをするかです。  
-            デフォルトは0で自動アンロックをしません。  
-            例えば5を入れれば五分間はロックしたままとなります。
+            何分後に自動解除をするかです。  
+            デフォルトは0で自動解除をしません。  
+            例えば5を入れれば五分後に権限を持っていない人も喋れるようになります。
 
         !lang en
         --------

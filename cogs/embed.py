@@ -1,4 +1,4 @@
-# RT - Embed
+# Free RT - Embed
 
 from typing import Union
 
@@ -7,8 +7,8 @@ from urllib.parse import quote
 from discord.ext import commands
 import discord
 
-from rtutil.markord import embed
-from rtlib import RT
+from util.markdowns import embed
+from util import RT
 
 
 class Embed(commands.Cog):

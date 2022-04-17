@@ -2,8 +2,10 @@
     "token": {
         "test": "テスト用BotのTOKEN、実行時に引数にtestと渡された際に使用されます。",
         "production": "本番環境用のTOKEN",
-    	"sub": "りつたんのTOKEN"
+        "sub": "ふりーりつたんのTOKEN"
     },
+    "test_hCaptcha":"テスト時のhCaptchaシークレットキー、何でも良い",
+    "hCaptcha":"本番用のhCaptchaシークレットキー、secretと同じく本番は長いほうが良い",
     "secret": "シークレットキー, テスト時ならなんだっていい。本番の場合は長い方が良い。",
     "topgg": "TopGGのTOKENです。テスト用Botのみ入力省略可です。",
     "mysql": {

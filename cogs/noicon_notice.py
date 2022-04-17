@@ -1,4 +1,4 @@
-# RT - No Icon Notice
+# Free RT - No Icon Notice
 
 from typing import Optional
 
@@ -7,8 +7,8 @@ import discord
 
 from aiomysql import Pool, Cursor
 
-from rtutil import DatabaseManager
-from rtlib import RT
+from util import DatabaseManager
+from util import RT
 
 
 class DataManager(DatabaseManager):
@@ -75,7 +75,7 @@ class NoIconNotice(commands.Cog, DataManager):
         ----------
         text : str, default ""
             送信する文字列です。
-            もし何も入力しなかった場合はオフにすると解釈されます。
+            もし何も入力しなかった場合は機能をオフにします。
 
         Aliases
         -------

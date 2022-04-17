@@ -9,7 +9,7 @@ from ujson import loads, dumps
 from aiomysql import Cursor
 from time import time
 
-from rtutil import DatabaseManager
+from util import DatabaseManager
 
 from .cache import Cache
 

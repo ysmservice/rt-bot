@@ -1,4 +1,4 @@
-# RT - RTA
+# Free RT - RTA
 
 from __future__ import annotations
 
@@ -12,8 +12,8 @@ from time import time
 
 from aiomysql import Pool, Cursor
 
-from rtutil import DatabaseManager
-from rtlib import RT
+from util import DatabaseManager
+from util import RT
 
 
 class DataManager(DatabaseManager):
@@ -73,10 +73,14 @@ class RTA(commands.Cog):
             "RTA", "あーるてぃーえー", "即抜け",
             "rta_notification", "rta-notification", "RTA-notification", "RTA_notification",
             "rta_notice", "rta-notice", "RTA-notice", "RTA_notice"
-        ], headding={
-            "ja":"即抜けRTA通知の設定",
-            "en":"Set recording RTA channel"
-        }, parent="ServerUseful"
+        ],
+        extras={
+            "headding": {
+                "ja": "即抜けRTA通知の設定",
+                "en": "Set recording RTA channel"
+            },
+            "parent": "ServerUseful"
+        }
     )
     @commands.has_guild_permissions(kick_members=True)
     async def rta(self, ctx):
@@ -108,12 +112,12 @@ class RTA(commands.Cog):
         ----------
         channel : チャンネル名かメンション、ID
             通知を行うチャンネルです。  
-            もしない場合は実行したチャンネルに通知されます。
+            もしこの引数を指定しなかった場合は実行したチャンネルに通知されます。
 
         Notes
         -----
         もう一度このコマンドを実行するとRTA設定をOffにできます。
-            
+
         !lang en
         --------
         Set channel which recording the leaving RTA.

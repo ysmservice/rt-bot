@@ -1,4 +1,4 @@
-# RT - Level
+# Free RT - Level
 
 from __future__ import annotations
 
@@ -9,8 +9,8 @@ from dataclasses import dataclass
 from discord.ext import commands
 import discord
 
-from rtlib.page import EmbedPage
-from rtlib import RT, Table
+from util.page import EmbedPage
+from util import RT, Table
 
 
 Exp, Level = NewType("Exp", int), NewType("Level", int)
@@ -68,10 +68,10 @@ class Level(commands.Cog):
     async def level(self, ctx: commands.Context):
         """!lang ja
         --------
-        レベル機能です。RTのいるサーバーで一定数しゃべるとレベルが上がります。
-        グローバルレベルとローカルレベルという2種類のレベリング方式があります。
-        グローバルレベルは共通で、全世界での自分の位置を知ることができます。
-        ローカルレベルはサーバーごとで管理(一定レベルに達したら役職をあげるなど)できます。
+        レベル機能です。RTのいるサーバーで一定数話すとレベルが上がります。
+        RTにはグローバルレベルとローカルレベルという2種類のレベリング方式があります。
+        グローバルレベルは全サーバー共通で、全世界での自分の位置を知ることができます。
+        ローカルレベルはサーバーごとで管理(一定レベルに達したら役職を付与するなど)ができます。
 
         Aliases
         -------
@@ -203,7 +203,7 @@ class Level(commands.Cog):
         """!lang ja
         --------
         レベル報酬関連の設定をします。
-        `rt!level reward`で現在の設定を表示できます。
+        `rf!level reward`で現在の設定を表示できます。
         ※設定できるのはローカルレベルのみです。
 
         Aliases
@@ -213,7 +213,7 @@ class Level(commands.Cog):
         !lang en
         --------
         Configure settings related to level rewards.
-        You can use `rt!level reward` to display the current settings.
+        You can use `rf!level reward` to display the current settings.
         Only the local level can be set.
 
         Aliases
@@ -303,7 +303,7 @@ class Level(commands.Cog):
         Parameters
         ----------
         level : int
-            削除する報酬のレベル。
+            削除する報酬のレベル数。
 
         Aliases
         -------

@@ -1,4 +1,4 @@
-# RT - Role Message
+# Free RT - Role Message
 
 from typing import TYPE_CHECKING, Optional, Optional, Union, Literal, Tuple, List
 
@@ -8,7 +8,7 @@ import discord
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
     from aiomysql import Pool
-    from rtlib import Backend
+    from util import Backend
 
 
 class DataManager:
@@ -235,9 +235,9 @@ class RoleMessage(commands.Cog, DataManager):
         Parameters
         ----------
         role : ロールのメンションか名前またはID
-            何のロールが付与または剥奪されたらメッセージを送るかです。
+            付与または剥奪されたらメッセージを送る対象のロールです。
         mode : add または remove
-            ロールが付与または剥奪どっちが起きたらメッセージを送るかです。  
+            ロールが付与/剥奪どちらが起きたらメッセージを送るかです。  
             `add`にすると付与時で`remove`で剥奪時です。
         content : str
             送信内容です。
@@ -329,7 +329,7 @@ class RoleMessage(commands.Cog, DataManager):
         """!lang ja
         --------
         例外ロールを設定します。  
-        これで設定した例外ロールが付与されているメンバーは、ロールメッセージのロールが付与または剥奪されても何も起きなくなります。
+        これで設定した例外ロールが付与されているメンバーは、ロールメッセージのロールが付与または剥奪されても通知されなくなります。
 
         Aliases
         -------
@@ -366,7 +366,7 @@ class RoleMessage(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!rolemessage ignore add ロールA ロールB`
+        `rf!rolemessage ignore add ロールA ロールB`
         ロールBが付与されているメンバーにロールAが付与または剥奪された際にロールメッセージを送信しないようにします。
 
         !lang en
@@ -382,7 +382,7 @@ class RoleMessage(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!rolemessage ignore add "role A" "role B"`.
+        `rf!rolemessage ignore add "role A" "role B"`.
         Do not send a role message to a member with role B when role A is granted or revoked."""
         await self.add_ignore(ctx.guild.id, role.id, ignore_role.id)
         await ctx.reply("Ok")

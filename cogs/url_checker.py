@@ -1,16 +1,16 @@
-# RT - Url Checker
+# Free RT - Url Checker
 
 from typing import TYPE_CHECKING, List
 
 from discord.ext import commands
 import discord
 
-from rtutil import securl, DatabaseManager
+from util import securl, DatabaseManager
 from re import findall
 
 if TYPE_CHECKING:
     from aiomysql import Pool, Cursor
-    from rtlib import Backend
+    from util import Backend
 
 
 class DataManager(DatabaseManager):
@@ -83,7 +83,7 @@ class UrlChecker(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!securl http://tasuren.f5.si`
+        `rf!securl http://tasuren.f5.si`
 
         Aliases
         -------
@@ -100,7 +100,7 @@ class UrlChecker(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!check http://tasuren.f5.si`
+        `rf!check http://tasuren.f5.si`
 
         Aliases
         -------

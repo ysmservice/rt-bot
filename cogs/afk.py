@@ -1,11 +1,11 @@
-# RT - AFK
+# Free RT - AFK
 
 from typing import TYPE_CHECKING, TypedDict, Optional, Dict
 
 from discord.ext import commands, tasks
 import discord
 
-from rtlib import RT, setting
+from util import RT
 
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -187,9 +187,9 @@ class AFK(commands.Cog, DataManager):
         --------
         AFK機能で留守メッセージを設定することができます。  
         [この画像](https://rt-bot.com/img/other/afk.png)のようなことができます。  
-        パソコンから離れている間にメンションされた際に留守メッセージを送信するということができます。  
-        また時間指定で毎日自動でAFKを設定するや指定された言葉が含まれるメッセージを送信したらAFKを設定するといったこともできます。  
-        設定したAFKは何かメッセージを送信すると解除されます。
+        パソコンから離れている間にメンションされた際に留守であることを伝えるメッセージを送信することができます。  
+        また時間指定で毎日自動でAFKを設定する機能や指定された言葉が含まれるメッセージを送信したらAFKを設定する機能もあります。  
+        設定したAFKは自分で何かメッセージを送信すると解除されます。
 
         !lang en
         --------
@@ -207,11 +207,14 @@ class AFK(commands.Cog, DataManager):
     HELP = ("Individual", "afk")
 
     @afk.command(
-        "set", aliases=["s", "設定"], headding={
-            "ja": "AFKを設定します。", "en": "Set AFK"
+        "set", aliases=["s", "設定"],
+        extras={
+            "headding": {
+                "ja": "AFKを設定します。",
+                "en": "Set AFK"
+            }
         }
     )
-    @setting.Setting("afk", "0 AFK Set", HELP)
     async def set_(self, ctx: commands.Context, *, reason):
         """!lang ja
         --------
@@ -224,7 +227,7 @@ class AFK(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!afk set 現在説教タイムのため返信ができません。`
+        `rf!afk set 現在説教タイムのため返信ができません。`
 
         Aliases
         -------
@@ -241,7 +244,7 @@ class AFK(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!afk set Cannot reply due to current sermon time.`
+        `rf!afk set Cannot reply due to current sermon time.`
 
         Aliases
         -------
@@ -255,7 +258,7 @@ class AFK(commands.Cog, DataManager):
         """!lang ja
         --------
         AFKの拡張です。  
-        これを使えば特定の時間になったらAFKを設定するや特定の言葉が含まれるメッセージが送信されたらAFKを設定するなどを設定できます。
+        これを使えば時間指定でのAFK設定や特定の言葉が含まれるメッセージ送信によりAFKをONにするなどの設定ができます。
 
         Aliases
         -------
@@ -279,7 +282,6 @@ class AFK(commands.Cog, DataManager):
             "ja": "AFKプラスの設定をします。", "en": "Setting for AFK Plus"
         }
     )
-    @setting.Setting("afk", "2 AFK Plus Set", HELP)
     async def set_plus(self, ctx: commands.Context, mode, *, reason):
         """!lang ja
         --------
@@ -288,10 +290,11 @@ class AFK(commands.Cog, DataManager):
         Parameters
         ----------
         mode : str
-            これは何時にAFKを設定するかまたは何の言葉がメッセージにあったらAFKを設定するのかです。  
+            何時にAFKを設定するか、または何の言葉がメッセージにあったらAFKを設定するのかです。  
             例えば`23:00`にすれば毎晩十一時にAFKを設定するようになります。  
             また`学校`とすれば`学校`が含まれるメッセージを送信したらAFKを設定するようになります。  
-            注意で朝九時などは`9:00`のようにしてしまうかもしれませんがこれではダメで、ゼロ埋めをしないといけないので`09:00`のようにしましょう。
+            午前9時などは`9:00`ではなく、`09:00`のようにかならず0を入れましょう。  
+            0が入っていないと`9:00`という言葉が含まれるメッセージが送信されたときにAFKになるようになります。
         reason : str
             AFK設定に使用する理由です。
 
@@ -299,7 +302,7 @@ class AFK(commands.Cog, DataManager):
         --------
         例えば寝る時間にAFKを設定したいのなら以下のようにすることで毎晩十一時にAFKを自動で設定することができます。
         ```
-        rt!afk plus set 23:00 現在tasurenは営業しておりません。
+        rf!afk plus set 23:00 現在tasurenは営業しておりません。
         またのお越しをお待ちしております。
         ```
 
@@ -325,7 +328,7 @@ class AFK(commands.Cog, DataManager):
         --------
         For example, if you want to set AFK at bedtime, you can use the following to set AFK automatically at 11:00 every night.
         ```
-        rt!afk plus set 23:00 Currently tasuren is not open for business.
+        rf!afk plus set 23:00 Currently tasuren is not open for business.
         We look forward to seeing you again.
         ```
 
@@ -351,11 +354,13 @@ class AFK(commands.Cog, DataManager):
             )
 
     @plus.command(
-        aliases=["del", "削除"], headding={
-            "ja": "AFKプラスの設定を削除します。", "en": "Delete AFK Plus"
+        aliases=["del", "削除"],
+        extras={
+            "headding": {
+                "ja": "AFKプラスの設定を削除します。", "en": "Delete AFK Plus"
+            }
         }
     )
-    @setting.Setting("afk", "3 AFK Plus Delete", HELP)
     async def delete(self, ctx: commands.Context, *, mode):
         """!lang ja
         --------
@@ -393,12 +398,14 @@ class AFK(commands.Cog, DataManager):
             await ctx.reply("Ok")
 
     @plus.command(
-        "list", aliases=["l", "一覧"], headding={
-            "ja": "AFK Plusの設定リストを表示します。",
-            "en": "Show you the settings of AFK Plus."
+        "list", aliases=["l", "一覧"],
+        extras={
+            "headding": {
+                "ja": "AFK Plusの設定リストを表示します。",
+                "en": "Show you the settings of AFK Plus."
+            }
         }
     )
-    @setting.Setting("afk", "1 AFK Plus List", HELP)
     async def list_(self, ctx: commands.Context):
         """!lang ja
         --------
@@ -431,7 +438,7 @@ class AFK(commands.Cog, DataManager):
             # もしAFKを設定していた人ならAFKを解除しておく。
             await (await self.get(message.author)).delete_afk()
             return await message.reply(
-                "AFKを解除しました。"
+                "AFKを解除しました。", delete_after=3
             )
 
         # AFKを設定している人にメンションをしているのならAFKだと伝える。

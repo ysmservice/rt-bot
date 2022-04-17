@@ -1,4 +1,4 @@
-# RT - Rt Role
+# Free RT - Rt Role
 
 from typing import Union
 
@@ -72,7 +72,7 @@ class RTRole(commands.Cog):
         """!lang ja
         --------
         指定したコマンドを特定の役職を持っている人しか実行できないようにします。  
-        `rt!rtrole`で現在設定されているRTロールのリストを表示します。
+        `rf!rtrole`で現在設定されているRTロールのリストを表示します。
 
         Aliases
         -------
@@ -109,13 +109,13 @@ class RTRole(commands.Cog):
         Parameters
         ----------
         role : 役職の名前またはメンション
-            設定するRTロールの名前かメンションです。
+            設定するロールの名前かメンションです。
         commands : str
-            その役職を持っていないと実行できないコマンドの名前のです。(空白で複数指定できます。)
+            その役職を持っていないと実行できないコマンドの名前です。(空白で複数指定できます。)
 
         Examples
         --------
-        `rt!rtrole set ping-info専門の人 ping info`  
+        `rf!rtrole set ping-info専門の人 ping info`  
         pingとinfoコマンドを`ping-info専門の人`の役職を持っていないと実行できないようにします。
 
         !lang en
@@ -135,12 +135,12 @@ class RTRole(commands.Cog):
     async def delete(self, ctx, *, role: Union[discord.Role, str]):
         """!lang ja
         --------
-        `rt!rtrole set`の逆です。
+        `rf!rtrole set`の逆です。
 
         Parameters
         ----------
         role : 役職のメンションか名前
-            RTロールで設定した削除したいRTロールの役職の名前です。
+            RTロールの設定を解除したいロールの役職の名前です。
 
         Aliases
         -------

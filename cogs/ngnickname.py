@@ -1,4 +1,4 @@
-# RT - Ng Nickname
+# Free RT - Ng Nickname
 
 from discord.ext import commands
 import discord
@@ -49,7 +49,7 @@ class NGNickName(commands.Cog):
                         else:
                             await after.send(
                                 "<:error:878914351338246165> あなたのそのニックネームは" \
-                                f"`{after.guild.name}`で有効ではありません。\n" \
+                                f"`{after.guild.name}`で禁止する設定になっています。\n" \
                                 "お手数ですが別のものにしてください。\n" \
                                 f"検知した禁止ワード：`{word}`"
                             )
@@ -66,8 +66,8 @@ class NGNickName(commands.Cog):
     async def ngnick(self, ctx):
         """!lang ja
         -------
-        ニックネームに含められないNGニックネームを設定します。  
-        `rt!ngnick`で現在登録しているNGニックネームの一覧を表示します。
+        ニックネームに含めることができないNGワード(NGニックネーム)を設定します。  
+        `rf!ngnick`で現在登録しているNGニックネームの一覧を表示します。
 
         Aliases
         -------
@@ -75,12 +75,12 @@ class NGNickName(commands.Cog):
 
         Notes
         -----
-        サーバーのオーナーのニックネームは、RTに管理者権限があっても更新は権限の仕様上できません。
+        サーバーのオーナーのニックネームは、RTに管理者権限があってもdiscordの仕様上RTが規制することができません。
 
         !lang en
         --------
         Sets the NG nicknames that cannot be included in nicknames.  
-        Displays the list of NG nicknames currently registered with `rt!ngnick`.
+        Displays the list of NG nicknames currently registered with `rf!ngnick`.
 
         Aliases
         -------
@@ -110,8 +110,8 @@ class NGNickName(commands.Cog):
 
         Examples
         --------
-        `rt!ngnick add tasuren`  
-        tasurenが本当のサーバーのオーナーなのでこれは禁止します。
+        `rf!ngnick add tasuren`  
+        tasurenが本当のサーバーのオーナーなのでなりすましを禁止するとき。
 
         Aliases
         -------
@@ -128,7 +128,7 @@ class NGNickName(commands.Cog):
 
         Examples
         --------
-        `rt!ngnick add tasuren`.  
+        `rf!ngnick add tasuren`.  
         This is banned because tasuren is the real owner of the server."""
         await ctx.trigger_typing()
 

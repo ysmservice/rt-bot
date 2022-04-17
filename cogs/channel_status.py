@@ -1,9 +1,9 @@
-# RT - Channel Status
+# Free RT - Channel Status
 
 from discord.ext import commands, tasks
 import discord
 
-from rtlib import RT, DatabaseManager, setting
+from util import RT, DatabaseManager
 
 
 class DataManager(DatabaseManager):
@@ -62,11 +62,11 @@ class ChannelStatus(commands.Cog, DataManager):
         }, "parent": "ServerUseful"
     })
     @commands.has_guild_permissions(manage_channels=True)
-    @setting.Setting("guild", "Channel Status", channel=discord.TextChannel)
     async def status(self, ctx, *, text):
         """!lang ja
         --------
-        テキストチャンネルにメンバー数などを表示させます。  
+        テキストチャンネルの名前を指定したものに固定します。  
+        5分ごとに更新され、メンバー数などの変数を利用するとステータスのようになります。  
         実行したチャンネルに設定されます。
 
         Parameters
@@ -86,7 +86,7 @@ class ChannelStatus(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!status メンバー数：!mb!`
+        `rf!status メンバー数：!mb!`
 
         !lang en
         --------
@@ -110,7 +110,7 @@ class ChannelStatus(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!status Members:!mb!`"""
+        `rf!status Members:!mb!`"""
         if text.lower() in ("false", "off", "disable", "0"):
             await self.delete(ctx.guild.id, ctx.channel.id)
             content = {"ja": "", "en": ""}

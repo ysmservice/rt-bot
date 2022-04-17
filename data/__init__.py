@@ -1,4 +1,4 @@
-# RTの基本データ。
+# Free RTの基本データ。
 
 from typing import Optional
 
@@ -16,23 +16,27 @@ class Colors:
 data = {
     "prefixes": {
         "test": [
-            "r2!", "R2!", "r2.", "R2.",
-            "りっちゃん２　", "りっちゃん2 ", "r2>"
+            "rf2!", "RF2!", "rf2.", "Rf2.",
+            "りふちゃん２　", "りふちゃん2 ", "rf2>"
         ],
         "production": [
-            "rt!", "Rt!", "RT!", "rt.", "Rt.",
-            "RT.", "りつ！", "りつ."
+            "rf!", "りふ！", "RF!", "rf.", "Rf.",
+            "RF.", "rF.", "りふ.", "Rf!", "rF!", "りふ!"
         ],
         "sub": [
-            "rt#", "りつちゃん ", "りつたん ", "りつ ",
-            "りつちゃん　", "りつたん　", "りつ　", "Rt#", "RT#"
+            "rf#", "りふちゃん ", "りふたん ", "りふ ",
+            "りふちゃん　", "りふたん　", "りふ　", "Rf#", "RF#", "rF#"
         ],
-        "alpha": ["r3!", "r3>"]
+        "alpha": ["rf3!", "rf3>"]
     },
     "colors": {name: getattr(Colors, name) for name in dir(Colors)},
     "admins": [
         634763612535390209, 266988527915368448,
-        667319675176091659, 693025129806037003
+        667319675176091659, 693025129806037003,
+        757106917947605034, 603948934087311360,
+        875651011950297118, 608788412367110149,
+        510590521811402752, 705264675138568192, 
+        484655503675228171
     ]
 }
 
@@ -42,19 +46,6 @@ RTCHAN_COLORS = {
     "player": 0x84b9cb,
     "queue": 0xeebbcb
 }
-
-
-def is_admin(user_id: Optional[int] = None):
-     "管理者かチェックをする関数です。"
-     def check(ctx):
-         if isinstance(user_id, int):
-             return user_id in data["admins"]
-         else:
-             return ctx.author.id in data["admins"]
-     if user_id is None:
-         return commands.check(check)
-     else:
-         return check(user_id)
 
 
 PERMISSION_TEXTS = {

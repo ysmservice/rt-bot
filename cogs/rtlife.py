@@ -1,4 +1,4 @@
-# RT - RT Life
+# Free RT - RT Life
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from psutil import virtual_memory, cpu_percent
 from aiofiles import open as aioopen
 from ujson import load, dumps
 
-from rtlib import RT
+from util import RT
 
 
 class RTLife(commands.Cog):

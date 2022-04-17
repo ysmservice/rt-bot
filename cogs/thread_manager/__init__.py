@@ -12,7 +12,7 @@ from .dataclass import DataManager
 
 if TYPE_CHECKING:
     from aiomysql import Pool
-    from rtlib import Backend
+    from util import Backend
 
 
 class ThreadManager(commands.Cog, DataManager):
@@ -36,9 +36,9 @@ class ThreadManager(commands.Cog, DataManager):
         """!lang ja
         --------
         スレッドマネージャーです。  
-        なおスラッシュコマンドに対応しています。  
-        似た機能でスレッド作成専用チャンネルというものがあります。  
-        ヘルプのチャンネルプラグインカテゴリーにあります。
+        スラッシュコマンドに対応しています。  
+        ヘルプのチャンネルプラグインカテゴリーにはスレッド作成専用チャンネルという似た機能が存在します。  
+        そちらも確認してみてください。
 
         !lang en
         --------
@@ -59,7 +59,7 @@ class ThreadManager(commands.Cog, DataManager):
     async def list_(self, ctx: commands.Context):
         """!lang ja
         --------
-        RTに設定されているスレッドが勝手にアーカイブされないように監視しているチャンネルの一覧です。
+        スレッドが勝手にアーカイブされないようにRTが監視しているチャンネルの一覧です。
 
         Aliases
         -------
@@ -215,7 +215,7 @@ class ThreadManager(commands.Cog, DataManager):
     )
     async def kick(
         self, ctx: commands.Context, *, user: discord.Member = discord.SlashOption(
-            "user", "スレッドから追い出すユーザーです。"
+            "user", "スレッドから退出させるユーザーです。"
         )
     ):
         """!lang ja

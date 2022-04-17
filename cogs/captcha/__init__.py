@@ -11,10 +11,9 @@ from time import time
 from discord.ext import commands, tasks
 import discord
 
-from aiohttp import ClientSession
 from ujson import dumps
 
-from rtlib import RT, Table
+from util import RT, Table
 
 from .image import ImageCaptcha, QueueData as ImageQueue
 from .web import WebCaptcha
@@ -154,7 +153,7 @@ class Captcha(commands.Cog, DataManager):
 
     def session(self):
         "`aiohttp.ClientSession`を手に入れるためのものです。"
-        return ClientSession(loop=self.bot.loop, json_serialize=dumps)
+        return self.bot.session
 
     def print(self, *args, **kwargs) -> None:
         return self.bot.print("[Captcha]", *args, **kwargs)
@@ -177,12 +176,12 @@ class Captcha(commands.Cog, DataManager):
         --------
         このコマンドを設定する前から参加している人は認証対象とならないので、手動で役職を付与してください。  
         そしてデフォルトではサーバー参加後に一時間放置すると認証対象から外されます。  
-        もし認証対象から外されるまでの時間や外された際にキックをするかどうかの設定をする場合は`timeout`を設定してください。  
+        もし認証対象から外されるまでの時間を変えたり外された際にキックをするかどうかの設定をする場合は`timeout`を設定してください。  
         (下の方にヘルプがあります。)
 
         Notes
         -----
-        上手くいかない際は[これ](https://rt-team.github.io/ja/trouble/captcha)と[これ](https://rt-team.github.io/ja/trouble/role)をご確認ください。
+        上手くいかない際は[こちら](https://rt-team.github.io/ja/trouble/captcha)と[こちら](https://rt-team.github.io/ja/trouble/role)をご確認ください。
 
         !lang en
         --------
@@ -251,7 +250,7 @@ class Captcha(commands.Cog, DataManager):
         """!lang ja
         --------
         合言葉認証を設定します。  
-        合言葉認証はこの設定コマンドを実行したチャンネルにサーバーの参加者は設定した合言葉を送信しないといけないもので、人間かどうかをチェックするというより普通にプライベートなサーバーに設定する機能です。
+        合言葉認証はこの設定コマンドを実行したチャンネルにサーバーの参加者は設定した合言葉を送信しないといけないもので、合言葉さえ知れば誰でも入れるためセキュリティはあまり高くありません。
 
         Parameters
         ----------
@@ -303,7 +302,7 @@ class Captcha(commands.Cog, DataManager):
         """!lang ja
         --------
         ワンクリック認証でボタンをクリックするだけの認証方法です。  
-        強度は弱いです。
+        セキュリティの強度は弱くなります。
 
         <ja-ext>
 
@@ -347,7 +346,7 @@ class Captcha(commands.Cog, DataManager):
     async def timeout_(self, ctx: commands.Context, timeout: float, kick: bool):
         """!lang ja
         --------
-        認証のタイムアウトをカスタムします。  
+        認証のタイムアウトをカスタマイズします。  
         そしてオプションでタイムアウト時にキックするかどうかを設定します。
 
         Notes
@@ -478,13 +477,13 @@ for fname in ("image", "web", "click"):
         ----------
         role : 役職の名前かメンションまたはID
             認証成功時に付与する役職です。  
-            この役職を手に入れないと通常のチャンネルを見れないようにすればいいです。
+            この役職を手に入れないと通常のチャンネルを見れないようにするのをおすすめします。
 
         Notes
         -----
         この認証を設定すると認証開始ボタンのついたメッセージが実行したチャンネルに送信されます。  
         サーバーに参加した人はそのボタンを押して認証を開始します。  
-        ですので認証チャンネルにはメッセージが送信されないようにしましょう。""", 1
+        ですので認証チャンネルではメッセージが送信できないようにしましょう。""", 1
     ).replace(
         "<en-ext>", """Parameters
         ----------

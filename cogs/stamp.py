@@ -1,12 +1,12 @@
-# RT - Stamp
+# Free RT - Stamp
 
 from typing import Optional
 
 from discord.ext import commands
 import discord
 
-from rtlib import DatabaseManager
-from rtlib.page import EmbedPage
+from util import DatabaseManager
+from util.page import EmbedPage
 
 
 class DataManager(DatabaseManager):
@@ -88,7 +88,7 @@ class Stamp(commands.Cog, DataManager):
         """!lang ja
         --------
         スタンプ機能です。  
-        指定した名前をメッセージに含めて送信すると指定した画像が送信されるというものです。
+        指定したスタンプの名前をメッセージに含めると指定した画像が送信されます。
 
         Aliases
         -------
@@ -151,7 +151,7 @@ class Stamp(commands.Cog, DataManager):
         ----------
         name : str
             スタンプの名前です。  
-            `thx!`にすればコマンド実行時に添付したファイルを`thx!`が含まれたメッセージが送信された際に送信します。
+            `thx!`にすると、コマンド実行時に添付したファイルを、`thx!`が含まれたメッセージが送信された際に送信します。
 
         Aliases
         -------
@@ -217,7 +217,7 @@ class Stamp(commands.Cog, DataManager):
         rm, remove, del"""
         if name in self.cache.get(ctx.guild.id, {}):
             await self.delete(ctx.guild.id, name)
-            await self.update_cache(ctx.guild.id)
+            del self.cache[message.guild.id][name]
             await ctx.reply("Ok")
         else:
             await ctx.reply(

@@ -1,11 +1,11 @@
-# RT - Bump
+# Free RT - Bump
 
 from typing import Any, Literal
 
 from discord.ext import commands, tasks
 import discord
 
-from rtlib import DatabaseManager, setting
+from util import DatabaseManager
 
 from asyncio import sleep
 from ujson import loads
@@ -79,7 +79,7 @@ def get_extras(mode: str) -> dict:
 
 
 class Bump(commands.Cog, DataManager):
-
+    
     IDS = {
         302050872383242240: {
             "mode": "bump",
@@ -127,7 +127,6 @@ class Bump(commands.Cog, DataManager):
     @commands.command(extras=get_extras("bump"))
     @commands.has_guild_permissions(administrator=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
-    @setting.Setting("guild", "Bump通知")
     async def bump(self, ctx, onoff: bool, *, role: discord.Role = None):
         """!lang ja
         --------
@@ -136,14 +135,14 @@ class Bump(commands.Cog, DataManager):
         Parameters
         ----------
         onoff : bool
-            on/offです。
+            onにするかoffにするかです。
         role : 役職名またはメンション, optional
             通知する際にメンションする役職です。  
-            オプションで選択しなくても大丈夫です。
+            選択しなくても実行できます。
 
         Examples
         --------
-        `rt!bump on Bump係`
+        `rf!bump on Bump係`
 
         Notes
         -----
@@ -163,7 +162,7 @@ class Bump(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!bump on BumpMan`
+        `rf!bump on BumpMan`
 
         Notes
         -----
@@ -226,7 +225,7 @@ class Bump(commands.Cog, DataManager):
             (mode,)
         )
 
-    REPLIES = {"bump": "/bump", "up": "/dissoku up", "raise": "rt!raise"}
+    REPLIES = {"bump": "/bump", "up": "/dissoku up", "raise": "rf!raise"}
 
     @tasks.loop(seconds=10)
     async def notification(self):

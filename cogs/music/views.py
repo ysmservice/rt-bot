@@ -9,9 +9,9 @@ from inspect import iscoroutinefunction
 
 import discord
 
-from rtutil.views import TimeoutView
-from rtlib.page import EmbedPage
-from rtlib.slash import Context, UnionContext
+from util import TimeoutView
+from util.page import EmbedPage
+from util.slash import Context, UnionContext
 
 from .playlist import to_musics, Playlist
 from .music import Music

@@ -1,4 +1,4 @@
-# RT - Require Send
+# Free RT - Require Send
 
 from typing import TYPE_CHECKING, Union, Tuple, Dict, List
 
@@ -10,7 +10,7 @@ from time import time
 
 if TYPE_CHECKING:
     from aiomysql import Pool, Cursor
-    from rtlib import Backend
+    from util import Backend
 
 
 MAX_TIMEOUT = 4320
@@ -286,10 +286,10 @@ class RequireSend(commands.Cog, DataManager):
         ----------
         timeout : float
             何分以内に入力しなければならないかです。  
-            サーバーに参加した人がこれに設定した分指定したチャンネルに何も送信しなかったらキックされます。  
-            三日すなわち4320分以上に設定することはできません。
+            サーバーに参加した人がこれに設定した時間が経つまでに指定したチャンネルに何も送信しなかったらキックされます。  
+            3日＝4320分以上に設定することはできません。
         channel : テキストチャンネルの名前かメンションまたはID, optinoal
-            対象の入力必須とするチャンネルです。  
+            入力必須とするチャンネルです。  
             もしこの引数を入力しなかった場合はコマンドを実行したチャンネルが代わりに設定されます。
 
         Aliases
@@ -341,7 +341,7 @@ class RequireSend(commands.Cog, DataManager):
         Parameters
         ----------
         channel : テキストチャンネルの名前かメンションまたはID, optional
-            入力必須チャンネルじゃなくしたいチャンネルです。
+            入力必須を解除したいチャンネルです。
 
         Aliases
         -------

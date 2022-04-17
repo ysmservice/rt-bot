@@ -1,9 +1,9 @@
-# RT - Short URL
+# Free RT - Short URL
 
 from discord.ext import commands
 import discord
 
-from rtlib import DatabaseManager, RT, setting
+from util import DatabaseManager, RT
 
 from random import sample
 from time import time
@@ -117,11 +117,14 @@ class ShortURL(commands.Cog, DataManager):
     HELP = ("Individual", "url")
 
     @url.command(
-        aliases=["短縮", "add"], headding={
-            "ja": "URLを短縮します。", "en": "Shortens URL"
+        aliases=["短縮", "add"],
+        extras={
+            "headding":{
+                "ja": "URLを短縮します。",
+                "en": "Shortens URL"
+            }
         }
     )
-    @setting.Setting("url", "URL Shorter", HELP)
     async def short(self, ctx, url: str, custom: str = None):
         """!lang ja
         --------
@@ -137,14 +140,14 @@ class ShortURL(commands.Cog, DataManager):
         url : str
             対象のURLです。
         custom : str, optional
-            短縮URLをカスタムする場合に使います。  
+            短縮URLをカスタマイズする場合に使います。  
             例えば`tasuren`にすれば`http://rtbo.tk/tasuren`のように短縮されます。  
-            これはひらがななどは使えないので英数字にしてください。  
-            空白の場合はランダムな六文字の英文字となります。
+            ひらがななどは使用できないので英数字にしてください。  
+            空白の場合はランダムな六文字のアルファベットとなります。
 
         Examples
         --------
-        `rt!url short http://tasuren.f5.si tasuren`  
+        `rf!url short http://tasuren.f5.si tasuren`  
         tasurenのホームページを`http://rtbo.tk/tasuren`からアクセスできるようにする。
 
         Aliases
@@ -172,7 +175,7 @@ class ShortURL(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!url short http://tasuren.f5.si tasuren`  
+        `rf!url short http://tasuren.f5.si tasuren`  
         Make the home page of tasuren accessible from `http://rtbo.tk/tasuren`."""
         if len(await self.getall(ctx.author.id)) >= 15:
             await self.remove_last(ctx.author.id)
@@ -200,12 +203,14 @@ class ShortURL(commands.Cog, DataManager):
             await ctx.reply(f"短縮しました。>>>http://rtbo.tk/{custom}")
 
     @url.command(
-        "list", aliases=["一覧"], headding={
-            "ja": "短縮したURLのリストを表示します。",
-            "en": "Displays shorted URLs"
+        "list", aliases=["一覧"], 
+        extras={
+            "headding": {
+                "ja": "短縮したURLのリストを表示します。",
+                "en": "Displays shorted URLs"
+            }
         }
     )
-    @setting.Setting("url", "URL Shorter List", HELP)
     async def list_(self, ctx):
         """!lang ja
         --------
@@ -233,11 +238,13 @@ class ShortURL(commands.Cog, DataManager):
             await ctx.reply("まだ何も短縮URLは登録されていません。")
 
     @url.command(
-        "remove", aliases=["rm", "delete", "del", "削除"], headding={
-            "ja": "短縮URLを削除します。", "en": "Remove shorted URL"
+        "remove", aliases=["rm", "delete", "del", "削除"], 
+        extras={
+            "headding": {
+                "ja": "短縮URLを削除します。", "en": "Remove shorted URL"
+            }
         }
     )
-    @setting.Setting("url", "URL Shorter Remove", HELP)
     async def remove_(
         self, ctx, custom="URLの最後の部分です。 (End of URL (`...` of `http://rtbo.tk/...`))"
     ):

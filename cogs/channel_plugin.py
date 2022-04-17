@@ -1,9 +1,9 @@
-# RT - Channel Plugin
+# Free RT - Channel Plugin
 
 from discord.ext import commands
 import discord
 
-from rtlib import RT
+from util import RT
 
 from inspect import cleandoc
 from asyncio import sleep
@@ -14,40 +14,40 @@ HELPS = {
     "ChannelPluginGeneral": {
         "ja": (
             "画像, URLの自動スポイラー", cleandoc("""# 画像, URLの自動スポイラー
-            これは`rt>asp`をチャンネルトピックに入れることでタイトル通り画像とURLにスポイラーがついてメッセージが再送信されるようになります。  
-            なお、`rt>asp`の他に単語を空白で分けて右に書けばその言葉もスポイラーするようになります。
+            `rf>asp`をチャンネルトピックに入れることでタイトル通り画像とURLにスポイラーがついてメッセージが再送信されるようになります。  
+            なお、`rf>asp`の他に単語を空白で分けて右に書けばその言葉もスポイラーするようになります。
 
             ### 警告
             これを使うとスポイラーがついた際に再送信するのでメッセージを編集することができなくなります。
 
             ### メモ
-            `rt>ce`をチャンネルトピックに入れることで全部のメッセージが再送信されて編集できなくなります。  
-            (権限がない限りであって他の人のメッセージを削除することができる人はメッセージの削除が可能です。)  
+            `rf>ce`をチャンネルトピックに入れることで全部のメッセージが再送信されて編集できなくなります。  
+            (他の人のメッセージを削除する権限がある人はメッセージの削除が可能です。)  
             失言を許さないサーバーオーナーは設定してみましょう。""")
         ),
         "en": (
             "Image, URL Auto Spoiler", cleandoc("""# Automatic spoiler for images, URLs
-            This will resend the message with spoilers for images and URLs by putting `rt>asp` in the channel topic, as the title says.  
-            In addition to `rt>asp`, you can also spoil words by separating them with spaces and writing them on the right.
+            This will resend the message with spoilers for images and URLs by putting `rf>asp` in the channel topic, as the title says.  
+            In addition to `rf>asp`, you can also spoil words by separating them with spaces and writing them on the right.
 
             ### Warning
             If you use this, the message will be resent when it is spoiled and you will not be able to edit it.
 
             ### Notes.
-            If you put `rt>ce` in a channel topic, all messages will be resent and you will not be able to edit them.  
+            If you put `rf>ce` in a channel topic, all messages will be resent and you will not be able to edit them.  
             (You can delete messages if you are not authorized to do so and can delete other people's messages.""")
         )
     },
     "ChannelKick": {
         "ja": (
             "チャンネルキック", cleandoc("""# チャンネルキック
-            特定の言葉がメッセージに含まれていないとキックされるチャンネルにするためのものです。
-            `rt>kick <空白で分けたメッセージに必要な言葉>`をチャンネルのトピックに入れてください。""")
+            特定の言葉がメッセージに含まれていないとキックされるチャンネルにします。
+            `rf>kick <空白で分けたメッセージに必要な言葉>`をチャンネルのトピックに入れてください。""")
         ),
         "en": (
             "ChannelKick", cleandoc("""# Channel kick
             To make a channel that will be kicked if certain words are not included in the message.
-            Put `rt>kick <word required in message separated by spaces>` in the channel topic.""")
+            Put `rf>kick <word required in message separated by spaces>` in the channel topic.""")
         )
     }
 }
@@ -101,7 +101,7 @@ class ChannelPluginGeneral(commands.Cog):
 
         if message.channel.topic:
             for cmd in message.channel.topic.splitlines():
-                if cmd.startswith("rt>asp"):
+                if cmd.startswith("rf>asp"):
                     # Auto Spoiler
                     content = message.clean_content
 
@@ -144,7 +144,7 @@ class ChannelPluginGeneral(commands.Cog):
                             await message.delete()
                         except (discord.NotFound, discord.Forbidden):
                             pass
-                elif cmd.startswith("rt>ce"):
+                elif cmd.startswith("rf>ce"):
                     # Can't Edit
                     await message.channel.webhook_send(
                         message.clean_content, files=[
@@ -154,14 +154,14 @@ class ChannelPluginGeneral(commands.Cog):
                         avatar_url=message.author.avatar.url
                     )
                     await message.delete()
-                elif cmd.startswith("rt>embed"):
+                elif cmd.startswith("rf>embed"):
                     # Auto Embed
                     await self.bot.cogs["ServerTool"].embed(
                         await self.bot.get_context(message), "null",
                         content=message.content
                     )
                     await message.delete()
-                elif cmd.startswith("rt>kick "):
+                elif cmd.startswith("rf>kick "):
                     # Kick
                     for word in cmd.split()[1:]:
                         if word not in message.content:

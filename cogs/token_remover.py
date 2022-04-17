@@ -1,4 +1,4 @@
-# RT - Token Remover
+# Free RT - Token Remover
 
 from typing import DefaultDict, List
 
@@ -9,7 +9,7 @@ from collections import defaultdict
 from re import findall
 from time import time
 
-from rtlib import RT
+from util import RT
 
 
 class TokenRemover(commands.Cog):

@@ -1,4 +1,4 @@
-# RT - Reprypt
+# Free RT - Reprypt
 
 from discord.ext import commands
 import discord
@@ -16,7 +16,7 @@ class Reprypt(commands.Cog):
     @commands.group(
         extras={
             "headding": {"ja": "Repryptを使用して文章を暗号化/復号化します。",
-                         "en": "..."},
+                         "en": "Encryption/Decryption by Reprypt."},
             "parent": "Individual"
         },
         name="reprypt"
@@ -50,7 +50,7 @@ class Reprypt(commands.Cog):
 
         Examples
         --------
-        `rt!reprypt encrypt tasuren 私の極秘情報！`
+        `rf!reprypt encrypt tasuren 私の極秘情報！`
 
         Aliases
         -------
@@ -58,12 +58,12 @@ class Reprypt(commands.Cog):
 
         Notes
         -----
-        これにはAPIがあります。  
+        この機能にはAPIがあります。  
         URI:`/api/reprypt` POST/OPTIONS
         ```json
         {
             "mode": "encrypt",
-            "content": "復号化する暗号",
+            "content": "暗号化する文字列",
             "password": "パスワード"
         }
         ```
@@ -82,7 +82,7 @@ class Reprypt(commands.Cog):
 
         Examples
         --------
-        `rt!reprypt encrypt tasuren My top secret!`
+        `rf!reprypt encrypt tasuren My top secret!`
 
         Aliases
         -------
@@ -95,7 +95,7 @@ class Reprypt(commands.Cog):
         ```json
         {
             "mode": "encrypt",
-            "content": "Cipher to decrypt",
+            "content": "String to encrypt",
             "password": "password"
         }
         ```"""
@@ -124,11 +124,11 @@ class Reprypt(commands.Cog):
 
         Examples
         --------
-        `rt!reprypt encrypt tasuren ByGqa44We55B1u56e5oYO65FC77x`
+        `rf!reprypt encrypt tasuren ByGqa44We55B1u56e5oYO65FC77x`
 
         Notes
         -----
-        これにはAPIがあります。  
+        この機能にはAPIがあります。  
         URI:`/api/reprypt` POST/OPTIONS
         ```json
         {
@@ -155,7 +155,7 @@ class Reprypt(commands.Cog):
 
         Examples
         --------
-        `rt!reprypt encrypt tasuren ByGqa44We55B1u56e5oYO65FC77x`
+        `rf!reprypt encrypt tasuren ByGqa44We55B1u56e5oYO65FC77x`
 
         Notes
         -----

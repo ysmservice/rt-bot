@@ -1,4 +1,4 @@
-# RT - Poll (Vote)
+# Free RT - Poll (Vote)
 
 from typing import Callable, Tuple, List, Dict
 
@@ -9,7 +9,7 @@ import discord
 
 from emoji import UNICODE_EMOJI_ENGLISH
 
-from rtlib import RT
+from util import RT
 
 
 class CloseButton(discord.ui.View):
@@ -62,7 +62,7 @@ class Poll(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.content.startswith("投票rt "):
-            message.content = message.content.replace("投票rt", "rt!poll")
+            message.content = message.content.replace("投票rt", "rf!poll")
             await self.bot.process_commands(message)
 
     @commands.command(
@@ -75,24 +75,24 @@ class Poll(commands.Cog):
         """!lang ja
         --------
         投票パネルを作成します。
-        
+
         Parameters
         ----------
         title : str
             投票パネルのタイトルです。  
             もしタイトルに空白を含める場合は`"`で囲んでください。
         only_one : bool
-            これをonにした場合は投票を一人一票までとします。  
-            投票を一人一票としない場合はoffを入れてください。
+            これをonにした場合は投票を一人一票までに制限します。  
+            一人何票でも投票できるようにする場合はoffを入れてください。
         content : str
-            改行で分けた投票に入れる項目です。  
+            項目を改行で分けて入れます。  
             行の最初に絵文字を置くとその絵文字が投票パネルに使われます。  
-            もし絵文字を置かない場合は自動で英文字の絵文字が割り振られます。
+            もし絵文字を置かない場合は自動でアルファベットの絵文字が割り振られます。
 
         Examples
         --------
         ```
-        rt!poll 好きな人は？ on
+        rf!poll 好きな人は？ on
         😊 tasuren
         ミスティックガール
         吹雪ちゃん
@@ -117,12 +117,12 @@ class Poll(commands.Cog):
         content : str
             This is the item to be included in the poll, separated by a new line.  
             If you put an emoticon at the beginning of the line, the emoticon will be used in the voting panel.  
-            If no emoji is placed, an English emoji will be assigned automatically.
+            If no emoji is placed, an alphabet emoji will be assigned automatically.
 
         Examples
         --------
         ```
-        rt!poll "Who's your favorite?" on
+        rf!poll "Who's your favorite?" on
         😊 tasuren
         Mystic Girl
         Hubuki-chan

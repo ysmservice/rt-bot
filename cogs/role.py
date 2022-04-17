@@ -1,4 +1,4 @@
-# RT - Role Panel
+# Free RT - Role Panel
 
 from __future__ import annotations
 
@@ -12,8 +12,8 @@ from time import time
 from discord.ext import commands
 import discord
 
-from rtutil import get_webhook
-from rtlib import RT
+from util import get_webhook
+from util import RT
 
 if TYPE_CHECKING:
     from ._oldrole import OldRolePanel
@@ -226,7 +226,7 @@ class RolePanel(commands.Cog):
         """!lang ja
         --------
         役職パネルを作成します。  
-        RTの役職パネルはリアクションではなくボタンとセレクター形式でモダンです。
+        RTの役職パネルはリアクションではなくボタンとセレクター形式で操作しやすくなっています。
 
         Parameters
         ----------
@@ -237,10 +237,10 @@ class RolePanel(commands.Cog):
             役職パネルに入れる役職です。  
             改行で一つづつわけて役職のメンションか名前を入れてください。  
             作成される役職パネルにはみやすいように自動で絵文字が付きます。  
-            この絵文字をカスタムしたい場合は役職の最初に絵文字を置いてください。  
-            また、付与できる最大数をカスタムしたい場合は`--only 個数`をcontentの前に以下のように置いてください。
+            この絵文字を自分で指定したい場合は役職の最初に絵文字を置いてください。  
+            また、付与できる最大数を指定したい場合は`--only 個数`をcontentの前に以下のように置いてください。
             ```
-            rt!role タイトル --only 個数
+            rf!role タイトル --only 個数
             役職1
             役職2
             ...
@@ -249,14 +249,14 @@ class RolePanel(commands.Cog):
 
         Notes
         -----
-        もし前に作った役職パネルを編集したい場合は`Template`ボタンを押すことで同じ役職パネルを作るコマンドを取得できます。  
-        そして役職パネルに返信をしてコマンドを実行すればその役職パネルを編集して新しくすることができます。
+        もし前に作った役職パネルを編集したい場合は`Template`ボタンを押すことでその役職パネルを作ったときのコマンドを取得できます。  
+        そして前の役職パネルに返信をしてコマンドを実行すればその役職パネルを編集して新しくすることができます。
 
         Examples
         --------
         通常
         ```
-        rt!role やっているプログラミング言語
+        rf!role やっているプログラミング言語
         Python
         Ruby
         C言語
@@ -274,7 +274,7 @@ class RolePanel(commands.Cog):
         個数限定
         (この例では二つまでしか選択できない絵文字をカスタムしている役職パネルです。)
         ```
-        rt!role ゲーム担当 --only 2
+        rf!role ゲーム担当 --only 2
         ⚔️ 戦闘担当
         ❤️ 回復担当
         🛡️ 防御担当
@@ -297,7 +297,7 @@ class RolePanel(commands.Cog):
             If you want to customize this emoji, put it at the beginning of the role.  
             Also, if you want to customize the maximum number of pieces that can be added, put `--only <max count>` before the content like this
             ```
-            rt!role title --only <max count>
+            rf!role title --only <max count>
             Role 1
             Role 2
             ...
@@ -313,7 +313,7 @@ class RolePanel(commands.Cog):
         --------
         Normal
         ```
-        rt!role "What programming language are you using?"
+        rf!role "What programming language are you using?"
         Python
         Ruby
         C
@@ -331,7 +331,7 @@ class RolePanel(commands.Cog):
         Number of persons
         (In this example, it is a role panel with custom emoji that can only be selected up to two.)
         ```
-        rt!role "Game Positions" --only 2
+        rf!role "Game Positions" --only 2
         ⚔️ Combatant
         ❤️ Healer
         🛡️ Defender

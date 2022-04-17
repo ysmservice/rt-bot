@@ -1,12 +1,12 @@
-# RT - Original Menu Message
+# Free RT - Original Menu Message
 
 from typing import Callable, Coroutine
 
 from discord.ext import commands
 import discord
 
-from rtlib import RT, DatabaseManager
-from rtlib.ext import componesy
+from util import RT, DatabaseManager
+from util.ext import componesy
 from time import time
 
 
@@ -131,21 +131,20 @@ class OriginalMenuMessage(commands.Cog, DataManager):
         --------
         矢印ボタンで操作可能なメニューメッセージを作ります。  
         一つのサーバーにつき三十個まで作成可能です。  
-        **もし三十一個目を作った場合は一個目が無効になります。**
+        **もし三十一個以上作った場合は古いものから無効になります。**
 
         Parameters
         ----------
         content : str
-            メニュー入れる文字列です。  
-            `$タイトル`のようにメニューのページのタイトルを設定して、その次の行にそのページの説明を書きます。  
-            よくわからない場合は下の例を見ましょう。  
-            もしメッセージに入れきれないほど書く場合はテキストファイルに書き込み、この引数を`file`としてそのテキストファイルを添付してコマンドを実行してください。  
-            テキストファイルにすれば作り直す際に楽です。
+            メニューに入れる文字列です。  
+            下の例のように、`$タイトル`のようにメニューのページのタイトルを設定して、その次の行にそのページの説明を書きます。  
+            もしメッセージに入れきれないほど書く場合はテキストファイルに書き込み、この引数を`file`と書いてそのテキストファイルを添付してコマンドを実行してください。  
+            テキストファイルにすればメニューメッセージを作り直す際に楽になります。
 
         Examples
         --------
         ```
-        rt!menu $質問をする前に 1ページ目
+        rf!menu $質問をする前に 1ページ目
         自分でGoogleなどである程度調べてわからない債に質問してください。
         $質問をする前に 2ページ目
         敬語を使って質問しましょう。
@@ -171,7 +170,7 @@ class OriginalMenuMessage(commands.Cog, DataManager):
         Examples
         --------
         ```
-        rt!menu $Before asking questions, page one.
+        rf!menu $Before asking questions, page one.
         Ask yourself questions about bonds that you don't know by doing some research on Google.
         $Before I ask you a question, page two.
         Let's ask questions using honorific expressions.

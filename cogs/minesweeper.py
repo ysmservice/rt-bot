@@ -1,10 +1,9 @@
-
-# RT - MineSweeper Game Extension
+# Free RT - MineSweeper Game Extension
 
 import discord
 from discord.ext import commands
 
-from rtutil import Minesweeper as Ms
+from util import Minesweeper as Ms
 
 
 class Mines(commands.Cog):

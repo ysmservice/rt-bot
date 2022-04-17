@@ -1,4 +1,4 @@
-# RT - Role Keeper
+# Free RT - Role Keeper
 
 from typing import TYPE_CHECKING, Optional, List
 
@@ -9,7 +9,7 @@ from time import time
 
 if TYPE_CHECKING:
     from aiomysql import Pool
-    from rtlib import Backend
+    from util import Backend
 
 
 # データベースのテーブルです。
@@ -150,8 +150,8 @@ class RoleKeeper(commands.Cog, DataManager):
         """!lang ja
         --------
         ロールキーパーです。  
-        一度退出してもまたサーバーに参加した際に前に退出した時付与されていたロールが付与されます。  
-        なのでサーバーから退出してもまた次参加した際に前までついていたロールがキープされます。  
+        一度退出してもまたサーバーに参加した際に最後についていたロールが付与されます。  
+        なのでサーバーから退出しても前までついていたロールがキープされます。  
         このコマンドを実行することでONとOFFを切り替えることができます。
 
         Notes

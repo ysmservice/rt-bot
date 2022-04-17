@@ -1,4 +1,4 @@
-# RT - Delay Role
+# Free RT - Delay Role
 
 from __future__ import annotations
 
@@ -12,8 +12,8 @@ import discord
 
 from aiomysql import Pool, Cursor
 
-from rtlib import RT, Cacher
-from rtutil import DatabaseManager
+from util import RT, Cacher
+from util import DatabaseManager
 
 
 class DataManager(DatabaseManager):
@@ -166,7 +166,7 @@ class DelayRole(commands.Cog, DataManager):
         ----------
         delay : int
             何秒遅延するかです。
-            もし日付等で指定したい場合は`rt!calc 式`で計算ができるのでそれを使ったりして秒数に計算してください。
+            もし日付等で指定したい場合は`rf!calc 式`で計算ができるのでそれを使ったりして秒数に計算してください。
             三十五秒以下にすると大幅に付与が遅れます。
         role : ロールの名前かメンションまたはID
             付与するロールです。
@@ -187,7 +187,7 @@ class DelayRole(commands.Cog, DataManager):
         ----------
         delay : int
             The number of seconds to delay.
-            If you want to specify a date, you can use `rt!calc expression` to calculate the number of seconds.
+            If you want to specify a date, you can use `rf!calc expression` to calculate the number of seconds.
             If it is less than 35 seconds, the grant is significantly delayed.
         role : role name, mentions or ID
             The role to be granted.

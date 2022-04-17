@@ -1,11 +1,11 @@
-# RT - Moderation
+# Free RT - Moderation
 
 from typing import Literal, List
 
 from discord.ext import commands
 import discord
 
-from rtlib import RT, setting
+from util import RT
 
 
 class Moderation(commands.Cog):
@@ -21,7 +21,6 @@ class Moderation(commands.Cog):
         }, aliases=["バン", "ばん", "BAN"]
     )
     @commands.has_guild_permissions(ban_members=True)
-    @setting.Setting("guild", "BAN/Kick")
     async def ban(
         self, ctx, *, members: str = "カンマで区切ることでめんばーを複数指定可能です。",
         mode: Literal["kick", "ban"] = "ban"
@@ -47,7 +46,7 @@ class Moderation(commands.Cog):
 
         Examples
         --------
-        `rt!ban @tasuren @tasuren-sub`"""
+        `rf!ban @tasuren @tasuren-sub`"""
         members = [
             await commands.UserConverter().convert(ctx, member)
             for member in members.split(",")
@@ -77,6 +76,28 @@ class Moderation(commands.Cog):
         }, aliases=["キック", "きっく", "KICK"]
     )
     async def kick(self, ctx, *, members):
+        """!lang ja
+        --------
+        メンバーをキックできます。
+
+        Parameters
+        ----------
+        members : メンバーのメンションか名前
+            誰をBANするかです。  
+            カンマで区切って複数人指定もできます。
+
+        !lang en
+        --------
+        Kick members.
+
+        Parameters
+        ----------
+        members : Mention or Name of members
+            Target members.
+
+        Examples
+        --------
+        `rf!ban @tasuren @tasuren-sub`"""
         await self.ban(ctx, members=members, mode="kick")
 
     kick._callback.__doc__ = ban._callback.__doc__.replace("ban", "kick").replace("BAN", "Kick") \

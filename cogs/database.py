@@ -1,4 +1,4 @@
-# RT - Database Manager
+# Free RT - Database Manager
 
 from discord.ext import commands
 import discord
@@ -6,8 +6,7 @@ import discord
 from aiofiles import open as aioopen
 from aiofiles.os import remove
 
-from rtlib import RT
-from data import is_admin
+from util import RT
 
 
 class DatabaseManager(commands.Cog):
@@ -16,9 +15,9 @@ class DatabaseManager(commands.Cog):
 
     @commands.command(
         description="渡された命令文でデータベースを操作します。",
-        category="Admin", aliases=["db", "mysql", "execute", "実行"]
+        extras={"parent":"Admin"}, aliases=["db", "mysql", "execute", "実行"]
     )
-    @is_admin()
+    @commands.is_owner()
     async def sql(
         self, ctx, show: bool = discord.SlashOption("show", "実行結果を表示するかどうかです。"),
         *, cmd: str = discord.SlashOption("sql", "SQLの命令文です。")
@@ -30,7 +29,7 @@ class DatabaseManager(commands.Cog):
 
         Notes
         -----
-        RTのデータベースへの接続に使用しているラッパーは`aiomysql`です。  
+        Free RTのデータベースへの接続に使用しているラッパーは`aiomysql`です。  
         その`aiomysql`のオプションで自動コミットするようにしています。
 
         Parameters

@@ -1,11 +1,11 @@
-# RT - NG Word
+# Free RT - NG Word
 
 from __future__ import annotations
 
 from discord.ext import commands
 import discord
 
-from rtlib import RT, Table
+from util import RT, Table
 
 from .log import log
 
@@ -59,12 +59,12 @@ class NgWord(commands.Cog, DataManager):
         """!lang ja
         --------
         NGワード機能です。  
-        `rt!ngword`で登録されているNGワードのリストを表示します。
+        `rf!ngword`で登録されているNGワードのリストを表示します。
 
         !lang en
         --------
         NG Word feature.
-        Run `rt!ngword` to display ngwords registered."""
+        Run `rf!ngword` to display ngwords registered."""
         if not ctx.invoked_subcommand:
             embed = discord.Embed(
                 title={"ja": "NGワードリスト", "en": "NG Words"},
@@ -74,8 +74,12 @@ class NgWord(commands.Cog, DataManager):
             await ctx.reply(embed=embed)
 
     @ngword.command(
-        name="add", aliases=["あどど"], headding={
-            "ja": "NGワードを追加します。", "en": "Remove NG Word"
+        name="add", aliases=["あどど"], 
+        extras={
+            "headding": {
+                "ja": "NGワードを追加します。",
+                "en": "Remove NG Word"
+            }
         }
     )
     @commands.has_guild_permissions(manage_messages=True)
@@ -91,7 +95,8 @@ class NgWord(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!ngword add あほー`
+        `rf!ngword add あああ`  
+        この場合、`あああ`を含むメッセージが削除されます。
 
         Notes
         -----
@@ -109,7 +114,7 @@ class NgWord(commands.Cog, DataManager):
         Examples
         --------
         ```
-        rt!ngword add ahoy
+        rf!ngword add ahoy
         Ahoy
         idiot
         Idiot
@@ -124,8 +129,12 @@ class NgWord(commands.Cog, DataManager):
         await ctx.reply("Ok")
 
     @ngword.command(
-        name="remove", aliases=["りむーぶ", "rm", "delete", "del"], headding={
-            "ja": "NGワードを削除します。", "en": "Remove NG Word"
+        name="remove", aliases=["りむーぶ", "rm", "delete", "del"],
+        extras={
+            "headding": {
+                "ja": "NGワードを削除します。",
+                "en": "Remove NG Word"
+            }
         }
     )
     @commands.has_guild_permissions(manage_messages=True)
@@ -133,11 +142,12 @@ class NgWord(commands.Cog, DataManager):
         """!lang ja
         --------
         NGワードを削除します。  
-        NGワードを追加する際に実行したコマンドの逆です。
+        NGワードを追加する際に実行したコマンドの逆です。これも改行で一括削除できます。
 
         Examples
         --------
-        `rt!ngword remove みすった NGワード`
+        `rf!ngword remove あああ`  
+        この場合`あああ`を含むメッセージが削除されないようになります。
 
         !lang en
         --------
@@ -146,7 +156,7 @@ class NgWord(commands.Cog, DataManager):
 
         Examples
         --------
-        `rt!ngword remove Badngword"""
+        `rf!ngword remove Badngword"""
         await ctx.trigger_typing()
         for word in words.splitlines():
             self.remove(ctx.guild.id, word)

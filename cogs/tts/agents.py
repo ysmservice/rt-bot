@@ -50,7 +50,7 @@ class VoiceTypes(Enum):
     gtts = 3
 
 
-with open(ALLOWED_CHARACTERS_CSV, "r") as f:
+with open(ALLOWED_CHARACTERS_CSV, "r",encoding="utf8") as f:
     ALLOWED_CHARACTERS = tuple(f.read().split())
     "AquesTalkで使える文字のタプル"
 Source = Union[discord.FFmpegOpusAudio, discord.FFmpegPCMAudio]
@@ -173,7 +173,7 @@ class Agent:
         return AGENTS[code]
 
 
-with open(AGENTS_JSON, "r") as f:
+with open(AGENTS_JSON, "r",encoding="utf8") as f:
     for type_, datas in load(f).items():
         for agent, data in datas.items():
             AGENTS[f"{type_}-{agent}"] = Agent(

@@ -1,11 +1,11 @@
-# RT - Welocme Message
+# Free RT - Welocme Message
 
 from typing import Literal
 
 from discord.ext import commands
 import discord
 
-from rtlib import DatabaseManager, RT, setting
+from util import DatabaseManager, RT, setting
 from asyncio import sleep
 
 
@@ -70,7 +70,6 @@ class Welcome(commands.Cog, DataManager):
     )
     @commands.cooldown(1, 8, commands.BucketType.guild)
     @commands.has_guild_permissions(administrator=True)
-    @setting.Setting("guild", "Welcome Message", channel=discord.TextChannel)
     async def welcome(self, ctx, mode: Literal["join", "remove"], *, content):
         """!lang ja
         --------
@@ -99,7 +98,7 @@ class Welcome(commands.Cog, DataManager):
         Examples
         --------
         ```
-        rt!welcome join $ment$, ようこそ！RTサーバーへ！！
+        rf!welcome join $ment$, ようこそ！RTサーバーへ！！
         あなたは$count$人目の参加者です。
         ```
 
@@ -134,7 +133,7 @@ class Welcome(commands.Cog, DataManager):
         Examples
         --------
         ```
-        rt!welcome join $ment$, Welcome to the RT server!
+        rf!welcome join $ment$, Welcome to the RT server!
         You are the $count$th participant.
         Welcome to the RT server!
         ```

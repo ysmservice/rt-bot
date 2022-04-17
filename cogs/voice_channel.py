@@ -1,4 +1,4 @@
-# RT - Voice Channel
+# Free RT - Voice Channel
 
 from typing import TYPE_CHECKING, Union, Literal, Tuple, Dict, List
 
@@ -8,7 +8,7 @@ import discord
 from time import time
 
 if TYPE_CHECKING:
-    from rtlib import Backend
+    from util import Backend
     from aiomysql import Pool
 
 

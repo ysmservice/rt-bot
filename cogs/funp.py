@@ -1,9 +1,9 @@
-# RT - Funp
+# Free RT - Funp
 
 from discord.ext import commands, easy
 import discord
 
-from rtlib import DatabaseManager
+from util import DatabaseManager
 from random import choice
 
 
@@ -177,7 +177,7 @@ class Funp(commands.Cog, DataManager):
         """!lang ja
         --------
         Funpを表示します。  
-        カテゴリーの指定をしない場合は`rt!funp`でも表示はできます。
+        カテゴリーの指定をしない場合は`rf!funp`でも表示はできます。
 
         Parameters
         ----------
@@ -187,8 +187,8 @@ class Funp(commands.Cog, DataManager):
         Warnings
         --------
         NSFWカテゴリーにはあなたを不快にさせたりする画像がある可能性があります。  
-        それともし誰かのいたずらによりNSFWカテゴリーではないカテゴリーを閲覧する際にNSFWな画像がでてきた場合はサポートサーバーまでお知らせください。  
-        これらのことが考えられるので実行は自己責任です。"""
+        それともし誰かのいたずらによりモラルやdiscord利用規約に反する画像が出てきた場合はサポートサーバーまでお知らせください。  
+        以上の理由から実行は自己責任となります。ご注意ください。"""
         mode = self.get_mode(mode)
         if mode in self.MODES["nsfw"] and not getattr(ctx.channel, "nsfw", False):
             await ctx.reply(
@@ -298,7 +298,7 @@ class Funp(commands.Cog, DataManager):
             指定しない場合は実行者が登録者としてコマンドが実行されます。  
             この引数はRTの管理者のみ指定可能です。"""
         mode = self.get_mode(mode)
-        if user_id and ctx.author.id not in self.bot.data["admins"]:
+        if user_id and ctx.author.id not in self.bot.owner_ids:
             return await ctx.reply(
                 "Error, ユーザーID指定は管理者のみです。"
             )
@@ -337,7 +337,7 @@ class Funp(commands.Cog, DataManager):
             指定しなかった場合は実行者が登録者として扱われます。
             管理者のみこの引数を指定できます。"""
         mode = self.get_mode(mode)
-        if user_id and ctx.author.id not in self.bot.data["admins"]:
+        if user_id and ctx.author.id not in self.bot.owner_ids:
             return await ctx.reply(
                 "Error, ユーザーID指定は管理者のみです。"
             )

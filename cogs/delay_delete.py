@@ -1,9 +1,9 @@
-# RT - Delay Delete Message
+# Free RT - Delay Delete Message
 
 from discord.ext import commands, tasks
 import discord
 
-from rtlib import RT, DatabaseManager, setting
+from util import RT, DatabaseManager
 from time import time
 
 
@@ -69,12 +69,11 @@ class DelayDelete(commands.Cog, DataManager):
         }
     )
     @commands.cooldown(1, 30, commands.BucketType.channel)
-    @setting.Setting("guild", "DelayDeleteMessage", channel=discord.TextChannel)
     async def delaydelete(self, ctx, minutes: int, *, content):
         """!lang ja
         --------
         遅延削除機能です。  
-        作成したメッセージを指定しただけたったら削除します。
+        作成したメッセージを指定した期間だけたったら削除します。
 
         Parameters
         ----------
@@ -85,8 +84,8 @@ class DelayDelete(commands.Cog, DataManager):
 
         Notes
         -----
-        この機能と同じような機能で指定したチャンネル内に送られたメッセージを指定されただけたったら削除というのをできます。  
-        この機能を使う場合は対象のチャンネルのトピックに`rt>delaydelete 何分後削除するか`を送りましょう。
+        指定したチャンネル内に送られたメッセージを指定された期間だけたったら削除ということもできます。  
+        使いたい場合は対象のチャンネルのトピックに`rf>delaydelete 何分後削除するか`を入れましょう。
 
         Warnings
         --------
@@ -113,7 +112,7 @@ class DelayDelete(commands.Cog, DataManager):
         Notes
         -----
         Similar to this function, you can delete messages sent to a specified channel after a specified time.  
-        To use this feature, send `rt>delaydelete minutes later` to the topic in the target channel.
+        To use this feature, send `rf>delaydelete minutes later` to the topic in the target channel.
 
         Warnings
         --------
@@ -140,15 +139,15 @@ class DelayDelete(commands.Cog, DataManager):
             return
 
         for line in message.channel.topic.splitlines():
-            if line.startswith("rt>delaydelete "):
+            if line.startswith("rf>delaydelete "):
                 try:
                     await self.write(
                         message.channel.id, message.id,
-                        60 * int(line.replace("rt>delaydelete ", ""))
+                        60 * int(line.replace("rf>delaydelete ", ""))
                     )
                 except ValueError:
                     await message.reply(
-                        "このチャンネルのトピックの`rt>delaydelete`の使い方が間違っています。"
+                        "このチャンネルのトピックの`rf>delaydelete`の使い方が間違っています。"
                     )
 
     def cog_unload(self):
