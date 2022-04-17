@@ -156,7 +156,7 @@ class Help(commands.Cog):
 
         if word is None:
             # もしカテゴリー一覧を表示すればいいだけなら。
-            url = "http://0.0.0.0" if self.bot.test else "https://rt-bot.com/help.html"
+            url = "http://0.0.0.0" if self.bot.test else "https://free-rt.com/help.html"
             embed = discord.Embed(
                 title={
                     "ja": "Help - カテゴリー選択", "en": "Help - Category Select"
@@ -164,13 +164,13 @@ class Help(commands.Cog):
                 description={
                     "ja": f"カテゴリーを選択するとそのカテゴリーにあるコマンドが表示されます。\nまたこちらからも見れます：{url}" \
                         "\n[こちら](https://rt-team.github.io/ja/notes/help)を見るとヘルプをよく理解できるようになれるかもしれません。" \
-                        "そしてスラッシュコマンドは少し特殊なので[こちら](https://rt-team.github.io/notes/slash_table)を確認してください。\n" \
-                        "Free RTを使用した場合は[利用規約](https://rt-bot.com/terms.html)に同意したことになります。\n" \
-                        "また、プライバシーポリシーは[こちら](https://rt-bot.com/privacy.html)から確認できます。",
+                        "そしてスラッシュコマンドは少し特殊なので[こちら](https://free-rt.github.io/notes/slash_table)を確認してください。\n" \
+                        "Free RTを使用した場合は[利用規約](https://free-rt.com/terms.html)に同意したことになります。\n" \
+                        "また、プライバシーポリシーは[こちら](https://free-rt.com/privacy.html)から確認できます。",
                     "en": f"Selecting a category will show you the commands in that category. \nYou can also see them here: {url}\n" \
-                        "You may be able to understand the help better by looking at [here](https://rt-team.github.io/en/notes/help).\n" \
-                        "By using Free RT, you agree to the [Terms of Use](https://rt-bot.com/terms.html).\n" \
-                        "You can also view our privacy policy at [here](https://rt-bot.com/privacy.html)."
+                        "You may be able to understand the help better by looking at [here](https://free-rt.github.io/en/notes/help).\n" \
+                        "By using Free RT, you agree to the [Terms of Use](https://free-rt.com/terms.html).\n" \
+                        "You can also view our privacy policy at [here](https://free-rt.com/privacy.html)."
                 }, color=self.bot.colors["normal"]
             )
             view = self.make_view(
@@ -262,7 +262,7 @@ class Help(commands.Cog):
         """!lang ja
         --------
         コマンドの使い方が載っているヘルプを表示します。  
-        また、[ここ](https://rt-team.github.io/notes/help)を見るとコマンドの見方がよくわかるかもしれません。
+        また、[ここ](https://free-rt.github.io/notes/help)を見るとコマンドの見方がよくわかるかもしれません。
 
         Parameters
         ----------
