@@ -12,7 +12,7 @@ from .dataclass import DataManager
 
 if TYPE_CHECKING:
     from aiomysql import Pool
-    from rtlib import Backend
+    from util import Backend
 
 
 class ThreadManager(commands.Cog, DataManager):

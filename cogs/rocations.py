@@ -15,8 +15,8 @@ import discord
 from aiomysql import Pool, Cursor
 from ujson import loads, dumps
 
-from rtlib.slash import Context, UnionContext
-from rtlib import RT
+from util.slash import Context, UnionContext
+from util import RT
 
 
 # データ型等

@@ -6,8 +6,8 @@ from asyncio import sleep
 
 from discord.ext import commands
 
-from rtlib.setting import Context
-from rtlib import RT
+from util.setting import Context
+from util import RT
 
 
 class Tools(commands.Cog):

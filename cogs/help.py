@@ -5,9 +5,9 @@ from typing import Tuple, List
 from discord.ext import commands, tasks
 import discord
 
-from rtlib.page import EmbedPage
-from rtlib.ext import componesy
-from rtlib import RT
+from util.page import EmbedPage
+from util.ext import componesy
+from util import RT
 
 
 class Help(commands.Cog):

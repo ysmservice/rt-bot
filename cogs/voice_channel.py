@@ -8,7 +8,7 @@ import discord
 from time import time
 
 if TYPE_CHECKING:
-    from rtlib import Backend
+    from util import Backend
     from aiomysql import Pool
 
 

@@ -10,7 +10,7 @@ from time import time
 
 if TYPE_CHECKING:
     from aiomysql import Pool, Cursor
-    from rtlib import Backend
+    from util import Backend
 
 
 MAX_TIMEOUT = 4320

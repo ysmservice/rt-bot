@@ -1,11 +1,10 @@
-# rtlib
+# util
 aiofiles
 ujson
 nextcord[voice,speed]
 aiomysql
 pytz
 websockets
-# rtutil
 ## OAuth
 reprypt
 # RT main

@@ -1,4 +1,4 @@
-# RT Lib - Typed
+# RT Util - Bot
 
 from typing import Union, Dict, List
 
@@ -7,7 +7,7 @@ from discord.ext import commands
 from aiohttp import ClientSession
 from aiomysql import Pool
 
-from data import data, Colors, is_admin
+from data import data, Colors
 
 from .mysql_manager import MySQLManager
 from .rtws import ExtendedRTWebSocket
@@ -19,17 +19,19 @@ class RT(commands.AutoShardedBot):
     pool: Pool
     test: bool
     data: data # type: ignore
-    admins: List[int]
     session: ClientSession
     secret: dict
-    is_admin: is_admin # type: ignore
     colors: dict
     Colors: Colors
     rtws: ExtendedRTWebSocket
     cachers: CacherPool
 
     def print(self, *args, **kwargs) -> None:
-        return print(f"[RT.Bot]", *args, **kwargs)
+        if len(args) >= 1 and args[0].startswith("[") and args[0].endswith("]"):
+            args[0] = f"\033[93m{args[0]}\033[0m"
+        if len(args) >= 2 and args[1].startswith("[") and args[1].endswith("]"):
+            args[1] = f"\033[95m{args[0]}\033[0m"
+        return print(f"\033[32m[RT log]\033[0m", *args, **kwargs)
 
     def get_ip(self) -> str:
         return "localhost" if self.test else "146.59.153.178"
@@ -44,7 +46,4 @@ class RT(commands.AutoShardedBot):
         self.print("Bye")
 
     def get_website_url(self) -> str:
-        return "http://localhost/" if self.test else "https://rt-bot.com/"
-
-
-sendableString = Union[str, Dict[str, str]]
+        return "http://localhost/" if self.test else "https://free-rt.com/"

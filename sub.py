@@ -16,9 +16,9 @@ commands.Cog.route = lambda *args, **kwargs: lambda *args, **kwargs: (args, kwar
 from aiohttp import ClientSession
 from sys import argv
 import ujson
-import rtlib
+import util
 
-from data import data, is_admin, RTCHAN_COLORS
+from data import data, RTCHAN_COLORS
 
 
 with open("token.secret", "r", encoding="utf-8_sig") as f:
@@ -30,20 +30,20 @@ prefixes = data["prefixes"]["sub"]
 
 
 def setup(bot):
-    bot.admins = data["admins"]
+    bot.owner_ids = data["admins"]
 
     @bot.listen()
     async def on_close(loop):
         await bot.session.close()
         del bot.mysql
 
-    bot.mysql = bot.data["mysql"] = rtlib.mysql.MySQLManager(
+    bot.mysql = bot.data["mysql"] = util.mysql.MySQLManager(
         loop=bot.loop, user=secret["mysql"]["user"],
         host="146.59.153.178" if argv[1] == "production" else "localhost",
         password=secret["mysql"]["password"], db="mysql",
         pool = True, minsize=1, maxsize=30, autocommit=True)
 
-    rtlib.setup(bot)
+    util.setup(bot)
     bot.load_extension("jishaku")
 
     bot._loaded = False
@@ -77,13 +77,6 @@ bot.test = argv[1] != "production"
 
 bot.data = data
 bot.colors = RTCHAN_COLORS
-bot.is_admin = is_admin
-
-
-async def _is_owner(user):
-    return bot.is_admin(user.id)
-bot.is_owner = _is_owner
-del is_admin, _is_owner
 
 
 setup(bot)

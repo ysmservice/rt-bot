@@ -46,7 +46,6 @@ async def check(
     headers: dict = HEADERS
 ) -> SecURLData:
     """渡されたURLをSecURLでチェックします。
-
     Parameters
     ----------
     session : aiohttp.ClientSession
@@ -61,7 +60,6 @@ async def check(
         ブラウザのサイズです。
     headers : dict, default HEADERS
         通信に使うヘッダーです。通常は変更しなくても大丈夫です。
-
     Raises
     ------
     ValueError : URLにアクセスできなかった際などの失敗時に発生します。"""
@@ -79,7 +77,6 @@ def get_capture(
     data: SecURLData, full: bool = False
 ) -> str:
     """渡されたデータにある`img`のデータからURLを作ります。
-
     Parameters
     ----------
     data : SecURLData
@@ -90,16 +87,3 @@ def get_capture(
         f"https://securl.nu/save_local_captured.php?key={data['img'][10:-4]}"
         if full else f"{HEADERS['Origin']}{data['img']}"
     )
-
-
-if __name__ == "__main__":
-    from asyncio import run
-
-    async def main(url):
-        async with ClientSession() as session:
-            return await check(session, url)
-
-    data = run(main(input("URL>")))
-    print("RawData\t", data)
-    print("Capture\t", get_capture(data))
-    print("CaptureFull\t", get_capture(data, True))

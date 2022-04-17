@@ -3,7 +3,7 @@
 from discord.ext import commands, easy, tasks
 import discord
 
-from rtlib import DatabaseManager
+from util import DatabaseManager
 
 from datetime import datetime, timedelta
 from asyncio import sleep

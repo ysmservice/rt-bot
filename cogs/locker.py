@@ -3,7 +3,7 @@
 from discord.ext import commands, tasks
 import discord
 
-from rtlib import mysql, DatabaseManager
+from util import mysql, DatabaseManager
 from typing import List
 from time import time
 

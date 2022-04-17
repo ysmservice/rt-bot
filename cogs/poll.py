@@ -9,7 +9,7 @@ import discord
 
 from emoji import UNICODE_EMOJI_ENGLISH
 
-from rtlib import RT
+from util import RT
 
 
 class CloseButton(discord.ui.View):

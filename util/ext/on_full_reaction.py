@@ -36,5 +36,5 @@ class OnFullReactionAddRemove(commands.Cog):
 
 
 def setup(bot):
-    timeout = getattr(bot, "_rtlib_ofr_timeout", 0.025)
+    timeout = getattr(bot, "_util_ofr_timeout", 0.025)
     bot.add_cog(OnFullReactionAddRemove(bot, timeout=timeout))

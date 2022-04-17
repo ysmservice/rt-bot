@@ -12,19 +12,11 @@ import discord
 
 from pytz import utc
 
-from aiohttp import ClientSession
 from ujson import dumps
 
-from rtlib.rt_module.src.setting import CommandData, CommandRunData
-from rtlib import RT
-from rtutil import clean_content
-
-
-def Setting(*args, **kwargs):
-    "以前の設定デコレータの偽物"
-    def decorator(func):
-        return func
-    return decorator
+from util.rt_module.src.setting import CommandData, CommandRunData
+from . import RT
+from .olds import clean_content
 
 
 def _replaceln(content: str) -> str:
@@ -123,7 +115,7 @@ class SettingManager(commands.Cog):
 
     def session(self):
         "`aiohttp.ClientSession`の準備をする。"
-        return ClientSession(loop=self.bot.loop, json_serialize=dumps)
+        return self.bot.session
 
     def _get_default(self, default: object) -> object:
         # 渡されたものがスラッシュのオプションならそれに設定されているデフォルトを返す。
@@ -135,9 +127,7 @@ class SettingManager(commands.Cog):
 
     def extract_category(self, command: commands.Command) -> str:
         "カテゴリーを取り出します。"
-        return command.__original_kwargs__.get(
-            "category", command.extras.get("parent", "Other")
-        )
+        return command.extras.get("parent", "Other")
 
     def extract_help(self, command: commands.Command, category: str) -> dict[str, str]:
         "ヘルプを取り出します。"

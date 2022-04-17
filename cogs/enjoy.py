@@ -12,8 +12,8 @@ from aiofiles.os import remove
 from bs4 import BeautifulSoup
 from PIL import Image
 
-from rtlib.page import EmbedPage
-from rtlib import RT
+from util.page import EmbedPage
+from util import RT
 
 
 class Enjoy(commands.Cog):

@@ -6,12 +6,12 @@ from discord.ext import commands
 import discord
 
 from collections import defaultdict
-from rtlib import DatabaseManager
+from util import DatabaseManager
 from functools import wraps
 from time import time
 
 if TYPE_CHECKING:
-    from rtlib import Backend
+    from util import Backend
 
 
 class DataManager(DatabaseManager):

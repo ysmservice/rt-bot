@@ -9,7 +9,7 @@ from collections import defaultdict
 from discord.ext import commands
 import discord
 
-from rtlib import RT, Table
+from util import RT, Table
 
 
 class RoleLinkerData(Table):

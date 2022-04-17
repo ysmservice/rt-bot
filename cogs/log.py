@@ -62,7 +62,7 @@ class Log(commands.Cog):
 
     def __init__(self, bot):
         self.bot, self.data = bot, bot.data
-        self.team_id = self.data["admins"]
+        self.team_id = self.bot.owner_ids
         self.c = self.bot.colors["normal"]
         self.bot.loop.create_task(self.on_command_added())
 

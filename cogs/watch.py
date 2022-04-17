@@ -10,7 +10,7 @@ from time import time
 from discord.ext import commands, tasks
 import discord
 
-from rtlib import RT
+from util import RT
 
 
 @dataclass

@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, List
 from discord.ext import commands
 import discord
 
-from rtlib import RT
+from util import RT
 
 if TYPE_CHECKING:
     from aiomysql import Pool, Cursor

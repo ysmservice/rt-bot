@@ -351,16 +351,17 @@ class MySQLManager:
     Examples
     --------
     # 普通
-    db = rtutil.MySQLManager(
+    db = util.MySQLManager(
         loop=bot.loop, user="root", password="I wanna be the guy", db="mysql")
     async with db.get_cursor() as cursor:
         ...
     # プールとして使う場合
-    pool = rtutil.MySQLManager(
+    pool = util.MySQLManager(
         loop=bot.loop, user="root", password="I wanna be the guy", db="mysql")
     db = pool.get_database()
     async with db.get_cursor() as cursor:
         ..."""
+
     def __init__(self, pool: bool = False, _pool_c=False, **kwargs):
         self.connection, self.pool = None, None
         self._real_pool = None

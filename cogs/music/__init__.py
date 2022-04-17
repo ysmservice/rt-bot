@@ -11,9 +11,9 @@ from asyncio import sleep
 import discord.ext.commands as commands
 import discord
 
-from rtlib.slash import loading, UnionContext, Context
-from rtutil.views import TimeoutView
-from rtlib import RT, Table, sendKwargs
+from util.slash import loading, UnionContext, Context
+from util import TimeoutView
+from util import RT, Table, sendKwargs
 
 from .views import (
     PLAYLIST_SELECT, is_require_dj, do_confirmation, MusicSelect, Queues,

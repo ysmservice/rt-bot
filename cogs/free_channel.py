@@ -5,7 +5,7 @@ from typing import Literal
 from discord.ext import commands
 import discord
 
-from rtlib import RT, setting
+from util import RT, setting
 
 from asyncio import sleep
 

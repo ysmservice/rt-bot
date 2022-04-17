@@ -12,9 +12,9 @@ import discord
 
 from aiofiles.os import remove
 
-from rtlib.slash import UnionContext
-from rtlib import RT, Table
-from rtutil.views import TimeoutView
+from util.slash import UnionContext
+from util import RT, Table
+from util import TimeoutView
 
 from .agents import OPENJTALK, AGENTS
 from .voice import OUTPUT_DIRECTORY

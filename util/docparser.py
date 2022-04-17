@@ -1,4 +1,4 @@
-# rtlib.libs.util - Doc Parser
+# rt util - Doc Parser
 
 from typing import Literal, Optional, Union, Callable, Tuple
 

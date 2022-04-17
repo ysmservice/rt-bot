@@ -31,7 +31,7 @@ Free RTについて知らない人はここ (webサイト作成中なのでお�
 ### 起動手順
 1. 必要なものを`pip install -r requirements.txt`でインストールをします。
 2. 必要なTOKENなどを`auth.template.json`を参考に`auth.json`に書き込む。
-3. `rtlib`に`rt-module`リポジトリを置いてフォルダの名前を`rt_module`にする。
+3. `util`に`rt-module`リポジトリをそのまま(srcだけ置くとかはしないでください)置いてフォルダの名前を`rt_module`にする。
 4. `rt-backend`リポジトリにあるプログラムを動かす。
    (これはオプションで認証等のバックエンドを必要とするものを動かしたい場合は動かす必要があります。)
 5. `python3 main.py test`でテストを実行する。

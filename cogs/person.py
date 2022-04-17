@@ -12,10 +12,9 @@ import asyncio
 from discord.ext import commands
 import discord
 
-from aiohttp import ClientSession
 from bs4 import BeautifulSoup
 
-from rtlib import RT, Table
+from util import RT, Table
 
 
 class Yahoo(Table):
@@ -40,7 +39,7 @@ class Person(commands.Cog):
 
     def __init__(self, bot: RT):
         self.bot = bot
-        self.session = ClientSession()
+        self.session = self.bot.session
         self.ydata = Yahoo(self.bot)
 
     async def search_message(

@@ -1,7 +1,7 @@
 # rtutilとrtlibについて
 rtutilとrtlibは共にRTに関するお役立ちツールが集まったもの、と考えてください。  
 freeRTにおいて何かそのようなツールを作る際には**rtutil**に作成してください。  
-この2つに関してはrtutilへの統一を目指しています。
+rtutilへの統一作業中です。完全に作業が終わるまでの間は基本的には新機能の追加は控えてほしいです。
 
 ## rtlibにあるもの
 * webhook_send (`channel.webhook_send`を使える機能)
@@ -29,3 +29,41 @@ freeRTにおいて何かそのようなツールを作る際には**rtutil**に�
 * markord (マークダウン変換機)
 * minesweeper (マインスイーパー)
 * securlAPIを叩く機能
+* その他
+
+# data_managerについて
+ここでは3つのDataBaseManagerを統一し、1つのManagerにした時にどのような仕様になるかを解説しています。  
+元々rtutil.DatabaseManagerだったものをそのまま使用する予定です。  
+他の種類のDBManagerについては解説されないのでご注意ください。
+
+## data_managerを使ったコード例
+```python
+from rtutil import DatabaseManager
+from mysql import Pool, Cursor
+
+class DataManager(DatabaseManager):
+
+    TABLE = "テーブル名"
+    
+    def __init__(self, cog: "cog名"):
+        self.cog = cog
+        self.pool: Pool = self.cog.bot.mysql.pool
+        self.cog.bot.loop.create_task(self.prepare_table())
+    
+    async def prepare_table(self, cursor: Cursor = None) -> None:
+        "テーブルを準備する。"
+        await cursor.execute(
+            f"""CREATE TABLE IF NOT EXISTS {self.TABLE} (
+                ChannelID BIGINT
+            );"""
+        )
+
+    async def write(
+        self, channel_id: int, cursor: Cursor = None
+    ) -> None:
+        "データを書き込みます。"
+        await cursor.execute(
+            f"""INSERT INTO {self.TABLE} VALUES (%s)""",
+            (channel_id)
+        )
+```

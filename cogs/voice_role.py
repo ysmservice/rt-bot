@@ -5,7 +5,7 @@ from typing import Union
 from discord.ext import commands, tasks
 import discord
 
-from rtlib import DatabaseManager, RT
+from util import DatabaseManager, RT
 
 
 class DataManager(DatabaseManager):

@@ -12,8 +12,8 @@ from time import time
 from discord.ext import commands
 import discord
 
-from rtutil import get_webhook
-from rtlib import RT
+from util import get_webhook
+from util import RT
 
 if TYPE_CHECKING:
     from ._oldrole import OldRolePanel

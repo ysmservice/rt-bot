@@ -10,7 +10,7 @@ from random import sample
 
 import discord
 
-from rtlib import sendableString
+from util import sendableString
 
 from .music import Music, is_url
 

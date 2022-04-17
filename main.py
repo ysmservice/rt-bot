@@ -16,7 +16,7 @@ import discord
 from aiohttp import ClientSession
 from ujson import load, dumps
 
-from rtlib import RT, mysql, setup, websocket
+from util import RT, mysql, setup, websocket
 from data import data, Colors
 
 with open("auth.json", "r") as f:
@@ -33,16 +33,15 @@ bot = RT(
     allowed_mentions=discord.AllowedMentions(
         everyone=False,
         users=False,
-        replied_user=False),
+        replied_user=False
+    ),
     activity=discord.Game("起動準備"),
     status=discord.Status.dnd)  # RTオブジェクトはcommands.Botを継承している
 bot.test = argv[-1] != "production"  # argvの最後がproductionかどうか
 if not bot.test:
     websocket.WEBSOCKET_URI_BASE = "ws://146.59.153.178"
 bot.data = data  # 全データアクセス用、非推奨
-bot.admins = data["admins"]  # 非推奨
 bot.owner_ids = data["admins"]
-bot.is_admin = bot.is_owner  #　非推奨
 bot.secret = secret  # auth.jsonの内容を入れている
 bot.mysql = bot.data["mysql"] = mysql.MySQLManager(
     loop=bot.loop,
@@ -59,7 +58,7 @@ bot.Colors = Colors  # botで使う基本色が入っているclass
 # 起動中だと教えられるようにするためのコグを読み込む
 bot.load_extension("cogs._first")
 # スラッシュマネージャーを設定する
-bot.load_extension("rtlib.slash")
+bot.load_extension("util.slash")
 # onami(jishakuのnextcord版)を読み込む
 bot.load_extension("onami")
 
@@ -72,7 +71,7 @@ async def on_ready():
     bot.unload_extension("cogs._first")
 
     # 拡張を読み込む
-    setup(bot)  # rtlib.setup
+    setup(bot)  # util.setup
     bot.load_extension("cogs._oldrole")  # oldroleだけ特別に読み込んでいる
     for name in listdir("cogs"):
         if not name.startswith(("_", ".")):

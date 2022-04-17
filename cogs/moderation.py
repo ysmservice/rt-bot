@@ -5,7 +5,7 @@ from typing import Literal, List
 from discord.ext import commands
 import discord
 
-from rtlib import RT
+from util import RT
 
 
 class Moderation(commands.Cog):

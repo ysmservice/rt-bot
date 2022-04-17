@@ -5,7 +5,7 @@ from typing import Any, Literal
 from discord.ext import commands, tasks
 import discord
 
-from rtlib import DatabaseManager
+from util import DatabaseManager
 
 from asyncio import sleep
 from ujson import loads

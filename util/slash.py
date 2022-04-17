@@ -41,12 +41,8 @@ def check(command: commands.Command):
         command._callback.__doc__ = f"""!lang ja\n--------\n{command.callback.__doc__
         }\n\n!lang en\n--------\n{command.callback.__doc__}"""
     return ((
-        ((
-            "category" in command.__original_kwargs__ 
-            or "parent" in command.extras
-        ) and (
-            "headding" in command.__original_kwargs__
-            or "headding" in command.extras
+        (("parent" in command.extras) and (
+            "headding" in command.extras
             or command.description != ""
         ) or command.parent)
     ) and "jishaku" not in command.qualified_name) or "slash" in command.__original_kwargs__
@@ -93,8 +89,7 @@ def make_command_instance(decorator, function: commands.Command):
 
 def get_category_name(function: commands.Command) -> Optional[str]:
     "カテゴリーの名前取り出すだけ。"
-    return function.__original_kwargs__.get("category") \
-        or function.extras.get("parent")
+    return function.extras.get("parent")
 
 
 #   ここからしばらくモンキーパッチ

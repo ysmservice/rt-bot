@@ -1,19 +1,10 @@
-# RT Util - Markord
+# RT util - markdowns
 
-from typing import Tuple, Union
-
-from discord import Embed, Color
-
-
-def repeate(separate: int, character: str = "\n") -> str:
-    "指定された数だけ改行を作ります。"
-    return character * separate
-
+from discord import Embed
 
 def decoration(markdown: str, separate: int = 0) -> str:
     """見出しが使われているマークダウンをDiscordで有効なものに変換します。  
     ただたんに`# ...`を`**#** ...`に変換して渡された数だけ後ろに改行を付け足すだけです。
-
     Parameters
     ----------
     markdown : str
@@ -25,7 +16,7 @@ def decoration(markdown: str, separate: int = 0) -> str:
         if line.startswith(("# ", "## ", "### ", "#### ", "##### ")):
             line = f"**#** {line[line.find(' ')+1:]}"
         if line.startswith(("\n", "**#**")):
-            line = f"{repeate(separate)}{line}"
+            line = f"{'\n' * separate}{line}"
         new += f"{line}\n"
     return new
 
@@ -35,18 +26,16 @@ def separate(text: str, character: str = "\n") -> Tuple[str, str]:
     return text[:(i:=text.find(character))], text[i+1:]
 
 
-def embed(markdown: str, **kwargs) -> Embed:
+def create_embed(markdown: str, **kwargs) -> Embed:
     """渡されたマークダウンの文字列をタイトルと説明とフィールドが設定されている`discord.Embed`に変換します。  
     見出しは三段階設定することができ、一段でタイトルで二段でフィールドそして三段で`**#** ...`のようになります。  
     もしフィールドの`inline`を`False`にしたい場合は`## !`のようにしてください。
-
     Parameters
     ----------
     markdown : str
         変換するマークダウンです。
     kwargs : dict
         `discord.Embed`のインスタンス作成時に渡すキーワード引数です。
-
     Examples
     --------
     ```
@@ -58,7 +47,6 @@ def embed(markdown: str, **kwargs) -> Embed:
     Field1 Child1 Value
     #### Field1 Child2
     Field1 Child2 Value
-
     ## Field2
     Field2 value
     ### Field2 Child1
@@ -79,27 +67,3 @@ def embed(markdown: str, **kwargs) -> Embed:
             name=name, value=decoration(value), inline=inline
         )
     return embed
-
-
-if __name__ == "__main__":
-    from inspect import cleandoc
-
-    print(
-        embed(cleandoc(
-            """# Title
-            Description
-            ## Field1
-            Field1 value
-            ### Field1 Child1
-            Field1 Child1 Value
-            #### Field1 Child2
-            Field1 Child2 Value
-
-            ## Field2
-            Field2 value
-            ### Field2 Child1
-            Field2 Child1 Value
-            #### Field2 Child2
-            Field2 Child2 Value"""
-        )).to_dict()
-    )

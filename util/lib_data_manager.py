@@ -15,7 +15,7 @@ from ujson import loads, dumps
 from aiomysql import Cursor
 
 if TYPE_CHECKING:
-    from rtlib import RT
+    from util import RT
 
 
 Allocation = Union[Literal["Guild", "User", "Member", "Channel"], str]
