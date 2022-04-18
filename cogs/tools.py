@@ -6,7 +6,7 @@ from asyncio import sleep
 
 from discord.ext import commands
 
-from util.setting import Context
+from util.settings import Context
 from util import RT
 
 

@@ -7,7 +7,7 @@ from urllib.parse import quote
 from discord.ext import commands
 import discord
 
-from util.markdowns import embed
+from util.markdowns import create_embed
 from util import RT
 
 

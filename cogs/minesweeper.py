@@ -3,7 +3,7 @@
 import discord
 from discord.ext import commands
 
-from util import Minesweeper as Ms
+from util import minesweeper as Ms
 
 
 class Mines(commands.Cog):
