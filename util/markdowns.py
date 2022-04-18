@@ -1,7 +1,9 @@
 # RT util - markdowns
 
 from discord import Embed
+from typing import Tuple
 
+newlinestr = '\n'
 def decoration(markdown: str, separate: int = 0) -> str:
     """見出しが使われているマークダウンをDiscordで有効なものに変換します。  
     ただたんに`# ...`を`**#** ...`に変換して渡された数だけ後ろに改行を付け足すだけです。
@@ -16,7 +18,7 @@ def decoration(markdown: str, separate: int = 0) -> str:
         if line.startswith(("# ", "## ", "### ", "#### ", "##### ")):
             line = f"**#** {line[line.find(' ')+1:]}"
         if line.startswith(("\n", "**#**")):
-            line = f"{'\n' * separate}{line}"
+            line = f"{newlinestr * separate}{line}"
         new += f"{line}\n"
     return new
 

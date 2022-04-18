@@ -2,7 +2,7 @@
 
 import discord
 from discord.ext import commands
-
+from typing import Optional
 
 async def get_webhook(
     channel: discord.TextChannel, name: str = "RT-Tool"
