@@ -20,19 +20,19 @@ class BasePage(TimeoutView):
         self.page = self.page + \
             (-1 if mode.endswith("l") else 1)*((mode[0] == "d")+1)
 
-    @discord.ui.button(emoji="?")
+    @discord.ui.button(emoji="⏪")
     async def dash_left(self, _, interaction: discord.Interaction):
         await self.on_turn("dl", interaction)
 
-    @discord.ui.button(emoji="??")
+    @discord.ui.button(emoji="◀️")
     async def left(self, _, interaction: discord.Interaction):
         await self.on_turn("l", interaction)
 
-    @discord.ui.button(emoji="??")
+    @discord.ui.button(emoji="▶️")
     async def right(self, _, interaction: discord.Interaction):
         await self.on_turn("r", interaction)
 
-    @discord.ui.button(emoji="?")
+    @discord.ui.button(emoji="⏩")
     async def dash_right(self, _, interaction: discord.Interaction):
         await self.on_turn("dr", interaction)
 
