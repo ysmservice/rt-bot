@@ -5,7 +5,8 @@ from typing import Literal
 from discord.ext import commands
 import discord
 
-from util import RT, DatabaseManager
+from util import RT
+from util.mysql_manager import DatabaseManager
 
 from re import findall
 

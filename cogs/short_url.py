@@ -3,7 +3,8 @@
 from discord.ext import commands
 import discord
 
-from util import DatabaseManager, RT
+from util.mysql_manager import DatabaseManager
+from util import RT
 
 from random import sample
 from time import time

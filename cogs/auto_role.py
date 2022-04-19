@@ -3,7 +3,7 @@
 from discord.ext import commands
 import discord
 
-from util import DatabaseManager
+from util.mysql_manager import DatabaseManager
 
 
 class DataManager(DatabaseManager):

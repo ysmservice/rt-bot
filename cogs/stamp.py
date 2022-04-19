@@ -5,7 +5,7 @@ from typing import Optional
 from discord.ext import commands
 import discord
 
-from util import DatabaseManager
+from util.mysql_manager import DatabaseManager
 from util.page import EmbedPage
 
 

@@ -5,7 +5,8 @@ from typing import Literal
 from discord.ext import commands
 import discord
 
-from util import DatabaseManager, RT, settings
+from util.mysql_manager import DatabaseManager
+from util import RT, settings
 from asyncio import sleep
 
 
