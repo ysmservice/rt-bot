@@ -4,7 +4,7 @@ from typing import Optional
 
 import random
 
-
+newlinestr='\n'
 class MineSweeper:
 
     def __init__(
@@ -43,7 +43,7 @@ class MineSweeper:
                     self.get_around_data(t_data, x_checking, y_checking).count(9)
         self.data: tuple = tuple([tuple(i) for i in t_data])
         if self.logging:
-            print(f"[util][MineSweeper]maked data: {'\n'.join(self.data)}")
+            print(f"[util][MineSweeper]maked data: {newlinestr.join(self.data)}")
 
 
     def get_around_data(self, t_data, x, y) -> tuple:

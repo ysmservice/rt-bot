@@ -247,7 +247,7 @@ def new_get_type(self, typing: object):
     elif any(
         get_origin(typing) is type_ or isinstance(typing, str)
         for type_ in (Union, Literal)
-    ) or hasattr(typing, "converter"):
+    ) or hasattr(typing, "_original"):
         # `typing.Union`や`typing.Literal`をアノテーションに使うことはできないので、これらのオプションを見つけたら文字列の型として返すように設定する。
         # また、`commands.Converter`か`commands.Converter`を継承したクラスの場合は文字列とする。
         return discord.CommandOption.option_types[str]

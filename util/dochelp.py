@@ -78,7 +78,7 @@ import discord
 from aiofiles import open as async_open
 from ujson import loads, dumps
 
-from .docperser import DocParser
+from .docparser import DocParser
 from data import PERMISSION_TEXTS
 
 

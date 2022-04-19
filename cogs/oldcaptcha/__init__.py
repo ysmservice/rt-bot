@@ -6,7 +6,8 @@ from discord.ext import commands, tasks
 import discord
 
 from util import DatabaseManager as RUDatabaseManager
-from util import RT, DatabaseManager, websocket
+from util.mysql_manager import DatabaseManager
+from util import RT, websocket
 
 from aiomysql import Pool, Cursor
 from ujson import loads, dumps

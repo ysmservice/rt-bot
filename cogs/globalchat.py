@@ -6,7 +6,7 @@ from discord.ext import commands
 import discord
 
 from collections import defaultdict
-from util import DatabaseManager
+from util.mysql_manager import DatabaseManager
 from functools import wraps
 from time import time
 

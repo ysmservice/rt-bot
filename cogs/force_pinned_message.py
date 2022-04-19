@@ -8,7 +8,8 @@ from time import time
 from discord.ext import commands, tasks
 import discord
 
-from util import RT, DatabaseManager as OldDatabaseManager
+from util import RT
+from util.mysql_manager import DatabaseManager as OldDatabaseManager
 from util import DatabaseManager, markdowns
 
 from aiomysql import Pool, Cursor

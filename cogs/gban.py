@@ -7,7 +7,8 @@ from random import choice
 from discord.ext import commands
 import discord
 
-from util import RT, mysql, DatabaseManager
+from util import RT, mysql
+from util.mysql_manager import DatabaseManager
 from util.page import EmbedPage
 from util.ext import componesy
 
