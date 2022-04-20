@@ -64,22 +64,27 @@ PERMISSION_TEXTS = {
     "manage_events": "イベントの管理",
     "manage_threads": "スレッドの管理",
     "use_slash_commands": "スラッシュコマンドの使用",
-    "view_guild_insights": "テキストチャンネルの閲覧＆ボイスチャンネルの表示",
+    "view_guild_insights": "チャンネルを見る",
     "send_messages": "メッセージを送信",
-    "send_tts_messages": "TTSメッセージを送信",
+    "send_tts_messages": "テキスト読み上げメッセージを送信する",
     "manage_messages": "メッセージの管理",
     "embed_links": "埋め込みリンク",
     "attach_files": "ファイルを添付",
     "read_message_history": "メッセージ履歴を読む",
     "mention_everyone": "@everyone、@here、全てのロールにメンション",
-    "external_emojis": "外部の絵文字の使用",
+    "external_emojis": "外部の絵文字を使用する",
     "add_reactions": "リアクションの追加",
     "connect": "接続",
     "speak": "発言",
-    "stream": "動画",
+    "stream": "WEB カメラ",
     "mute_members": "メンバーをミュート",
     "deafen_members": "メンバーのスピーカーをミュート",
     "move_members": "メンバーを移動",
     "use_voice_activation": "音声検出を使用",
     "priority_speaker": "優先スピーカー"
+}
+
+
+EMOJIS = {
+    "levelup":"⤴️"
 }
