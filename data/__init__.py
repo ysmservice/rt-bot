@@ -1,4 +1,4 @@
-# Free RT‚ÌŠî–{ƒf[ƒ^B
+# Free RTã®åŸºæœ¬ãƒ‡ãƒ¼ã‚¿ã€‚
 
 from typing import Optional
 
@@ -17,15 +17,15 @@ data = {
     "prefixes": {
         "test": [
             "rf2!", "RF2!", "rf2.", "Rf2.",
-            "‚è‚Ó‚¿‚á‚ñ‚Q@", "‚è‚Ó‚¿‚á‚ñ2 ", "rf2>"
+            "ã‚Šãµã¡ã‚ƒã‚“ï¼’ã€€", "ã‚Šãµã¡ã‚ƒã‚“2 ", "rf2>"
         ],
         "production": [
-            "rf!", "‚è‚ÓI", "RF!", "rf.", "Rf.",
-            "RF.", "rF.", "‚è‚Ó.", "Rf!", "rF!", "‚è‚Ó!"
+            "rf!", "ã‚Šãµï¼", "RF!", "rf.", "Rf.",
+            "RF.", "rF.", "ã‚Šãµ.", "Rf!", "rF!", "ã‚Šãµ!"
         ],
         "sub": [
-            "rf#", "‚è‚Ó‚¿‚á‚ñ ", "‚è‚Ó‚½‚ñ ", "‚è‚Ó ",
-            "‚è‚Ó‚¿‚á‚ñ@", "‚è‚Ó‚½‚ñ@", "‚è‚Ó@", "Rf#", "RF#", "rF#"
+            "rf#", "ã‚Šãµã¡ã‚ƒã‚“ ", "ã‚ŠãµãŸã‚“ ", "ã‚Šãµ ",
+            "ã‚Šãµã¡ã‚ƒã‚“ã€€", "ã‚ŠãµãŸã‚“ã€€", "ã‚Šãµã€€", "Rf#", "RF#", "rF#"
         ],
         "alpha": ["rf3!", "rf3>"]
     },
@@ -50,42 +50,42 @@ RTCHAN_COLORS = {
 
 
 PERMISSION_TEXTS = {
-    "administrator": "ŠÇ—Ò",
-    "view_audit_log": "ŠÄ¸ƒƒO‚ğ•\¦",
-    "manage_guild": "ƒT[ƒo[ŠÇ—",
-    "manage_roles": "ƒ[ƒ‹‚ÌŠÇ—",
-    "manage_channels": "ƒ`ƒƒƒ“ƒlƒ‹‚ÌŠÇ—",
-    "kick_members": "ƒƒ“ƒo[‚ğƒLƒbƒN",
-    "ban_members": "ƒƒ“ƒo[‚ğBAN",
-    "create_instant_invite": "µ‘Ò‚ğì¬",
-    "change_nickname": "ƒjƒbƒNƒl[ƒ€‚Ì•ÏX",
-    "manage_nicknames": "ƒjƒbƒNƒl[ƒ€‚ÌŠÇ—",
-    "manage_emojis": "ŠG•¶š‚ÌŠÇ—",
-    "manage_webhooks": "ƒEƒFƒuƒtƒbƒN‚ÌŠÇ—",
-    "manage_events": "ƒCƒxƒ“ƒg‚ÌŠÇ—",
-    "manage_threads": "ƒXƒŒƒbƒh‚ÌŠÇ—",
-    "use_slash_commands": "ƒXƒ‰ƒbƒVƒ…ƒRƒ}ƒ“ƒh‚Ìg—p",
-    "view_guild_insights": "ƒ`ƒƒƒ“ƒlƒ‹‚ğŒ©‚é",
-    "send_messages": "ƒƒbƒZ[ƒW‚ğ‘—M",
-    "send_tts_messages": "ƒeƒLƒXƒg“Ç‚İã‚°ƒƒbƒZ[ƒW‚ğ‘—M‚·‚é",
-    "manage_messages": "ƒƒbƒZ[ƒW‚ÌŠÇ—",
-    "embed_links": "–„‚ß‚İƒŠƒ“ƒN",
-    "attach_files": "ƒtƒ@ƒCƒ‹‚ğ“Y•t",
-    "read_message_history": "ƒƒbƒZ[ƒW—š—ğ‚ğ“Ç‚Ş",
-    "mention_everyone": "@everyoneA@hereA‘S‚Ä‚Ìƒ[ƒ‹‚Éƒƒ“ƒVƒ‡ƒ“",
-    "external_emojis": "ŠO•”‚ÌŠG•¶š‚ğg—p‚·‚é",
-    "add_reactions": "ƒŠƒAƒNƒVƒ‡ƒ“‚Ì’Ç‰Á",
-    "connect": "Ú‘±",
-    "speak": "”­Œ¾",
-    "stream": "WEB ƒJƒƒ‰",
-    "mute_members": "ƒƒ“ƒo[‚ğƒ~ƒ…[ƒg",
-    "deafen_members": "ƒƒ“ƒo[‚ÌƒXƒs[ƒJ[‚ğƒ~ƒ…[ƒg",
-    "move_members": "ƒƒ“ƒo[‚ğˆÚ“®",
-    "use_voice_activation": "‰¹ºŒŸo‚ğg—p",
-    "priority_speaker": "—DæƒXƒs[ƒJ["
+    "administrator": "ç®¡ç†è€…",
+    "view_audit_log": "ç›£æŸ»ãƒ­ã‚°ã‚’è¡¨ç¤º",
+    "manage_guild": "ã‚µãƒ¼ãƒãƒ¼ç®¡ç†",
+    "manage_roles": "ãƒ­ãƒ¼ãƒ«ã®ç®¡ç†",
+    "manage_channels": "ãƒãƒ£ãƒ³ãƒãƒ«ã®ç®¡ç†",
+    "kick_members": "ãƒ¡ãƒ³ãƒãƒ¼ã‚’ã‚­ãƒƒã‚¯",
+    "ban_members": "ãƒ¡ãƒ³ãƒãƒ¼ã‚’BAN",
+    "create_instant_invite": "æ‹›å¾…ã‚’ä½œæˆ",
+    "change_nickname": "ãƒ‹ãƒƒã‚¯ãƒãƒ¼ãƒ ã®å¤‰æ›´",
+    "manage_nicknames": "ãƒ‹ãƒƒã‚¯ãƒãƒ¼ãƒ ã®ç®¡ç†",
+    "manage_emojis": "çµµæ–‡å­—ã®ç®¡ç†",
+    "manage_webhooks": "ã‚¦ã‚§ãƒ–ãƒ•ãƒƒã‚¯ã®ç®¡ç†",
+    "manage_events": "ã‚¤ãƒ™ãƒ³ãƒˆã®ç®¡ç†",
+    "manage_threads": "ã‚¹ãƒ¬ãƒƒãƒ‰ã®ç®¡ç†",
+    "use_slash_commands": "ã‚¹ãƒ©ãƒƒã‚·ãƒ¥ã‚³ãƒãƒ³ãƒ‰ã®ä½¿ç”¨",
+    "view_guild_insights": "ãƒãƒ£ãƒ³ãƒãƒ«ã‚’è¦‹ã‚‹",
+    "send_messages": "ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’é€ä¿¡",
+    "send_tts_messages": "ãƒ†ã‚­ã‚¹ãƒˆèª­ã¿ä¸Šã’ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’é€ä¿¡ã™ã‚‹",
+    "manage_messages": "ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã®ç®¡ç†",
+    "embed_links": "åŸ‹ã‚è¾¼ã¿ãƒªãƒ³ã‚¯",
+    "attach_files": "ãƒ•ã‚¡ã‚¤ãƒ«ã‚’æ·»ä»˜",
+    "read_message_history": "ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸å±¥æ­´ã‚’èª­ã‚€",
+    "mention_everyone": "@everyoneã€@hereã€å…¨ã¦ã®ãƒ­ãƒ¼ãƒ«ã«ãƒ¡ãƒ³ã‚·ãƒ§ãƒ³",
+    "external_emojis": "å¤–éƒ¨ã®çµµæ–‡å­—ã‚’ä½¿ç”¨ã™ã‚‹",
+    "add_reactions": "ãƒªã‚¢ã‚¯ã‚·ãƒ§ãƒ³ã®è¿½åŠ ",
+    "connect": "æ¥ç¶š",
+    "speak": "ç™ºè¨€",
+    "stream": "WEB ã‚«ãƒ¡ãƒ©",
+    "mute_members": "ãƒ¡ãƒ³ãƒãƒ¼ã‚’ãƒŸãƒ¥ãƒ¼ãƒˆ",
+    "deafen_members": "ãƒ¡ãƒ³ãƒãƒ¼ã®ã‚¹ãƒ”ãƒ¼ã‚«ãƒ¼ã‚’ãƒŸãƒ¥ãƒ¼ãƒˆ",
+    "move_members": "ãƒ¡ãƒ³ãƒãƒ¼ã‚’ç§»å‹•",
+    "use_voice_activation": "éŸ³å£°æ¤œå‡ºã‚’ä½¿ç”¨",
+    "priority_speaker": "å„ªå…ˆã‚¹ãƒ”ãƒ¼ã‚«ãƒ¼"
 }
 
 
 EMOJIS = {
-    "levelup":"??"
+    "levelup":"â¤´ï¸"
 }
