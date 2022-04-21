@@ -23,7 +23,7 @@ from util import RT
 from .server_tool import PERMISSION_TEXTS
 
 
-ERROR_CHANNEL = 961870556548984862
+ERROR_CHANNEL = 962977145716625439
 
 INFO_DESC = {
     "ja": """どうもFree RTという新時代Botです。
