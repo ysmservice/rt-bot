@@ -1,5 +1,7 @@
 # RT Utilities
 
+import discord
+
 from .bot import RT
 from .cacher import Cache, Cacher, CacherPool
 from .checks import isintable, has_any_roles, has_all_roles
@@ -15,14 +17,18 @@ from .lib_data_manager import Table
 from .minesweeper import MineSweeper
 from . import mysql_manager as mysql
 from .olds import tasks_extend, sendKwargs
-from .olds import lib_setup as setup
 from .page import EmbedPage
-from .slash import Context as SlashContext
 from .types import sendableString
 from .views import TimeoutView
 from .webhooks import get_webhook, webhook_send
 
 from .ext import view as componesy
+
+if discord.__title__ == "nextcord":
+    from .olds import lib_setup as setup
+    from .slash import Context as SlashContext
+else:
+    from ._dpy_monky import _setup as setup
 
 
 __all__ = [
