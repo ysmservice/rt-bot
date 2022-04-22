@@ -236,11 +236,11 @@ class BotGeneral(commands.Cog):
             color=self.bot.colors["normal"]
         )
         embed.add_field(
-            name="Servers", value=len(self.bot.guilds)
+            name="Servers", value=len(self.bot.guilds),
             inline=False
         )
         embed.add_field(
-            name="Users", value=len(self.bot.users)
+            name="Users", value=len(self.bot.users),
             inline=False
         )
         for item_variable_name, item_name in INFO_ITEMS:
