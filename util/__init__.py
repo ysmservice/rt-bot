@@ -28,7 +28,7 @@ if discord.__title__ == "nextcord":
     from .olds import lib_setup as setup
     from .slash import Context as SlashContext
 else:
-    from ._dpy_monky import setup
+    from ._dpy_monky import _setup as setup
 
 
 __all__ = [
