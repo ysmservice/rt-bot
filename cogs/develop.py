@@ -18,7 +18,7 @@ class Develop(commands.Cog):
     )
     @commands.is_owner()
     async def develop(self, ctx):
-        if not ctx.invoked_subcommand is None:
+        if ctx.invoked_subcommand is None:
             return await ctx.send("使用方法が違います。")
     
     @develop.command()
