@@ -15,7 +15,7 @@ class GameSearch(commands.Cog):
         self.bot = bot
 
     @commands.command(
-        aliases=["searchgame","ゲームを探す"]
+        aliases=["searchgame","ゲームを探す"],
         extras={
             "headding": {"ja": "ゲームを探します。", "en": "..."},
             "parent": "Entertainment"
