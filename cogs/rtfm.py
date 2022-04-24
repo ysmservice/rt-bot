@@ -163,10 +163,6 @@ class rtfm(commands.Cog, name="Documentation"):
         e.description = "\n".join(f"[`{key}`]({url})" for key, url in self.matches)
         await ctx.send(embed=e)
 
-    @commands.Cog.listener()
-    async def on_ready(self):
-        self.logger.info("I'm ready!")
-
     @commands.command(
         name="rtfm",
         description="d.pyのドキュメントへのリンクを提供します。",
