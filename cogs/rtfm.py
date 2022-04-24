@@ -1,3 +1,4 @@
+# Free RT - rtfm
 import io
 import os
 import re
@@ -183,6 +184,6 @@ class rtfm(commands.Cog, name="Documentation"):
         await self.do_rtfm(ctx, key, query)
 
 
-async def setup(bot):
-    await bot.add_cog(rtfm(bot))
+def setup(bot):
+    bot.add_cog(rtfm(bot))
 
