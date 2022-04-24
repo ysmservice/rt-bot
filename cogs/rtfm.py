@@ -129,7 +129,7 @@ class rtfm(commands.Cog, name="Documentation"):
     async def build_rtfm_lookup_table(self, page_types):
         cache = {}
         for key, page in page_types.items():
-            async with aiohttp.ClientSession() as session:
+            async with self.bot.ClientSession() as session:
                 async with session.get(page + "/objects.inv") as resp:
                     if resp.status != 200:
                         raise RuntimeError(
