@@ -46,7 +46,6 @@ class SphinxObjectFileReader:
 class rtfm(commands.Cog, name="Documentation"):
     def __init__(self, bot):
         self.bot = bot
-        self.logger = logging.getLogger(__name__)
 
         self.page_types = {
             "nextcord_latest": "https://docs.nextcord.dev/en/latest/",
