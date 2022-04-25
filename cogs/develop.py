@@ -18,6 +18,13 @@ class Develop(commands.Cog):
     )
     @commands.is_owner()
     async def develop(self, ctx):
+        """!lang ja
+        --------
+        管理者専用のコマンドです。sub_commands: reload_help, command_log
+        
+        !lang en
+        --------
+        Command for developers only. sub_commands: reload_help, command_log"""
         if ctx.invoked_subcommand is None:
             return await ctx.send("使用方法が違います。")
     
@@ -34,7 +41,8 @@ class Develop(commands.Cog):
 
     @develop.command(
         extras={
-            "headding":{"ja":"直近1分間のコマンド実行ログを見ます。", "en":"View commands logs."}
+            "headding":{"ja":"直近1分間のコマンド実行ログを見ます。", "en":"View commands logs."},
+            "parent":"Admin"
         }
     )
     @commands.is_owner()
@@ -72,6 +80,16 @@ class Develop(commands.Cog):
             await ctx.reply(embed=self.bot.cogs["SystemLog"]._make_embed())
         else:
             await ctx.reply("ログ無し。")
+
+    @develop.command(
+        extras={"headding": {"ja": "言語データを再読込します。",
+                             "en": "Reload language data."},
+                "parent": "Admin"})
+    async def reload_language(self, ctx):
+        """言語データを再読込します。"""
+        await ctx.trigger_typing()
+        await self.bot.cogs["Language"].update_language()
+        await ctx.reply("Ok")
 
 
 def setup(bot):
