@@ -3,8 +3,6 @@ LICENSE : ./LICENSE
 README  : ./readme.md
 """
 
-print("Free RT Discord Bot (C) 2022 Free RT\nNow loading...")
-
 from os import listdir
 from sys import argv
 
@@ -18,6 +16,8 @@ from ujson import load, dumps
 
 from util import RT, mysql, setup, websocket
 from data import data, Colors
+
+print("Free RT Discord Bot (C) 2022 Free RT\nNow loading...")
 
 with open("auth.json", "r") as f:
     secret = load(f)
@@ -89,21 +89,21 @@ async def on_ready():
 
 
 # loggingの準備
-#logger = logging.getLogger('discord')
-#handler = handlers.RotatingFileHandler(
-#    filename='log/discord.log',
-#    encoding='utf-8',
-#    mode='w',
-#    maxBytes=10000000,
-#    backupCount=5
-#)  # 出力先ファイルの設定
-#handler.setLevel(logging.DEBUG)  # 出力レベルの設定
-#handler.setFormatter(
-#    logging.Formatter(
-#        "[%(asctime)s][%(levelname)s][%(name)s] %(message)s"
-#    )
-#)  # 出力形式の設定
-#logger.addHandler(handler)
+# logger = logging.getLogger('discord')
+# handler = handlers.RotatingFileHandler(
+#     filename='log/discord.log',
+#     encoding='utf-8',
+#     mode='w',
+#     maxBytes=10000000,
+#     backupCount=5
+# )  # 出力先ファイルの設定
+# handler.setLevel(logging.DEBUG)  # 出力レベルの設定
+# handler.setFormatter(
+#     logging.Formatter(
+#         "[%(asctime)s][%(levelname)s][%(name)s] %(message)s"
+#     )
+# )  # 出力形式の設定
+# logger.addHandler(handler)
 
 # 実行
 bot.run(secret["token"][argv[-1]])
