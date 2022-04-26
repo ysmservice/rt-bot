@@ -80,19 +80,19 @@ class EnglishThxTemplateView(discord.ui.View):
                 You can also use `rf!lang en` to set the language to English.
                 (If you want to set it for the whole server, run `rf!lang en server`.)
 
-                **RT Info**.
-                Official website: https://rt-bot.com
+                **free-RT Info**.
+                Official website: https://free-rt.com
                 Support server: https://discord.gg/VHwJ3CBuWw
-                Tutorial: https://rt-team.github.io/en/notes/tutorial
+                Tutorial: https://free-rt.github.io/en/notes/tutorial
                 Prefixes: `rf!`, `Rf!`, `RF!`, `rf.`, `Rf.`, `Rf.`, `りふ！`, `りふ.`
 
                 **RT Terms of Service**.
                 By using RT, you agree to the following terms of use.
-                https://rt-bot.com/terms.html
+                https://free-rt.com/terms.html
 
                 **RT Privacy Policy**
                 RT's privacy policy can be viewed at
-                https://rt-bot.com/privacy.html"""
+                https://free-rt.com/privacy.html"""
             )
         )
 
