@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Generic, TypeVar, Any, Optional
+from typing import Generic, TypeVar, Any, Optional
 from collections.abc import Iterator, Callable
 
 from time import time

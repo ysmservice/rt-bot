@@ -165,7 +165,7 @@ class SettingManager(commands.Cog):
                 kwargs[parameter.name] = {
                     "type": "str",
                     "default": None if parameter.default == parameter.empty
-                                    else self._get_default(parameter.default),
+                               else self._get_default(parameter.default),
                     "extra": None
                 }
                 if parameter.annotation in (

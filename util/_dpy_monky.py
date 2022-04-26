@@ -12,6 +12,7 @@ def dpy_setup(mode: str = None) -> None:
     "dpy用のセットアップをします。動作はnextcordの場合と同じです。"
     pass
 
+
 # ここからスラッシュ関連
 
 # コマンドを標準でハイブリッドにする。

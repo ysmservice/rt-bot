@@ -27,7 +27,7 @@ def decoration(markdown: str, separate: int = 0) -> str:
 
 def separate(text: str, character: str = "\n") -> Tuple[str, str]:
     "指定された文字列を指定された文字の左右で分けます。"
-    return text[:(i:=text.find(character))], text[i + 1:]
+    return text[: (i := text.find(character))], text[i+1 :]
 
 
 def create_embed(markdown: str, **kwargs) -> Embed:
