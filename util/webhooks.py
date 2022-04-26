@@ -4,6 +4,7 @@ import discord
 from discord.ext import commands
 from typing import Optional
 
+
 async def get_webhook(
     channel: discord.TextChannel, name: str = "RT-Tool"
 ) -> Optional[discord.Webhook]:
@@ -16,7 +17,7 @@ async def webhook_send(
 ):
     """`channel.send`感覚でウェブフック送信をするための関数です。  
     `channel.webhook_send`のように使えます。  
-    
+
     Parameters
     ----------
     *args : tuple
