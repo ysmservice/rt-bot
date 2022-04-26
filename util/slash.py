@@ -3,7 +3,6 @@
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Optional, Union, Literal, get_origin
 
-from asyncio import sleep
 from inspect import signature
 from datetime import datetime
 from functools import wraps
@@ -482,7 +481,6 @@ class SlashManager(commands.Cog):
     @commands.Cog.listener()
     async def on_full_ready(self):
         ...
-
 
 
 def setup(bot):

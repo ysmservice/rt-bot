@@ -225,7 +225,8 @@ class WebSocket:
                             # イベントハンドラを実行してもしデータを返されたならそれを送り返す。
                             if (
                                 return_data := await self.run_event(
-                                data["event_type"], data["data"])
+                                    data["event_type"], data["data"]
+                                )
                             ):
                                 await self.send(data["event_type"], return_data)
                         else:

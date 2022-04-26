@@ -1,10 +1,9 @@
 # Free RT Util - MySQL Manager
 
-from typing import Union, Any, Dict, Tuple
+from typing import Any, Dict, Tuple
 
-from asyncio import AbstractEventLoop, get_event_loop, iscoroutinefunction
+from asyncio import get_event_loop, iscoroutinefunction
 from aiomysql import create_pool, connect
-from pymysql.err import OperationalError
 from functools import wraps
 import warnings
 import ujson

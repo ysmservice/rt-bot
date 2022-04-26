@@ -29,9 +29,10 @@ async def webhook_send(
         discord.pyのWebhook.sendに入れるキーワード引数です。"""
     if isinstance(channel, commands.Context):
         channel = channel.channel
-    wb = (wb if (
+    wb = (
+        wb if (
             wb := discord.utils.get(await channel.webhooks(), name=webhook_name)
-          ) else await channel.create_webhook(name=webhook_name))
+        ) else await channel.create_webhook(name=webhook_name))
     try:
         return await wb.send(*args, **kwargs)
     except discord.InvalidArgument as e:
