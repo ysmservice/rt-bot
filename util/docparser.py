@@ -198,11 +198,9 @@ class DocParser:
                     now["item"] = before["line"]
                     t = self.HEADDINGS[now["lang"]].get(now["item"], now["item"]) + "\n"
                     text[now["lang"]] += t
-            elif (
-                    line not in self.HEADDINGS[now["lang"]] and (
-                        now["code"] or not line.startswith("!")
-                    ) and now["item"] != "!"
-                  ):
+            elif (line not in self.HEADDINGS[now["lang"]]
+                  and (now["code"] or not line.startswith("!"))
+                  and now["item"] != "!"):
                 # もし改行のみで空白2個が後ろにないなら改行を空白二個と置き換える。
                 if not line.endswith("  ") and not now["code"]:
                     line = line + "  "
