@@ -212,8 +212,8 @@ class Bulk(commands.Cog):
         mode : add または remove
             付与か剥奪どっちを実行するかで、addにすると役職の付与でremoveにすると役職の剥奪となります。
         target : everyoneまたは役職の名前かメンション
-            役職の付与または剥奪を行う対象者です。  
-            everyoneにした場合はサーバーにいる人全員となります。  
+            役職の付与または剥奪を行う対象者です。
+            everyoneにした場合はサーバーにいる人全員となります。
             役職の名前かメンションを入れた場合はその役職を持っている人が対象となります。
         role : 役職名または役職メンション
             付与または剥奪する役職です。
@@ -221,7 +221,7 @@ class Bulk(commands.Cog):
         !lang en
         --------
         Adds or Removes the specified role to specific members who is on this server.
-        
+
         Parameters
         ----------
         mode : add or remove
