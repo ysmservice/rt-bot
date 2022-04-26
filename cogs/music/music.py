@@ -54,6 +54,7 @@ class MusicTypes:
     soundcloud = 3
     spotify = 4
     ysmfilm = 5
+    direct_url = 6
 
 class MusicDict(TypedDict):
     "プレイリスト等に保存する際の音楽データの辞書の型です。"
@@ -104,6 +105,8 @@ def make_youtube_url(data: dict) -> str:
 
 def format_time(time_: Union[int, float]) -> str:
     "経過した時間を`01:39`のような`分：秒数`の形にフォーマットする。"
+    if time_ == '--:--:--':
+        return '--:--:--'
     return ":".join(
         map(lambda o: (
             str(int(o[1])).zfill(2)
@@ -207,6 +210,10 @@ class Music:
                     cog, author, MusicTypes.ysmfilm, yf_gettitle(qs_d['id'][0]), url,
                     "https://ysmfilm.wjg.jp/th.php?id="+qs_d['id'][0], int(yf_getduration(qs_d['id'][0]).split(':')[0])*360+int(yf_getduration(qs_d['id'][0]).split(':')[1])*60+int(yf_getduration(qs_d['id'][0]).split(':')[2])
                 )
+            elif urllib.parse.urlparse(url).path.endswith('.mp4') or urllib.parse.urlparse(url).path.endswith('.mp3'):
+                return cls(
+                    cog, author, MusicTypes.direct_url, url, url,"","--:--:--"
+                 )
             else:
                 # YouTube
                 if not is_url(url):
@@ -257,6 +264,8 @@ class Music:
             qs=urllib.parse.urlparse(self.url).query
             qs_d=urllib.parse.parse_qs(qs)
             return "https://ysmfilm.wjg.jp/video/"+qs_d['id'][0]+".mp4"
+        elif self.music_type == MusicTypes.direct_url:
+            return self.url
         assert False, "あり得ないことが発生しました。"
 
     async def make_source(self) -> Union[
