@@ -23,7 +23,11 @@ discord.CommandOption.description = property(
     lambda self: self._description
     if self._description else "No description provided"
 )
-ds = lambda self, value: setattr(self, "_description", value)
+
+def ds(self, value):
+    return setattr(self, "_description", value)
+
+
 discord.CommandOption.description = discord.CommandOption.description.setter(ds)
 discord.ApplicationSubcommand.description = property(
     lambda self: "No description provided"
@@ -74,6 +78,7 @@ def make_command_instance(decorator, function: commands.Command):
     # だが、それだとコマンドフレームワーク内で実行した際に`discord.SlashOption`に設定した`default`が渡されない。
     # それを修正するようにする。
     original_function = function.callback
+
     @wraps(original_function)
     async def new_function(*args, **kwargs):
         for key in list(kwargs.keys()):
@@ -98,12 +103,14 @@ def make_command_monkey(decorator):
     @wraps(decorator)
     def normal_command(*args, _deco_rator_=decorator, **kwargs):
         decorator = _deco_rator_(*args, **kwargs)
+
         @wraps(decorator)
         def new_decorator(function):
             function = decorator(function)
             if check(function):
                 # カテゴリーを親コマンドとして設定したいので、ここでそのカテゴリーの親コマンドとする偽の関数を用意する。
                 category_name = get_category_name(function)
+
                 @discord.slash_command(
                     category_name := camel2snake(category_name),
                     "No description provided"
@@ -120,6 +127,8 @@ def make_command_monkey(decorator):
             return function
         return new_decorator
     return normal_command
+
+
 commands.command = make_command_monkey(commands.command)
 commands.group = make_command_monkey(commands.group)
 
