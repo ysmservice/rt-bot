@@ -24,6 +24,7 @@ discord.CommandOption.description = property(
     if self._description else "No description provided"
 )
 
+
 def ds(self, value):
     return setattr(self, "_description", value)
 
@@ -134,9 +135,10 @@ commands.group = make_command_monkey(commands.group)
 
 
 # 通常のグループコマンドのサブコマンドのデコレータを拡張する
-def make_group_command_monkey(decorator_, group = False):
+def make_group_command_monkey(decorator_, group=False):
     def group_command(*args, **kwargs):
         decorator = decorator_(*args, **kwargs)
+
         @wraps(decorator)
         def new_decorator(function):
             function: commands.Command = decorator(function)
@@ -169,12 +171,16 @@ def make_group_command_monkey(decorator_, group = False):
             return function
         return new_decorator
     return group_command
+
+
 commands.GroupMixin.command = make_group_command_monkey(commands.GroupMixin.command)
 commands.GroupMixin.group = make_group_command_monkey(commands.GroupMixin.group, True)
 
 
 # 上で行ったモンキーパッチを適用させるためにCogを拡張する。
 original = commands.Cog.__new__
+
+
 def new_new(cls, *args, **kwargs):
     for name, function in list(cls.__dict__.items()):
         if not (
@@ -193,9 +199,11 @@ def new_new(cls, *args, **kwargs):
             setattr(cls, name, fake)
             # 設定したカテゴリーの親コマンドに設定されている他のコマンドも設定する。
             for other_name, other in list(cls.__dict__.items()):
-                if (name != other_name and hasattr(other, "slash")
-                        and category == other.slash.parent_command
-                            .callback.__name__):
+                if (
+                    name != other_name and hasattr(other, "slash")
+                    and category == other.slash.parent_command
+                    .callback.__name__
+                ):
                     other.slash.parent_command = function.slash.parent_command
                     function.slash.parent_command.children[other.slash.name] = \
                         other.slash
@@ -208,6 +216,8 @@ def new_new(cls, *args, **kwargs):
             if not function.slash._self_argument:
                 function.slash.set_self_argument(self)
     return self
+
+
 commands.Cog.__new__ = new_new
 
 
@@ -218,6 +228,8 @@ commands.Cog.__new__ = new_new
 original_read_methods = discord.ClientCog._read_methods
 discord.Client._read_methods = lambda _: None
 original_add_cog = BotBase.add_cog
+
+
 def new_add_cog(self: BotBase, cog: commands.Cog, *args, **kwargs):
     # 追加されたコグの中身を取り出していく。
     for name, value in list(cog.__class__.__dict__.items()):
@@ -241,11 +253,15 @@ def new_add_cog(self: BotBase, cog: commands.Cog, *args, **kwargs):
     # 色々処理をした後に本来ならコグのインスタンス化時に実行される`discord.ClientCog._read_methods`を実行する。
     original_read_methods(cog)
     return original_add_cog(self, cog, *args, **kwargs)
+
+
 BotBase.add_cog = wraps(original_add_cog)(new_add_cog)
 
 
 # スラッシュに対応していないがコマンドフレームワークでは対応しているようなアノテーションをスラッシュに対応させるようにする。
 original_get_type = discord.CommandOption.get_type
+
+
 def new_get_type(self, typing: object):
     if typing in (
         discord.TextChannel, discord.VoiceChannel,
@@ -263,6 +279,8 @@ def new_get_type(self, typing: object):
     else:
         # 上記以外なら元々の関数を実行する。
         return original_get_type(self, typing)
+
+
 discord.CommandOption.get_type = new_get_type
 
 
@@ -276,6 +294,8 @@ discord.Client.on_full_ready = discord.Client.rollout_application_commands
 
 # `discord.SlashOption`で引数の説明等の詳細を設定していない状態でのデフォルト値が適用されないのを治すようにする。
 original_from_callback = discord.ApplicationSubcommand._from_callback
+
+
 def new_from_callback(
     self: discord.ApplicationSubcommand, callback: Callable
 ) -> discord.ApplicationSubcommand:
@@ -288,6 +308,8 @@ def new_from_callback(
             )
             self.options[parameter.name] = discord.CommandOption(parameter, self)
     return self
+
+
 discord.ApplicationSubcommand._from_callback = new_from_callback
 
 
