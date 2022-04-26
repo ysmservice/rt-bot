@@ -77,7 +77,8 @@ class DocParser:
             if type_name in line:
                 line = line.replace(
                     type_name, self.ITEM_REPLACE_TEXTS[now_lang]
-                        .get(type_name, type_name))
+                    .get(type_name, type_name)
+                )
         # 名前の部分を**で囲む。
         if ":" in line:
             left, right, left_count, right_count = self._split(line)

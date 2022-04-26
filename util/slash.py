@@ -437,7 +437,7 @@ class SlashManager(commands.Cog):
 
     @commands.command(
         description="コマンドを実行します。 | Run command",
-        extras={"parent":"RT"}
+        extras={"parent": "RT"}
     )
     async def run(self, ctx: Context, *, content):
         """!lang ja
@@ -483,38 +483,6 @@ class SlashManager(commands.Cog):
     async def on_full_ready(self):
         ...
 
-    # ここから完全なテスト用コマンド
-    @discord.slash_command()
-    @commands.cooldown(1, 30)
-    async def normal_test(self, interaction):
-        await interaction.response.send_message("test")
-
-    @commands.command(
-        extras={
-            "headding": {"ja": "テスト見出し", "en": "..."},
-            "parent":"SlashTest"}
-    )
-    async def test(self, ctx, test: Union[str, int]):
-        await ctx.trigger_typing()
-        await sleep(3)
-        await ctx.reply("This is the test")
-
-    @commands.group(
-        extras={
-            "headding": {"ja": "テストグループ", "en": "..."},
-            "parent":"SlashTest"
-        }
-    )
-    async def test_group(self, ctx):
-        ...
-
-    @test_group.command()
-    async def wow(self, ctx, member: discord.Member = discord.SlashOption("member", "This is the test")):
-        await ctx.reply(f"This is the test. {member.name}")
-
-    @test_group.command()
-    async def ping(self, ctx):
-        await ctx.reply("pong")
 
 
 def setup(bot):
