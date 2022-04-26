@@ -121,7 +121,7 @@ class Cursor:
     def _get_column_args(
             self, values: Dict[str, Any], format_text: str = "{} = %s AND ",
             json_dump: bool = False
-            ) -> Tuple[str, list]:
+    ) -> Tuple[str, list]:
         conditions, args = "", []
         for key in values:
             conditions += format_text.format(key)
@@ -372,7 +372,7 @@ class MySQLManager:
     async def get_database(self):
         """このクラスの定義済みのものをプールを使って取得します。  
         これはこのクラスの定義時`pool=True`と言う引数を作っている場合のみ使用できます。  
-        
+
         Warnings
         --------
         これはデータベースへの接続が終わってから実行してください。"""
