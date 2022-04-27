@@ -53,7 +53,7 @@ class DataManager(DatabaseManager):
 
     async def read(
         self, cursor, guild_id: int, channel_id: int,
-        message_id: int) -> tuple:
+            message_id: int) -> tuple:
         target = {
             "GuildID": guild_id, "ChannelID": channel_id,
             "MessageID": message_id

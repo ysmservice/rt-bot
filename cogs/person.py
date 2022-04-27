@@ -261,7 +261,7 @@ class Person(commands.Cog):
                 "en": "Discord registration date and time"
             },
             value=(user.created_at + timedelta(hours=9))
-                   .strftime('%Y-%m-%d %H:%M:%S')
+                  .strftime('%Y-%m-%d %H:%M:%S')
         )
         embed.add_field(
             name={
@@ -282,8 +282,8 @@ class Person(commands.Cog):
                     "en": "Information in this server"
                 }, description=(
                     "@everyone, " + ", ".join(
-                    role.mention for role in member.roles
-                    if role.name != "@everyone")
+                        role.mention for role in member.roles
+                        if role.name != "@everyone")
                 ), color=member.color
             )
             embed.add_field(

@@ -62,6 +62,7 @@ class Tenki(commands.Cog, DataManager):
         self.tenki_notification.start()
 
         self.view = easy.View("TenkiPrefectureSelect")
+
         def add_item(options, true_count):
             return self.view.add_item(
                 "Select", self.on_select_prefecture,

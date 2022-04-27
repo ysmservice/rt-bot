@@ -21,10 +21,10 @@ class Bulk(commands.Cog):
         embed.add_field(
             name={"ja": f"{t}に失敗したメンバー一覧",
                   "en": f"List of members who failed {t}"},
-            value=("\n".join(f"{member.mention}\n　{e}" for member, e in failed_members
-                   ) if failed_members else {
-                    "ja": f"{t}に失敗したメンバーはいません。",
-                    "en": f"No member has failed {t}."
+            value=("\n".join(f"{member.mention}\n　{e}" for member, e in failed_members)
+                   if failed_members else {
+                       "ja": f"{t}に失敗したメンバーはいません。",
+                       "en": f"No member has failed {t}."
                    }))
         return embed
 

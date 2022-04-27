@@ -74,13 +74,13 @@ class SystemLog(commands.Cog):
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: Exception):
         # エラー時のログ処理。大量のisinstance->returnがあるのはbot_general.pyで処理するから。
-        if isinstance(error, (
-                    commands.CommandNotFound, discord.Forbidden, commands.CommandOnCooldown,
-                    commands.MemberNotFound, commands.UserNotFound, commands.ChannelNotFound,
-                    commands.RoleNotFound, commands.MissingRequiredArgument, commands.BadArgument,
-                    commands.ArgumentParsingError, commands.TooManyArguments, commands.MissingPermissions,
-                    commands.MissingRole, commands.CheckFailure, AssertionError
-                )):
+        if isinstance(
+            error,
+            (commands.CommandNotFound, discord.Forbidden, commands.CommandOnCooldown,
+             commands.MemberNotFound, commands.UserNotFound, commands.ChannelNotFound,
+             commands.RoleNotFound, commands.MissingRequiredArgument, commands.BadArgument,
+             commands.ArgumentParsingError, commands.TooManyArguments, commands.MissingPermissions,
+                 commands.MissingRole, commands.CheckFailure, AssertionError)):
             return
         elif isinstance(error, commands.CommandInvokeError):
             return await self.on_command_error(ctx, error.original)
