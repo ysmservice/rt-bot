@@ -261,16 +261,16 @@ class Person(commands.Cog):
                 "en": "Discord registration date and time"
             },
             value=(user.created_at + timedelta(hours=9))
-                  .strftime('%Y-%m-%d %H:%M:%S')
+                   .strftime('%Y-%m-%d %H:%M:%S')
         )
         embed.add_field(
             name={
                 "ja": "アバターURL",
                 "en": "Avatar URL"
-            },
-            value=embed.thumbnail.url.replace("?size=1024", "")
-                  if embed.thumbnail.url else "ありません。",
-            inline=False
+            }, value=(
+                embed.thumbnail.url.replace("?size=1024", "")
+                if embed.thumbnail.url else "ありません。"
+            ), inline=False
         )
         embeds.append(embed)
 
@@ -280,13 +280,11 @@ class Person(commands.Cog):
                 title={
                     "ja": "このサーバーでの情報",
                     "en": "Information in this server"
-                },
-                description=(
+                }, description=(
                     "@everyone, " + ", ".join(
                     role.mention for role in member.roles
                     if role.name != "@everyone")
-                ),
-                color=member.color
+                ), color=member.color
             )
             embed.add_field(
                 name={"ja": "表示名",
@@ -296,8 +294,7 @@ class Person(commands.Cog):
             embed.add_field(
                 name={"ja": "参加日時",
                       "en": "Member joined at"},
-                value=(member.joined_at + timedelta(hours=9)
-                ).strftime('%Y-%m-%d %H:%M:%S')
+                value=(member.joined_at + timedelta(hours=9)).strftime('%Y-%m-%d %H:%M:%S')
             )
             if member.voice:
                 embed.add_field(

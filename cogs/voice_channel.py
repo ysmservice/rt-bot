@@ -274,8 +274,7 @@ class VCChannel(commands.Cog, DataManager):
                     vc.category,
                     f"create_{'voice' if row[0] == 'vc' else 'text'}_channel"
                 )(
-                    name=row[2].replace("!name!", member.name)
-                         .replace("!id!", str(member.id)),
+                    name=row[2].replace("!name!", member.name).replace("!id!", str(member.id)),
                     overwrites={
                         member.guild.default_role: discord.PermissionOverwrite(
                             view_channel=False

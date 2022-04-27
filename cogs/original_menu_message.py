@@ -6,8 +6,6 @@ from discord.ext import commands
 import discord
 
 from util.mysql_manager import DatabaseManager
-from util import RT
-from util.ext import componesy
 from time import time
 
 

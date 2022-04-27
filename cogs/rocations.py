@@ -30,7 +30,7 @@ class Server(TypedDict):
     language: str
 
 
-RAISE_TIME = 14106 # 3時間55分06秒
+RAISE_TIME = 14106  # 3時間55分06秒
 Servers = OrderedDict[int, Server]
 
 

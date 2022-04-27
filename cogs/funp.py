@@ -359,12 +359,12 @@ class Funp(commands.Cog, DataManager):
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def nekobot(
         self, ctx, type_: str = discord.SlashOption(
-                "type", "NSFWの種類です。", choices={
-                    "hentai": "hentai",
-                    "nakadashi": "nakadashi",
-                    "paizuri": "paizuri",
-                    "tentacle": "tentacle",
-                    "boobs": "boobs"})):
+            "type", "NSFWの種類です。", choices={
+                "hentai": "hentai",
+                "nakadashi": "nakadashi",
+                "paizuri": "paizuri",
+                "tentacle": "tentacle",
+                "boobs": "boobs"})):
         """!lang ja
         --------
         NekoBot APIを利用したNSFW画像を表示するコマンドです。  
