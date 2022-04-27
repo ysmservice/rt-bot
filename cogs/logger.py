@@ -7,7 +7,6 @@ from traceback import TracebackException
 
 import collections
 import aiofiles
-import logging
 
 from util import RT
 
@@ -62,17 +61,15 @@ class SystemLog(commands.Cog):
             self.authors = []
             self.guilds = []
 
-
     @commands.Cog.listener()
     async def on_command(self, ctx):
         self.names.append(ctx.command.name)
         self.zero_parents.append(
-            ctx.command.name if len(ctx.command.parents) == 0 \
-                else ctx.command.parents[-1].name
+            ctx.command.name if len(ctx.command.parents) == 0 
+            else ctx.command.parents[-1].name
         )
         self.authors.append(ctx.author.id)
         self.guilds.append(getattr(ctx.guild, "id", 0))
-
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: Exception):
@@ -84,7 +81,7 @@ class SystemLog(commands.Cog):
                 commands.BadArgument, commands.ArgumentParsingError, commands.TooManyArguments,
                 commands.BadUnionArgument, commands.BadLiteralArgument, commands.MissingPermissions,
                 commands.MissingRole, commands.CheckFailure, AssertionError
-            )):
+                )):
             return
         elif isinstance(error, commands.CommandInvokeError):
             return await self.on_command_error(ctx, error.original)
