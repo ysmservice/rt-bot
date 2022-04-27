@@ -57,7 +57,7 @@ THANKYOU_TEMPLATE = cleandoc(
     公式ウェブサイト：https://free-rt.com
     サポートサーバー：https://discord.gg/KW4CZvYMJg
     チュートリアル　：https://rt-team.github.io/ja/notes/tutorial
-    プリフィックス　：`rf!`, `Rf!`, `RF!`, `rf.`, `Rf.`, `RF.`, `りふ！`, `りふ.`
+    プリフィックス　：`rf!`, `りふ！`, `RF!`, `rf.`, `Rf.`, `RF.`, `rF.`, `りふ.`, `Rf!`, `rF!`, `りふ!`
 
     **free-RT 利用規約**
     RTを利用した場合以下の利用規約に同意したことになります。
@@ -84,7 +84,7 @@ class EnglishThxTemplateView(discord.ui.View):
                 Official website: https://free-rt.com
                 Support server: https://discord.gg/VHwJ3CBuWw
                 Tutorial: https://free-rt.github.io/en/notes/tutorial
-                Prefixes: `rf!`, `Rf!`, `RF!`, `rf.`, `Rf.`, `Rf.`, `りふ！`, `りふ.`
+                Prefixes: `rf!`, `りふ！`, `RF!`, `rf.`, `Rf.`, `RF.`, `rF.`, `りふ.`, `Rf!`, `rF!`, `りふ!`
 
                 **RT Terms of Service**.
                 By using RT, you agree to the following terms of use.
