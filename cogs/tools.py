@@ -1,8 +1,6 @@
 # Free RT - Tools For Dashboard
 
-from typing import Literal
-
-from asyncio import sleep, wait_for, TimeoutError
+from asyncio import wait_for, TimeoutError
 
 from discord.ext import commands
 
@@ -89,7 +87,7 @@ class Tools(commands.Cog):
 
     @commands.command(
         extras={
-            "headding":{
+            "headding": {
                 "ja": "文字列を逆順にします。", "en": "Reverse text"
             }
         }

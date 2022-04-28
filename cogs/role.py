@@ -141,7 +141,7 @@ class RolePanelView(discord.ui.View):
             await interaction.response.send_message(
                 {
                     "ja": f"一分以内に{get_ja(mode)}してほしいロールを選択をしてください。",
-                    "en": f"Please select role within a minute."
+                    "en": "Please select role within a minute."
                 }, view=RoleSelectView(
                     interaction.guild_id, interaction.user.id, [
                         discord.SelectOption(

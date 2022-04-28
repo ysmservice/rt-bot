@@ -169,8 +169,7 @@ class Welcome(commands.Cog, DataManager):
                     row[2]
                     .replace("$ment$", member.mention)
                     .replace("$name$", member.name)
-                    .replace("$count$", str(len(member.guild.members)))
-                    )
+                    .replace("$count$", str(len(member.guild.members))))
                 channel = member.guild.get_channel(row[1])
                 if channel:
                     await sleep(3)

@@ -207,8 +207,7 @@ class ServerTool(commands.Cog):
         if 0 < day:
             try:
                 async for message in ctx.channel.history(
-                        limit=1, before=datetime.now() - timedelta(days=day)
-                        ):
+                        limit=1, before=datetime.now() - timedelta(days=day)):
                     e = discord.Embed(
                         description=f"{message.content}\n[メッセージに行く]({message.jump_url})",
                         color=self.bot.colors["normal"]
@@ -225,7 +224,7 @@ class ServerTool(commands.Cog):
             except (OverflowError, discord.HTTPException):
                 await ctx.reply(
                     {"ja": "過去にさかのぼりすぎました。",
-                    "en": "I was transported back in time to another dimension."})
+                     "en": "I was transported back in time to another dimension."})
         else:
             await ctx.reply(
                 {"ja": "未来にはいけません。",
@@ -234,8 +233,7 @@ class ServerTool(commands.Cog):
 
     def old_easy_embed(
             self, content: str,
-            color: discord.Color = discord.Embed.Empty
-            ):
+            color: discord.Color = discord.Embed.Empty):
         es = ">>"
         spl = content.splitlines()
         title = spl[0][len(es):]
