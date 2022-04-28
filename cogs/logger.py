@@ -80,7 +80,7 @@ class SystemLog(commands.Cog):
              commands.MemberNotFound, commands.UserNotFound, commands.ChannelNotFound,
              commands.RoleNotFound, commands.MissingRequiredArgument, commands.BadArgument,
              commands.ArgumentParsingError, commands.TooManyArguments, commands.MissingPermissions,
-                 commands.MissingRole, commands.CheckFailure, AssertionError)):
+                commands.MissingRole, commands.CheckFailure, AssertionError)):
             return
         elif isinstance(error, commands.CommandInvokeError):
             return await self.on_command_error(ctx, error.original)

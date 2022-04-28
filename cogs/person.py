@@ -260,8 +260,7 @@ class Person(commands.Cog):
                 "ja": "Discord登録日時",
                 "en": "Discord registration date and time"
             },
-            value=(user.created_at + timedelta(hours=9))
-                  .strftime('%Y-%m-%d %H:%M:%S')
+            value=(user.created_at + timedelta(hours=9)).strftime('%Y-%m-%d %H:%M:%S')
         )
         embed.add_field(
             name={

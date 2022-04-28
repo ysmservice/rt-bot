@@ -215,8 +215,7 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
                     + " - RT Twitter Notification",
                     avatar_url=(
                         "" if status.user.default_profile_image
-                        else status.user.profile_image_url_https
-                        ), view=view)
+                        else status.user.profile_image_url_https), view=view)
             except discord.Forbidden:
                 await channel.send(
                     "Twitter通知をしようとしましたが権限がないため通知に失敗しました。\n"

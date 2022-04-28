@@ -24,8 +24,7 @@ class Bulk(commands.Cog):
             value=("\n".join(f"{member.mention}\n　{e}" for member, e in failed_members)
                    if failed_members else {
                        "ja": f"{t}に失敗したメンバーはいません。",
-                       "en": f"No member has failed {t}."
-                   }))
+                       "en": f"No member has failed {t}."}))
         return embed
 
     @commands.group(

@@ -3,7 +3,6 @@
 from discord.ext import commands
 
 
-
 class Mines(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
