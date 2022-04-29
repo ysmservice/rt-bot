@@ -432,8 +432,7 @@ class TTSCog(commands.Cog, name="TTS"):
         }
         self.user[ctx.author.id].routines.append(RoutineData(
             keys=aliases.split(","),
-            path=ctx.message.attachments[0].url
-                 if voice == "up" else voice
+            path=ctx.message.attachments[0].url if voice == "up" else voice
         ))
         await ctx.reply("Ok")
 
