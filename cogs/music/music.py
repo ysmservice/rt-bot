@@ -76,7 +76,7 @@ def yf_gettitle(id):
 
 
 def yf_getduration(id):
-    searchurl="https://ysmfilm.wjg.jp/duration.php?id=" + id
+    searchurl = "https://ysmfilm.wjg.jp/duration.php?id=" + id
     with urllib.request.urlopen(searchurl) as ut:
         tit = ut.read().decode()
     return tit
