@@ -39,7 +39,7 @@ INFO_ITEMS = (("INVITE", {"ja": "招待リンク", "en": "invite link"}),
               ("CREDIT", {"ja": "クレジット", "en": "Credit"}))
 INFO_INVITE = "https://discord.com/api/oauth2/authorize?client_id=961521106227974174&permissions=8&scope=bot%20applications.commands"
 INFO_SS, INFO_URL = "https://discord.gg/KW4CZvYMJg", "https://free-rt.com"
-INFO_GITHUB = """* [RT-Team](https://github.com/free-RT)
+INFO_GITHUB = """* [free-RT-developers](https://github.com/free-RT)
 * [RT-Bot](https://github.com/free-RT/rt-bot)
 * [RT-Backend](https://github.com/free-RT/rt-backend)
 * [RT-Frontend](https://github.com/free-RT/rt-frontend)"""
