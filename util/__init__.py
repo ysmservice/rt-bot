@@ -24,13 +24,6 @@ from .webhooks import get_webhook, webhook_send
 
 from .ext import view as componesy
 
-if discord.__title__ == "nextcord":
-    from .olds import lib_setup as setup
-    from .slash import Context as SlashContext
-else:
-    from ._dpy_monky import _setup as setup
-    SlashContext = None
-
 
 __all__ = [
     "RT",
@@ -56,8 +49,6 @@ __all__ = [
     "olds",
     "tasks_extend",
     "sendKwargs",
-    "SlashContext",
-    "setup",
     "EmbedPage",
     "rtws",
     "securl",

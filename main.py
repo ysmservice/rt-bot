@@ -52,14 +52,13 @@ bot.pool = bot.mysql.pool  # bot.mysql.pool のエイリアス
 bot.colors = data["colors"]  # 下のColorsを辞書に変換したもの
 bot.Colors = Colors  # botで使う基本色が入っているclass
 
+
 @bot.listen()
 async def setup_hook():
     # 起動中だと教えられるようにするためのコグを読み込む
     await bot.load_extension("cogs._first")
-    # スラッシュマネージャーを設定する
-    await bot.load_extension("util.slash")
-# onami(jishakuのnextcord版)を読み込む
-    await bot.load_extension("onami")
+    # jishakuを読み込む
+    await bot.load_extension("jishaku")
 
 
 @bot.listen()
@@ -75,11 +74,10 @@ async def on_ready():
     for name in listdir("cogs"):
         if not name.startswith(("_", ".")):
             try:
-                bot.load_extension(
+                await bot.load_extension(
                     f"cogs.{name[:-3] if name.endswith('.py') else name}")
-            except discord.ext.commands.NoEntryPointError as e:
-                if "setup" not in str(e):
-                    raise e
+            except Exception as e:
+                print(e)
             else:
                 bot.print("[Extension]", "Loaded", name)  # ロードログの出力
     bot.print("Completed to boot Free RT")
