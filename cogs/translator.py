@@ -170,5 +170,5 @@ class Translator(commands.Cog):
                 break
 
 
-def setup(bot):
-    bot.add_cog(Translator(bot))
+async def setup(bot):
+    await bot.add_cog(Translator(bot))
