@@ -224,6 +224,10 @@ class Music:
                 return cls(
                     cog, author, MusicTypes.direct_url, url, url, "", "--:--:--"
                 )
+            elif urllib.parse.urlparse(url).path.endswith('.mp4') or urllib.parse.urlparse(url).path.endswith('.mp3'):
+                return cls(
+                    cog, author, MusicTypes.direct_url, url, url,"","--:--:--"
+                 )
             else:
                 # YouTube
                 if not is_url(url):
