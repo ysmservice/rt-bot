@@ -294,5 +294,5 @@ class schedule(commands.Cog, DataManager):
         self.process_notice.cancel()
 
 
-def setup(bot):
-    bot.add_cog(schedule(bot))
+async def setup(bot):
+    await bot.add_cog(schedule(bot))

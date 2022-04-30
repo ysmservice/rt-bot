@@ -45,8 +45,6 @@ class rtfm(commands.Cog, name="Documentation"):
         self.bot = bot
 
         self.page_types = {
-            "nextcord_latest": "https://docs.nextcord.dev/en/latest/",
-            "nextcord_stable": "https://docs.nextcord.dev/en/stable/",
             "latest": "https://discordpy.readthedocs.io/en/latest/",
             "stable": "https://discordpy.readthedocs.io/en/stable/",
             "v1.7.3": "https://discordpy.readthedocs.io/en/v1.7.3/",
@@ -175,5 +173,5 @@ class rtfm(commands.Cog, name="Documentation"):
         await self.do_rtfm(ctx, key, query)
 
 
-def setup(bot):
-    bot.add_cog(rtfm(bot))
+async def setup(bot):
+    await bot.add_cog(rtfm(bot))
