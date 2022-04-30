@@ -248,5 +248,5 @@ class DataManager(commands.Cog):
             print(1)
 
 
-def setup(bot):
-    bot.add_cog(DataManager(bot))
+async def setup(bot):
+    await bot.add_cog(DataManager(bot))
