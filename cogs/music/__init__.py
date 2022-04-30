@@ -1,4 +1,5 @@
 # Free RT - Music
+# This feature is disabled.
 
 from __future__ import annotations
 
@@ -765,4 +766,5 @@ class MusicCog(commands.Cog, name="Music"):
 
 
 async def setup(bot):
-    await bot.add_cog(MusicCog(bot))
+    # await bot.add_cog(MusicCog(bot))
+    pass  # This feature is disabled.

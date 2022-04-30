@@ -11,6 +11,7 @@ from .converters import (
     RolesConverter
 )
 from .data_manager import DatabaseManager
+from .dpy_monkey import setup
 from .lib_data_manager import Table
 from .minesweeper import MineSweeper
 from . import mysql_manager as mysql
@@ -40,6 +41,7 @@ __all__ = [
     "debug",
     "dochelp",
     "docperser",
+    "setup",
     "Table",
     "markdowns",
     "MineSweeper",

@@ -5,24 +5,10 @@ from discord.ext import commands
 from aiohttp import ClientSession
 from aiomysql import Pool
 
-from data import data, Colors
-
-from .mysql_manager import MySQLManager
-from .rtws import ExtendedRTWebSocket
-from .cacher import CacherPool
-
 
 class RT(commands.AutoShardedBot):
-    mysql: MySQLManager
-    pool: Pool
-    test: bool
-    data: data  # type: ignore
-    session: ClientSession
-    secret: dict
-    colors: dict
-    Colors: Colors
-    rtws: ExtendedRTWebSocket
-    cachers: CacherPool
+    def __init__(self, *args, **kwargs):
+        return super().__init__(*args, **kwargs)
 
     def print(self, *args, **kwargs) -> None:
         temp = [*args]
@@ -46,3 +32,6 @@ class RT(commands.AutoShardedBot):
 
     def get_website_url(self) -> str:
         return "http://localhost/" if self.test else "https://free-rt.com/"
+
+    async def add_cog(self, *args, override: bool = True, **kwargs):
+        return await super().add_cog(*args, override=override, **kwargs)
