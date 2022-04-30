@@ -54,14 +54,6 @@ bot.Colors = Colors  # botで使う基本色が入っているclass
 
 
 @bot.listen()
-async def setup_hook():
-    # 起動中だと教えられるようにするためのコグを読み込む
-    await bot.load_extension("cogs._first")
-    # jishakuを読み込む
-    await bot.load_extension("jishaku")
-
-
-@bot.listen()
 async def on_ready():
     bot.print("Connected to discord")
     # 起動中いつでも使えるaiohttp.ClientSessionを作成
