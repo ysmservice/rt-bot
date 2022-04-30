@@ -218,5 +218,5 @@ class DelayLottery(commands.Cog, DataManager):
         self.lottery_worker.cancel()
 
 
-def setup(bot):
-    bot.add_cog(DelayLottery(bot))
+async def setup(bot):
+    await bot.add_cog(DelayLottery(bot))
