@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from typing import (
-    TYPE_CHECKING, TypedDict, Type, Callable, Literal, Union, Optional, Any
+    TypedDict, Callable, Literal, Union, Optional, Any
 )
 
 from time import time
@@ -56,6 +56,7 @@ class MusicTypes:
     ysmfilm = 5
     direct_url = 6
 
+
 class MusicDict(TypedDict):
     "プレイリスト等に保存する際の音楽データの辞書の型です。"
 
@@ -69,16 +70,22 @@ class MusicDict(TypedDict):
 
 #   Utils
 def yf_gettitle(id):
-    searchurl="https://ysmfilm.wjg.jp/view_raw.php?id="+id
+    searchurl = "https://ysmfilm.wjg.jp/view_raw.php?id=" + id
     with urllib.request.urlopen(searchurl) as ut:
-        tit=ut.read().decode()
+        tit = ut.read().decode()
     return tit
+
+
 def yf_getduration(id):
-    searchurl="https://ysmfilm.wjg.jp/duration.php?id="+id
+    searchurl = "https://ysmfilm.wjg.jp/duration.php?id=" + id
     with urllib.request.urlopen(searchurl) as ut:
-        tit=ut.read().decode()
+        tit = ut.read().decode()
     return tit
+
+
 niconico = NicoNico()
+
+
 def make_niconico_music(
     cog: MusicCog, author: discord.Member, url: str, video: Union[
         niconico_objects.Video, niconico_objects.MyListItemVideo
@@ -141,7 +148,7 @@ class Music:
         self._made_source = False
         self.closed = False
 
-        self.on_close = lambda : None
+        self.on_close = lambda: None
 
     def to_dict(self) -> MusicDict:
         "このクラスに格納されているデータをJSONにシリアライズ可能な辞書にします。"
@@ -204,11 +211,18 @@ class Music:
                     data["thumbnail"], data["duration"]
                 )
             elif "ysmfilm" in url:
-                qs=urllib.parse.urlparse(url).query
-                qs_d=urllib.parse.parse_qs(qs)
+                qs = urllib.parse.urlparse(url).query
+                qs_d = urllib.parse.parse_qs(qs)
                 return cls(
                     cog, author, MusicTypes.ysmfilm, yf_gettitle(qs_d['id'][0]), url,
-                    "https://ysmfilm.wjg.jp/th.php?id="+qs_d['id'][0], int(yf_getduration(qs_d['id'][0]).split(':')[0])*360+int(yf_getduration(qs_d['id'][0]).split(':')[1])*60+int(yf_getduration(qs_d['id'][0]).split(':')[2])
+                    "https://ysmfilm.wjg.jp/th.php?id=" + qs_d['id'][0],
+                    int(yf_getduration(qs_d['id'][0]).split(':')[0]) * 360
+                    + int(yf_getduration(qs_d['id'][0]).split(':')[1]) * 60
+                    + int(yf_getduration(qs_d['id'][0]).split(':')[2])
+                )
+            elif urllib.parse.urlparse(url).path.endswith('.mp4') or urllib.parse.urlparse(url).path.endswith('.mp3'):
+                return cls(
+                    cog, author, MusicTypes.direct_url, url, url, "", "--:--:--"
                 )
             elif urllib.parse.urlparse(url).path.endswith('.mp4') or urllib.parse.urlparse(url).path.endswith('.mp3'):
                 return cls(
@@ -261,9 +275,9 @@ class Music:
             setattr(self, "on_close", self.video.close)
             return self.video.download_link
         elif self.music_type == MusicTypes.ysmfilm:
-            qs=urllib.parse.urlparse(self.url).query
-            qs_d=urllib.parse.parse_qs(qs)
-            return "https://ysmfilm.wjg.jp/video/"+qs_d['id'][0]+".mp4"
+            qs = urllib.parse.urlparse(self.url).query
+            qs_d = urllib.parse.parse_qs(qs)
+            return "https://ysmfilm.wjg.jp/video/" + qs_d['id'][0] + ".mp4"
         elif self.music_type == MusicTypes.direct_url:
             return self.url
         assert False, "あり得ないことが発生しました。"
@@ -341,7 +355,7 @@ class Music:
             return ""
         return "".join((
             (base := "?" * length
-            )[:(now := int(self.now / self.duration * length))],
+             )[:(now := int(self.now / self.duration * length))],
             "?", base[now:])
         )
 
