@@ -1,7 +1,5 @@
 # Free RT Utilities
 
-import discord
-
 from .bot import RT
 from .cacher import Cache, Cacher, CacherPool
 from .checks import isintable, has_any_roles, has_all_roles
