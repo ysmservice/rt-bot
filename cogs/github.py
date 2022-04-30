@@ -5,7 +5,7 @@ from discord.ext import commands
 class Github(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.github_url = "https://api.github.com/repos/RT-Team/rt-backend/issues"
+        self.github_url = "https://api.github.com/repos/free-RT/rt-bot/issues"
         self.github_token = bot.secret.get("github", "")
 
     @commands.group(name="github")
