@@ -23,7 +23,7 @@ class qr(commands.Cog):
 
         !lang en
         --------
-        qr category command。sub_commands: make, read"""
+        qr category command. sub_commands: make, read"""
         if ctx.invoked_subcommand is None:
             return await ctx.send("使用方法が違います。")
 
@@ -62,5 +62,5 @@ class qr(commands.Cog):
         os.remove(str(ctx.author.id) + 'r.png')
 
 
-def setup(bot): 
-    bot.add_cog(qr(bot))
+async def setup(bot): 
+    await bot.add_cog(qr(bot))

@@ -183,7 +183,7 @@ class GlobalBan(commands.Cog, DataManager):
 
     @gban.command("list")
     @commands.cooldown(1, 60, commands.BucketType.user)
-    async def gban_list(self, ctx):
+    async def (self, ctx):
         """!lang ja
         --------
         Gbanされている人のリストを表示します。
@@ -259,5 +259,6 @@ class GlobalBan(commands.Cog, DataManager):
         await ctx.reply("削除しました。")
 
 
-def setup(bot):
-    bot.add_cog(GlobalBan(bot))
+async def setup(bot):
+    await bot.add_cog(GlobalBan(bot))
+gban_list

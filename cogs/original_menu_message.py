@@ -261,5 +261,5 @@ class OriginalMenuMessage(commands.Cog, DataManager):
         )
 
 
-def setup(bot):
-    bot.add_cog(OriginalMenuMessage(bot))
+async def setup(bot):
+    await bot.add_cog(OriginalMenuMessage(bot))

@@ -263,5 +263,5 @@ class LinkBlocker(commands.Cog, DataManager):
                 await message.channel.send(content, delete_after=3)
 
 
-def setup(bot):
-    bot.add_cog(LinkBlocker(bot))
+async def setup(bot):
+    await bot.add_cog(LinkBlocker(bot))

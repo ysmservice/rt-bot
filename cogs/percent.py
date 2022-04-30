@@ -15,5 +15,5 @@ class percent(commands.Cog):
         await ctx.send(embed=embed)
 
 
-def setup(bot):
-    return bot.add_cog(percent(bot))
+async def setup(bot):
+    await bot.add_cog(percent(bot))

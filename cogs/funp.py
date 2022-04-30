@@ -394,5 +394,5 @@ class Funp(commands.Cog, DataManager):
             )
 
 
-def setup(bot):
-    bot.add_cog(Funp(bot))
+async def setup(bot):
+    await bot.add_cog(Funp(bot))

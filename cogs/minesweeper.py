@@ -38,5 +38,5 @@ class Mines(commands.Cog):
             "このコマンドは現在使用できません。もうしばらくお待ちください...")
 
 
-def setup(bot):
-    return bot.add_cog(Mines(bot))
+async def setup(bot):
+    await bot.add_cog(Mines(bot))

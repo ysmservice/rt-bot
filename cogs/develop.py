@@ -92,5 +92,5 @@ class Develop(commands.Cog):
         await ctx.reply("Ok")
 
 
-def setup(bot):
-    bot.add_cog(Develop(bot))
+async def setup(bot):
+    await bot.add_cog(Develop(bot))
