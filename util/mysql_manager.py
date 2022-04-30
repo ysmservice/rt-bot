@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, Tuple
 
-from asyncio import get_event_loop, iscoroutinefunction
+from asyncio import get_event_loop, iscoroutinefunction, run
 from aiomysql import create_pool, connect
 from functools import wraps
 import warnings
@@ -359,6 +359,9 @@ class MySQLManager:
     def __init__(self, pool: bool = False, _pool_c=False, **kwargs):
         self.connection, self.pool = None, None
         self._real_pool = None
+        run(async__init__(kwargs))
+
+    async def async__init__(self, pool: bool = False, _pool_c=False, **kwargs):
         self.loop = kwargs.get("loop", get_event_loop())
         self.loop.create_task(self._setup(pool, _pool_c, kwargs))
 
