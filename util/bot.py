@@ -2,8 +2,7 @@
 
 from discord.ext import commands
 
-from aiohttp import ClientSession
-from aiomysql import Pool
+from .dpy_monkey import _setup
 
 
 class RT(commands.AutoShardedBot):
@@ -35,3 +34,7 @@ class RT(commands.AutoShardedBot):
 
     async def add_cog(self, *args, override: bool = True, **kwargs):
         return await super().add_cog(*args, override=override, **kwargs)
+
+    async def setup(self, mode=None) -> None:
+        "utilにある拡張cogをすべてもしくは指定されたものだけ読み込みます。"
+        return await _setup(self, mode)

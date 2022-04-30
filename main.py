@@ -11,7 +11,7 @@ import discord
 from aiohttp import ClientSession
 from ujson import load, dumps
 
-from util import RT, mysql, setup, websocket
+from util import RT, mysql, websocket
 from data import data, Colors
 
 print("Free RT Discord Bot (C) 2022 Free RT\nNow loading...")
@@ -69,7 +69,7 @@ async def on_ready():
     await bot.unload_extension("cogs._first")
 
     # 拡張を読み込む
-    setup(bot)  # util.setup
+    await bot.setup(bot)
     await bot.load_extension("cogs._oldrole")  # oldroleだけ特別に読み込んでいる
     for name in listdir("cogs"):
         if not name.startswith(("_", ".")):
