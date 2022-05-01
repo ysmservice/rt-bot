@@ -170,5 +170,5 @@ class OnSend(commands.Cog):
         self.events[event_name].remove(coro)
 
 
-def setup(bot):
+async def setup(bot):
     await bot.add_cog(OnSend(bot))
