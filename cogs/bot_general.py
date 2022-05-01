@@ -19,6 +19,7 @@ from util import RT
 
 from .server_tool import PERMISSION_TEXTS
 
+ERROR_CHANNEL = 962977145716625439
 
 INFO_DESC = {
     "ja": """どうもFree RTという新時代Botです。
@@ -417,6 +418,17 @@ class BotGeneral(commands.Cog):
         except Exception as e:
             kwargs["content"] = str(e)
             await ctx.send(**kwargs)
+
+    @tasks.loop(hours=2)
+    async def error_log_to_discord(self):
+        # discordの特定のチャンネルにエラーを送信します。
+        if len(self.errors) == 0:
+            return
+        await self.bot.get_channel(ERROR_CHANNEL).send(
+            embed=discord.Embed(title="エラーログ", description=f"この2時間に発生したエラーの回数:{len(self.errors)}"),
+            file=discord.File(StringIO("\n\n".join(self.errors)))
+        )
+        self.errors = set()
 
     def get_help_url(self, category: str, name: str) -> str:
         return f"https://free-rt.com/help.html?g={category}&c={name}"
