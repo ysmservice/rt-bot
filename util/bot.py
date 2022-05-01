@@ -3,7 +3,7 @@
 from discord.ext import commands
 
 from .dpy_monkey import _setup
-
+from . import mysql_manager as mysql
 
 class RT(commands.AutoShardedBot):
     def __init__(self, *args, **kwargs):
@@ -14,6 +14,15 @@ class RT(commands.AutoShardedBot):
         await self.load_extension("cogs._first")
         # jishakuを読み込む
         await self.load_extension("jishaku")
+        self.mysql = self.data["mysql"] = await mysql.MySQLManager().init(
+            loop=self.loop,
+            **self.secret["mysql"],
+            pool=True,
+            minsize=1,
+            maxsize=500 if self.test else 1000000,
+            autocommit=True
+        )  # maxsizeはテスト用では500、本番環境では100万になっている
+        self.pool = self.mysql.pool  # bot.mysql.pool のエイリアス
 
     def print(self, *args, sep: str = "", **kwargs) -> None:
         "[RT log]と色の装飾を加えてprintをします。"
@@ -46,6 +55,6 @@ class RT(commands.AutoShardedBot):
 
     async def setup(self, mode=None) -> None:
         "utilにある拡張cogをすべてもしくは指定されたものだけ読み込みます。"
-        if mode==None: 
+        if mode is None:
             return await _setup(self)
         return await _setup(self, mode)
