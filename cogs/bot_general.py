@@ -406,7 +406,7 @@ class BotGeneral(commands.Cog):
                 kwargs["view"] = discord.ui.View()
                 kwargs["view"].add_item(
                     discord.ui.Button(
-                        label="ヘルプを見る", emoji="?", url=url
+                        label="ヘルプを見る", emoji="❔", url=url
                     )
                 )
 
