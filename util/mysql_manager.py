@@ -356,12 +356,11 @@ class MySQLManager:
     async with db.get_cursor() as cursor:
         ..."""
 
-    async def init(self, pool: bool = False, _pool_c=False, **kwargs) -> object:
+    def __init__(self, pool: bool = False, _pool_c=False, **kwargs):
         self.connection, self.pool = None, None
         self._real_pool = None
         self.loop = kwargs.get("loop", get_event_loop())
         self.loop.create_task(self._setup(pool, _pool_c, kwargs))
-        return self
 
     async def _setup(self, pool, _pool_c, kwargs) -> None:
         # データベースの準備をする。

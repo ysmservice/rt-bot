@@ -14,7 +14,7 @@ class RT(commands.AutoShardedBot):
         await self.load_extension("cogs._first")
         # jishakuを読み込む
         await self.load_extension("jishaku")
-        self.mysql = self.data["mysql"] = await mysql.MySQLManager().init(
+        self.mysql = self.data["mysql"] = mysql.MySQLManager(
             loop=self.loop,
             **self.secret["mysql"],
             pool=True,
@@ -53,8 +53,6 @@ class RT(commands.AutoShardedBot):
         "add_cogをデフォルトでオーバーライドするようにしたもの。"
         return await super().add_cog(*args, override=override, **kwargs)
 
-    async def setup(self, mode=None) -> None:
+    async def setup(self, mode=()) -> None:
         "utilにある拡張cogをすべてもしくは指定されたものだけ読み込みます。"
-        if mode is None:
-            return await _setup(self)
         return await _setup(self, mode)
