@@ -7,6 +7,7 @@ from collections import defaultdict
 from inspect import cleandoc
 from itertools import chain
 from random import choice
+from io import StringIO
 from time import time
 import speedtest
 
