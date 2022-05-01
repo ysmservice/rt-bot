@@ -61,7 +61,7 @@ async def on_ready():
     await bot.unload_extension("cogs._first")
 
     # 拡張を読み込む
-    await bot.setup(bot)
+    await bot.setup()
     await bot.load_extension("cogs._oldrole")  # oldroleだけ特別に読み込んでいる
     for name in listdir("cogs"):
         if not name.startswith(("_", ".")):
