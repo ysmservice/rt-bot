@@ -359,7 +359,7 @@ class MySQLManager:
     def __init__(self, pool: bool = False, _pool_c=False, **kwargs):
         self.connection, self.pool = None, None
         self._real_pool = None
-        run(async__init__(kwargs))
+        run(self.async__init__(kwargs))
 
     async def async__init__(self, pool: bool = False, _pool_c=False, **kwargs):
         self.loop = kwargs.get("loop", get_event_loop())
