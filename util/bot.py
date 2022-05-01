@@ -46,4 +46,6 @@ class RT(commands.AutoShardedBot):
 
     async def setup(self, mode=None) -> None:
         "utilにある拡張cogをすべてもしくは指定されたものだけ読み込みます。"
+        if mode==None: 
+            return await _setup(self)
         return await _setup(self, mode)
