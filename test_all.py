@@ -8,4 +8,7 @@ def test_util():
 def test_cog():
     "Cog関連のテストをします。"
     import cogs
-    assert all("setup" in dir(m) for m in dir(cogs) if not m.startswith(("_", ".")))
+    assert all("setup" in dir(getattr(cogs, m))
+               for m in dir(cogs)
+               if not m.startswith(("_", "."))
+              )
