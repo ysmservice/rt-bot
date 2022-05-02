@@ -11,5 +11,4 @@ def test_cog():
     import cogs
     assert all("setup" in dir(getattr(cogs, m))
                for m in dir(cogs)
-               if not m.startswith(("_", "."))
-              )
+               if not m.startswith(("_", ".")))
