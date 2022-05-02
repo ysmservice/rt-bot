@@ -5,6 +5,7 @@ def test_util():
     import util
     assert "mysql" in dir(util)
 
+
 def test_cog():
     "Cog関連のテストをします。"
     import cogs
