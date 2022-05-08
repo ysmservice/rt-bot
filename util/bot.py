@@ -25,7 +25,7 @@ class RT(commands.AutoShardedBot):
         )  # maxsizeはテスト用では500、本番環境では100万になっている
         self.pool = self.mysql.pool  # bot.mysql.pool のエイリアス
 
-    def print(self, *args, sep: str = "", **kwargs) -> None:
+    def print(self, *args, sep: str, **kwargs) -> None:
         "[RT log]と色の装飾を加えてprintをします。"
         temp = [*args]
         if len(args) >= 1 and args[0].startswith("[") and args[0].endswith("]"):
