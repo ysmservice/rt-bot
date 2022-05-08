@@ -11,8 +11,6 @@ from . import mysql_manager as mysql
 
 class RT(commands.AutoShardedBot):
     def __init__(self, *args, **kwargs):
-        # 起動中いつでも使えるaiohttp.ClientSessionを作成
-        self._session = ClientSession(loop=bot.loop, json_serialize=dumps)
         return super().__init__(*args, **kwargs)
 
     @property
@@ -23,6 +21,8 @@ class RT(commands.AutoShardedBot):
         return self._session
 
     async def setup_hook(self):
+        # 起動中いつでも使えるaiohttp.ClientSessionを作成
+        self._session = ClientSession(loop=self.loop, json_serialize=dumps)
         # 起動中だと教えられるようにするためのコグを読み込む
         await self.load_extension("cogs._first")
         # jishakuを読み込む
