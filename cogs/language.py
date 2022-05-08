@@ -93,7 +93,7 @@ class Language(commands.Cog):
             args = (self.get_text(args[0], lang),)
         if kwargs.get("embed", False):
             kwargs["embed"] = self.get_text(kwargs["embed"], lang)
-        if kwargs.get("embed", False):
+        if kwargs.get("embeds", False):
             kwargs["embeds"] = [self.get_text(embed, lang)
                                 for embed in kwargs.get("embeds", [])]
 
