@@ -336,7 +336,7 @@ class GlobalChat(commands.Cog, DataManager):
                 channel = self.bot.get_channel(channel_id)
                 if channel:
                     if channel.guild.id not in self.ban_cache:
-                        for entry in await channel.guild.bans():
+                        async for entry in channel.guild.bans():
                             self.ban_cache[channel.guild.id].append(
                                 entry.user.id
                             )

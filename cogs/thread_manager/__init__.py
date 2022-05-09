@@ -381,7 +381,7 @@ class ThreadManager(commands.Cog, DataManager):
                     self.cache.remove(after.guild.id)
 
     @commands.Cog.listener()
-    async def on_thread_join(self, thread: discord.Thread):
+    async def on_thread_create(self, thread: discord.Thread):
         if discord.utils.get(thread.members, id=self.bot.user.id) is None:
             if thread.guild.id in self.cache:
                 self.cache.remove(thread.guild.id)
