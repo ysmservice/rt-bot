@@ -253,7 +253,7 @@ class Person(commands.Cog):
             ) if user.public_flags else "",
             color=self.bot.colors["normal"]
         )
-        embed.set_thumbnail(url=getattr(user.avatar, "url", ""))
+        embed.set_thumbnail(url=getattr(user.display_avatar, "url", ""))
         embed.add_field(name="ID", value=f"`{user.id}`")
         embed.add_field(
             name={
@@ -489,7 +489,7 @@ class Person(commands.Cog):
                             await message.remove_reaction(
                                 self.EMOJIS["search"], self.bot.user)
                         except (discord.HTTPException, discord.Forbidden,
-                                discord.NotFound, discord.InvalidArgument):
+                                discord.NotFound, TypeError):
                             pass
                     else:
                         # もしリアクションが押されたならコマンドを実行する。
