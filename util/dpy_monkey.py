@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from discord.ext import commands
+import discord
 
 from .webhooks import webhook_send
 from .cacher import CacherPool
