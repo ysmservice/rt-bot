@@ -18,7 +18,7 @@ from jishaku.functools import executor_function
 
 from util import RT
 
-from .server_tool import PERMISSION_TEXTS
+from data import PERMISSION_TEXTS
 
 ERROR_CHANNEL = 962977145716625439
 
