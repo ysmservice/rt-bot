@@ -63,11 +63,6 @@ def clean_content(content: str, guild: discord.Guild) -> str:
 Context = Union[commands.Context]
 
 
-# webhook_sendを新しく定義する。
-discord.abc.Messageable.webhook_send = webhook_send  # type: ignore
-discord.ext.easy = componesy  # type: ignore
-
-
 def lib_setup(bot, only: Union[Tuple[str, ...], List[str]] = []):
     "元rtlibにあるエクステンションを全てまたは指定されたものだけ読み込みます。"
     for name in ("on_send", "on_full_reaction", "on_cog_add"):
