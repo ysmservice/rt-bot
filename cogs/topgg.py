@@ -1,6 +1,6 @@
 # Free RT - TopGG
 
-from topgg import DBLClient
+# from topgg import DBLClient
 
 
 def setup(bot):

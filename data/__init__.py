@@ -1,5 +1,7 @@
 # Free RTの基本データ。
 
+from inspect import cleandoc
+
 
 class Colors:
     normal = 0x0066ff
