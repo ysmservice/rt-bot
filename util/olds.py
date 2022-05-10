@@ -9,8 +9,6 @@ from pymysql.err import OperationalError
 from . import isintable
 
 # from .slash import Context as SlashContext
-from .ext import componesy
-from .webhooks import webhook_send
 from .cacher import CacherPool
 
 
