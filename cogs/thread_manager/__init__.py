@@ -47,7 +47,7 @@ class ThreadManager(commands.Cog, DataManager):
         Thread Manager"""
         if ctx.invoked_subcommand:
             if not hasattr(ctx, "interacton"):
-                await ctx.trigger_typing()
+                await ctx.typing()
         else:
             await ctx.reply(
                 {"ja": "使用方法が違います。",

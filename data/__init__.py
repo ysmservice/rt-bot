@@ -61,7 +61,7 @@ PERMISSION_TEXTS = {
     "manage_webhooks": "ウェブフックの管理",
     "manage_events": "イベントの管理",
     "manage_threads": "スレッドの管理",
-    "use_slash_commands": "スラッシュコマンドの使用",
+    "use_application_commands": "スラッシュコマンドの使用",
     "view_guild_insights": "チャンネルを見る",
     "send_messages": "メッセージを送信",
     "send_tts_messages": "テキスト読み上げメッセージを送信する",
