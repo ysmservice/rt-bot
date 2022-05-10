@@ -7,7 +7,9 @@ from typing import TYPE_CHECKING
 
 from discord.ext import commands
 
+from .webhooks import webhook_send
 from .cacher import CacherPool
+from .ext import componesy
 
 if TYPE_CHECKING:
     from .bot import RT
@@ -27,6 +29,13 @@ async def _setup(self, mode: tuple[str, ...] = ()) -> None:
             except commands.ExtensionAlreadyLoaded:
                 pass
     self.cachers = CacherPool()
+
+
+# webhook_sendとcomponesyを新しく定義する。
+discord.abc.Messageable.webhook_send = webhook_send  # type: ignore
+discord.ext.commands.Context.webhook_send = webhook_send  # type: ignore
+# componesyに関してはモンキーパッチ脱却予定なのでext.easyからのアクセスは非推奨。
+discord.ext.easy = componesy  # type: ignore
 
 
 # on_full_readyが呼ばれた時にtreeをsyncする。
