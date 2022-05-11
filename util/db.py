@@ -45,13 +45,44 @@ class Coooog(commands.Cog):
 ```
 """
 
-
-async def add_db_manager(bot, manager):
-    async with bot.mysql.pool.acquire() as conn:
-        async with conn.cursor() as cursor:
-            await manager.manager_load()
+from inspect import iscoroutinefunction
 
 
 class DBManager:
-    def __init__(self):
+    "データベースマネージャーです。db.command()デコレータが着いたものをコマンドとして扱います。"
+
+    def __init_subclass__(cls):
+        return cls  # 未完成
+
+    async def manager_load(self, _):
         pass
+
+
+def command(**kwargs):
+    "これがついた関数をコマンドとして扱うデコレータです。外部から`.run(...)`で呼び出せます。"
+    def deco(func):
+        if not iscoroutinefunction(func):
+            raise ValueError("コマンドはコルーチンである必要があります。")
+
+        async def new_coro(self, *args, **kwargs):  # 未完成
+            async with self.bot.pool.acquire() as conn:
+                async with conn.cursor() as cursor:
+                    return await func(cursor, *args, **kwargs)
+        return new_coro
+    return deco
+
+
+async def add_db_manager(bot, manager: DBManager):
+    "botにDBManagerを追加します。"
+    if not isinstance(manager, DBManager):
+        raise ValueError("引数managerはDBManagerのサブクラスである必要があります。")
+
+    if not hasattr(bot, "managers"):
+        bot.managers = [manager]
+    else:
+        bot.managers.append(manager)
+
+    # manager_load関数を実行する。(デフォルトでは何もしない)
+    async with bot.pool.acquire() as conn:
+        async with conn.cursor() as cursor:
+            await manager.manager_load(cursor)
