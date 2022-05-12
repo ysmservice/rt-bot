@@ -39,15 +39,22 @@ class Coooog(commands.Cog):
         self.db = await self.bot.add_db_manager(Managerrr(bot))
 
     @commands.command()
-    async def datacheck(self, ctx, id: int):
-        result = self.db.get_user.run()
+    async def datacheck(self, ctx, id: str):
+        result = self.db.get_user.run(id)
         await ctx.send(result if result else "見つかりませんでした。")
 ```
 """
 
 from discord.ext import commands
 
+import aiomysql
+
 from inspect import iscoroutinefunction
+
+
+async def mysql_connect(*args, **kwargs):
+    "全て移行が終了した後に使う予定のmysql接続用関数。"
+    return await aiomysql.create_pool(*args, **kwargs)
 
 
 class DBManager:
@@ -70,12 +77,14 @@ class DBManager:
 
 class Command:
 
-    def __init__(self, coro):
+    def __init__(self, coro, **kwargs):
         self._manager = None
         self.__bot: commands.Bot = None
         self._callback = coro
+        self.__kwargs = kwargs
 
     async def __call__(self, *args, **kwargs):
+        # 単純に呼び出すだけ。自動cursor付与などは一切しない。
         return await self._callback(self._manager, *args, **kwargs)
 
     async def run(self, *args, **kwargs):
@@ -83,8 +92,13 @@ class Command:
             raise RuntimeError("Managerもしくはbotが見つかりません。")
 
         async with self.__bot.pool.acquire() as conn:
-            async with conn.cursor() as cursor:
-                result = await self._callback(self._manager, cursor, *args, **kwargs)
+            if kwargs.get("auto"):
+                async with conn.cursor() as cursor:
+                    result = await self._callback(self._manager, cursor, *args, **kwargs)
+            else:
+                result = await self._callback(self._manager, conn, *args, **kwargs)
+
+        # releaseして、使っていないconnectionをしまう。
         self.__bot.pool.release()
         return result
 
