@@ -45,6 +45,8 @@ class Coooog(commands.Cog):
 ```
 """
 
+from discord.ext import commands
+
 from inspect import iscoroutinefunction
 
 
@@ -52,10 +54,39 @@ class DBManager:
     "データベースマネージャーです。db.command()デコレータが着いたものをコマンドとして扱います。"
 
     def __init_subclass__(cls):
-        return cls  # 未完成
+        cls.commands = []
+        for m in dir(cls):
+            obj = getattr(cls, m)
+            if isinstance(obj, Command):
+                obj._manager = cls
+                setattr(cls, m, obj)
+                cls.commands.append(obj)
+
+        return cls
 
     async def manager_load(self, _):
         pass
+
+
+class Command:
+
+    def __init__(self, coro):
+        self._manager = None
+        self.__bot: commands.Bot = None
+        self._callback = coro
+
+    async def __call__(self, *args, **kwargs):
+        return await self._callback(self._manager, *args, **kwargs)
+
+    async def run(self, *args, **kwargs):
+        if not self._manager or not self.__bot:
+            raise RuntimeError("Managerもしくはbotが見つかりません。")
+
+        async with self.__bot.pool.acquire() as conn:
+            async with conn.cursor() as cursor:
+                result = await self._callback(self._manager, cursor, *args, **kwargs)
+        self.__bot.pool.release()
+        return result
 
 
 def command(**kwargs):
@@ -63,17 +94,15 @@ def command(**kwargs):
     def deco(func):
         if not iscoroutinefunction(func):
             raise ValueError("コマンドはコルーチンである必要があります。")
-
-        async def new_coro(self, *args, **kwargs):  # 未完成
-            async with self.bot.pool.acquire() as conn:
-                async with conn.cursor() as cursor:
-                    return await func(cursor, *args, **kwargs)
-        return new_coro
+        return Command(func)
     return deco
 
 
-async def add_db_manager(bot, manager: DBManager):
+async def add_db_manager(bot: commands.Bot, manager: DBManager):
     "botにDBManagerを追加します。"
+    for m in manager.commands:
+        m.__bot = bot
+        m._manager = manager
     if not isinstance(manager, DBManager):
         raise ValueError("引数managerはDBManagerのサブクラスである必要があります。")
 
@@ -86,3 +115,4 @@ async def add_db_manager(bot, manager: DBManager):
     async with bot.pool.acquire() as conn:
         async with conn.cursor() as cursor:
             await manager.manager_load(cursor)
+    return manager
