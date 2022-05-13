@@ -9,7 +9,7 @@ gTTS
 opencv-contrib-python
 bs4
 youtube_dl
-pyopenjtalk
+git+https://github.com/yaakiyu/pyopenjtalk
 psutil
 pyqrcode
 pypng
