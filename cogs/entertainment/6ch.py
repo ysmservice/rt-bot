@@ -7,6 +7,7 @@ from datetime import date
 import reprypt
 
 from discord.ext import commands
+from discord import app_commands
 
 
 def rname() -> str:
@@ -32,7 +33,7 @@ class SixChannel(commands.Cog):
         async with async_open(path, "w") as f:
             await f.write(dumps(data, indent=indent))
 
-    @commands.group(
+    @commands.hybrid_group(
         name="6ch", aliases=["ch"], extras={
             "headding": {
                 "ja": "掲示板",
@@ -61,6 +62,7 @@ class SixChannel(commands.Cog):
                 await ctx.reply("まだありません。")
 
     @sixch.command()
+    @app_commands.describe(name="作成するスレッドの名前")
     async def new(self, ctx, *, name):
         """!lang ja
         -------
@@ -93,6 +95,7 @@ class SixChannel(commands.Cog):
 
     @sixch.command(aliases=["cng"])
     @commands.has_permissions(manage_channels=True)
+    @app_commands.describe(name="接続するスレッドの名前")
     async def connect(self, ctx, *, name):
         """!lang ja
         --------
@@ -113,6 +116,7 @@ class SixChannel(commands.Cog):
         await ctx.reply("`rf!info`からサポートサーバーにて管理者に問い合わせてください。")
 
     @sixch.command(aliases=["nick"])
+    @app_commands.describe(name="スレッドで使うニックネーム")
     async def nickname(self, ctx, *, name):
         """!lang ja
         --------
