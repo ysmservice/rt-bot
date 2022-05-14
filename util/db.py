@@ -50,6 +50,7 @@ from discord.ext import commands
 import aiomysql
 
 from inspect import iscoroutinefunction
+from functools import update_wrapper
 
 
 async def mysql_connect(*args, **kwargs):
@@ -82,6 +83,9 @@ class Command:
         self.__bot: commands.Bot = None
         self._callback = coro
         self.__kwargs = kwargs
+        
+        # functools.wrapsと同等のことをしてdocstringなどをcoroに揃える。
+        self = update_wrapper(self, coro)
 
     async def __call__(self, *args, **kwargs):
         # 単純に呼び出すだけ。自動cursor付与などは一切しない。
