@@ -37,9 +37,8 @@ change[doc]: 内容
 
 
 ## RT開発の環境について
-free-RTは現在nextcordで開発されています。さらにいくつかの機能を拡張して使いやすくしています。  
-そのためいくつか本家discord.pyとは違う点があるので注意してください。  
-free-RTではdiscord.pyに書き換えを行う計画があります。もし書き換えに協力したかったら公式サーバーかgithubのissueまで。
+free-RTは現在いくつかの機能を拡張して使いやすくしています。  
+そのためいくつか通常のdiscord.pyとは違う点があるので注意してください。  
 
 ### commands.commandの引数
 commands.commandの引数にextrasをつけることができます。
@@ -58,5 +57,5 @@ Context.sendのcontent引数に{"ja":"...", "en":"..."}の形式で辞書を入�
 現時点で全て対応済みですが、新しくsendする場合は作ると良いでしょう。
 
 ### Cog内でのon_readyについて
-Cogはon_readyが呼ばれてからロードされるので、Cog内ではon_readyの代わりとしてinit関数を使うかon_full_readyが使えます。  
+Cogはon_readyが呼ばれてからロードされるので、Cog内ではon_readyの代わりとしてcog_load関数を使うかon_full_readyが使えます。  
 on_full_readyイベントはfree-rtが全てのCogを読み込んだ後に呼ばれます。
