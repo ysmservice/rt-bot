@@ -23,7 +23,7 @@ class DataBaseManager(db.DBManager):
         "データを取得します。"
         await cursor.execute(
             "SELECT * FROM OnlineNotice WHERE notice_user=?",
-            (author_id,)
+            (notice_user_id,)
         )
         return await cursor.fetchall()
 
@@ -57,11 +57,47 @@ class OnlineNotice(commands.Cog):
         }
     )
     async def online_notice(self, ctx):
+        """!lang ja
+        --------
+        ユーザーがオンラインになったときに通知します。
+
+        !lang en
+        --------
+        Notices if a user was online."""
         if ctx.invoked_subcommand is None:
             await ctx.send("使用方法が違います。")
 
-    @online_notice.command(name="set")
-    async def _set(self, ctx, notice_user: discord.User):
+    @online_notice.command(
+        name="add", aliases=["set", "追加", "設定"],
+        extras={"ja": "通知するユーザーを追加", "en": "Add notice user"}
+    )
+    async def _add(self, ctx, notice_user: discord.User):
+        """!lang ja
+        --------
+        通知するユーザーを追加します。
+
+        Parameters
+        ----------
+        notice_user: ユーザーIDか名前かメンション
+            このユーザーがオンラインになった時にあなたのDMに通知が来ます。
+
+        Aliases
+        -------
+        set, 追加, 設定
+
+        !lang en
+        --------
+        Adds the user to notice list.
+
+        Parameters
+        ----------
+        notice_user: User ID, name, or mention
+            Notice message will come to your DM when the user becomes online.
+
+        Aliases
+        -------
+        set
+        """
         await self.db.set_user.run(ctx.auhtor.id, notice_user.id)
         await ctx.send("Ok")
 
@@ -79,7 +115,7 @@ class OnlineNotice(commands.Cog):
             for m in loads(userdata[1]):
                 try:
                     e = discord.Embed(title="オンライン通知", descrption=f"{after.mention}さんがオンラインになりました。")
-                    await bot.get_user(int(m)).send(embed=e)
+                    await self.bot.get_user(int(m)).send(embed=e)
                 except Exception:
                     pass
 
