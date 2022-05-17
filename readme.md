@@ -21,23 +21,27 @@ If you don't know about Free RT, have a look at [here](https://free-rt.com/).
 ## CONTRIBUTION
 See [contributing](https://github.com/Free-RT/rt-bot/blob/main/contributing/).
 
-## Installation.
-## Dependencies.
-Required.
+## Installation
+### Dependencies
+These are required.
 
 * Python 3.10
-* MySQL or MariaDB.
-* Everything in `requirements.txt`.
+* MySQL or MariaDB
+* pip requirements all in `requirements.txt`
 * Run `rt-backend` if you want to use functions that require a backend such as authentication.
-### Startup procedure: 1.
-1. install required items with `pip install -r requirements.txt` 2.
-2. write necessary TOKEN etc. to `auth.json` referring to `auth.template.json`. 3.
-Put the `rt-module` repository in `util` and name the folder `rt_module`. 4.
-4. run the program in the `rt-backend` repository.
-   (This is optional and you need to do it if you want to run something that requires a backend such as authentication. 5.)
-Run the tests with `python3 main.py test`.
-   (In this case, TOKEN will be the one in the `test` key of `auth.json`.)
 
-(In this case, TOKEN is the one in the key of `test` in `auth.json`.) * Read `readme.md` in `cogs/tts` if you want to run the readout.
-### Run production.
+### Startup procedure
+1. install required items with `pip install -r requirements.txt`
+2. write necessary TOKEN etc. to `auth.json` referring to `auth.template.json`.
+3. Put the `rt-module` repository in `util` and name the folder `rt_module`.
+4. run the program in the `rt-backend` repository.
+   (This is optional and you need to do it if you want to run something that requires a backend such as authentication.)
+5. Run the tests with `python3 main.py test`.
+   (In this case, login-TOKEN will be the one in the `test` key of `auth.json`.)
+6. If you'd like to boot in production mode, type `python3 main.py production`.
+   (Login-TOKEN will be `production` in `auth.json`.)
+
+* Read `readme.md` in `cogs/tts` if you want to run the readout.
+
+### Run production
 The startup command is `sudo -E python3 main.py production` and you need `auth.json` TOKEN for `production`.
