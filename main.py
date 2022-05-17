@@ -23,7 +23,9 @@ with open("auth.json", "r") as f:
 intents = discord.Intents.default()  # intents指定
 intents.typing = False
 intents.members = True
+intents.presences = True
 intents.message_content = True
+
 bot = RT(
     data["prefixes"][argv[-1]],
     help_command=None,
@@ -34,7 +36,9 @@ bot = RT(
         replied_user=False
     ),
     activity=discord.Game("起動準備"),
-    status=discord.Status.dnd)  # RTオブジェクトはcommands.Botを継承している
+    status=discord.Status.dnd
+)  # RTオブジェクトはcommands.Botを継承している
+
 bot.test = argv[-1] != "production"  # argvの最後がproductionかどうか
 if not bot.test:
     websocket.WEBSOCKET_URI_BASE = "ws://60.158.90.139"

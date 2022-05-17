@@ -25,7 +25,7 @@ See [contributing](https://github.com/Free-RT/rt-bot/blob/main/contributing/).
 ### Dependencies
 These are required.
 
-* Python 3.10
+* Python 3.9 or higher
 * MySQL or MariaDB
 * pip requirements all in `requirements.txt`
 * Run `rt-backend` if you want to use functions that require a backend such as authentication.
@@ -38,8 +38,6 @@ These are required.
    (This is optional and you need to do it if you want to run something that requires a backend such as authentication.)
 5. Run the tests with `python3 main.py test`.
    (In this case, login-TOKEN will be the one in the `test` key of `auth.json`.)
-6. If you'd like to boot in production mode, type `python3 main.py production`.
-   (Login-TOKEN will be `production` in `auth.json`.)
 
 * Read `readme.md` in `cogs/tts` if you want to run the readout.
 
