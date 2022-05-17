@@ -3,6 +3,8 @@
 from discord.ext import commands
 import discord
 
+import asyncio
+
 from ujson import loads, dumps
 
 from util import db
@@ -22,30 +24,29 @@ class DataBaseManager(db.DBManager):
     async def get_user(self, cursor, notice_user_id: int) -> tuple:
         "データを取得します。"
         await cursor.execute(
-            "SELECT * FROM OnlineNotice WHERE notice_user=?",
-            (notice_user_id,)
+            f"SELECT * FROM OnlineNotice WHERE notice_user={notice_user_id}"
         )
         return await cursor.fetchall()
 
     @db.command()
     async def set_user(self, cursor, author_id: int, notice_user_id: int) -> None:
         "データを入れます。author_id: 通知する人 notice_user_id: 監視される人"
-        if now := self.get_user(cursor, author_id):
+        if now := await self.get_user(cursor, author_id):
             data = dumps(loads(now[1]) + [str(author_id)])
             await cursor.execute(
-                "UPDATE OnlineNotice SET authors=? WHERE notice_user=?",
+                f"UPDATE OnlineNotice SET authors='{data}' WHERE notice_user={notice_user_id}",
                 (data, notice_user_id)
             )
         else:
             await cursor.execute(
-                "INSERT INTO OnlineNotice values (?, ?)",
-                (notice_user_id, (dumps([str(author_id)])))
+                f"INSERT INTO OnlineNotice values ({notice_user_id}, '{dumps([str(author_id)])}')"
             )
 
 
 class OnlineNotice(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.cache = []
 
     async def cog_load(self):
         self.db = await self.bot.add_db_manager(DataBaseManager(self.bot))
@@ -98,7 +99,7 @@ class OnlineNotice(commands.Cog):
         -------
         set
         """
-        await self.db.set_user.run(ctx.auhtor.id, notice_user.id)
+        await self.db.set_user.run(ctx.author.id, notice_user.id)
         await ctx.send("Ok")
 
     # require: presence_intent
@@ -109,15 +110,20 @@ class OnlineNotice(commands.Cog):
             return
         if after.status != discord.Status.online:
             return
+        if after.id in self.cache:
+            return
 
         userdata = await self.db.get_user.run(after.id)
         if userdata:
-            for m in loads(userdata[1]):
+            self.cache.append(after.id)
+            for m in loads(userdata[0][1]):
                 try:
-                    e = discord.Embed(title="オンライン通知", descrption=f"{after.mention}さんがオンラインになりました。")
+                    e = discord.Embed(title="オンライン通知", description=f"{after.mention}さんがオンラインになりました。")
                     await self.bot.get_user(int(m)).send(embed=e)
                 except Exception:
                     pass
+            await asynciio.sleep(0.5)
+            self.cache.remove(after.id)
 
 
 async def setup(bot):

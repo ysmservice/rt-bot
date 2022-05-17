@@ -80,7 +80,7 @@ class Command:
 
     def __init__(self, coro, **kwargs):
         self._manager = None
-        self.__bot: commands.Bot = None
+        self._bot: commands.Bot = None
         self._callback = coro
         self.__kwargs = kwargs
 
@@ -92,18 +92,16 @@ class Command:
         return await self._callback(self._manager, *args, **kwargs)
 
     async def run(self, *args, **kwargs):
-        if not self._manager or not self.__bot:
+        if (self._manager is None) or (self._bot is None):
             raise RuntimeError("Managerもしくはbotが見つかりません。")
 
-        async with self.__bot.pool.acquire() as conn:
-            if kwargs.get("auto"):
+        async with self._bot.mysql.pool.acquire() as conn:
+            if not kwargs.get("auto"):
                 async with conn.cursor() as cursor:
                     result = await self._callback(self._manager, cursor, *args, **kwargs)
             else:
                 result = await self._callback(self._manager, conn, *args, **kwargs)
 
-        # releaseして、使っていないconnectionをしまう。
-        self.__bot.pool.release()
         return result
 
 
@@ -118,11 +116,13 @@ def command(**kwargs):
 
 async def add_db_manager(bot: commands.Bot, manager: DBManager):
     "botにDBManagerを追加します。"
-    for m in manager.commands:
-        m.__bot = bot
-        m._manager = manager
+
     if not isinstance(manager, DBManager):
         raise ValueError("引数managerはDBManagerのサブクラスである必要があります。")
+
+    for m in [x.__name__ for x in manager.commands]:
+        setattr(getattr(manager, m), "_bot", bot)
+        setattr(getattr(manager, m), "_manager", manager)
 
     if not hasattr(bot, "managers"):
         bot.managers = [manager]
@@ -130,7 +130,7 @@ async def add_db_manager(bot: commands.Bot, manager: DBManager):
         bot.managers.append(manager)
 
     # manager_load関数を実行する。(デフォルトでは何もしない)
-    async with bot.pool.acquire() as conn:
+    async with bot.mysql.pool.acquire() as conn:
         async with conn.cursor() as cursor:
             await manager.manager_load(cursor)
     return manager
