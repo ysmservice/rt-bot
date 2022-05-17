@@ -1,7 +1,7 @@
 # Free RT - Slash, Author: tasuren, Description: このコードはパブリックドメインとします。
 
 # from collections.abc import Callable
-from typing import TYPE_CHECKING, Optional, Union, get_origin
+from typing import TYPE_CHECKING, Optional, Union
 
 # from inspect import signature
 from datetime import datetime
@@ -16,6 +16,7 @@ from pytz import utc
 
 if TYPE_CHECKING:
     from . import RT
+
 
 """
 discord.CommandOption.description = property(
@@ -35,6 +36,7 @@ discord.ApplicationSubcommand.description = property(
 )
 discord.ApplicationSubcommand.description = discord.ApplicationSubcommand.description.setter(ds)
 """
+
 
 def check(command: commands.Command):
     "スラッシュにふさわしいかチェックする関数です。"
@@ -95,6 +97,7 @@ def make_command_instance(decorator, function: commands.Command):
 def get_category_name(function: commands.Command) -> Optional[str]:
     "カテゴリーの名前取り出すだけ。"
     return function.extras.get("parent")
+
 
 """
 #   ここからしばらくモンキーパッチ
@@ -311,6 +314,7 @@ def new_from_callback(
 
 discord.ApplicationSubcommand._from_callback = new_from_callback
 """
+
 
 #   ここからモンキーパッチではない。
 class Context:
