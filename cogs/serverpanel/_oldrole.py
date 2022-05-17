@@ -5,7 +5,7 @@ from typing import Callable, Coroutine, Optional, Dict
 from discord.ext import commands, tasks
 import discord
 
-from emoji import UNICODE_EMOJI_ENGLISH
+from emoji import EMOJI_DATA as UNICODE_EMOJI_ENGLISH
 from asyncio import create_task
 
 

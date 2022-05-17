@@ -15,8 +15,10 @@ import discord
 from aiomysql import Pool, Cursor
 from ujson import loads, dumps
 
-from util.slash import Context, UnionContext
 from util import RT
+
+
+Context, UnionContext = commands.Context, commands.Context
 
 
 # データ型等
@@ -403,7 +405,7 @@ class Rocations(commands.Cog):
     async def raise_alias(self, ctx: UnionContext):
         await self.raise_(ctx)
 
-    @discord.slash_command("raise", description="Rocationsでのサーバー表示順位を上げます。")
+    @discord.app_commands.command("raise", description="Rocationsでのサーバー表示順位を上げます。")
     async def raise_slash(self, interaction: discord.Interaction):
         ctx = Context(self.bot, interaction, self.raise_alias, "rf!raise")
         await ctx.typing()

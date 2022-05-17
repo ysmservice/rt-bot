@@ -12,7 +12,7 @@ from util.mysql_manager import DatabaseManager
 from util.page import EmbedPage
 from util.ext import componesy
 
-from .bot_general import INFO_SS
+from ..RT.__init__ import INFO_SS
 
 
 class DataManager(DatabaseManager):

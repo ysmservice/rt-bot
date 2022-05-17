@@ -7,7 +7,7 @@ import discord
 
 from util import RT, Table
 
-from .log import log
+from ..channelplugin.log import log
 
 
 class NGWords(Table):

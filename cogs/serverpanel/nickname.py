@@ -3,7 +3,7 @@
 from discord.ext import commands
 import discord
 
-from emoji import UNICODE_EMOJI_ENGLISH
+from emoji import EMOJI_DATA as UNICODE_EMOJI_ENGLISH
 from typing import Dict
 
 

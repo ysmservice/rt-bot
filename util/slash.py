@@ -1,14 +1,14 @@
 # Free RT - Slash, Author: tasuren, Description: このコードはパブリックドメインとします。
 
-from collections.abc import Callable
-from typing import TYPE_CHECKING, Optional, Union, Literal, get_origin
+# from collections.abc import Callable
+from typing import TYPE_CHECKING, Optional, Union, get_origin
 
-from inspect import signature
+# from inspect import signature
 from datetime import datetime
 from functools import wraps
 from re import sub
 
-from discord.ext.commands.bot import BotBase
+# from discord.ext.commands.bot import BotBase
 from discord.ext import commands
 import discord
 
@@ -17,7 +17,7 @@ from pytz import utc
 if TYPE_CHECKING:
     from . import RT
 
-
+"""
 discord.CommandOption.description = property(
     lambda self: self._description
     if self._description else "No description provided"
@@ -34,7 +34,7 @@ discord.ApplicationSubcommand.description = property(
     if self._description is discord.utils.MISSING else self._description
 )
 discord.ApplicationSubcommand.description = discord.ApplicationSubcommand.description.setter(ds)
-
+"""
 
 def check(command: commands.Command):
     "スラッシュにふさわしいかチェックする関数です。"
@@ -96,7 +96,7 @@ def get_category_name(function: commands.Command) -> Optional[str]:
     "カテゴリーの名前取り出すだけ。"
     return function.extras.get("parent")
 
-
+"""
 #   ここからしばらくモンキーパッチ
 # 通常のコマンドのデコレータを拡張する。
 def make_command_monkey(decorator):
@@ -310,7 +310,7 @@ def new_from_callback(
 
 
 discord.ApplicationSubcommand._from_callback = new_from_callback
-
+"""
 
 #   ここからモンキーパッチではない。
 class Context:
