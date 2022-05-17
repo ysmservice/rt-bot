@@ -1,13 +1,131 @@
 # Free RT - Help
 
-from typing import Tuple, List
+from typing import Tuple, List, Union
 
 from discord.ext import commands, tasks
 import discord
 
 from util.page import EmbedPage
-from util.ext import componesy
 from util import RT
+
+
+def convert_commands(data, word=None) -> Union[dict, str]:
+    "カテゴリーをなくしてcommandsだけリストにして返す。wordが指定されればそのコマンドのカテゴリを返す。"
+    if word is None:
+        commands = {}
+        for category in data:
+            commands.update(data[category])
+        return commands
+    else:
+        for category in data:
+            if word in data[category]:
+                return category
+
+
+def get_command_help(client, commands, cmd_name, lang):
+    return EmbedPage(
+        data=client.cogs["DocHelp"].convert_embed(
+            cmd_name, commands[cmd_name][lang][1], color=client.colors["normal"]
+        )
+    ).data[0]
+
+
+def get_category_help(client, data, category_name, lang):
+    description = "\n".join(
+        f"`{cmd}` {data[category_name][cmd][lang][0]}"
+        for cmd in data[category_name]
+        if len(data[category_name][cmd][lang]) >= 2
+    )
+    return discord.Embed(
+        title=f"Help - {category_name}",
+        description=description,
+        color=client.colors["normal"]
+    )
+
+
+class HelpCategorySelect(discord.ui.Select):
+
+    CATEGORIES = {
+        "bot": "RT",
+        "server-tool": "ServerTool",
+        "server-panel": "ServerPanel",
+        "server-safety": "ServerSafety",
+        "server-useful": "ServerUseful",
+        "entertainment": "Entertainment",
+        "individual": "Individual",
+        "chplugin": "ChannelPlugin",
+        "music": "Music",
+        "other": "Other"
+    }
+    CATEGORY_JA = {
+        "ServerTool": "サーバーツール",
+        "ServerPanel": "サーバーパネル",
+        "ServerSafety": "サーバー安全",
+        "ServerUseful": "サーバー便利",
+        "Entertainment": "娯楽",
+        "Individual": "個人",
+        "ChannelPlugin": "チャンネルプラグイン",
+        "Music": "音楽",
+        "Other": "その他"
+    }
+
+    def __init__(self, user_id, lang, data: dict):
+        super().__init__(
+            placeholder="カテゴリー選択" if lang == "ja" else "Category",
+            min_values=1, max_values=1, custom_id=str(user_id),
+            options=[discord.SelectOption(label=self.get_category_name(c, lang), value=c) for c in data]
+        )
+
+    def get_category_name(self, category, lang):
+        c = self.CATEGORIES.get(category, category)
+        if lang == "ja":
+            c = self.CATEGORY_JA.get(c, c)
+        return c
+
+    async def callback(self, interaction: discord.Interaction):
+        help = interaction.client.cogs["DocHelp"].data
+        lang = interaction.client.cogs["Language"].get(interaction.user.id)
+        if interaction.user.id != int(self.custom_id):
+            return await interaction.response.send_message(
+                "あなたはこのhelpを操作することはできません。" if lang == "ja" else "You can't control this help.", ephemeral=True
+            )
+
+        category = self.values[0]
+        embed = get_category_help(interaction.client, help, category, lang)
+        view = HelpView(interaction.user.id, lang, help, category)
+        await interaction.response.edit_message(
+            embed=embed, view=view
+        )
+
+
+class HelpCommandSelect(discord.ui.Select):
+    def __init__(self, user_id, lang, data: dict, category: str):
+        super().__init__(
+            placeholder="コマンド選択" if lang == "ja" else "Command", min_values=1, max_values=1, custom_id=str(user_id) + "_2",
+            options=[discord.SelectOption(label=c, value=c) for c in data[category]]
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        help = interaction.client.cogs["DocHelp"].data
+        lang = interaction.client.cogs["Language"].get(interaction.user.id)
+        if interaction.user.id != int(self.custom_id[:-2]):
+            return await interaction.response.send_message(
+                "あなたはこのhelpを操作することはできません。" if lang == "ja" else "You can't control this help.", ephemeral=True
+            )
+
+        commands = convert_commands(help)
+        embed = get_command_help(interaction.client, commands, self.values[0], lang)
+        await interaction.response.edit_message(
+            embed=embed
+        )
+
+
+class HelpView(discord.ui.View):
+    def __init__(self, user_id, lang, data, category=None):
+        super().__init__()
+        self.add_item(HelpCategorySelect(user_id, lang, data))
+        if category:
+            self.add_item(HelpCommandSelect(user_id, lang, data, category))
 
 
 class Help(commands.Cog):
@@ -69,94 +187,27 @@ class Help(commands.Cog):
     def cog_unload(self):
         self.update_help.cancel()
 
-    def search(self, word: str, lang: str) -> Tuple[str, str, List[Tuple[str, str]], List[Tuple[str, str]]]:
-        # 指定された言葉で検索またはヘルプの取得を行う関数です。
-        c, category, perfect, on_name, on_doc = False, "", "", [], []
+    def search(self, word: str, lang: str) -> Tuple[List[Tuple[str, str]], List[Tuple[str, str]]]:
+        # 指定された言葉で検索する関数です。
+        on_name, on_doc = [], []
         for category_name in self.help:
-            if category_name == word:
-                category = word
-                break
-            perfect = self.help[category_name].get(word, {lang: ["", ""]})[lang][1]
-            if perfect == "":
-                for cmd in self.help[category_name]:
-                    if word in cmd:
-                        on_name.append((category_name, cmd))
-                    if len(self.help[category_name][cmd][lang]) >= 2:
-                        if word in self.help[category_name][cmd][lang][1]:
-                            on_doc.append((category_name, cmd))
-            else:
-                c = category_name
-                break
-        return c, category, perfect, on_name, on_doc
-
-    async def on_select(self, select, interaction):
-        # カテゴリー選択がされたら。
-        ctx = await self.bot.get_context(interaction.message)
-        if interaction.message.content:
-            user = interaction.message.guild.get_member(
-                int(interaction.message.content
-                    .replace("<@", "").replace(">", "").replace("!", ""))
-            )
-        elif interaction.message.reference:
-            user = interaction.message.reference.cached_message.author
-        else:
-            user = interaction.user
-
-        if (select.values and select.values[0] != "None" and user
-                and user.id == interaction.user.id):
-            # 選択されたものを引数としてdhelpのコマンドを実行する。
-            ctx.author = user
-            ctx.rt = 1
-            await self._help(ctx, select.values[0], interaction)
-
-    def get_view_args(self, lang, category):
-        # 作るViewのデータを取得するための関数です。
-        if category is None:
-            options = [discord.SelectOption(label="...", value="None")]
-            placeholder = "..."
-        else:
-            options = [
-                discord.SelectOption(
-                    label=cmd, value=cmd,
-                    description=self.help[category][cmd][lang][0]
-                ) for cmd in self.help[category]
-                if len(self.help[category][cmd][lang]) >= 2 and cmd
-            ]
-            placeholder = "コマンド選択" if lang == "ja" else "Command"
-        return [
-            ("Select", self.on_select, {
-                "options": [
-                    discord.SelectOption(
-                        label=(
-                            self.CATEGORY_JA.get(category, category)
-                            if lang == "ja" else category
-                        ), value=category
-                    ) for category in self.help
-                    if category
-                ],
-                "placeholder": "カテゴリー選択" if lang == "ja" else "Category"
-            }),
-            ("Select", self.on_select, {
-                "options": options, "placeholder": placeholder
-            })
-        ]
-
-    def make_view(self, user, lang, category=None) -> discord.ui.View:
-        # Viewを作るための関数です。
-        view = componesy.View("HelpView", timeout=60)
-        for _, func, kwargs in self.get_view_args(lang, category):
-            view.add_item("Select", func, **kwargs)
-        return view.get_view()
+            for cmd in self.help[category_name]:
+                if word in cmd:
+                    on_name.append((category_name, cmd))
+                if len(self.help[category_name][cmd][lang]) >= 2:
+                    if word in self.help[category_name][cmd][lang][1]:
+                        on_doc.append((category_name, cmd))
+        return on_name, on_doc
 
     async def _help(self, ctx, word, interaction=None):
         self.help = self.bot.cogs["DocHelp"].data
         lang = self.bot.cogs["Language"].get(ctx.author.id)
         edit = hasattr(ctx, "rt")
         reply = True
+        command_matched = convert_commands(self.help, word)
 
         if word is None:
-            # もしカテゴリー一覧を表示すればいいだけなら。
-            url = "http://0.0.0.0" if self.bot.test else "https://free-rt.com/help.html"
+            url = "https://free-rt.com/help.html"
             embed = discord.Embed(
                 title={
                     "ja": "Help - カテゴリー選択", "en": "Help - Category Select"
@@ -173,77 +224,34 @@ class Help(commands.Cog):
                           "You can also view our privacy policy at [here](https://free-rt.com/privacy.html)."
                 }, color=self.bot.colors["normal"]
             )
-            view = self.make_view(
-                getattr(interaction, "user", None) or ctx.author, lang
-            )
-            await ctx.reply(embed=embed, view=view)
+            view = HelpView(ctx.author.id, lang, self.help)
+            await ctx.send(embed=embed, view=view)
+        elif word in self.help:
+            # カテゴリ名と一致したとき。
+            embed = get_category_help(self.bot, self.help, word, lang)
+            view = HelpView(ctx.author.id, lang, self.help)
+            await ctx.send(embed=embed, view=view)
+        elif command_matched:
+            # コマンド名と一致したとき。
+            commands = convert_commands(self.help)
+            embed = get_command_help(self.bot, commands, word, lang)
+            view = HelpView(ctx.author.id, lang, self.help, command_matched)
+            await ctx.send(embed=embed, view=view)
         else:
-            c, category, perfect, on_name, on_doc = self.search(word, lang)
-
-            if category:
-                # もしカテゴリー名が一致したなら。
-                description = "\n".join(
-                    f"`{cmd}` {self.help[category][cmd][lang][0]}"
-                    for cmd in self.help[category]
-                    if len(self.help[category][cmd][lang]) >= 2
+            # 検索結果を表示する。
+            on_name, on_doc = self.search(word, lang)
+            embed = discord.Embed(
+                title="検索結果", color=self.bot.colors["normal"]
+            )
+            for name, value in (("名前部分一致", on_name), ("説明部分一致", on_doc)):
+                embed.add_field(
+                    name=name,
+                    value=("\n".join(
+                        f"`{n}` {self.help[category][n][lang][0]}"
+                        for category, n in value)
+                        if value else "見つかりませんでした。")
                 )
-                embed = discord.Embed(
-                    title=f"Help - {word}",
-                    description=description,
-                    color=self.bot.colors["normal"]
-                )
-                view = self.make_view(
-                    getattr(interaction, "user", None) or ctx.author,
-                    lang, category
-                )
-                kwargs = {"embed": embed, "view": view}
-            elif perfect:
-                # もしコマンド名が一致したなら。
-                user = getattr(interaction, "user", None) or ctx.author
-                embeds = EmbedPage(data=self.bot.cogs["DocHelp"].convert_embed(
-                    word, perfect, color=self.bot.colors["normal"]
-                ))
-                edit, reply = False, not bool(interaction)
-                if not reply:
-                    await ctx.message.delete()
-                if len(embeds.data) == 1:
-                    kwargs = {"embed": embeds.data[0], "view": self.make_view(user, lang, c),
-                              "target": user.id}
-                    del embeds
-                else:
-                    for _, callback, kwargs in self.get_view_args(lang, c):
-                        async def new(self, interaction):
-                            return await callback(self, interaction)
-                        embeds.add_item(
-                            type(
-                                "HelpSelector", (discord.ui.Select,),
-                                {"callback": new}
-                            )(**kwargs)
-                        )
-                        del new
-                    kwargs = {"embed": embeds.data[0], "view": embeds, "target": user.id}
-            else:
-                # もし何も一致しないなら検索結果を表示する。
-                embed = discord.Embed(
-                    title="検索結果", color=self.bot.colors["normal"]
-                )
-                for name, value in (("名前部分一致", on_name), ("説明部分一致", on_doc)):
-                    embed.add_field(
-                        name=name,
-                        value=("\n".join(
-                            f"`{n}` {self.help[category][n][lang][0]}"
-                            for category, n in value)
-                            if value else "見つかりませんでした。")
-                    )
-                kwargs = {"embed": embed}
-
-            if edit:
-                kwargs["target"] = ctx.author.id
-                await ctx.message.edit(**kwargs)
-            elif reply:
-                await ctx.reply(**kwargs)
-            else:
-                await ctx.send(interaction.user.mention, **kwargs)
+            await ctx.send(embed=embed)
 
     @commands.command(
         name="help", aliases=["h", "Help_me,_ERINNNNNN!!", "たすけて！"],
@@ -251,7 +259,7 @@ class Help(commands.Cog):
             "headding": {"ja": "Helpを表示します。",
                          "en": "Get help."},
             "parent": "RT"
-        }, slash_command=True, description="ヘルプを表示します。"
+        }, description="ヘルプを表示します。"
     )
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def dhelp(
