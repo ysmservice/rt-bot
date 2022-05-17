@@ -122,7 +122,7 @@ class OnlineNotice(commands.Cog):
                     await self.bot.get_user(int(m)).send(embed=e)
                 except Exception:
                     pass
-            await asynciio.sleep(0.5)
+            await asyncio.sleep(0.5)
             self.cache.remove(after.id)
 
 
