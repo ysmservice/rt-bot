@@ -83,7 +83,7 @@ class Command:
         self.__bot: commands.Bot = None
         self._callback = coro
         self.__kwargs = kwargs
-        
+
         # functools.wrapsと同等のことをしてdocstringなどをcoroに揃える。
         self = update_wrapper(self, coro)
 
