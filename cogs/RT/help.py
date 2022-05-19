@@ -6,7 +6,7 @@ from discord.ext import commands, tasks
 import discord
 
 from util.page import EmbedPage
-from util import RT
+from util import RT, TimeoutView
 
 
 def convert_commands(data, word=None) -> Union[dict, str]:
@@ -120,7 +120,7 @@ class HelpCommandSelect(discord.ui.Select):
         )
 
 
-class HelpView(discord.ui.View):
+class HelpView(TimeoutView):
     def __init__(self, user_id, lang, data, category=None):
         super().__init__()
         self.add_item(HelpCategorySelect(user_id, lang, data))
@@ -202,8 +202,6 @@ class Help(commands.Cog):
     async def _help(self, ctx, word, interaction=None):
         self.help = self.bot.cogs["DocHelp"].data
         lang = self.bot.cogs["Language"].get(ctx.author.id)
-        edit = hasattr(ctx, "rt")
-        reply = True
         command_matched = convert_commands(self.help, word)
 
         if word is None:
