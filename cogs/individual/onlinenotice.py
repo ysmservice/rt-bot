@@ -32,10 +32,9 @@ class DataBaseManager(db.DBManager):
     async def set_user(self, cursor, author_id: int, notice_user_id: int) -> None:
         "データを入れます。author_id: 通知する人 notice_user_id: 監視される人"
         if now := await self.get_user(cursor, author_id):
-            data = dumps(loads(now[1]) + [str(author_id)])
+            data = dumps(loads(now[0][1]) + [str(author_id)])
             await cursor.execute(
                 f"UPDATE OnlineNotice SET authors='{data}' WHERE notice_user={notice_user_id}",
-                (data, notice_user_id)
             )
         else:
             await cursor.execute(
