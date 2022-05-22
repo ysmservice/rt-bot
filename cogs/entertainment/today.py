@@ -1,6 +1,7 @@
 # Free RT - What day is today
 
 from discord.ext import commands, tasks
+from discord import app_commands
 import discord
 
 from util.mysql_manager import DatabaseManager
@@ -81,7 +82,7 @@ class Today(commands.Cog, DataManager):
             )
         return embed
 
-    @commands.command(
+    @commands.hybrid_command(
         extras={
             "headding": {
                 "ja": "「今日は何の日」を表示、通知します。",
@@ -90,6 +91,7 @@ class Today(commands.Cog, DataManager):
         }
     )
     @commands.cooldown(1, 10, commands.BucketType.guild)
+    @app_commands.describe(setting="通知をするかどうか")
     async def today(self, ctx, setting: bool = None):
         """!lang ja
         --------

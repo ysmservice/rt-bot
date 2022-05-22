@@ -3,6 +3,7 @@
 from typing import TYPE_CHECKING, TypedDict, Optional, Dict
 
 from discord.ext import commands, tasks
+from discord import app_commands
 import discord
 
 from util import RT
@@ -176,7 +177,7 @@ class AFK(commands.Cog, DataManager):
     async def cog_load(self):
         await self._prepare_table()
 
-    @commands.group(
+    @commands.hybrid_group(
         aliases=["留守"], extras={
             "headding": {
                 "ja": "留守メッセージの設定 AFK機能",
@@ -217,6 +218,7 @@ class AFK(commands.Cog, DataManager):
             }
         }
     )
+    @app_commands.describe(reason="AFKになる理由")
     async def set_(self, ctx: commands.Context, *, reason):
         """!lang ja
         --------
@@ -284,6 +286,7 @@ class AFK(commands.Cog, DataManager):
             "ja": "AFKプラスの設定をします。", "en": "Setting for AFK Plus"
         }
     )
+    @app_commands.describe(mode="AFKメッセージに含まれる言葉、もしくは時間帯", reason="AFKになる理由")
     async def set_plus(self, ctx: commands.Context, mode, *, reason):
         """!lang ja
         --------
@@ -363,6 +366,7 @@ class AFK(commands.Cog, DataManager):
             }
         }
     )
+    @app_commands.describe(mode="AFKプラスの設定の際に入力したmode引数")
     async def delete(self, ctx: commands.Context, *, mode):
         """!lang ja
         --------

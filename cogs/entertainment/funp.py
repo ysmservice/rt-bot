@@ -1,6 +1,7 @@
 # Free RT - Funp
 
 from discord.ext import commands, easy
+from discord import app_commands
 import discord
 
 from util.mysql_manager import DatabaseManager
@@ -125,7 +126,7 @@ class Funp(commands.Cog, DataManager):
         }
     )"""
 
-    @commands.group(
+    @commands.hybrid_group(
         slash_command=True, extras={
             "headding": {
                 "ja": "みんなの画像を見る。",
@@ -172,6 +173,7 @@ class Funp(commands.Cog, DataManager):
         aliases=["see", "sw", "しょう", "見る"],
         description="Funpをランダムで取り出して表示します。"
     )
+    @app_commands.describe(mode="閲覧する画像のカテゴリー")
     async def show(self, ctx, mode: str):
         """!lang ja
         --------
@@ -273,6 +275,11 @@ class Funp(commands.Cog, DataManager):
         aliases=["rm", "delete", "del", "りむーぶ", "削除"],
         description="Funpを削除します。"
     )
+    @app_commands.describe(
+        mode="削除する画像のカテゴリー",
+        name="削除する画像の名前",
+        user_id="削除する画像の投稿者のID(管理者のみ)"
+    )
     async def remove(
         self, ctx, mode: str, name: str,
         user_id: int = None
@@ -309,6 +316,10 @@ class Funp(commands.Cog, DataManager):
 
     @funp.command(
         "list", description="自分の登録したFunpの一覧を見ることができます。"
+    )
+    @app_commands.describe(
+        mode="登録したFunpのカテゴリー",
+        user_id="登録したFunpの投稿者のID(管理者のみ)"
     )
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def _list(
@@ -350,6 +361,8 @@ class Funp(commands.Cog, DataManager):
         aliases=["nb"], description="NekoBot APIを使用してNSFWな画像を表示します。"
     )
     @commands.cooldown(1, 5, commands.BucketType.user)
+    @app_commands.describe(type_="表示する画像のタイプ")
+    @app_commands.remane(type_="type")
     async def nekobot(self, ctx, type_):
         """!lang ja
         --------

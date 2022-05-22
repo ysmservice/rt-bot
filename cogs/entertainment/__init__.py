@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Iterator
 
 from discord.ext import commands
+from discord import app_commands
 import discord
 
 from jishaku.functools import executor_function
@@ -22,7 +23,7 @@ class Enjoy(commands.Cog):
     def __init__(self, bot: RT):
         self.bot = bot
 
-    @commands.command(
+    @commands.hybrid_command(
         aliases=["mc", "まいくら", "マイクラ"],
         extras={
             "headding": {"ja": "Minecraftの特定のユーザーのスキンとUUIDを調べます。",
@@ -31,6 +32,7 @@ class Enjoy(commands.Cog):
         }
     )
     @commands.cooldown(1, 15, commands.BucketType.user)
+    @app_commands.describe(user="調べるユーザー名")
     async def minecraft(self, ctx, *, user):
         """!lang ja
         --------
@@ -94,7 +96,7 @@ class Enjoy(commands.Cog):
 
     NHK_BASE_URL = "https://www3.nhk.or.jp/news/"
 
-    @commands.command(
+    @commands.hybrid_command(
         extras={
             "headding": {"ja": "NHKのニュースを取得します。",
                          "en": "Show japan nhk news."},
@@ -148,7 +150,7 @@ class Enjoy(commands.Cog):
                 "image": thumbnail_anchor.find("img").get("src")
             }
 
-    @commands.command("jin", extras={
+    @commands.hybrid_command("jin", extras={
         "headding": {"ja": "オレ的ゲーム速報＠刃の最新のニュースを表示します。",
                      "en": "..."},
         "parent": "Entertainment"
@@ -196,7 +198,7 @@ class Enjoy(commands.Cog):
         )
         base_image.save(output_path)
 
-    @commands.command(
+    @commands.hybrid_command(
         name="game", extras={
             "headding": {"ja": "好きなゲームソフトパッケージ画像を作ります。",
                          "en": "..."},

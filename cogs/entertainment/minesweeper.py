@@ -1,6 +1,7 @@
 # Free RT - MineSweeper Game Extension
 
 from discord.ext import commands
+from discord import app_commands
 
 
 class Mines(commands.Cog):
@@ -8,7 +9,7 @@ class Mines(commands.Cog):
         self.bot = bot
         self.games = {}
 
-    @commands.command(
+    @commands.hybrid_command(
         aliases=["ms", "MS"],
         extras={
             "headding": {"ja": "マインスイーパー",
@@ -16,6 +17,8 @@ class Mines(commands.Cog):
             "parent": "Entertainment"
         }
     )
+    @commands.cooldown(1, 15, commands.BucketType.user)
+    @app_commands.describe(x="ゲームの横の長さ", y="ゲームの縦の長さ", bomb="ボムの数")
     async def minesweeper(self, ctx, x: int = 9, y: int = 9, bomb: int = 12):
         """!lang ja
         --------

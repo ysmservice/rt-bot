@@ -6,7 +6,6 @@ import discord
 from traceback import TracebackException
 
 import collections
-import aiofiles
 
 from util import RT
 

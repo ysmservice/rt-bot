@@ -1,6 +1,7 @@
 # Free RT - online Notice
 
 from discord.ext import commands
+from discord import app_commands
 import discord
 
 import asyncio
@@ -50,7 +51,7 @@ class OnlineNotice(commands.Cog):
     async def cog_load(self):
         self.db = await self.bot.add_db_manager(DataBaseManager(self.bot))
 
-    @commands.group(
+    @commands.hybrid_group(
         extras={
             "headding": {"ja": "オンライン通知", "en": "Online Notice"},
             "parent": "Individual"
@@ -71,6 +72,7 @@ class OnlineNotice(commands.Cog):
         name="add", aliases=["set", "追加", "設定"],
         extras={"ja": "通知するユーザーを追加", "en": "Add notice user"}
     )
+    @app_commands.describe(user="通知するユーザー")
     async def _add(self, ctx, notice_user: discord.User):
         """!lang ja
         --------
