@@ -69,6 +69,7 @@ async def on_ready():
     bot.print("Completed to boot Free RT")
 
     bot.dispatch("full_ready")  # full_readyイベントを発火する
+    bot.tree.sync()  # スラコマのツリーを同期する
 
 
 # 実行

@@ -63,9 +63,17 @@ class RT(commands.AutoShardedBot):
     def get_website_url(self) -> str:
         return "http://localhost/" if self.test else "https://free-rt.com/"
 
-    async def add_cog(self, *args, override: bool = True, **kwargs):
-        "add_cogをデフォルトでオーバーライドするようにしたもの。"
-        return await super().add_cog(*args, override=override, **kwargs)
+    async def add_cog(self, cog, override: bool = True, **kwargs):
+        "add_cogの拡張。overrideがデフォルトでTrueなのと、OnCogAddに関する動作をする。"
+        if "OnCogAdd" in self.cogs:
+            await self.cogs["OnCogAdd"]._add_cog(cog, **kwargs)
+        return await super().add_cog(cog, override=override, **kwargs)
+
+    async def remove_cog(self, cog_name):
+        "remove_cogの拡張。OnCogAddに関する動作をする。"
+        if "OnCogAdd" in self.cogs:
+            await self.cogs["OnCogAdd"]._remove_cog(cog_name)
+        return await super().cog_remove(cog_name)
 
     async def setup(self, mode=()) -> None:
         "utilにある拡張cogをすべてもしくは指定されたものだけ読み込みます。"
