@@ -23,11 +23,9 @@ class SystemLog(commands.Cog):
         self.guilds = []
         self.errors = set()
         self.logging_loop.start()
-        self.error_log_to_discord.start()
 
     def cog_unload(self):
         self.logging_loop.cancel()
-        self.error_log_to_discord.cancel()
 
     def _make_embed(self):
         name = collections.Counter(self.names).most_common()[0]
@@ -73,7 +71,7 @@ class SystemLog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: Exception):
-        # エラー時のログ処理。大量のisinstance->returnがあるのはbot_general.pyで処理するから。
+        # エラー時のログ処理。大量のisinstance->returnがあるのはcogs/RT/__init__.pyで処理するから。
         if isinstance(
             error,
             (commands.CommandNotFound, discord.Forbidden, commands.CommandOnCooldown,
@@ -88,21 +86,17 @@ class SystemLog(commands.Cog):
             return
         else:
             error_message = "".join(TracebackException.from_exception(error).format())
-            self.errors.add(error_message)
             print("\033[31m" + error_message + "\033[0m")
-
-    @tasks.loop(hours=1)
-    async def error_log_to_discord(self):
-        # discordの特定のチャンネルにエラーを送信します。
-        if len(self.errors) == 0:
-            return
-        async with aiofiles.open("log/recently_errors.txt") as f:
-            await f.write("\n\n".join(self.errors))
-        await self.bot.get_channel(ERROR_CHANNEL).send(
-            embed=discord.Embed(title="エラーログ", description=f"直近1時間に発生したエラーの回数:{len(self.errors)}"),
-            file=discord.File("log/recently_errors.txt")
-        )
-        self.errors = set()
+            ch = self.bot.get_channel(ERROR_CHANNEL)
+            embed = discord.Embed(
+                title="Free RT Error log",
+                description=f"```{error_message}```",
+                color=self.bot.Colors.unknown
+            )
+            embed.add_field(name="コマンド", value=f"{ctx.command.name} (実行メッセージ: {ctx.message.content})")
+            embed.add_field(name="ユーザー", value=f"{ctx.author.mention} ({ctx.author.id})")
+            embed.add_field(name="サーバー", value=f"{ctx.guild.name} ({ctx.guild.id})")
+            await ch.send(embed=embed)
 
 
 async def setup(bot):

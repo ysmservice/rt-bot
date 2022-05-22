@@ -117,7 +117,6 @@ class BotGeneral(commands.Cog):
         self.wslatency = "..."
         self.cache: defaultdict[int, dict[str, float]] = defaultdict(dict)
         self.remove_cache.start()
-        self.error_log_to_discord.start()
 
         self.make_embed_template()
 
@@ -381,9 +380,6 @@ class BotGeneral(commands.Cog):
             error_message = "".join(
                 TracebackException.from_exception(error).format()
             )
-            self.errors.add(error_message)
-
-            print(error_message)
 
             title = "500 Internal Server Error"
             description = {
@@ -420,17 +416,6 @@ class BotGeneral(commands.Cog):
         except Exception as e:
             kwargs["content"] = str(e)
             await ctx.send(**kwargs)
-
-    @tasks.loop(hours=2)
-    async def error_log_to_discord(self):
-        # discordの特定のチャンネルにエラーを送信します。
-        if len(self.errors) == 0:
-            return
-        await self.bot.get_channel(ERROR_CHANNEL).send(
-            embed=discord.Embed(title="エラーログ", description=f"この2時間に発生したエラーの回数:{len(self.errors)}"),
-            file=discord.File(StringIO("\n\n".join(self.errors)), "erros.txt")
-        )
-        self.errors = set()
 
     def get_help_url(self, category: str, name: str) -> str:
         return f"https://free-rt.com/help.html?g={category}&c={name}"
