@@ -67,8 +67,8 @@ class Log(commands.Cog):
         self.team_id = self.bot.owner_ids
         self.c = self.bot.colors["normal"]
 
-    async def cog_load(self):
-        await sleep(1.5)
+    @commands.Cog.listener()
+    async def on_help_reload(self):
         for lang in CHP_HELP:
             self.bot.cogs["DocHelp"].add_help(
                 "ChannelPlugin", "Discord-log",

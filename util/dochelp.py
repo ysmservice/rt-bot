@@ -142,6 +142,7 @@ class DocHelp(commands.Cog):
             await self.on_command_add(command)
             self.bot.dispatch("command_add", command)
             await self.on_command_add_kari(command)
+        self.bot.dispatch("help_reload")
 
     def convert_embed(self, command_name: str, doc: str, **kwargs) -> list[discord.Embed]:
         """渡されたコマンド名とヘルプ(マークダウン)をEmbedにします。

@@ -83,8 +83,8 @@ class ChannelPluginGeneral(commands.Cog):
     def __init__(self, bot: RT):
         self.bot = bot
 
-    async def cog_load(self):
-        await sleep(1.5)
+    @commands.Cog.listener()
+    async def on_help_reload(self):
         for command_name in HELPS:
             for lang in HELPS[command_name]:
                 self.bot.cogs["DocHelp"].add_help(
