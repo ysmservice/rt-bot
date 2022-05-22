@@ -56,7 +56,7 @@ def wait_ready(coro):
     @wraps(coro)
     async def new_coro(self: "GuildData", *args, **kwargs):
         try:
-            await wait_for(self.lock.wait(), 6, loop=self.cog.bot.loop)
+            await wait_for(self.lock.wait(), 6)
         except TimeoutError:
             raise TimeoutError("データベースに嫌われてしまいました。悲しいです。")
         else:
