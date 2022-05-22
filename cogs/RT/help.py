@@ -101,7 +101,8 @@ class HelpCategorySelect(discord.ui.Select):
 class HelpCommandSelect(discord.ui.Select):
     def __init__(self, user_id, lang, data: dict, category: str):
         super().__init__(
-            placeholder="コマンド選択" if lang == "ja" else "Command", min_values=1, max_values=1, custom_id=str(user_id) + "_2",
+            placeholder="コマンド選択" if lang == "ja" else "Command",
+            min_values=1, max_values=1, custom_id=str(user_id) + "_2",
             options=[discord.SelectOption(label=c, value=c) for c in data[category]]
         )
 
