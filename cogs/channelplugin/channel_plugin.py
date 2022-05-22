@@ -6,7 +6,6 @@ import discord
 from util import RT
 
 from inspect import cleandoc
-from asyncio import sleep
 from re import findall
 
 

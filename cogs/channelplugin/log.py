@@ -2,7 +2,6 @@
 
 from discord.ext import commands
 import discord
-from asyncio import sleep
 
 from datetime import datetime, timedelta
 from functools import wraps

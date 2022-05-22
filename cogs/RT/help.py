@@ -103,7 +103,9 @@ class HelpCommandSelect(discord.ui.Select):
         super().__init__(
             placeholder="コマンド選択" if lang == "ja" else "Command",
             min_values=1, max_values=1, custom_id=str(user_id) + "_2",
-            options=[discord.SelectOption(label=c, value=c) for c in data[category]]
+            options=[discord.SelectOption(
+                label=c, value=c, description=data[category][c][lang][0]
+            ) for c in data[category]]
         )
 
     async def callback(self, interaction: discord.Interaction):
@@ -111,7 +113,7 @@ class HelpCommandSelect(discord.ui.Select):
         lang = interaction.client.cogs["Language"].get(interaction.user.id)
         if interaction.user.id != int(self.custom_id[:-2]):
             return await interaction.response.send_message(
-                "あなたはこのhelpを操作することはできません。" if lang == "ja" else "You can't control this help.", ephemeral=True
+                "あなたはこのhelpを操作できません。" if lang == "ja" else "You can't control this help.", ephemeral=True
             )
 
         commands = convert_commands(help)
