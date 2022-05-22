@@ -294,7 +294,7 @@ class Help(commands.Cog):
         Aliases
         -------
         `h`"""
-        if not "DocHelp" in self.bot.cogs:
+        if "DocHelp" not in self.bot.cogs:
             return await ctx.send(
                 {"ja": "現在起動中のためヘルプを表示できません。", "en": "Help is not available because the bot is still loading."}
             )
