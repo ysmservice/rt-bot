@@ -38,13 +38,33 @@ discord.ext.commands.Context.webhook_send = webhook_send  # type: ignore
 # componesyに関してはモンキーパッチ脱却予定なのでext.easyからのアクセスは非推奨。
 discord.ext.easy = componesy  # type: ignore
 
+default_hybrid_command = commands.hybrid_command
 
-# on_full_readyが呼ばれた時にtreeをsyncする。
-class Monkey(commands.Cog):
+def new_hybrid_command(*args, **kwargs):
+    "descriptionをheaddingから指定するようにしたhybridコマンドです。"
+    if (
+        (not kwargs.get("description", False))
+        and kwargs.get("extras", False)
+        and "headding" in kwargs["extras"]
+    ):
+        kwargs["description"] = kwargs["extras"]["headding"]["ja"]
+    return default_hybrid_command(*args, **kwargs)
 
-    def __init__(self, bot: "RT"):
-        self.bot = bot
+default_hybrid_group = commands.hybrid_group
+
+def new_hybrid_group(*args, **kwargs):
+    "descriptionをheaddingから指定するようにしたhybridグループです。"
+    if (
+        (not kwargs.get("description", False))
+        and kwargs.get("extras", False)
+        and "headding" in kwargs["extras"]
+    ):
+        kwargs["description"] = kwargs["extras"]["headding"]["ja"]
+    return default_hybrid_group(*args, **kwargs)
+
+commands.hybrid_command = new_hybrid_command
+commands.hybrid_group = new_hybrid_group
 
 
 async def setup(bot):
-    await bot.add_cog(Monkey(bot))
+    pass
