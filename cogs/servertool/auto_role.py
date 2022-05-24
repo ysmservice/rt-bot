@@ -1,6 +1,7 @@
 # Free RT - Auto Role
 
 from discord.ext import commands
+from discord import app_commands
 import discord
 
 from util.mysql_manager import DatabaseManager
@@ -47,7 +48,7 @@ class AutoRole(commands.Cog, DataManager):
         super(commands.Cog, self).__init__(self.bot.mysql)
         await self.init_table()
 
-    @commands.command(
+    @commands.hybrid_command(
         aliases=["are", "自動役職", "オートロール", "おーとろーる"], extras={
             "headding": {
                 "ja": "サーバーに誰かが参加した際に指定された役職を自動で付与します。",
@@ -57,6 +58,7 @@ class AutoRole(commands.Cog, DataManager):
     )
     @commands.cooldown(1, 10, commands.BucketType.guild)
     @commands.has_guild_permissions(administrator=True)
+    @app_commands.describe(onoff="有効にするか無効にするか", role="付けるロール")
     async def autorole(self, ctx, onoff: bool, *, role: discord.Role = None):
         """!lang ja
         --------

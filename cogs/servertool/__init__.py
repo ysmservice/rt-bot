@@ -8,6 +8,7 @@ from random import sample
 from os import listdir
 
 from discord.ext import commands
+from discord import app_commands
 import discord
 
 from util.page import EmbedPage
@@ -39,7 +40,7 @@ class ServerTool(commands.Cog):
                 *STAR_HELP[lang]
             )
 
-    @commands.command(
+    @commands.hybrid_command(
         aliases=["perm", "権限", "perms", "permissions", "けんげん"], extras={
             "headding": {
                 "ja": "指定したユーザーの権限を表示します。",
@@ -47,6 +48,7 @@ class ServerTool(commands.Cog):
             }, "parent": "ServerTool"
         }
     )
+    @app_commands.describe(member="メンバーまたは役職")
     async def permission(
         self, ctx: commands.Context,
         member: Union[discord.Member, discord.Role, str] = None
@@ -111,6 +113,7 @@ class ServerTool(commands.Cog):
             }, "parent": "ServerUseful"
         }
     )
+    @app_commands.describe(guild_id="サーバーID")
     async def sinfo(self, ctx, guild_id: int = None):
         """!lang ja
         --------
@@ -168,7 +171,7 @@ class ServerTool(commands.Cog):
 
         await ctx.reply(embed=e)
 
-    @commands.command(
+    @commands.hybrid_command(
         aliases=["timem", "tm", "たいむましん", "タイムマシン",
                  "バックトゥザフューチャー", "BackToTheFuture"],
         extras={
@@ -178,6 +181,7 @@ class ServerTool(commands.Cog):
             }, "parent": "Individual"
         }
     )
+    @app_commands.describe(day="さかのぼる日数")
     async def timemachine(self, ctx, day: int = 1):
         """!lang ja
         --------
@@ -342,7 +346,7 @@ class ServerTool(commands.Cog):
         else:
             await ctx.reply(embed=embed)
 
-    @commands.command(
+    @commands.hybrid_command(
         aliases=[
             "sm", "プレイ((", "スローモード", "すろーもーど",
             "cdn", "クールダウン", "くーるぽこ", "くーるだうん"
@@ -355,6 +359,8 @@ class ServerTool(commands.Cog):
     )
     @commands.has_permissions(manage_channels=True)
     @commands.cooldown(1, 300, commands.BucketType.channel)
+    @app_commands.describe(t="スローモードを何秒で指定するか")
+    @app_commands.rename(t="time")
     async def slowmode(self, ctx, t: int):
         """!lang ja
         --------
@@ -465,7 +471,7 @@ class ServerTool(commands.Cog):
             )
         )
 
-    @commands.command(
+    @commands.hybrid_command(
         aliases=["delmes", "削除", "rm", "さくじょ"], extras={
             "headding": {
                 "ja": "メッセージ削除コマンド、リアクションメッセージ削除",
@@ -475,6 +481,7 @@ class ServerTool(commands.Cog):
     )
     @commands.has_permissions(manage_messages=True)
     @commands.cooldown(1, 10, commands.BucketType.channel)
+    @app_commands.describe(count="消す数", target="発言者")
     async def purge(self, ctx, count: int, target: discord.Member = None):
         """!lang ja
         --------
@@ -634,7 +641,7 @@ class ServerTool(commands.Cog):
             finally:
                 self.trash_queue.remove(payload.channel_id)
 
-    @commands.command(
+    @commands.hybrid_command(
         aliases=["メンバー一覧", "メンバー", "mems"], extras={
             "headding": {
                 "ja": "ｻｰﾊﾞｰ、ﾁｬﾝﾈﾙ閲覧可能、ﾛｰﾙ所持のﾒﾝﾊﾞｰの一覧を表示します。",
@@ -643,6 +650,8 @@ class ServerTool(commands.Cog):
         }
     )
     @commands.cooldown(1, 7, commands.BucketType.user)
+    @app_commands.describe(channel="ロール、チャンネル、スレッドのどれか")
+    @app_commands.rename(channel="target")
     async def members(
         self, ctx, *, channel: Union[
             discord.Role, discord.TextChannel,

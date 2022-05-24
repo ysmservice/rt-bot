@@ -3,6 +3,7 @@
 from typing import Union, Literal, List
 
 from discord.ext import commands
+from discord import app_commands
 import discord
 
 
@@ -27,7 +28,7 @@ class Bulk(commands.Cog):
                        "en": f"No member has failed {t}."}))
         return embed
 
-    @commands.group(
+    @commands.hybrid_group(
         extras={
             "headding": {
                 "ja": "一括で指定した役職またはサーバーメンバー全員にメッセージを送信や役職の付与/剥奪ができます。",
@@ -60,6 +61,7 @@ class Bulk(commands.Cog):
             }
         }
     )
+    @app_commands.describe(target="送る相手", content="メッセージ内容")
     async def send(self, ctx, target: GuildRole, *, content):
         """!lang ja
         --------
@@ -122,7 +124,7 @@ class Bulk(commands.Cog):
                 try:
                     e = discord.Embed(description=content)
                     e.set_author(name=ctx.author, icon_url=ctx.author.display_avatar.url)
-                    e.set_footer(text="RT一括送信 対象：" + ("全員" if isinstance(target, str) else f"{target.name}を持つ人"))
+                    e.set_footer(text="freeRT一括送信 対象：" + ("全員" if isinstance(target, str) else f"{target.name}を持つ人"))
                     await member.send(embed=e)
                     sent_count += 1
                 except (discord.HTTPException, discord.Forbidden):
@@ -160,6 +162,7 @@ class Bulk(commands.Cog):
             }
         }
     )
+    @app_commands.describe(mode="削除か付与か", role="対象のロール")
     async def edit(self, ctx, mode: Mode, *, role: discord.Role):
         """!lang ja
         --------
@@ -198,6 +201,7 @@ class Bulk(commands.Cog):
             }
         }
     )
+    @app_commands.describe(mode="付与か剥奪か", target="対象者", role="対象のロール")
     async def manage(self, ctx, mode: Mode, target: GuildRole, *, role: discord.Role):
         """!lang ja
         --------
