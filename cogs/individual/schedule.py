@@ -1,9 +1,15 @@
+# free RT - schedule
+
+from typing import TYPE_CHECKING
+
 from discord.ext import commands, tasks
+from discord import app_commands
 import discord
+
 from util import RT
+
 from datetime import datetime
 from asyncio import Event
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from aiomysql import Pool
@@ -50,7 +56,7 @@ class schedule(commands.Cog, DataManager):
     async def cog_load(self):
         await self._prepare_table()
 
-    @commands.group(
+    @commands.hybrid_group(
         aliases=["予定", "sch"], extras={
             "headding": {
                 "ja": "スケジュール機能",

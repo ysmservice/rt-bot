@@ -9,6 +9,7 @@ from re import findall
 import asyncio
 
 from discord.ext import commands
+from discord import app_commands
 import discord
 
 from bs4 import BeautifulSoup
@@ -50,7 +51,7 @@ class Person(commands.Cog):
             if message.id != original.id and content in message.clean_content:
                 return message
 
-    @commands.command(
+    @commands.hybrid_command(
         extras={
             "headding": {
                 "ja": "実行したチャンネルにあるメッセージの数を5000件まで数えます。",
@@ -59,6 +60,7 @@ class Person(commands.Cog):
         }, aliases=["メッセージ数"]
     )
     @commands.cooldown(1, 300, commands.BucketType.channel)
+    @app_commands.describe(content="この文字を含むメッセージを数えます。")
     async def msgc(self, ctx: commands.Context, *, content=None):
         """!lang ja
         --------

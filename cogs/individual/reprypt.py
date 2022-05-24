@@ -1,6 +1,7 @@
 # Free RT - Reprypt
 
 from discord.ext import commands
+from discord import app_commands
 import discord
 
 from time import time
@@ -13,7 +14,7 @@ class Reprypt(commands.Cog):
         self.bot = bot
         self.rate = {}
 
-    @commands.group(
+    @commands.hybrid_group(
         extras={
             "headding": {"ja": "Repryptを使用して文章を暗号化/復号化します。",
                          "en": "Encryption/Decryption by Reprypt."},
@@ -36,6 +37,7 @@ class Reprypt(commands.Cog):
             )
 
     @reprypt_.command(aliases=["en"])
+    @app_commands.describe(key="暗号化キー", content="暗号化する文章")
     async def encrypt(self, ctx, key, *, content):
         """!lang ja
         --------
@@ -106,6 +108,7 @@ class Reprypt(commands.Cog):
         )
 
     @reprypt_.command(aliases=["de"])
+    @app_commands.describe(key="暗号化キー", content="暗号化された文章")
     async def decrypt(self, ctx, key, *, content):
         """!lang ja
         --------
