@@ -3,6 +3,7 @@
 from typing import Literal, Union, List, Tuple
 
 from discord.ext import commands
+from discord import app_commands
 import discord
 
 from util import RT
@@ -225,7 +226,7 @@ class Language(commands.Cog):
         Literal["ja", "en"] : 言語コード。"""
         return self.cache.get(ugid, "ja")
 
-    @commands.command(
+    @commands.hybrid_command(
         aliases=["lang"],
         extras={
             "headding": {
@@ -235,6 +236,7 @@ class Language(commands.Cog):
             "parent": "RT"
         }
     )
+    @app_commands.describe(language="変更後の言語コード", mode="サーバー単位かユーザー単位か")
     async def language(self, ctx, language: Literal["ja", "en"], mode: Literal["server", "user"] = "user"):
         """!lang ja
         --------

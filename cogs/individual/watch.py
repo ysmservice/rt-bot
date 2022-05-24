@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from time import time
 
 from discord.ext import commands, tasks
+from discord import app_commands
 import discord
 
 from util import RT
@@ -56,7 +57,7 @@ class Watch(commands.Cog):
         self.timers: dict[int, Timer] = {}
         self.timer_processer.start()
 
-    @commands.group(
+    @commands.hybrid_group(
         aliases=["w", "時計"], extras={
             "parent": "Individual", "headding": {
                 "ja": "時計, ストップウォッチ, タイマー",
@@ -175,6 +176,7 @@ class Watch(commands.Cog):
 
     @watch.command(aliases=["t", "タイマー"], description="タイマー")
     @commands.cooldown(1, 15, commands.BucketType.user)
+    @app_commands.describe(minutes="タイマーを設定する時間(単位は分)", content="終了時に送信する内容")
     async def timer(
         self, ctx: commands.Context, minutes: float, *, content: str = None
     ):

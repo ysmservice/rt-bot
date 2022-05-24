@@ -5,6 +5,7 @@ from typing import Union, Optional
 from random import choice
 
 from discord.ext import commands
+from discord import app_commands
 import discord
 
 from util import RT, mysql
@@ -88,7 +89,7 @@ class GlobalBan(commands.Cog, DataManager):
                     f"{member.name}をBANしました。\n理由：\n{row[1]}"
                 )
 
-    @commands.group(extras={
+    @commands.hybrid_group(extras={
         "headding": {
             "ja": "グローバルBAN機能",
             "en": "Global Ban"
@@ -144,6 +145,7 @@ class GlobalBan(commands.Cog, DataManager):
 
     @gban.command(aliases=("c", "チェック", "確認"))
     @commands.cooldown(1, 5, commands.BucketType.user)
+    @app_commands.describe(user="調べるユーザー")
     async def check(self, ctx, *, user: Union[discord.User, discord.Object]):
         """!lang ja
         --------
@@ -214,7 +216,7 @@ class GlobalBan(commands.Cog, DataManager):
                  "en": "GBanned user is not found."}
             )
 
-    @gban.command("add")
+    @gban.command("add", with_app_command=False)
     @commands.is_owner()
     async def add_user_(self, ctx, user_id: int, *, reason):
         await ctx.typing()
@@ -237,7 +239,7 @@ class GlobalBan(commands.Cog, DataManager):
 
         await ctx.reply("追加しました。")
 
-    @gban.command("remove")
+    @gban.command("remove", with_app_command=False)
     @commands.is_owner()
     async def remove_user_(self, ctx, user_id: int):
         await ctx.typing()

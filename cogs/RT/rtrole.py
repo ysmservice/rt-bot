@@ -3,6 +3,7 @@
 from typing import Union
 
 from discord.ext import commands
+from discord import app_commands
 import discord
 
 from aiofiles import open as async_open
@@ -59,7 +60,7 @@ class RTRole(commands.Cog):
         async with async_open("data/rtrole.json", "w") as f:
             await f.write(dumps(self.data, ensure_ascii=True, indent=2))
 
-    @commands.group(
+    @commands.hybrid_group(
         aliases=["rtロール", "りつロール", "rr"], extras={
             "headding": {"ja": "RTを操作できる役職を設定します。", "en": "..."},
             "parent": "RT"
@@ -98,6 +99,7 @@ class RTRole(commands.Cog):
 
     @rtrole.command("set", aliases=["設定", "s"])
     @commands.has_permissions(administrator=True)
+    @app_commands.describe(role="設定するロール", commands="持ってないと使えないようにするコマンド")
     async def set_(self, ctx, role: discord.Role, *, commands):
         """!lang ja
         --------
@@ -129,6 +131,7 @@ class RTRole(commands.Cog):
 
     @rtrole.command(aliases=["del", "rm", "remove", "削除"])
     @commands.has_permissions(administrator=True)
+    @app_commands.describe(role="解除するロール")
     async def delete(self, ctx, *, role: Union[discord.Role, str]):
         """!lang ja
         --------

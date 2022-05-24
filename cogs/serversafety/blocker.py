@@ -8,6 +8,7 @@ from collections import defaultdict
 from collections.abc import Iterator
 
 from discord.ext import commands
+from discord import app_commands
 import discord
 
 from aiomysql import Pool, Cursor
@@ -103,7 +104,7 @@ class Blocker(commands.Cog, DataManager):
         self.bot = bot
         super(commands.Cog, self).__init__(self)
 
-    @commands.group(
+    @commands.hybrid_group(
         "blocker", aliases=["b", "ブロッカー"], extras={
             "headding": {
                 "ja": "絵文字,スタンプブロッカー", "en": "Emoji,Stamp blocker"
@@ -137,6 +138,7 @@ class Blocker(commands.Cog, DataManager):
     @blocker.command("toggle", aliases=["設定", "t"])
     @commands.has_guild_permissions(manage_messages=True)
     @commands.cooldown(1, 10, commands.BucketType.guild)
+    @app_commands.describe(mode="削除するもの")
     async def _toggle(self, ctx: commands.Context, *, mode: DataManager.Mode):
         """!lang ja
         --------
@@ -216,6 +218,7 @@ class Blocker(commands.Cog, DataManager):
     @role.command(aliases=["追加", "a"])
     @commands.cooldown(1, 8, commands.BucketType.guild)
     @commands.has_guild_permissions(manage_messages=True)
+    @app_commands.describe(mode="削除するもの", role="削除対象のロール")
     async def add(
         self, ctx: commands.Context, mode: DataManager.Mode, *, role: "Role"
     ):
@@ -258,6 +261,7 @@ class Blocker(commands.Cog, DataManager):
     @role.command(aliases=["削除", "rm"])
     @commands.cooldown(1, 8, commands.BucketType.guild)
     @commands.has_guild_permissions(manage_messages=True)
+    @app_commands.describe(mode="削除したくなくなったもの", role="対象のロール")
     async def remove(
         self, ctx: commands.Context, mode: DataManager.Mode, *, role: "Role"
     ):

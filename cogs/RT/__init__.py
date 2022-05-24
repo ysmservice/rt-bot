@@ -149,7 +149,7 @@ class BotGeneral(commands.Cog):
 
         self._now_status_index = 0 if self._now_status_index else 1
 
-    @commands.command(
+    @commands.hybrid_command(
         extras={"headding": {"ja": "レイテンシを表示します。", "en": "Show you free-RT latency."},
                 "parent": "RT"},
         slash_command=True,
@@ -210,7 +210,7 @@ class BotGeneral(commands.Cog):
         embed.add_field(name="アップロード", value=f'{data["upload"]/1048576}Mbps')
         await message.edit(embed=embed)
 
-    @commands.command(
+    @commands.hybrid_command(
         extras={"headding": {
             "ja": "free-RTの招待リンクを含めた情報を表示します。",
             "en": "Show you RT's invite link."

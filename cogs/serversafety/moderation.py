@@ -1,8 +1,7 @@
 # Free RT - Moderation
 
-from typing import Literal
-
 from discord.ext import commands
+from discord import app_commands
 
 from util import RT
 
@@ -11,7 +10,7 @@ class Moderation(commands.Cog):
     def __init__(self, bot: RT):
         self.bot = bot
 
-    @commands.command(
+    @commands.hybrid_command(
         extras={
             "headding": {
                 "ja": "メンバーのBAN",
@@ -20,9 +19,9 @@ class Moderation(commands.Cog):
         }, aliases=["バン", "ばん", "BAN"]
     )
     @commands.has_guild_permissions(ban_members=True)
+    @app_commands.describe(member="対象のメンバー")
     async def ban(
-        self, ctx, *, members: str = "カンマで区切ることでめんばーを複数指定可能です。",
-        mode: Literal["kick", "ban"] = "ban"
+        self, ctx, *, members: str
     ):
         """!lang ja
         --------
@@ -46,6 +45,7 @@ class Moderation(commands.Cog):
         Examples
         --------
         `rf!ban @tasuren @tasuren-sub`"""
+        mode = "ban"
         members = [
             await commands.UserConverter().convert(ctx, member)
             for member in members.split(",")
@@ -53,7 +53,7 @@ class Moderation(commands.Cog):
         excepts = []
         for m in members:
             try:
-                await getattr(ctx.guild, mode)(m, reason=f"実行者:{ctx.author}")
+                await getattr(ctx.guild, mode)(m, reason=f"free RT コマンド / 実行者:{ctx.author}")
             except Exception:
                 excepts.append(m)
         if excepts:
@@ -66,7 +66,7 @@ class Moderation(commands.Cog):
             await ctx.reply("ok", delete_after=5)
 
     @commands.has_permissions(kick_members=True)
-    @commands.command(
+    @commands.hybrid_command(
         extras={
             "headding": {
                 "ja": "メンバーのキック",
@@ -74,6 +74,7 @@ class Moderation(commands.Cog):
             }, "parent": "ServerSafety"
         }, aliases=["キック", "きっく", "KICK"]
     )
+    @app_commands.describe(member="対象のメンバー")
     async def kick(self, ctx, *, members):
         """!lang ja
         --------

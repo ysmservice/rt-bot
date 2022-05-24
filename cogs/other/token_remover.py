@@ -38,7 +38,7 @@ class TokenRemover(commands.Cog):
             self.cache[message.guild.id][message.author.id][1] = \
                 time() + self.DEFAULT_TIMEOUT
             if self.cache[message.guild.id][message.author.id][0] == 5:
-                await message.reply("TOKENなるものを送るのをやめてください。")
+                await message.reply("TOKENを送るのをやめてください。")
             elif self.cache[message.guild.id][message.author.id][0] == 8:
                 try:
                     await message.author.ban(reason="TOKENと思われるものを送っていたため。")

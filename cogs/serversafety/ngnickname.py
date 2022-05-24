@@ -1,6 +1,7 @@
 # Free RT - Ng Nickname
 
 from discord.ext import commands
+from discord import app_commands
 import discord
 
 from aiomysql import Pool
@@ -55,7 +56,7 @@ class NGNickName(commands.Cog):
                         finally:
                             break
 
-    @commands.group(
+    @commands.hybrid_group(
         aliases=["NGニックネーム", "nn"], extras={
             "headding": {
                 "ja": "NGニックネーム", "en": "NG Nickname"
@@ -97,6 +98,7 @@ class NGNickName(commands.Cog):
             )
 
     @ngnick.command(aliases=["追加"])
+    @app_commands.describe(word="検閲するワード")
     async def add(self, ctx, *, word):
         """!lang ja
         --------
@@ -149,6 +151,7 @@ class NGNickName(commands.Cog):
         )
 
     @ngnick.command(aliases=["削除"])
+    @app_commands.describe(word="削除するワード")
     async def remove(self, ctx, *, word):
         """!lang ja
         --------

@@ -255,7 +255,7 @@ class Ticket(commands.Cog, DataManager):
             await self.set_message(ctx.channel, content)
         await ctx.reply("Ok")
 
-    @commands.command(description="チケットチャンネルを閉じます。")
+    @commands.hybrid_command(description="チケットチャンネルを閉じます。")
     @commands.cooldown(1, 30, commands.BucketType.user)
     async def close(self, ctx: commands.Context):
         if ctx.channel.topic and "RTチケットチャンネル" in ctx.channel.topic:

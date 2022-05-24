@@ -3,6 +3,7 @@
 from typing import Optional
 
 from discord.ext import commands
+from discord import app_commands
 import discord
 
 from aiomysql import Pool, Cursor
@@ -60,12 +61,13 @@ class NoIconNotice(commands.Cog, DataManager):
         self.bot = bot
         super(commands.Cog, self).__init__(self.bot.mysql.pool)
 
-    @commands.command(aliases=("nin", "アイコン無し通知"), extras={
+    @commands.hybrid_command(aliases=("nin", "アイコン無し通知"), extras={
         "headding": {"ja": "アイコン未設定ユーザーに警告", "en": "Notice to user unset icon"},
         "parent": "ServerSafety"
     })
     @commands.has_guild_permissions(administrator=True)
     @commands.cooldown(1, 10, commands.BucketType.guild)
+    @app_commands.describe(text="送信する文字列(指定しなければオフ)")
     async def noinotice(self, ctx, *, text=""):
         """!lang ja
         -------

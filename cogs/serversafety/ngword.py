@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from discord.ext import commands
+from discord import app_commands
 import discord
 
 from util import RT, Table
@@ -49,7 +50,7 @@ class NgWord(commands.Cog, DataManager):
 
     HELP = ("ServerSafety", "ngword")
 
-    @commands.group(
+    @commands.hybrid_group(
         aliases=["えぬじーわーど", "ng"], extras={
             "headding": {"ja": "NGワード", "en": "NG Word"},
             "parent": "ServerSafety"
@@ -83,6 +84,8 @@ class NgWord(commands.Cog, DataManager):
         }
     )
     @commands.has_guild_permissions(manage_messages=True)
+    @app_commands.describe(words="NGワード")
+    @app_commands.rename(words="word")
     async def add_(self, ctx, *, words):
         """!lang ja
         --------
@@ -91,7 +94,7 @@ class NgWord(commands.Cog, DataManager):
         Parameters
         ----------
         words : NGワード(複数)
-            改行を使うことで複数一括で登録できます。
+            改行を使うことで複数一括で登録できます。(スラッシュコマンドではできません)
 
         Examples
         --------
@@ -138,11 +141,13 @@ class NgWord(commands.Cog, DataManager):
         }
     )
     @commands.has_guild_permissions(manage_messages=True)
+    @app_commands.describe(words="NGワード")
+    @app_commands.rename(words="word")
     async def remove_(self, ctx, *, words):
         """!lang ja
         --------
         NGワードを削除します。  
-        NGワードを追加する際に実行したコマンドの逆です。これも改行で一括削除できます。
+        NGワードを追加する際に実行したコマンドの逆です。これもメッセージコマンドなら改行で一括削除できます。
 
         Examples
         --------

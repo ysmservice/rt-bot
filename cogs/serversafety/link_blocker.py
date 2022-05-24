@@ -3,6 +3,7 @@
 from typing import TYPE_CHECKING, List
 
 from discord.ext import commands
+from discord import app_commands
 import discord
 
 from util import RT
@@ -94,7 +95,7 @@ class LinkBlocker(commands.Cog, DataManager):
     async def cog_load(self):
         await self._prepare_table()
 
-    @commands.group(
+    @commands.hybrid_group(
         aliases=["URLブロック", "lb"], extras={
             "headding": {
                 "ja": "URLをブロックする機能です。",
@@ -171,6 +172,7 @@ class LinkBlocker(commands.Cog, DataManager):
             )
 
     @linkblock.command(aliases=["rm", "delete", "del", "削除"])
+    @app_commands.describe(channel_id="削除するチャンネルのID")
     async def remove(self, ctx, channel_id: int = None):
         """!lang ja
         --------

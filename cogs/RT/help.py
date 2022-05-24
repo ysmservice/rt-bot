@@ -3,6 +3,7 @@
 from typing import Tuple, List, Union
 
 from discord.ext import commands, tasks
+from discord import app_commands
 import discord
 
 from util.page import EmbedPage
@@ -254,7 +255,7 @@ class Help(commands.Cog):
                 )
             await ctx.send(embed=embed)
 
-    @commands.command(
+    @commands.hybrid_command(
         name="help", aliases=["h", "Help_me,_ERINNNNNN!!", "たすけて！"],
         extras={
             "headding": {"ja": "Helpを表示します。",
@@ -263,6 +264,7 @@ class Help(commands.Cog):
         }, description="ヘルプを表示します。"
     )
     @commands.cooldown(1, 3, commands.BucketType.user)
+    @app_commands.describe(word="Helpを表示したいコマンド名")
     async def dhelp(
         self, ctx, *, word=None
     ):

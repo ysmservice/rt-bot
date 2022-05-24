@@ -402,7 +402,7 @@ class Rocations(commands.Cog):
 
     @commands.hybrid_command("raise")
     @commands.cooldown(1, 10, commands.BucketType.user)
-    async def raise_command(self, ctx: UnionContext):
+    async def raise_command(self, ctx):
         await self.raise_(ctx)
 
 

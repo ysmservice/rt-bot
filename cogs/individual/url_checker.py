@@ -168,7 +168,7 @@ class UrlChecker(commands.Cog, DataManager):
         if not force:
             self.runnings.remove(ctx.author.id)
 
-    @commands.command(
+    @commands.hybrid_command(
         extras={
             "headding": {
                 "ja": "URLに安全チェックボタンをつけるかどうか",

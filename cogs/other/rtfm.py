@@ -1,10 +1,13 @@
 # Free RT - rtfm
+
 import io
 import os
 import re
 import zlib
-import discord
+
 from discord.ext import commands
+from discord import app_commands
+import discord
 
 
 class SphinxObjectFileReader:
@@ -157,11 +160,12 @@ class rtfm(commands.Cog, name="Documentation"):
         e.description = "\n".join(f"[`{key}`]({url})" for key, url in self.matches)
         await ctx.send(embed=e)
 
-    @commands.command(
+    @commands.hybrid_command(
         name="rtfm",
         description="d.pyのドキュメントへのリンクを提供します。",
         aliases=["rtfd"],
     )
+    @app_commands.describe(key="検索キー(特定のもの以外を入れると検索内容として扱われます)", query="検索内容")
     async def rtfm(self, ctx, key: str = None, *, query: str = None):
         if not key or key.lower() not in self.page_types.keys():
             query = query or ""
