@@ -362,7 +362,7 @@ class Funp(commands.Cog, DataManager):
     )
     @commands.cooldown(1, 5, commands.BucketType.user)
     @app_commands.describe(type_="表示する画像のタイプ")
-    @app_commands.remane(type_="type")
+    @app_commands.rename(type_="type")
     async def nekobot(self, ctx, type_):
         """!lang ja
         --------

@@ -72,7 +72,7 @@ class OnlineNotice(commands.Cog):
         name="add", aliases=["set", "追加", "設定"],
         extras={"ja": "通知するユーザーを追加", "en": "Add notice user"}
     )
-    @app_commands.describe(user="通知するユーザー")
+    @app_commands.describe(notice_user="通知するユーザー")
     async def _add(self, ctx, notice_user: discord.User):
         """!lang ja
         --------

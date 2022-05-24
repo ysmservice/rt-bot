@@ -363,7 +363,7 @@ class Rocations(commands.Cog):
         )
         await ctx.reply("Ok")
 
-    @rocations.command("raise")
+    @rocations.command(name="raise")
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def raise_(self, ctx: UnionContext):
         """!lang ja
@@ -400,15 +400,9 @@ class Rocations(commands.Cog):
                         "en": f"Can't Raise yet!\nYou will be able to Raise when the time is <t:{elapsed}:R>."
                     })
 
-    @commands.command("raise")
+    @commands.hybrid_command("raise")
     @commands.cooldown(1, 10, commands.BucketType.user)
-    async def raise_alias(self, ctx: UnionContext):
-        await self.raise_(ctx)
-
-    @discord.app_commands.command("raise", description="Rocationsでのサーバー表示順位を上げます。")
-    async def raise_slash(self, interaction: discord.Interaction):
-        ctx = Context(self.bot, interaction, self.raise_alias, "rf!raise")
-        await ctx.typing()
+    async def raise_command(self, ctx: UnionContext):
         await self.raise_(ctx)
 
 

@@ -38,7 +38,9 @@ discord.ext.commands.Context.webhook_send = webhook_send  # type: ignore
 # componesyに関してはモンキーパッチ脱却予定なのでext.easyからのアクセスは非推奨。
 discord.ext.easy = componesy  # type: ignore
 
+
 default_hybrid_command = commands.hybrid_command
+
 
 def new_hybrid_command(*args, **kwargs):
     "descriptionをheaddingから指定するようにしたhybridコマンドです。"
@@ -50,7 +52,9 @@ def new_hybrid_command(*args, **kwargs):
         kwargs["description"] = kwargs["extras"]["headding"]["ja"]
     return default_hybrid_command(*args, **kwargs)
 
+
 default_hybrid_group = commands.hybrid_group
+
 
 def new_hybrid_group(*args, **kwargs):
     "descriptionをheaddingから指定するようにしたhybridグループです。"
@@ -61,6 +65,7 @@ def new_hybrid_group(*args, **kwargs):
     ):
         kwargs["description"] = kwargs["extras"]["headding"]["ja"]
     return default_hybrid_group(*args, **kwargs)
+
 
 commands.hybrid_command = new_hybrid_command
 commands.hybrid_group = new_hybrid_group
