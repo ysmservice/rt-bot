@@ -90,7 +90,7 @@ class Tenki(commands.Cog, DataManager):
         )
         await self.init_table()
 
-    @commands.command(
+    @commands.hybrid_command(
         slash_command=True, aliases=["天気"],
         description="日本の天気を表示します。",
         extras={

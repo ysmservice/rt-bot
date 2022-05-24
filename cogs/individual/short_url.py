@@ -1,6 +1,7 @@
 # Free RT - Short URL
 
 from discord.ext import commands
+from discord import app_commands
 import discord
 
 from util.mysql_manager import DatabaseManager
@@ -91,7 +92,7 @@ class ShortURL(commands.Cog, DataManager):
             # self.bot.print("[ShortURL_CacheUpdater]", await r.json())
             ...
 
-    @commands.group(
+    @commands.hybrid_group(
         extras={
             "headding": {
                 "ja": "URL短縮", "en": "Shorten the url."
@@ -125,6 +126,7 @@ class ShortURL(commands.Cog, DataManager):
             }
         }
     )
+    @app_commands.describe(url="短縮するURL", custom="短縮先のURL(任意)")
     async def short(self, ctx, url: str, custom: str = None):
         """!lang ja
         --------
@@ -244,9 +246,8 @@ class ShortURL(commands.Cog, DataManager):
             }
         }
     )
-    async def remove_(
-        self, ctx, custom="URLの最後の部分です。 (End of URL (`...` of `http://frrt.jp/...`))"
-    ):
+    @app_commands.describe(custom="削除する短縮URLのアドレス")
+    async def remove_(self, ctx, custom):
         """!lang ja
         --------
         登録している短縮URLを削除します。
@@ -274,7 +275,7 @@ class ShortURL(commands.Cog, DataManager):
         Aliases
         -------
         rm, delete, del"""
-        if "http://frrt.jp/" in custom:
+        if custom.startswith("http://frrt.jp/"):
             custom = custom[16:]
         try:
             await self.remove(ctx.author.id, custom)

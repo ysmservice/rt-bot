@@ -1,64 +1,66 @@
 # Free RT - Tools For Dashboard
 
-from asyncio import wait_for, TimeoutError
 
 from discord.ext import commands
+from discord import app_commands
+
+from asyncio import wait_for, TimeoutError
+from time import sleep
+import operator
+import ast
 
 from util.settings import Context
 from util import RT
+
+
+
+_OP_MAP = {
+    ast.Add: operator.add,
+    ast.Sub: operator.sub,
+    ast.Div: operator.truediv,
+    ast.FloorDiv: operator.floordiv,
+    ast.Mod: operator.mod,
+    ast.Mult: operator.mul,
+    ast.Invert: operator.neg,
+    ast.Pow: operator.pow,
+}
+
+
+def custom_eval(node_or_string):
+    node_or_string = ast.parse(node_or_string.lstrip(" \t"), mode='eval')
+    if isinstance(node_or_string, ast.Expression):
+        node_or_string = node_or_string.body
+    def _convert(node):
+        if isinstance(node, ast.Constant):
+            return node.value
+        elif isinstance(node, ast.BinOp) and isinstance(node.op, tuple(_OP_MAP.keys())):
+            sleep(0.1)  # タイムアウト実装のため。
+            left = _convert(node.left)
+            right = _convert(node.right)
+            if (right > 5 or left > 10000) and isinstance(node.op, ast.Pow):
+                raise TimeoutError("Powor too big.")
+            return _OP_MAP[type(node.op)](left, right)
+        else:
+            raise ValueError("can't calculate node of type '%s'" % node.__class__.__name__)
+    return _convert(node_or_string)
 
 
 class Tools(commands.Cog):
     def __init__(self, bot: RT):
         self.bot = bot
 
-    @commands.command(
-        aliases=["stc"],
-        extras={
-            "headding": {
-                "ja": "メッセージを特定のチャンネルに送信します。", "en": "Send message"
-            }
-        }
-    )
-    @commands.has_permissions(administrator=True)
-    @commands.cooldown(1, 5, commands.BucketType.channel)
-    async def send_(self, ctx: Context, *, content: str):
-        await ctx.send(content)
-        await ctx.reply(f"{ctx.channel.name}にメッセージを送信しました。")
-
-    @commands.command(
-        extras={
-            "headding": {
-                "ja": "IDチェッカー", "en": "ID Checker"
-            }
-        }
-    )
-    async def checker(self, ctx):
-        await ctx.reply(
-            f"ユーザーID: `{ctx.author.id}`\n"
-            f"サーバーID: `{ctx.guild.id}`\n"
-            f"チャンネルID: `{ctx.channel.id}`"
-        )
-
-    OKES = ["+", "-", "*", "/", ".", "(", ")"]
-    OKCHARS = list(map(str, range(10))) + OKES
-
-    def safety(self, word):
-        word = word.replace("**", "*")
-        return "".join(char for char in str(word) if char in self.OKCHARS)
-
-    @commands.command(
+    @commands.hybrid_command(
         extras={
             "headding": {
                 "ja": "式を入力して計算を行うことができます。", "en": "Calculation by expression"
             }, "parent": "Individual"
         }
     )
+    @app_commands.describe(expression="計算する式")
     async def calc(self, ctx: Context, *, expression: str):
         """!lang ja
         --------
-        渡された式から計算をします。  
-        (`+`, `-`, `/`, `*`のみが使用可能です。)
+        渡された式から計算をします。
 
         Parameters
         ----------
@@ -75,15 +77,16 @@ class Tools(commands.Cog):
             Expression"""
         try:
             x = await wait_for(
-                self.bot.loop.run_in_executor(None, eval, self.safety(expression)),
-                5, loop=self.bot.loop)
-        except SyntaxError:
-            raise commands.BadArgument("計算式がおかしいです！")
+                self.bot.loop.run_in_executor(None, custom_eval, expression), 3
+            )
+        except (SyntaxError, ValueError):
+            await ctx.send("計算式がおかしいです！")
         except ZeroDivisionError:
-            raise commands.BadArgument("0で割り算することはできません!")
+            await ctx.send("0で割り算することはできません!")
         except TimeoutError:
-            raise commands.BadArgument("計算範囲が大きすぎます！頭壊れます。")
-        await ctx.reply(f"計算結果：`{x}`")
+            await ctx.send("計算範囲が大きすぎます！頭壊れます。")
+        else:
+            await ctx.reply(f"計算結果：`{x}`")
 
     @commands.command(
         extras={

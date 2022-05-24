@@ -3,6 +3,7 @@
 from typing import TYPE_CHECKING, List
 
 from discord.ext import commands
+from discord import app_commands
 import discord
 
 from util import securl, DatabaseManager
@@ -64,7 +65,7 @@ class UrlChecker(commands.Cog, DataManager):
     async def cog_load(self):
         await self._prepare_table()
 
-    @commands.command(
+    @commands.hybrid_command(
         aliases=["check", "URLチェック", "uc", "ss"], extras={
             "parent": "Individual", "headding": {
                 "ja": "渡されたURLの写真を撮り危険性をチェックします。",
@@ -73,6 +74,7 @@ class UrlChecker(commands.Cog, DataManager):
         }
     )
     @commands.cooldown(1, 10, commands.BucketType.channel)
+    @app_commands.describe(url="URL")
     async def securl(
         self, ctx: commands.Context, *, url: str,
             force: bool = "", author=None):
