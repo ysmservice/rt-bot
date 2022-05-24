@@ -58,12 +58,11 @@ default_hybrid_group = commands.hybrid_group
 
 def new_hybrid_group(*args, **kwargs):
     "descriptionをheaddingから指定するようにしたhybridグループです。"
-    if (
-        (not kwargs.get("description", False))
-        and kwargs.get("extras", False)
-        and "headding" in kwargs["extras"]
-    ):
-        kwargs["description"] = kwargs["extras"]["headding"]["ja"]
+    if not kwargs.get("description", False):
+        if kwargs.get("extras", False) and "headding" in kwargs["extras"]:
+            kwargs["description"] = kwargs["extras"]["headding"]["ja"]
+        else:
+            kwargs["description"] = "No description provided."
     return default_hybrid_group(*args, **kwargs)
 
 
