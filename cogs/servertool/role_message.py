@@ -3,6 +3,7 @@
 from typing import TYPE_CHECKING, Optional, Union, Literal, Tuple, List
 
 from discord.ext import commands
+from discord import app_commands
 import discord
 
 if TYPE_CHECKING:
@@ -162,7 +163,7 @@ class RoleMessage(commands.Cog, DataManager):
         self.bot = bot
         super(commands.Cog, self).__init__(self.bot.loop, self.bot.mysql.pool)
 
-    @commands.group(
+    @commands.hybrid_group(
         aliases=["rmsg", "ロールメッセージ"], extras={
             "headding": {
                 "ja": "ロール付与/剥奪時に送信するメッセージ",
@@ -225,6 +226,7 @@ class RoleMessage(commands.Cog, DataManager):
     ROLE = Union[discord.Role, discord.Object]
 
     @rolemessage.command(aliases=["a", "追加"])
+    @app_commands.describe(role="対象のロール", mode="付与か剥奪か", content="送る内容")
     async def add(
         self, ctx, role: ROLE, mode: Literal["add", "remove"], *, content
     ):
@@ -288,6 +290,7 @@ class RoleMessage(commands.Cog, DataManager):
         await ctx.reply("Ok")
 
     @rolemessage.command(aliases=["rm", "削除"])
+    @app_commands.describe(role="対象のロール", mode="設定していたモード")
     async def remove(
         self, ctx, role: ROLE, mode: Literal["add", "remove"]
     ):
@@ -350,6 +353,7 @@ class RoleMessage(commands.Cog, DataManager):
             )
 
     @ignore.command("add", aliases=["a", "追加"])
+    @app_commands.describe(role="対象のロール", ignore_role="これが付与されていると無視されます。")
     async def add_ignore_(
         self, ctx, role: ROLE, *, ignore_role: ROLE
     ):
@@ -388,6 +392,7 @@ class RoleMessage(commands.Cog, DataManager):
         await ctx.reply("Ok")
 
     @ignore.command("remove", aliases=["rm", "削除"])
+    @app_commands.describe(role="対象のロール", ignore_role="例外に指定していたロール")
     async def remove_ignore_(
         self, ctx, role: ROLE, *, ignore_role: ROLE
     ):

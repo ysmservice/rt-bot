@@ -1,6 +1,7 @@
 # Free RT - Channel Status
 
 from discord.ext import commands, tasks
+from discord import app_commands
 import discord
 
 from util import RT
@@ -55,13 +56,14 @@ class ChannelStatus(commands.Cog, DataManager):
         await self.init_table()
         self.status_updater.start()
 
-    @commands.command(extras={
+    @commands.hybrid_command(extras={
         "headding": {
             "ja": "チャンネルにメンバー数などを表示する。",
             "en": "Displays the number of members and other information in the channel name."
         }, "parent": "ServerUseful"
     })
     @commands.has_guild_permissions(manage_channels=True)
+    @app_commands.describe(text="表示する内容")
     async def status(self, ctx, *, text):
         """!lang ja
         --------

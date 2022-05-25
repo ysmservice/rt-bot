@@ -6,6 +6,7 @@ from collections import defaultdict
 from time import time
 
 from discord.ext import commands, tasks
+from discord import app_commands
 import discord
 
 from util import RT
@@ -127,7 +128,7 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         await self.init_table()
         self.worker.start()
 
-    @commands.command(
+    @commands.hybrid_command(
         extras={
             "headding": {
                 "ja": "いつも下にくるメッセージ。強制ピン留めメッセージ機能。",
@@ -137,6 +138,7 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         }, aliases=["ピン留め", "ぴんどめ", "fpm", "forcepinmessage"]
     )
     @commands.has_guild_permissions(manage_messages=True)
+    @app_commands.describe(onoff="onにするかoffにするか", content="メッセージ内容")
     async def pin(self, ctx: commands.Context, onoff: bool, *, content=""):
         """!lang ja
         --------

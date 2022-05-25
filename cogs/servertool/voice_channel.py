@@ -3,6 +3,7 @@
 from typing import TYPE_CHECKING, Union, Literal, Tuple, Dict, List
 
 from discord.ext import commands, tasks
+from discord import app_commands
 import discord
 
 from time import time
@@ -153,13 +154,19 @@ class VCChannel(commands.Cog, DataManager):
     def cog_unload(self):
         self.cache_delete.cancel()
 
-    @commands.command(
+    @commands.hybrid_command(
         aliases=["vcチャンネル", "ボイスチャンネル"], extras={
             "headding": {
                 "ja": "ボイスチャンネル接続後作成するチャンネル",
                 "en": "Channel to be created after voice channel connection."
             }, "parent": "ServerTool"
         }
+    )
+    @app_commands.describe(
+        channel="対象のチャンネル",
+        mode="テキストかボイスどちらを作成するか",
+        role="役職",
+        template="チャンネル名のテンプレート"
     )
     async def vcc(
         self, ctx: commands.Context,

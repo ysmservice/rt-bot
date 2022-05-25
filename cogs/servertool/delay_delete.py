@@ -1,6 +1,7 @@
 # Free RT - Delay Delete Message
 
 from discord.ext import commands, tasks
+from discord import app_commands
 import discord
 
 from util import RT
@@ -62,13 +63,14 @@ class DelayDelete(commands.Cog, DataManager):
         await self.init_table()
         self.delete_loop.start()
 
-    @commands.command(
+    @commands.hybrid_command(
         aliases=["dd", "遅延削除"], extras={
             "headding": {"ja": "遅延削除メッセージ", "en": "Delay Delete Message"},
             "parent": "ServerTool"
         }
     )
     @commands.cooldown(1, 30, commands.BucketType.channel)
+    @app_commands.describe(minutes="何分後に削除するか", content="メッセージ内容")
     async def delaydelete(self, ctx, minutes: int, *, content):
         """!lang ja
         --------

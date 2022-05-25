@@ -3,6 +3,7 @@
 from typing import Literal
 
 from discord.ext import commands
+from discord import app_commands
 import discord
 
 from util import RT
@@ -80,7 +81,7 @@ class Expander(commands.Cog, DataManager):
         )
         await self.init_table()
 
-    @commands.command(
+    @commands.hybrid_command(
         extras={
             "headding": {
                 "ja": "メッセージリンク展開 on/off", "en": "message link expansion on/off"
@@ -88,7 +89,8 @@ class Expander(commands.Cog, DataManager):
         }
     )
     @commands.has_guild_permissions(administrator=True)
-    async def expand(self, ctx, onoff: bool, mode: Literal["g"] = "g"):
+    @app_commands.describe(onoff="onにするかoffにするか", mode="サーバー単位かチャンネル単位か")
+    async def expand(self, ctx, onoff: bool, mode: Literal["g", "c"] = "g"):
         """!lang ja
         --------
         メッセージリンクの展開のオンオフの切り替えコマンドです。  

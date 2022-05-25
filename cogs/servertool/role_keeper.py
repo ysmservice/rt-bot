@@ -140,7 +140,7 @@ class RoleKeeper(commands.Cog, DataManager):
     async def cog_load(self):
         await self._prepare_table()
 
-    @commands.group(
+    @commands.hybrid_command(
         aliases=["rk", "ロールキーパー"], extras={
             "headding": {
                 "ja": "ロールキーパー", "en": "Role Keeper"
@@ -178,13 +178,12 @@ class RoleKeeper(commands.Cog, DataManager):
         Aliases
         -------
         rk"""
-        if not ctx.invoked_subcommand:
-            await ctx.typing()
-            onoff = await self.toggle(ctx.guild.id)
-            await ctx.reply(
-                {"ja": f"ロールキーパーを{'ON' if onoff else 'OFF'}にしました。",
-                 "en": f"RoleKeeper is {'en' if onoff else 'dis'}abled."}
-            )
+        await ctx.typing()
+        onoff = await self.toggle(ctx.guild.id)
+        await ctx.reply(
+            {"ja": f"ロールキーパーを{'ON' if onoff else 'OFF'}にしました。",
+                "en": f"RoleKeeper is {'en' if onoff else 'dis'}abled."}
+        )
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):

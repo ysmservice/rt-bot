@@ -3,6 +3,7 @@
 from typing import Any, Literal
 
 from discord.ext import commands, tasks
+from discord import app_commands
 import discord
 
 from util.mysql_manager import DatabaseManager
@@ -123,9 +124,10 @@ class Bump(commands.Cog, DataManager):
             guild_id, mode, {"role": getattr(role, "id", 0), "onoff": onoff}
         )
 
-    @commands.command(extras=get_extras("bump"))
+    @commands.hybrid_command(extras=get_extras("bump"))
     @commands.has_guild_permissions(administrator=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
+    @app_commands.describe(onoff="onにするかoffにするか", role="通知の際にメンションするロール")
     async def bump(self, ctx, onoff: bool, *, role: discord.Role = None):
         """!lang ja
         --------
@@ -169,14 +171,16 @@ class Bump(commands.Cog, DataManager):
         await self.write("bump", ctx.guild.id, onoff, role)
         await ctx.reply("Ok", replace_language=False)
 
-    @commands.command(extras=get_extras("up"))
+    @commands.hybrid_command(extras=get_extras("up"))
     @commands.has_guild_permissions(administrator=True)
+    @app_commands.describe(onoff="onにするかoffにするか", role="通知の際にメンションするロール")
     async def up(self, ctx, onoff: bool, *, role: discord.Role = None):
         await self.write("up", ctx.guild.id, onoff, role)
         await ctx.reply("Ok", replace_language=False)
 
-    @commands.command(extras=get_extras("raise"))
+    @commands.hybrid_command(extras=get_extras("raise"))
     @commands.has_guild_permissions(administrator=True)
+    @app_commands.describe(onoff="onにするかoffにするか", role="通知の際にメンションするロール")
     async def raisenof(self, ctx, onoff: bool, *, role: discord.Role = None):
         await self.write("raise", ctx.guild.id, onoff, role)
         await ctx.reply("Ok", replace_language=False)

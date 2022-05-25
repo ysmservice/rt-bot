@@ -3,6 +3,7 @@
 from typing import Literal
 
 from discord.ext import commands
+from discord import app_commands
 import discord
 
 from util.mysql_manager import DatabaseManager
@@ -60,7 +61,7 @@ class Welcome(commands.Cog, DataManager):
         super(commands.Cog, self).__init__(self.bot.mysql)
         await self.init_table()
 
-    @commands.command(
+    @commands.hybrid_command(
         aliases=["wm", "ようこそ"], extras={
             "headding": {
                 "ja": "ウェルカムメッセージ",
@@ -70,6 +71,7 @@ class Welcome(commands.Cog, DataManager):
     )
     @commands.cooldown(1, 8, commands.BucketType.guild)
     @commands.has_guild_permissions(administrator=True)
+    @app_commands.describe(mode="入室時か退室時か", content="送信する内容(offなら機能オフ)")
     async def welcome(self, ctx, mode: Literal["join", "remove"], *, content):
         """!lang ja
         --------

@@ -7,6 +7,7 @@ from typing import Optional
 from time import time
 
 from discord.ext import commands, tasks
+from discord import app_commands
 import discord
 
 from aiomysql import Pool, Cursor
@@ -80,7 +81,7 @@ class DelayRole(commands.Cog, DataManager):
         super(commands.Cog, self).__init__(self.bot.mysql.pool)
         self.check_queue_deadline.start()
 
-    @commands.group(
+    @commands.hybrid_group(
         aliases=("dr", "遅延ロール", "ちろ"), extras={
             "headding": {"ja": "遅延ロール自動付与機能", "en": "Automatic delayed roll assignment function"},
             "parent": "ServerTool"
@@ -156,6 +157,7 @@ class DelayRole(commands.Cog, DataManager):
 
     @delayRole.command(aliases=("s", "設定"))
     @commands.has_guild_permissions(manage_roles=True)
+    @app_commands.describe(delay="何秒遅延するか", role="付与するロール")
     async def set(self, ctx: commands.Context, delay: int, *, role: discord.Role):
         """!lang ja
         --------
@@ -204,6 +206,7 @@ class DelayRole(commands.Cog, DataManager):
 
     @delayRole.command(aliases=("del", "d", "削除"))
     @commands.has_guild_permissions(manage_roles=True)
+    @app_commands.describe(role="設定解除するロール")
     async def delete(self, ctx: commands.Context, *, role: discord.Role):
         """!lang ja
         --------

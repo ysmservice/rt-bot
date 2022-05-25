@@ -1,6 +1,7 @@
 # Free RT - Locker
 
 from discord.ext import commands, tasks
+from discord import app_commands
 import discord
 
 from util import mysql
@@ -84,12 +85,13 @@ class Locker(commands.Cog, DataManager):
             color=self.bot.colors["normal"]
         )
 
-    @commands.command(name="lock", extras={
+    @commands.hybrid_command(name="lock", extras={
         "headding": {"ja": "チャンネルのロックです。", "en": "Lock channel."},
         "parent": "ServerTool"
     })
     @commands.has_permissions(manage_channels=True)
     @commands.cooldown(1, 300, commands.BucketType.channel)
+    @app_commands.describe(auto_unload="何分後に解除するか")
     async def lock_(self, ctx, *, auto_unload: int = 0):
         """!lang ja
         --------
@@ -123,7 +125,7 @@ class Locker(commands.Cog, DataManager):
             )
         )
 
-    @commands.command(extras={
+    @commands.hybrid_command(extras={
         "headding": {"ja": "チャンネルのロック解除です。", "en": "Unlock channel."},
         "parent": "ServerTool"
     })
