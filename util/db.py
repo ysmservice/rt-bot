@@ -45,6 +45,8 @@ class Coooog(commands.Cog):
 ```
 """
 
+from collections.abc import Coroutine
+
 from discord.ext import commands
 
 import aiomysql
@@ -62,6 +64,7 @@ class DBManager:
     "データベースマネージャーです。db.command()デコレータが着いたものをコマンドとして扱います。"
 
     def __init_subclass__(cls):
+        #  各コマンドの_manager属性をインスタンス化前のクラス情報にしておく。
         cls.commands = []
         for m in dir(cls):
             obj = getattr(cls, m)
@@ -78,8 +81,8 @@ class DBManager:
 
 class Command:
 
-    def __init__(self, coro, **kwargs):
-        self._manager = None
+    def __init__(self, coro: Coroutine, **kwargs):
+        self._manager: DBManager = None
         self._bot: commands.Bot = None
         self._callback = coro
         self.__kwargs = kwargs
@@ -92,11 +95,12 @@ class Command:
         return await self._callback(self._manager, *args, **kwargs)
 
     async def run(self, *args, **kwargs):
+        "関数を`cursor`(もしくは`connection`)をつけて実行します。"
         if (self._manager is None) or (self._bot is None):
             raise RuntimeError("Managerもしくはbotが見つかりません。")
 
         async with self._bot.mysql.pool.acquire() as conn:
-            if not kwargs.get("auto"):
+            if not self.__kwargs.get("auto"):
                 async with conn.cursor() as cursor:
                     result = await self._callback(self._manager, cursor, *args, **kwargs)
             else:
@@ -107,10 +111,10 @@ class Command:
 
 def command(**kwargs):
     "これがついた関数をコマンドとして扱うデコレータです。外部から`.run(...)`で呼び出せます。"
-    def deco(func):
+    def deco(func: Coroutine):
         if not iscoroutinefunction(func):
             raise ValueError("コマンドはコルーチンである必要があります。")
-        return Command(func)
+        return Command(func, **kwargs)
     return deco
 
 
