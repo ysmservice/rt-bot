@@ -37,32 +37,40 @@ discord.ext.easy = componesy  # type: ignore
 default_hybrid_command = commands.hybrid_command
 
 
-def new_hybrid_command(*args, **kwargs):
-    "descriptionをheaddingから指定するようにしたhybridコマンドです。"
-    if (
-        (not kwargs.get("description", False))
-        and kwargs.get("extras", False)
-        and "headding" in kwargs["extras"]
-    ):
-        kwargs["description"] = kwargs["extras"]["headding"]["ja"]
-    return default_hybrid_command(*args, **kwargs)
+def descriptor_hybrid(default):
+
+    def new_function(*args, **kwargs):
+        if not kwargs.get("description", False):
+            if kwargs.get("extras", False) and "headding" in kwargs["extras"]:
+                kwargs["description"] = kwargs["extras"]["headding"]["ja"]
+            else:
+                kwargs["description"] = "No description provided."
+        return default(*args, **kwargs)
+
+    return new_function
 
 
-default_hybrid_group = commands.hybrid_group
+commands.hybrid_command = descriptor_hybrid(commands.hybrid_command)
+commands.hybrid_group = descriptor_hybrid(commands.hybrid_group)
 
 
-def new_hybrid_group(*args, **kwargs):
-    "descriptionをheaddingから指定するようにしたhybridグループです。"
-    if not kwargs.get("description", False):
-        if kwargs.get("extras", False) and "headding" in kwargs["extras"]:
-            kwargs["description"] = kwargs["extras"]["headding"]["ja"]
-        else:
-            kwargs["description"] = "No description provided."
-    return default_hybrid_group(*args, **kwargs)
+def descriptor_sub(default):
+
+    def new_function(self, *args, **kwargs):
+        if not kwargs.get("description", False):
+            if kwargs.get("extras", False) and "headding" in kwargs["extras"]:
+                kwargs["description"] = kwargs["extras"]["headding"]["ja"]
+            elif self.description is not None:
+                kwargs["description"] = self.description
+            else:
+                kwargs["description"] = "No description provided."
+        return default(*args, **kwargs)
+
+    return new_function
 
 
-commands.hybrid_command = new_hybrid_command
-commands.hybrid_group = new_hybrid_group
+commands.HybridGroup.command = descriptor_hybrid(commands.HybridGroup.command)
+commands.HybridGroup.group = descriptor_hybrid(commands.HybridGroup.group)
 
 
 async def setup(bot):
