@@ -7,6 +7,7 @@ from typing import Optional
 from collections import defaultdict
 
 from discord.ext import commands
+from discord import app_commands
 import discord
 
 from util import RT, Table
@@ -62,7 +63,7 @@ class RoleLinker(commands.Cog, DataManager):
         self.running: dict[int, list[int]] = defaultdict(list)
         super(commands.Cog, self).__init__(self.bot)
 
-    @commands.group(
+    @commands.hybrid_group(
         extras={
             "headding": {
                 "ja": "ロールリンカー, 役職が付与/削除された際に他も付与/削除するようにする機能",
@@ -98,6 +99,11 @@ class RoleLinker(commands.Cog, DataManager):
             )
 
     @linker.command()
+    @app_commands.describe(
+        target="リンクされるロール",
+        link_role="リンクするロール",
+        reverse="付与と剥奪を逆にするかどうか"
+    )
     async def link(self, ctx, target: discord.Role, link_role: discord.Role, reverse: bool = False):
         """!lang ja
         --------
@@ -167,6 +173,7 @@ class RoleLinker(commands.Cog, DataManager):
                 await ctx.reply("Ok")
 
     @linker.command()
+    @app_commands.describe(target="リンクされていた役職")
     async def unlink(self, ctx, target: discord.Role):
         """!lang ja
         --------
@@ -176,7 +183,7 @@ class RoleLinker(commands.Cog, DataManager):
         Parameters
         ----------
         target : 役職のメンションまたは名前
-            役職リンクに設定されている役職です。
+            ロールリンクに設定されている役職です。
 
         !lang en
         --------

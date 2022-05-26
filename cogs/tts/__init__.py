@@ -8,6 +8,7 @@ from functools import wraps
 from os import listdir
 
 from discord.ext import commands, tasks
+from discord import app_commands
 import discord
 
 from aiofiles.os import remove
@@ -93,7 +94,7 @@ class TTSCog(commands.Cog, name="TTS"):
 
         self.now: dict[int, Manager] = {}
 
-    @commands.group(aliases=("読み上げ",), extras={
+    @commands.hybrid_group(aliases=("読み上げ",), extras={
         "headding": {"ja": "読み上げ", "en": "TTS"}, "parent": "Entertainment"
     })
     async def tts(self, ctx: UnionContext):
@@ -202,6 +203,7 @@ class TTSCog(commands.Cog, name="TTS"):
         }, view=SelectAgentView(self))
 
     @tts.command(aliases=("ch", "チャンネル"))
+    @app_commands.describe(mode="設定の切り替えか一覧表示か")
     async def channel(self, ctx: UnionContext, mode: Literal["toggle", "list"]):
         """!lang ja
         ---------
@@ -284,6 +286,7 @@ class TTSCog(commands.Cog, name="TTS"):
             ))
 
     @dictionary.command(aliases=("設定", "s"))
+    @app_commands.describe(before="置き換える対象の文字列", after="置き換え後の文字列")
     async def set(self, ctx: UnionContext, before, *, after):
         """!lang ja
         --------
@@ -319,6 +322,7 @@ class TTSCog(commands.Cog, name="TTS"):
         self.guild[ctx.guild.id].dictionary[before] = after
 
     @dictionary.command(aliases=("del", "rm", "remove", "削除"))
+    @app_commands.describe(before="置き換え対象の文字列")
     async def delete(self, ctx: UnionContext, *, before):
         """!lang ja
         --------
@@ -389,6 +393,7 @@ class TTSCog(commands.Cog, name="TTS"):
             ))
 
     @routine.command("set", aliases=("s", "設定"))
+    @app_commands.describe(voice="ネタ音声のURL", aliases="送信する文字列")
     async def set_routine(self, ctx: UnionContext, voice: Union[Literal["up"], str], *, aliases):
         """!lang ja
         --------
@@ -437,6 +442,7 @@ class TTSCog(commands.Cog, name="TTS"):
         await ctx.reply("Ok")
 
     @routine.command("delete", aliaess=("del", "rm", "remove", "削除"))
+    @app_commands.describe(alias="aliasesに登録したどれか")
     async def delete_routine(self, ctx: UnionContext, *, alias):
         """!lang ja
         --------

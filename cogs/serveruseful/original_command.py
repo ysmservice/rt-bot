@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from discord.ext import commands
+from discord import app_commands
 import discord
 
 from aiomysql import Pool, Cursor
@@ -100,7 +101,7 @@ class OriginalCommand(commands.Cog, DataManager):
         "en": ("AutoReply", "Partially consistent")
     }
 
-    @commands.group(
+    @commands.hybrid_group(
         aliases=["cmd", "コマンド", "こまんど"],
         extras={
             "headding": {
@@ -149,6 +150,7 @@ class OriginalCommand(commands.Cog, DataManager):
     @command.command("set", aliases=["せっと"])
     @commands.has_permissions(manage_messages=True)
     @commands.cooldown(1, 7, commands.BucketType.guild)
+    @app_commands.describe(command="コマンド名", auto_reply="部分一致かどうか", content="返信内容")
     async def set_command(self, ctx, command, auto_reply: bool, *, content):
         """!lang ja
         --------
@@ -207,6 +209,7 @@ class OriginalCommand(commands.Cog, DataManager):
     @command.command("delete", aliases=["del", "rm", "さくじょ", "削除"])
     @commands.has_permissions(manage_messages=True)
     @commands.cooldown(1, 7, commands.BucketType.guild)
+    @app_commands.describe(command="削除するコマンド名")
     async def delete_command(self, ctx, *, command):
         """!lang ja
         --------

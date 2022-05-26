@@ -16,6 +16,8 @@ class First(commands.Cog):
     async def on_command_error(self, ctx: commands.Context, error: Exception):
         if isinstance(error, commands.CommandNotFound):
             await ctx.reply("現在起動中のため実行できません。\nすみませんが、もうしばらくお待ちください。")
+        else:
+            await ctx.reply(str(error))
 
 
 async def setup(bot):

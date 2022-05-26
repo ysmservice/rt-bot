@@ -124,7 +124,7 @@ class GlobalChat(commands.Cog, DataManager):
         )
         await self.init_table()
 
-    @commands.group(
+    @commands.hybrid_group(
         aliases=["gc", "ぐろちゃ", "ぐろーばるちゃっと"],
         extras={
             "headding": {
@@ -152,6 +152,7 @@ class GlobalChat(commands.Cog, DataManager):
     @globalchat.command()
     @commands.has_permissions(administrator=True)
     @require_guild
+    @app_commands.describe(name="グローバルチャットの名前")
     async def make(self, ctx, *, name):
         """!lang ja
         --------
@@ -206,6 +207,7 @@ class GlobalChat(commands.Cog, DataManager):
 
     @globalchat.command(aliases=["cong", "コネクト", "接続", "せつぞく"])
     @require_guild
+    @app_commands.describe(name="グローバルチャットの名前")
     async def connect(self, ctx, *, name):
         """!lang ja
         --------

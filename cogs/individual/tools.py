@@ -13,7 +13,6 @@ from util.settings import Context
 from util import RT
 
 
-
 _OP_MAP = {
     ast.Add: operator.add,
     ast.Sub: operator.sub,
@@ -30,6 +29,7 @@ def custom_eval(node_or_string):
     node_or_string = ast.parse(node_or_string.lstrip(" \t"), mode='eval')
     if isinstance(node_or_string, ast.Expression):
         node_or_string = node_or_string.body
+
     def _convert(node):
         if isinstance(node, ast.Constant):
             return node.value
@@ -42,6 +42,7 @@ def custom_eval(node_or_string):
             return _OP_MAP[type(node.op)](left, right)
         else:
             raise ValueError("can't calculate node of type '%s'" % node.__class__.__name__)
+
     return _convert(node_or_string)
 
 

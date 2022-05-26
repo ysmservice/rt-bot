@@ -7,6 +7,7 @@ from typing import NewType, TypedDict, Literal, Union, Optional
 from dataclasses import dataclass
 
 from discord.ext import commands
+from discord import app_commands
 import discord
 
 from util.page import EmbedPage
@@ -62,7 +63,7 @@ class Level(commands.Cog):
     def get_now(self, data: LevelData) -> str:
         return f"Level:`{data['level']}`, Exp:`{data['exp']}`"
 
-    @commands.group(
+    @commands.hybrid_group(
         aliases=("lv", "レベル", "れべる", "れ"), extras={
             "parent": "ServerUseful",
             "headding": {
@@ -139,6 +140,7 @@ class Level(commands.Cog):
         description="レベルのランキングを表示します。"
     )
     @cooldown
+    @app_commands.describe(mode="サーバーかグローバルか")
     async def ranking(self, ctx: commands.Context, mode: UserMode):
         """!lang ja
         --------
@@ -250,6 +252,11 @@ class Level(commands.Cog):
     )
     @manage_role
     @cooldown
+    @app_commands.describe(
+        level="報酬を渡すレベル",
+        role="報酬ロール",
+        replace_role="代わりに剥奪したいロール"
+    )
     async def set(
         self, ctx: commands.Context, level: int,
         role: Union[discord.Role, discord.Object], *,
@@ -300,6 +307,7 @@ class Level(commands.Cog):
     )
     @manage_role
     @cooldown
+    @app_commands.describe(level="報酬を削除したいレベル")
     async def delete(self, ctx: commands.Context, level: int):
         """!lang ja
         --------

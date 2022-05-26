@@ -3,6 +3,7 @@
 from typing import Optional
 
 from discord.ext import commands
+from discord import app_commands
 import discord
 
 from util.mysql_manager import DatabaseManager
@@ -76,7 +77,7 @@ class Stamp(commands.Cog, DataManager):
                     self.cache[row[0]] = {}
                 self.cache[row[0]][row[1]] = row[2]
 
-    @commands.group(
+    @commands.hybrid_group(
         aliases=["sp", "スタンプ", "すたんぷ"], extras={
             "headding": {
                 "ja": "スタンプ機能", "en": "Stamp function"
@@ -140,7 +141,7 @@ class Stamp(commands.Cog, DataManager):
                     "en": "Stamp is not added yet."}}
             await ctx.reply(**kwargs)
 
-    @stamp.command("set", aliases=["せっと"])
+    @stamp.command("set", aliases=["せっと"], with_app_command=False)
     async def set_stamp(self, ctx, *, name):
         """!lang ja
         --------
@@ -188,6 +189,7 @@ class Stamp(commands.Cog, DataManager):
         "delete",
         aliases=["rm", "remove", "del", "さくじょ", "削除"]
     )
+    @app_commands.describe(name="スタンプの名前")
     async def delete_stamp(self, ctx, *, name):
         """!lang ja
         --------

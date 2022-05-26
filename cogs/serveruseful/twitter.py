@@ -9,6 +9,7 @@ from asyncio import Event
 from os.path import exists
 
 from discord.ext import commands
+from discord import app_commands
 import discord
 
 from tweepy import API, OAuth1UserHandler
@@ -286,7 +287,7 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
             self.disconnect()
             self.main_task.cancel()
 
-    @commands.group(
+    @commands.hybrid_group(
         aliases=["ツイッター", "tw"], extras={
             "headding": {"ja": "Twitter通知", "en": "Twitter Notification"},
             "parent": "ServerUseful"
@@ -314,6 +315,7 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
     @twitter.command("set", aliases=["s", "設定"])
     @commands.has_permissions(manage_channels=True, manage_webhooks=True)
     @commands.cooldown(1, 60, commands.BucketType.channel)
+    @app_commands.describe(onoff="onにするかoffにするか", username="ユーザー名")
     async def set_(self, ctx, onoff: bool, *, username):
         """!lang ja
         --------

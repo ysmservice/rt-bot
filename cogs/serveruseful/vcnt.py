@@ -1,23 +1,29 @@
-from discord.gateway import DiscordVoiceWebSocket
-from discord import VoiceClient, Embed, File, Message
-from discord.ext import commands
-import discord
-import nacl.secret
-import os
-from discord.utils import get
-import asyncio
-import subprocess
-from util import RTCPacket, BufferDecoder
-from discord.ext.commands import Context
+# free RT - voice recognizer
+
 from typing import Union, Optional, Sequence, Any
-from discord.sticker import GuildSticker, StickerItem
-from discord.mentions import AllowedMentions
-from discord.message import MessageReference, PartialMessage
-from discord.ui import View
+
 from youtube_dl import YoutubeDL
-from cogs.music.player import Player
-import re
 from ujson import loads
+import nacl.secret
+import subprocess
+import asyncio
+import re
+import os
+
+from discord.message import MessageReference, PartialMessage
+from discord.sticker import GuildSticker, StickerItem
+from discord import VoiceClient, Embed, File, Message
+from discord.gateway import DiscordVoiceWebSocket
+from discord.mentions import AllowedMentions
+from discord.ext.commands import Context
+from discord.ext import commands
+from discord.utils import get
+from discord.ui import View
+import discord
+
+from util import RTCPacket, BufferDecoder
+from cogs.music.player import Player
+
 
 with open("data/area_code.json", "r", encoding="utf-8") as f:
     AREA_CODE = loads(f.read())

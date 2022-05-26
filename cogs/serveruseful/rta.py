@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Optional
 
 from discord.ext import commands, tasks
+from discord import app_commands
 import discord
 
 from datetime import datetime, timezone
@@ -70,7 +71,7 @@ class RTA(commands.Cog):
     async def cog_load(self):
         await self.db._prepare_table()
 
-    @commands.group(
+    @commands.hybrid_group(
         aliases=[
             "RTA", "あーるてぃーえー", "即抜け",
             "rta_notification", "rta-notification", "RTA-notification", "RTA_notification",
@@ -105,7 +106,8 @@ class RTA(commands.Cog):
             await ctx.reply("コマンドの使いかたが間違っています。")
 
     @rta.command(aliases=["set", "設定"])
-    async def setup(self, ctx, channel: Optional[discord.TextChannel] = None):
+    @app_commands.describe(channel="通知をするチャンネル")
+    async def setup(self, ctx, channel: discord.TextChannel = commands.CurrentChannel):
         """!lang ja
         -------
         即抜けRTAを設定します。
@@ -133,7 +135,7 @@ class RTA(commands.Cog):
         Notes
         -----
         Run this command again to turn off the RTA setting."""
-        if await self.db.set_rta(ctx.guild.id, (channel := (channel or ctx.channel)).id):
+        if await self.db.set_rta(ctx.guild.id, channel.id):
             await ctx.reply(
                 embed=discord.Embed(
                     title="success",

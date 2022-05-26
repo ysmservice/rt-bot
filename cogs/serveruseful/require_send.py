@@ -3,6 +3,7 @@
 from typing import TYPE_CHECKING, Union, Tuple, Dict, List
 
 from discord.ext import commands, tasks
+from discord import app_commands
 import discord
 
 from asyncio import Event
@@ -235,7 +236,7 @@ class RequireSend(commands.Cog, DataManager):
     def cog_unload(self):
         self.process_queue.cancel()
 
-    @commands.group(
+    @commands.hybrid_group(
         aliases=["rs", "入力必須"], extras={
             "headding": {
                 "ja": "参加後に入力しないとキックされるチャンネルの設定",
@@ -276,9 +277,10 @@ class RequireSend(commands.Cog, DataManager):
             )
 
     @requiresend.command(aliases=["a", "追加"])
+    @app_commands.describe(timeout="時間制限", channel="入力必須にするチャンネル")
     async def add(
         self, ctx: commands.Context, timeout: float, *,
-        channel: Union[discord.TextChannel, discord.Object] = None
+        channel: Union[discord.TextChannel, discord.Object] = commands.CurrentChannel
     ):
         """!lang ja
         --------
@@ -318,7 +320,7 @@ class RequireSend(commands.Cog, DataManager):
         await ctx.typing()
         if timeout <= MAX_TIMEOUT:
             try:
-                await self.write(ctx.guild.id, (channel or ctx.channel).id, 60 * timeout)
+                await self.write(ctx.guild.id, channel.id, 60 * timeout)
             except AssertionError:
                 await ctx.reply(
                     {"ja": "これ以上追加できません。",
@@ -327,14 +329,14 @@ class RequireSend(commands.Cog, DataManager):
             else:
                 await ctx.reply("Ok")
         else:
-            await ctx.repy(
+            await ctx.reply(
                 {"ja": "一時間以上に設定することはできません。",
                  "en": "It cannot be set to more than one hour."}
             )
 
     @requiresend.command(aliases=["rm", "削除"])
     async def remove(
-        self, ctx, channel: Union[discord.TextChannel, discord.Object] = None
+        self, ctx, channel: Union[discord.TextChannel, discord.Object] = commands.CurrentChannel
     ):
         """!lang ja
         --------
@@ -363,7 +365,7 @@ class RequireSend(commands.Cog, DataManager):
         rm"""
         await ctx.typing()
         try:
-            await self.delete(ctx.guild.id, (channel or ctx.channel).id)
+            await self.delete(ctx.guild.id, channel.id)
         except AssertionError:
             await ctx.reply(
                 {"ja": "そのチャンネルは設定されていません。",

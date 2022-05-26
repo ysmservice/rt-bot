@@ -8,7 +8,7 @@ class Info(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(
+    @commands.hybrid_command(
         "help", slash_command=True, aliases=[
             "h", "へるぷ", "ヘルプ", "invite", "info", "about"
         ], description="ふりーりつたんの操作方法を表示します。"

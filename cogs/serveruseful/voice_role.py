@@ -3,7 +3,9 @@
 from typing import Union
 
 from discord.ext import commands, tasks
+from discord import app_commands
 import discord
+
 from util.mysql_manager import DatabaseManager
 from util import RT
 
@@ -68,7 +70,7 @@ class VoiceRole(commands.Cog, DataManager):
         await self.init_table()
         self.worker.start()
 
-    @commands.command(
+    @commands.hybrid_command(
         aliases=["vr", "ボイスロール", "音声役職", "ぼいすろーる"], extras={
             "headding": {
                 "ja": "音声チャンネルに接続した際に特定の役職を付与または剥奪する機能。",
@@ -76,6 +78,7 @@ class VoiceRole(commands.Cog, DataManager):
             }, "parent": "ServerUseful"
         }
     )
+    @app_commands.describe(channel="対象の音声チャンネル", role="接続した時に与えるロール")
     async def voicerole(
         self, ctx, channel: Union[discord.VoiceChannel, discord.StageChannel],
         *, role: discord.Role
