@@ -114,21 +114,21 @@ class ServerTool(commands.Cog):
         }
     )
     @app_commands.describe(guild_id="サーバーID")
-    async def sinfo(self, ctx, guild_id: int = None):
+    async def sinfo(self, ctx, guild: discord.Guild = commands.CurrentGuild):
         """!lang ja
         --------
         サーバーの情報を表示します。
 
         Parameters
         ----------
-        guild_id : int, optional
+        guild : int, optional
             対象のサーバーのIDです。  
             指定しなかった場合はコマンドを実行したサーバーとなります。  
             RTのいるサーバーしかサーバー指定はできません。
 
         Aliases
         -------
-        si
+        serverinfo, si
 
         !lang en
         --------
@@ -136,37 +136,29 @@ class ServerTool(commands.Cog):
 
         Parameters
         ----------
-        guild_id : int, optional
+        guild : int, optional
             The ID of the target server.  
             If it is not specified, it is the server where the command was executed.  
             Only the server where RT is located can be specified as the server.
 
         Aliases
         -------
-        si"""
-        if guild_id is None:
-            guild = ctx.guild
-        else:
-            guild = self.bot.get_guild(guild_id)
-            if guild is None:
-                return await ctx.reply(
-                    {"ja": "サーバーが見つかりませんでした。",
-                     "en": "The server is not found."}
-                )
-
+        serverinfo, si"""
         e = discord.Embed(title=f"{guild.name}の情報",
                           description="", color=0x00ff00)
-        e.add_field(name="サーバー名(ID)", value=f"{guild.name}({guild.id})")
+        e.add_field(name="サーバー名(ID)", value=f"{guild.name}(`{guild.id}`)")
+        e.add_field(name="作成者(ID)", value=f"{guild.owner}(`{guild.owner.id}`)")
         chs = (len(guild.channels), len(guild.categories),
                len(guild.text_channels), len(guild.voice_channels))
         e.add_field(name="チャンネル数",
-                    value="%s個(カテゴリ：%s個,テキスト：%s個,ボイス：%s個)" % chs)
+                value="`%s`個(カテゴリ：`%s`個,テキスト：`%s`個,ボイス：`%s`個)" % chs)
         mbs = (len(guild.members),
                len([m for m in guild.members if not m.bot]),
                len([m for m in guild.members if m.bot]))
         e.add_field(name="メンバー数",
-                    value="%s人(ユーザー：%s人,Bot：%s人)" % mbs)
-        e.add_field(name="作成日時(UTC)", value=guild.created_at)
+                    value="`%s`人(ユーザー：`%s`人,Bot：`%s`人)" % mbs)
+        e.add_field(name="作成日時(UTC)",
+                    value=discord.utils.format_dt(guild.created_at))
         e.set_thumbnail(url=guild.icon.url)
 
         await ctx.reply(embed=e)
