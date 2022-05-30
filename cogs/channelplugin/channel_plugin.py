@@ -98,82 +98,83 @@ class ChannelPluginGeneral(commands.Cog):
             return
         if not message.guild or message.author.discriminator == "0000":
             return
+        if not message.channel.topic:
+            return
 
-        if message.channel.topic:
-            for cmd in message.channel.topic.splitlines():
-                if cmd.startswith("rf>asp"):
-                    # Auto Spoiler
-                    content = message.clean_content
+        for cmd in message.channel.topic.splitlines():
+            if cmd.startswith("rf>asp"):
+                # Auto Spoiler
+                content = message.clean_content
 
-                    # 添付ファイルをスポイラーにする。
-                    new = []
-                    for attachment in message.attachments:
-                        attachment.filename = f"SPOILER_{attachment.filename}"
-                        new.append(await attachment.to_file())
-                    # urlをスポイラーにする。
-                    for url in findall(self.URL_PATTERN, content):
-                        content = content.replace(url, f"||{url}||", 1)
-                    # もしスポイラーワードが設定されているならそれもスポイラーにする。
-                    for word in cmd.split()[1:]:
-                        content = content.replace(word, f"||{word}||")
-                    # Embedに画像が設定されているなら外してスポイラーを付けた画像URLをフィールドに入れて追加する。
-                    e = False
-                    for index in range(len(message.embeds)):
-                        if message.embeds[index].image.url is not None:
-                            message.embeds[index].add_field(
-                                name="この埋め込みに設定されている画像",
-                                value=f"||{message.embeds[index].image.url}||"
-                            )
-                            message.embeds[index].set_image(url=None)
-                            e = True
-
-                    # 送信し直す。
-                    if ((message.content and message.clean_content != content)
-                            or message.attachments or (message.embeds and e)):
-                        # 送信しなおす。
-                        if message.reference:
-                            content = f"返信先：{message.reference.jump_url}\n{content}"
-                        await message.channel.webhook_send(
-                            content, files=new, embeds=message.embeds,
-                            username=message.author.display_name + " RT's Auto Spoiler",
-                            avatar_url=message.author.display_avatar.url,
-                            view=RemoveButton(message.author.id)
+                # 添付ファイルをスポイラーにする。
+                new = []
+                for attachment in message.attachments:
+                    attachment.filename = f"SPOILER_{attachment.filename}"
+                    new.append(await attachment.to_file())
+                # urlをスポイラーにする。
+                for url in findall(self.URL_PATTERN, content):
+                    content = content.replace(url, f"||{url}||", 1)
+                # もしスポイラーワードが設定されているならそれもスポイラーにする。
+                for word in cmd.split()[1:]:
+                    content = content.replace(word, f"||{word}||")
+                # Embedに画像が設定されているなら外してスポイラーを付けた画像URLをフィールドに入れて追加する。
+                e = False
+                for index in range(len(message.embeds)):
+                    if message.embeds[index].image.url is not None:
+                        message.embeds[index].add_field(
+                            name="この埋め込みに設定されている画像",
+                            value=f"||{message.embeds[index].image.url}||"
                         )
-                        try:
-                            await message.delete()
-                        except (discord.NotFound, discord.Forbidden):
-                            pass
-                elif cmd.startswith("rf>ce"):
-                    # Can't Edit
+                        message.embeds[index].set_image(url=None)
+                        e = True
+
+                # 送信し直す。
+                if ((message.content and message.clean_content != content)
+                        or message.attachments or (message.embeds and e)):
+                    # 送信しなおす。
+                    if message.reference:
+                        content = f"返信先：{message.reference.jump_url}\n{content}"
                     await message.channel.webhook_send(
-                        message.clean_content, files=[
-                            await at.to_file()
-                            for at in message.attachments
-                        ], username=message.author.display_name,
-                        avatar_url=message.author.display_avatar.url
+                        content, files=new, embeds=message.embeds,
+                        username=message.author.display_name + " RT's Auto Spoiler",
+                        avatar_url=message.author.display_avatar.url,
+                        view=RemoveButton(message.author.id)
                     )
-                    await message.delete()
-                elif cmd.startswith("rf>embed"):
-                    # Auto Embed
-                    await self.bot.cogs["ServerTool"].embed(
-                        await self.bot.get_context(message), "null",
-                        content=message.content
-                    )
-                    await message.delete()
-                elif cmd.startswith("rf>kick "):
-                    # Kick
-                    for word in cmd.split()[1:]:
-                        if word not in message.content:
-                            try:
-                                await message.author.kick(
-                                    reason=f"[ChannelPlugin]{word}がメッセージになかったため。"
-                                )
-                            except discord.Forbidden:
-                                await message.reply(
-                                    "必要なメッセージがないのでキックしようとしましたが権限がないのでできませんでした。"
-                                )
-                            finally:
-                                break
+                    try:
+                        await message.delete()
+                    except (discord.NotFound, discord.Forbidden):
+                        pass
+            elif cmd.startswith("rf>ce"):
+                # Can't Edit
+                await message.channel.webhook_send(
+                    message.clean_content, files=[
+                        await at.to_file()
+                        for at in message.attachments
+                    ], username=message.author.display_name,
+                    avatar_url=message.author.display_avatar.url
+                )
+                await message.delete()
+            elif cmd.startswith("rf>embed"):
+                # Auto Embed
+                await self.bot.cogs["ServerTool"].embed(
+                    await self.bot.get_context(message), "null",
+                    content=message.content
+                )
+                await message.delete()
+            elif cmd.startswith("rf>kick "):
+                # Kick
+                for word in cmd.split()[1:]:
+                    if word not in message.content:
+                        try:
+                            await message.author.kick(
+                                reason=f"[ChannelPlugin]{word}がメッセージになかったため。"
+                            )
+                        except discord.Forbidden:
+                            await message.reply(
+                                "必要なメッセージがないのでキックしようとしましたが権限がないのでできませんでした。"
+                            )
+                        finally:
+                            break
 
 
 async def setup(bot):

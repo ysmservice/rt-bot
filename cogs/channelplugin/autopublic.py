@@ -1,6 +1,7 @@
 # Free RT - Auto Public
 
 from discord.ext import commands
+from discord import ChannelType
 
 
 CHP_HELP = {
@@ -35,8 +36,9 @@ class AutoPublic(commands.Cog):
     async def on_message(self, message):
         if not hasattr(message.channel, "topic"):
             return
-        if not message.guild or message.author.bot or not message.channel.topic:
+        if not type(message.channel) == ChannelType.news or not message.channel.topic:
             return
+
         for line in message.channel.topic.splitlines():
             if line.startswith("rf>autopublic"):
                 await message.publish()

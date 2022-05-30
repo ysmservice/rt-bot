@@ -151,7 +151,7 @@ class ServerTool(commands.Cog):
         chs = (len(guild.channels), len(guild.categories),
                len(guild.text_channels), len(guild.voice_channels))
         e.add_field(name="チャンネル数",
-                value="`%s`個(カテゴリ：`%s`個,テキスト：`%s`個,ボイス：`%s`個)" % chs)
+                    value="`%s`個(カテゴリ：`%s`個,テキスト：`%s`個,ボイス：`%s`個)" % chs)
         mbs = (len(guild.members),
                len([m for m in guild.members if not m.bot]),
                len([m for m in guild.members if m.bot]))

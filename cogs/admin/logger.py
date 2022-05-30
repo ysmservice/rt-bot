@@ -5,7 +5,7 @@ import discord
 
 from traceback import TracebackException
 
-import collections
+from collections import Counter
 
 from util import RT
 
@@ -27,10 +27,13 @@ class SystemLog(commands.Cog):
         self.logging_loop.cancel()
 
     def _make_embed(self):
-        name = collections.Counter(self.names).most_common()[0]
-        zero_parent = collections.Counter(self.zero_parents).most_common()[0]
-        author = collections.Counter(self.authors).most_common()[0]
-        guild = collections.Counter(self.guilds).most_common()[0]
+        # コマンド実行記録のembedを作成する。
+        # 使用回数が最大のものを取り出す。
+        name = Counter(self.names).most_common()[0]
+        zero_parent = Counter(self.zero_parents).most_common()[0]
+        author = Counter(self.authors).most_common()[0]
+        guild = Counter(self.guilds).most_common()[0]
+
         e = discord.Embed(
             title="Free RT command log",
             description=f"1分間で{len(self.names)}回のコマンド実行(以下、実行最多記録)",
