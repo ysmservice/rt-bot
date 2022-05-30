@@ -65,6 +65,7 @@ class Log(commands.Cog):
         self.bot, self.data = bot, bot.data
         self.team_id = self.bot.owner_ids
         self.c = self.bot.colors["normal"]
+        self.parse_time = discord.utils.format_dt
 
     @commands.Cog.listener()
     async def on_help_reload(self):
@@ -73,10 +74,6 @@ class Log(commands.Cog):
                 "ChannelPlugin", "Discord-log",
                 lang, *CHP_HELP[lang]
             )
-
-    def parse_time(self, date):
-        # 時間を日本時間にして文字列にする。
-        return (date + timedelta(hours=9)).strftime('%Y-%m-%d')
 
     @commands.Cog.listener()
     @log()
@@ -98,7 +95,7 @@ class Log(commands.Cog):
         )
         embed.add_field(name="ユーザーID", value=str(member.id))
         embed.add_field(
-            name="Discord登録日",
+            name="Discord登録日時",
             value=self.parse_time(member.created_at)
         )
         embed.set_thumbnail(url=getattr(member.display_avatar, "url", ""))

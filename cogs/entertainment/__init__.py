@@ -40,7 +40,7 @@ class Enjoy(commands.Cog):
 
         Parameters
         ----------
-        user_name : str
+        user : str
             ユーザー名です。
 
         Examples
@@ -57,7 +57,7 @@ class Enjoy(commands.Cog):
 
         Parameters
         ----------
-        user_name : str
+        user : str
             Minecraft JE user name.
 
         Examples
@@ -99,7 +99,7 @@ class Enjoy(commands.Cog):
     @commands.hybrid_command(
         extras={
             "headding": {"ja": "NHKのニュースを取得します。",
-                         "en": "Show japan nhk news."},
+                         "en": "Show japanese nhk news."},
             "parent": "Individual"
         }
     )
