@@ -9,7 +9,7 @@ class Multiple(commands.Converter):
     _original: commands.Converter = None  # type: ignore
 
     async def convert(self, ctx: commands.Context, arg: str):
-        return [await self._original().convert(ctx, word) for word in arg.split(", ")]
+        return [await self._original().convert(ctx, word) for word in arg.split(",")]
 
 
 class MembersConverter(Multiple):
