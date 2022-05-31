@@ -12,7 +12,7 @@ class MineSweeper:
     def __init__(
             self, xlen: int, ylen: int, bombs: int, 
             seed: Optional[int] = None, log: bool = False
-    ):
+    ) -> None:
         "マインスイーパーです。インスタンス化でデータの作成までを行います。"
         if xlen > 100 or ylen > 100:
             raise ValueError("xlen and ylen must be 100 or less.")
@@ -26,28 +26,32 @@ class MineSweeper:
         self.logging: bool = log
         if seed:
             random.seed(seed)
-        self.make_data()
+        self._make_data()
         self.now_opened = []
 
-    def make_data(self):
-        "初期データをself.dataに2次元配列で作成します。0~8の数字は回りにある爆弾の数、9は爆弾を表します。"
+    def _make_data(self) -> None:
+        # 初期データをself.dataに2次元配列で作成します。0~8の数字は回りにある爆弾の数、9は爆弾を表します。
+        # 通常はこの関数はインスタンス時に自動で実行されます。
         raw_data = [0] * (self.xlen * self.ylen)
         for i in random.sample(range(self.xlen * self.ylen), k=self.bombs):
             raw_data[i] = 9
+
         # 2次元配列に直す。
         t_data = [
             [raw_data[x * self.ylen + y] for y in range(self.ylen)]
             for x in range(self.xlen)
         ]
+
         for x_checking in len(t_data):
             for y_checking in len(t_data[x_checking]):
                 t_data[x_checking][y_checking] = \
                     self.get_around_data(t_data, x_checking, y_checking).count(9)
-        self.data: tuple = tuple([tuple(i) for i in t_data])
+
+        self.data: tuple[tuple[int]] = tuple([tuple(i) for i in t_data])
         if self.logging:
             print(f"[util][MineSweeper]maked data: {newlinestr.join(self.data)}")
 
-    def get_around_data(self, t_data, x, y) -> tuple:
+    def get_around_data(self, t_data, x, y) -> tuple[int]:
         "t_dataのx番目のy番目の周りの数(壁を越えていたら0)を取得したリストを返します。"
         if t_data[x][y] == 9:
             return (9, 9, 9, 9, 9, 9, 9, 9, 9)  # 9の数が9個なので問題ない。
@@ -72,7 +76,7 @@ class MineSweeper:
         """
         assert x < self.xlen, "存在しない番地です。"
         assert y < self.ylen, "存在しない番地です。"
-        # 実際のコマンドでは、通常この2つはコマンド処理側ではじかれるのでエラーは出ない。
+        # 実際のコマンドでは、この2つはコマンド処理側ではじかれるのでエラーは出ない。
 
         number = self.data[x][y]
         if self.logging:
@@ -93,3 +97,12 @@ class MineSweeper:
         else:
             # ゲームは続行。
             return (0, number)
+
+    def to_string(self, mode: str = "s") -> str:
+        "現在の状況をEmbedのdescriptionに表示する形式の文字列に変換します。"
+        return "\n".join(
+            ("`" + "` `".join(
+                ["💣" if x == 9 else x if x in self.now_opened else "■" for x in l]
+                if mode == "s" else ["💣" if x == 9 else x for x in l]
+            ) + "`") for l in [list(i) for i in self.data]
+        )
