@@ -69,8 +69,8 @@ def descriptor_sub(default):
     return new_function
 
 
-commands.HybridGroup.command = descriptor_hybrid(commands.HybridGroup.command)
-commands.HybridGroup.group = descriptor_hybrid(commands.HybridGroup.group)
+commands.HybridGroup.command = descriptor_sub(commands.HybridGroup.command)
+commands.HybridGroup.group = descriptor_sub(commands.HybridGroup.group)
 
 
 async def setup(bot):
