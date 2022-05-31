@@ -17,8 +17,12 @@ class BasePage(TimeoutView):
     async def on_turn(
         self, mode: Literal["dl", "l", "r", "dr"], interaction: discord.Interaction
     ):
-        self.page = self.page + \
-            (-1 if mode.endswith("l") else 1) * ((mode[0] == "d") + 1)
+        if mode[0] == "d":
+            self.page = 0 if mode[1] == "l" else len(self.data) - 1
+        else:
+            self.page = (
+                self.page + (len(self.data) - 1 if mode == "l" else 1)
+            ) % len(self.data)
 
     @discord.ui.button(emoji="⏪")
     async def dash_left(self, interaction: discord.Interaction, _):
@@ -45,6 +49,8 @@ class EmbedPage(BasePage):
     async def on_turn(self, mode: str, interaction: discord.Interaction):
         before = self.page
         await super().on_turn(mode, interaction)
+        if self.page == before:
+            return
         try:
             assert 0 <= self.page
             embed = self.data[self.page]
