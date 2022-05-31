@@ -111,21 +111,25 @@ class Welcome(commands.Cog, DataManager):
         !lang en
         --------
         Sets the welcome message.  
-        When a member joins the server on the channel where this command is executed, the specified message will be sent.  
+        When a member joins the server on the channel where this command is executed, \
+        the specified message will be sent.  
         You can also set a message to be sent when you leave the room.
 
         Parameters
         ----------
         mode : str
-            Enter `join` to set a message to be sent when you join, or `remove` to set a message to be sent when you leave.
+            Enter `join` to set a message to be sent when you join, \
+            or `remove` to set a message to be sent when you leave.
         content : str
             The content of the welcome message.  
             If you want to turn it off, set it to `off`.
 
         Notes
         -----
-        If you put the following three in your message, it will be replaced by the corresponding one when you send the message.  
-        You can use this to create a message like `You are the XXth person to join! You can use this to create a message such as:
+        If you put the following three in your message, \
+        it will be replaced by the corresponding one when you send the message.  
+        You can use this to create a message like \
+        `You are the XXth person to join! You can use this to create a message such as:
         ````
         $ment$ Participant's Mention
         $name$ Participant's name

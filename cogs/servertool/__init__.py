@@ -22,7 +22,8 @@ STAR_HELP = {
     ),
     "en": (
         "Star board",
-        "When you give a ☆ reaction, it will be sent as a starred message to the channel with `rt>star` in the topic."
+        "When you give a ☆ reaction, it will be sent as a starred message"
+        " to the channel with `rt>star` in the topic."
     )
 }
 
@@ -420,7 +421,8 @@ class ServerTool(commands.Cog):
         --------
         Set or unset nsfw for the channel you run. 
         This command is for those iOS users who cannot set NSFW on iOS. 
-        It sets the channel to nsfw if it is not set to nsfw when executed, and unset nsfw if it is set to nsfw."""
+        It sets the channel to nsfw if it is not set to nsfw when executed, \
+        and unset nsfw if it is set to nsfw."""
         if hasattr(ctx.channel, "topic"):
             await ctx.typing()
             await ctx.channel.edit(nsfw=not ctx.channel.nsfw)
@@ -578,7 +580,8 @@ class ServerTool(commands.Cog):
                 )):
                     cache = channel.topic[channel.topic.find("rt>star") + 7:]
                     try:
-                        require = int(cache if (index := cache.find("\n")) == -1 else cache[:index])
+                        require = int(cache 
+                                      if (index := cache.find("\n")) == -1 else cache[:index])
                     except ValueError:
                         require = 1
                     if count < require:
@@ -637,7 +640,8 @@ class ServerTool(commands.Cog):
         aliases=["メンバー一覧", "メンバー", "mems"], extras={
             "headding": {
                 "ja": "ｻｰﾊﾞｰ、ﾁｬﾝﾈﾙ閲覧可能、ﾛｰﾙ所持のﾒﾝﾊﾞｰの一覧を表示します。",
-                "en": "Displays a list of members who are on the server, can view channels, and have roles."
+                "en": "Displays a list of members who are on the server, "
+                      "can view channels, and have roles."
             }, "parent": "ServerTool"
         }
     )
@@ -672,7 +676,8 @@ class ServerTool(commands.Cog):
 
         !lang en
         --------
-        Lists mentions, names, and IDs of people who are on the server, have access to the channel, or have a specific role.
+        Lists mentions, names, and IDs of people who are on the server, \
+        have access to the channel, or have a specific role.
 
         Parameters
         ----------
@@ -696,8 +701,8 @@ class ServerTool(commands.Cog):
                         new.append([])
                     finally:
                         new[i].append(
-                            f"{member.mention} {'<:bot:876337342116429844>' if member.bot else ''}\n　{member.name} ({member.id})"
-                        )
+                            f"{member.mention} {'<:bot:876337342116429844>' if member.bot else ''}"
+                            f"\n　{member.name} ({member.id})")
                         if sum(map(len, new[i])) <= 2000:
                             break
                         else:

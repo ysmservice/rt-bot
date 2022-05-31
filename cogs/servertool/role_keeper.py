@@ -167,8 +167,10 @@ class RoleKeeper(commands.Cog, DataManager):
         !lang en
         --------
         This is a role keeper.  
-        If you leave the server once, when you join the server again, you will be given the role you were given when you left before.  
-        So even if you leave the server, the next time you join, you will keep the role you had before.  
+        If you leave the server once, when you join the server again,
+        you will be given the role you were given when you left before.  
+        So even if you leave the server, the next time you join,
+        you will keep the role you had before.  
         You can turn it on and off by executing this command.
 
         Notes

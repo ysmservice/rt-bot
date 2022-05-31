@@ -113,13 +113,16 @@ class DelayDelete(commands.Cog, DataManager):
 
         Notes
         -----
-        Similar to this function, you can delete messages sent to a specified channel after a specified time.  
-        To use this feature, send `rf>delaydelete minutes later` to the topic in the target channel.
+        Similar to this function, you can delete messages \
+        sent to a specified channel after a specified time.  
+        To use this feature, send `rf>delaydelete minutes later` \
+        to the topic in the target channel.
 
         Warnings
         --------
         This function can remember up to 160 messages to be delayed deleted.  
-        If you register more than 160 messages for delayed deletion, the last message registered for delayed deletion will not be deleted.  
+        If you register more than 160 messages for delayed deletion, \
+        the last message registered for delayed deletion will not be deleted.  
         This is to prevent misuse. Thank you for your understanding.
 
         Aliases

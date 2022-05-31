@@ -43,7 +43,8 @@ class DataManager(DatabaseManager):
             except Exception as e:
                 assert False, {
                     "ja": f"エラーが発生しました。\nCode: `{e}`\n設定が既にない可能性があります。",
-                    "en": f"Error has occurred.\nCode: `{e}`\nThe setting may not already be there."
+                    "en": f"Error has occurred.\nCode: `{e}`\n"
+                          "The setting may not already be there."
                 }
         else:
             assert len(await self.read(guild_id, cursor)) < 10, {
@@ -110,15 +111,20 @@ class DelayRole(commands.Cog, DataManager):
         !lang en
         --------
         Delayed role auto-granting function.
-        This is a delayed version of `autorole`, a function that automatically grants roles to members who enter the server.
+        This is a delayed version of `autorole`, a function that automatically grants roles \
+        to members who enter the server.
         Roles can be granted after a certain number of seconds.
 
         Warnings
         --------
         This feature may also grant roles to unrelated people.
         (These unrelated people do not include those who have not already exceeded the delay time.)
-        "When a member enters a server, the member is written into the saved data as a role grantee, and a short time later, the role is granted to the member whose saved data is being written into the saved data."
-        Instead of such a mechanism, "Periodically, all members are checked. The check is whether the difference between the current time and the member's entry time is more than the delay time. If it is more, the member is given a role." This is how the system works.
+        "When a member enters a server, the member is written into the saved data as a role grantee, \
+        and a short time later, the role is granted to the member whose saved data is being written \
+        into the saved data."
+        Instead of such a mechanism, "Periodically, all members are checked. The check is whether the \
+        difference between the current time and the member's entry time is more than the delay time. 
+        If it is more, the member is given a role." This is how the system works.
         This is a solution to avoid save data bloat.
         Please understand this.
 
@@ -188,7 +194,8 @@ class DelayRole(commands.Cog, DataManager):
         ----------
         delay : int
             The number of seconds to delay.
-            If you want to specify a date, you can use `rf!calc expression` to calculate the number of seconds.
+            If you want to specify a date, you can use `rf!calc expression` \
+            to calculate the number of seconds.
             If it is less than 35 seconds, the grant is significantly delayed.
         role : role name, mentions or ID
             The role to be granted.

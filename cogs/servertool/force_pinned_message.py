@@ -225,7 +225,8 @@ class ForcePinnedMessage(commands.Cog, DataManager):
         --------
         After setting it up, it may not come down immediately.  
         If it doesn't come down after a while, please try sending a message.  
-        Please note that this is to prevent RTs from sending too many messages, which would limit the API."""
+        Please note that this is to prevent RTs from sending too many messages, \
+        which would limit the API."""
         if hasattr(ctx.channel, "topic"):
             await ctx.typing()
 
@@ -340,7 +341,8 @@ class ForcePinnedMessage(commands.Cog, DataManager):
                 try:
                     new_message = await message.channel.webhook_send(
                         username=f"{name[0]} - RT",
-                        avatar_url=self.bot.user.display_avatar.url if name[1] else member.display_avatar.url,
+                        avatar_url=self.bot.user.display_avatar.url 
+                                   if name[1] else member.display_avatar.url,
                         wait=True, **kwargs
                     )
                 except Exception as e:

@@ -208,7 +208,8 @@ class VCChannel(commands.Cog, DataManager):
         !lang en
         --------
         Voice Channel Channel
-        When someone connects to the voice channel you set up, it will create a channel for that person.  
+        When someone connects to the voice channel you set up, \
+        it will create a channel for that person.  
         The name of the created channel and the positions that can be viewed can be customized.
 
         Parameters
@@ -216,7 +217,8 @@ class VCChannel(commands.Cog, DataManager):
         channel : Name, Mention, or ID of the voice channel
             This is the channel that will be created when you connect to it.
         mode : tc or vc
-            If set to `tc`, a text channel will be created, if `vc`, a voice channel will be created.
+            If set to `tc`, a text channel will be created.  
+            If `vc`, a voice channel will be created.
         role : Mention or name of the role, optional
             This is a role that can only be seen if you have the channel you created.  
             If not specified, the channel will be available to everyone.  
@@ -224,7 +226,8 @@ class VCChannel(commands.Cog, DataManager):
         template : str, default `!name! channel`.
             The template for the channel name.  
             Use this template as the name when creating a channel.  
-            If you put `!id!` in the template, it will be replaced by the ID of the creator, and if you put `!name!` in the template, it will be replaced by the name of the creator.
+            If you put `!id!` in the template, it will be replaced by the ID of the creator.
+            And if you put `!name!` in the template, it will be replaced by the name of the creator.
 
         Notes
         -----

@@ -32,7 +32,8 @@ class Bulk(commands.Cog):
         extras={
             "headding": {
                 "ja": "一括で指定した役職またはサーバーメンバー全員にメッセージを送信や役職の付与/剥奪ができます。",
-                "en": "Adds or removes the specified role or sends the specified message to specific members who is on this server."
+                "en": "Adds or removes the specified role or sends the specified message"
+                      " to specific members who is on this server."
             },
             "parent": "ServerTool"
         }
@@ -124,7 +125,9 @@ class Bulk(commands.Cog):
                 try:
                     e = discord.Embed(description=content)
                     e.set_author(name=ctx.author, icon_url=ctx.author.display_avatar.url)
-                    e.set_footer(text="freeRT一括送信 対象：" + ("全員" if isinstance(target, str) else f"{target.name}を持つ人"))
+                    e.set_footer(
+                        text="freeRT一括送信 対象："
+                             + ("全員" if isinstance(target, str) else f"{target.name}を持つ人"))
                     await member.send(embed=e)
                     sent_count += 1
                 except (discord.HTTPException, discord.Forbidden):
@@ -182,7 +185,8 @@ class Bulk(commands.Cog):
         Parameters
         ----------
         mode : add or remove
-            If "add" is selected, all privileges will be granted, and if "remove" is selected, all privileges will be revoked.
+            If "add" is selected, all privileges will be granted, \
+            and if "remove" is selected, all privileges will be revoked.
         role : Name or Mention of the role
             The target role."""
         await ctx.typing()
@@ -258,7 +262,8 @@ class Bulk(commands.Cog):
                     )
 
         embed = discord.Embed(
-            title={"ja": "役職付与/剥奪の一括送信が完了しました。", "en": "It has completed to add/remove a role to the members collectively."},
+            title={"ja": "役職付与/剥奪の一括送信が完了しました。",
+                   "en": "It has completed to add/remove a role to the members collectively."},
             color=self.bot.colors["normal"]
         )
         embed = self.add_error_field(embed, failed_members, "役職の付与/剥奪")

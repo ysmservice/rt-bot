@@ -274,7 +274,8 @@ class RoleMessage(commands.Cog, DataManager):
 
         Noets
         -----
-        The following will be replaced with the corresponding ones if they are included in the submitted content.
+        The following will be replaced with the corresponding ones \
+        if they are included in the submitted content.
         ```
         !role_name!      A role name that added or removed
         !role_mention!   A role mention that added or removed
@@ -341,7 +342,8 @@ class RoleMessage(commands.Cog, DataManager):
         !lang en
         --------
         Set the exception role.  
-        Now, members who have been granted the configured exception role will not have anything happen to them when the role in the role message is granted or revoked.
+        Now, members who have been granted the configured exception role will not \
+        have anything happen to them when the role in the role message is granted or revoked.
 
         Aliases
         -------
