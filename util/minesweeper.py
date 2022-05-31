@@ -102,7 +102,7 @@ class MineSweeper:
         "現在の状況をEmbedのdescriptionに表示する形式の文字列に変換します。"
         return "\n".join(
             ("`" + "` `".join(
-                ["💣" if x == 9 else x if x in self.now_opened else "■" for x in l]
-                if mode == "s" else ["💣" if x == 9 else x for x in l]
-            ) + "`") for l in [list(i) for i in self.data]
+                ["💣" if x == 9 else x if x in self.now_opened else "■" for x in line]
+                if mode == "s" else ["💣" if x == 9 else x for x in line]
+            ) + "`") for line in [list(i) for i in self.data]
         )

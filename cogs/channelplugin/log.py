@@ -3,7 +3,7 @@
 from discord.ext import commands
 import discord
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from functools import wraps
 
 
