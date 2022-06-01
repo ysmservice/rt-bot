@@ -112,6 +112,7 @@ class News(commands.Cog, DataManager):
             else:
                 await ctx.reply("Newsは現在空です。")
 
+    @commands.is_owner()
     @news.command()
     async def add(self, ctx, *, content):
         """!lang ja
@@ -125,14 +126,10 @@ class News(commands.Cog, DataManager):
             写真がないのなら`None`を入れてください。
         content : str
             ニュースに追加する文字列です。"""
-        if ctx.author.id in (
-            634763612535390209, 667319675176091659,
-            693025129806037003, 739702692393517076,
-            510590521811402752
-        ):
-            now = await self.add_news(content, "None")
-            await ctx.reply(f"Ok number:{now}")
+        now = await self.add_news(content, "None")
+        await ctx.reply(f"Ok number:{now}")
 
+    @commands.is_owner()
     @news.command()
     async def remove(self, ctx, id_: int):
         """!lang ja
@@ -143,13 +140,8 @@ class News(commands.Cog, DataManager):
         ----------
         id : int
             削除するニュースのidです。"""
-        if ctx.author.id in (
-            634763612535390209, 667319675176091659,
-            693025129806037003, 739702692393517076,
-            510590521811402752
-        ):
-            await self.remove_news(id_)
-            await ctx.reply("Ok")
+        await self.remove_news(id_)
+        await ctx.reply("Ok")
 
 
 async def setup(bot):
