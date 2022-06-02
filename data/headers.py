@@ -1,5 +1,9 @@
 # Free RT Data - URL Requesting Headers
 
+USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) " \
+             "Chrome/95.0.4638.54 Safari/537.36 Edg/95.0.1020.40"
+
+
 TWITTERID_HEADERS = {
     "authority": "tweeterid.com",
     "sec-ch-ua": "^\\^Microsoft",
@@ -7,8 +11,7 @@ TWITTERID_HEADERS = {
     "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
     "x-requested-with": "XMLHttpRequest",
     "sec-ch-ua-mobile": "?0",
-    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like "
-                  "Gecko) Chrome/93.0.4577.63 Safari/537.36 Edg/93.0.961.38",
+    "user-agent": USER_AGENT
     "sec-ch-ua-platform": "^\\^Windows^\\^",
     "origin": "https://tweeterid.com",
     "sec-fetch-site": "same-origin",
@@ -19,5 +22,23 @@ TWITTERID_HEADERS = {
 }
 
 YAHOO_SEARCH_HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 6.2; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/32.0.1667.0 Safari/537.36'
+    'User-Agent': USER_AGENT
+}
+
+
+SECURL_HEADERS = {
+    "Connection": "keep-alive",
+    "sec-ch-ua": '"Microsoft Edge";v="95", "Chromium";v="95", ";Not A Brand";v="99"',
+    "Accept": "application/json, text/javascript, */*; q=0.01",
+    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+    "X-Requested-With": "XMLHttpRequest",
+    "sec-ch-ua-mobile": "?0",
+    "User-Agent": USER_AGENT,
+    "sec-ch-ua-platform": '"macOS"',
+    "Origin": "https://securl.nu",
+    "Sec-Fetch-Site": "same-origin",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Dest": "empty",
+    "Referer": "https://securl.nu/",
+    "Accept-Language": "ja,en;q=0.9,en-GB;q=0.8,en-US;q=0.7",
 }

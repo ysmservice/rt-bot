@@ -261,8 +261,9 @@ class Captcha(commands.Cog, DataManager):
         !lang en
         --------
         Configure password captcha.  
-        The password captcha requires the server participants to send the configured password to the channel where this configuration command is executed, \
-        and it is not a function to check whether the participants are human or not, but rather a function to set up a private server.
+        The password captcha requires the server participants to send the configured password to \
+        the channel where this configuration command is executed, and it is not a function to check \
+        whether the participants are human or not, but rather a function to set up a private server.
 
         Parameters
         ----------

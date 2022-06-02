@@ -15,7 +15,7 @@ import discord
 from bs4 import BeautifulSoup
 
 from util import RT, Table
-
+from data.headers import YAHOO_SEARCH_HEADERS
 
 class Yahoo(Table):
     __allocation__ = "GuildID"
@@ -24,9 +24,7 @@ class Yahoo(Table):
 
 class Person(commands.Cog):
 
-    HEADERS = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 6.2; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/32.0.1667.0 Safari/537.36'
-    }
+    HEADERS = YAHOO_SEARCH_HEADERS
     YAHOO_ICON = "http://tasuren.syanari.com/RT/yahoo_favicon.PNG"
     QUESTIONS = ("とは", "とは?", "とは？", "って何", "って何？",
                  "って何?", "ってなに", "ってなに？", "ってなに?")
