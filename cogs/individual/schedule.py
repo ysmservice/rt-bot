@@ -36,10 +36,12 @@ class DataManager:
                 for row in await cursor.fetchall():
                     if row and row[1]: 
                         try: 
-                            self.cog.cache[row[0]][row[1]] = {'UserID': row[0], 'body': row[1], 'stime': row[2], 'etime': row[3], 'day': row[4], 'dmnotice': row[5]}
+                            self.cog.cache[row[0]][row[1]] = {
+                                'UserID': row[0], 'body': row[1], 'stime': row[2], 'etime': row[3], 'day': row[4], 'dmnotice': row[5]}
                         except KeyError:
                             self.cog.cache[row[0]] = dict()
-                            self.cog.cache[row[0]][row[1]] = {'UserID': row[0], 'body': row[1], 'stime': row[2], 'etime': row[3], 'day': row[4], 'dmnotice': row[5]}
+                            self.cog.cache[row[0]][row[1]] = {
+                                'UserID': row[0], 'body': row[1], 'stime': row[2], 'etime': row[3], 'day': row[4], 'dmnotice': row[5]}
         self.cog.ready.set()
 
 

@@ -109,9 +109,11 @@ INFO_DESC = {
 またその他にもスレッド自動アーカイブ対策,自己紹介テンプレートに使える常に下にくるメッセージ,NSFW誤爆対策に使える自動画像スポイラーそしてボイスチャンネルロールなどあったら便利な機能もたくさんあります。
 さあ是非このBotを入れて他のBotを蹴り飛ばしましょう！""",
     "en": """It's a new era Bot called Free RT.
-This Bot is a multifunctional Bot with standard functions such as job title, voting, recruitment, ticket panel and channel status, as well as a music player with voice changing reading and playlists.
+This Bot is a multifunctional Bot with standard functions such as job title, voting, recruitment, \
+ticket panel and channel status, as well as a music player with voice changing reading and playlists.
 And there are images, web, password authentication and spam prevention functions that can be used as a troll countermeasure.
-Other useful features include automatic thread archiving, always-on messages for self-introduction templates, an automatic image spoiler for NSFW detonation, and voice channel rolls.
+Other useful features include automatic thread archiving, always-on messages for self-introduction \
+templates, an automatic image spoiler for NSFW detonation, and voice channel rolls.
 Come on, let's put this Bot in and kick the other Bots."""
 }
 INFO_ITEMS = (("INVITE", {"ja": "招待リンク", "en": "invite link"}),

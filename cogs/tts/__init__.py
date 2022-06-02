@@ -141,7 +141,8 @@ class TTSCog(commands.Cog, name="TTS"):
         elif ctx.guild.id in self.bot.cogs["Music"].now:
             await ctx.reply({
                 "ja": "音楽プレイヤーと同時に使うことはできません。",
-                "en": "Cannot be used with a music player at the same time.\nWe are currently preparing English support for Ritsu-chan, our sub RT.\nPlease wait for it to be released."
+                "en": "Cannot be used with a music player at the same time.\nWe are currently preparing English "
+                "support for Ritsu-chan, our sub RT.\nPlease wait for it to be released."
             })
         else:
             await ctx.author.voice.channel.connect()

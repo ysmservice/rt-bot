@@ -13,7 +13,8 @@ HEADERS = {
     "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
     "X-Requested-With": "XMLHttpRequest",
     "sec-ch-ua-mobile": "?0",
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.54 Safari/537.36 Edg/95.0.1020.40",
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) "
+                  "Chrome/95.0.4638.54 Safari/537.36 Edg/95.0.1020.40",
     "sec-ch-ua-platform": '"macOS"',
     "Origin": "https://securl.nu",
     "Sec-Fetch-Site": "same-origin",

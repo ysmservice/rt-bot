@@ -13,9 +13,11 @@ CHP_HELP = {
 """),
     "en": ("message auto public.",
            """# # Message autopublishing plugin - autopublic
-This is a feature that allows you to automatically publish messages by putting `rf>autopublic <check with option>` in the topic of a news channel.  
+This is a feature that allows you to automatically publish messages by \
+putting `rf>autopublic <check with option>` in the topic of a news channel.  
 Example: `rf>autopublic` (any message sent to a channel with this in the topic will make the message public)
-Example: `rf>autopublic check` (any message sent to a channel with this in the topic will make the message public, but the message will be checked when it is made public)
+Example: `rf>autopublic check` (any message sent to a channel with this in the topic \
+will make the message public, but the message will be checked when it is made public)
 """)
 }
 

@@ -149,7 +149,8 @@ class MusicCog(commands.Cog, name="Music"):
         -----
         Supported are YouTube, Nico Nico Douga, and SoundCloud.
         It also supports playback of YouTube playlists, and all songs in Nico Nico Douga's My List.
-        If you run this command while another song is playing, new song will be added to the queue, which is a list of songs that are scheduled to be played.
+        If you run this command while another song is playing, new song will be added to the queue, \
+        which is a list of songs that are scheduled to be played.
 
         Parameters
         ----------

@@ -30,7 +30,8 @@ trans, ほんやく, 翻訳
 ### これもあるよ
 翻訳コマンドである`translate`で個人カテゴリーにあります。"""),
     "en": ("Dedicated translation channel function", """# translation channel plugin - translate
-This is a feature that allows you to make a channel dedicated to translation by putting `rf>translate <language code to translate to>` in the channel topic.  
+This is a feature that allows you to make a channel dedicated to translation by putting \
+`rf>translate <language code to translate to>` in the channel topic.  
 Example: `rf>translate ja` (all messages sent to a channel with this in the topic will be translated into Japanese).  
 
 ### Language code example

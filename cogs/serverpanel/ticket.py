@@ -208,7 +208,8 @@ class Ticket(commands.Cog, DataManager):
         -----
         This command can only be executed by someone with channel management privileges.  
         If you want to disable this panel, you can simply delete the panel you created.  
-        If you want some message to be sent when a ticket channel is created, you can set it in the channel with the ticket by using the following command.
+        If you want some message to be sent when a ticket channel is created, \
+        you can set it in the channel with the ticket by using the following command.
         ```
         rf!tfm Message content (or `off` if you want to turn it off)
         ```

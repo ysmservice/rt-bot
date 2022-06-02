@@ -325,7 +325,8 @@ class AFK(commands.Cog, DataManager):
             This is what time to set AFK, or what word is in the message to set AFK.  
             For example, if you set it to `23:00`, it will set AFK at 11:00 every night.  
             And if you set it to `school`, the AFK will be set when a message containing `school` is sent.  
-            Note that you might use `9:00` for 9:00 in the morning, etc., but this is not good, and you need to fill in the zeros, so use something like `09:00`.
+            Note that you might use `9:00` for 9:00 in the morning, etc., \
+            but this is not good, and you need to fill in the zeros, so use something like `09:00`.
         reason : str
             The reason used to set the AFK.
 

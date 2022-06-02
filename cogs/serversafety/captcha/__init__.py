@@ -195,7 +195,8 @@ class Captcha(commands.Cog, DataManager):
 
         Notes
         -----
-        If it does not work, please check [this](https://rt-team.github.io/en/trouble/captcha) and [this](https://rt-team.github.io/en/trouble/role)"""
+        If it does not work, please check [this](https://free-rt.github.io/en/trouble/captcha) and \
+        [this](https://free-rt.github.io/en/trouble/role)"""
         if not ctx.invoked_subcommand:
             await ctx.reply(
                 {"ja": "使用方法が違います。", "en": "It is wrong way to use this command."}
@@ -260,7 +261,8 @@ class Captcha(commands.Cog, DataManager):
         !lang en
         --------
         Configure password captcha.  
-        The password captcha requires the server participants to send the configured password to the channel where this configuration command is executed, and it is not a function to check whether the participants are human or not, but rather a function to set up a private server.
+        The password captcha requires the server participants to send the configured password to the channel where this configuration command is executed, \
+        and it is not a function to check whether the participants are human or not, but rather a function to set up a private server.
 
         Parameters
         ----------

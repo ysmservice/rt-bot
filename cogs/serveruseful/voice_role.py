@@ -129,7 +129,8 @@ class VoiceRole(commands.Cog, DataManager):
         --------
         Voice Role function.  
         With this feature, you can assign a specific role to someone when they enter a specific voice channel.  
-        By using this feature and Discord's ability to show members with different roles, you can show who is currently in a voice channel, etc. using the role.
+        By using this feature and Discord's ability to show members with different roles, \
+        you can show who is currently in a voice channel, etc. using the role.
 
         Parameters
         ----------

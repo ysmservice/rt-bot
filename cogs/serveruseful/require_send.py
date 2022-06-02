@@ -260,7 +260,8 @@ class RequireSend(commands.Cog, DataManager):
 
         !lang en
         --------
-        This function allows you to set up a channel that will kick you if you don't send something before a specified amount of time has passed after joining.
+        This function allows you to set up a channel that will kick you \
+        if you don't send something before a specified amount of time has passed after joining.
 
         Notes
         -----

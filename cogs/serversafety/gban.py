@@ -116,7 +116,8 @@ class GlobalBan(commands.Cog, DataManager):
         The evidence you need is that the video is being reloaded when you shoot with a computer.  
         (You can edit and impersonate text from developer tools.)  
         You can take a screenshot with your smartphone or tablet.  
-        If taking evidence is cumbersome and you think the original message will not be deleted, you can have the RT administrator look at the evidence directly."""
+        If taking evidence is cumbersome and you think the original message will not be deleted, \
+        you can have the RT administrator look at the evidence directly."""
         if not ctx.invoked_subcommand:
             view = componesy.View("GbanSSView", timeout=15)
             view.add_item(

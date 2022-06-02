@@ -177,7 +177,8 @@ class TtsContext(Context):
                 if e.fields is not None:
                     for fi in e.fields:
                         sc = sc + fi.name + fi.value
-        args = [self.OPENJTALK, "-x", self.OPENJTALK_DICTIONARY, "-m", self.OPENJTALK_VOICE_DIRECTORY + "/" + self.OPENJTALK_VOICE_NAME, '-r', '1.0', '-ow', swav]
+        args = [self.OPENJTALK, "-x", self.OPENJTALK_DICTIONARY, "-m", 
+                self.OPENJTALK_VOICE_DIRECTORY + "/" + self.OPENJTALK_VOICE_NAME, '-r', '1.0', '-ow', swav]
         subprocess.run(args, input=sc.encode(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         channel = self.message.author.voice.channel
         voice = get(self.bot.voice_clients, guild=self.guild)
@@ -280,7 +281,8 @@ class NewVoiceClient(VoiceClient):
                 argsfm = ["ffmpeg", "-y", "-i", input_audio_filefm, "-ac", "1", "-ar", "16000", input_audio_file]
                 subprocess.run(argsfm, stdout=subprocess.PIPE, text=True, encoding="utf-8")
                 args = [julius, "-C", main, "-C", am_dnn, "-dnnconf", julius_dnn, "-input", "rawfile", "-cutsilence"]
-                p = await asyncio.create_subprocess_exec(*args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, stdin=asyncio.subprocess.PIPE)
+                p = await asyncio.create_subprocess_exec(
+                    *args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, stdin=asyncio.subprocess.PIPE)
                 stdout, stderr = await p.communicate(input=input_audio_file.encode())
                 try:
                     output = stdout.decode().split("### read waveform input")[1].split("\n\n")

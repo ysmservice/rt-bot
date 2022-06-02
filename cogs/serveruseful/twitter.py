@@ -104,7 +104,8 @@ class TwitterNotification(commands.Cog, DataManager, AsyncStream):
         "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
         "x-requested-with": "XMLHttpRequest",
         "sec-ch-ua-mobile": "?0",
-        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36 Edg/93.0.961.38",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
+                      "Chrome/93.0.4577.63 Safari/537.36 Edg/93.0.961.38",
         "sec-ch-ua-platform": "^\\^Windows^\\^",
         "origin": "https://tweeterid.com",
         "sec-fetch-site": "same-origin",

@@ -140,11 +140,13 @@ Voice channel: `voice channel name` in this channel
 **#** How to rename
 Text channel: `rf!rename renamed name` in that free channel
 Voice channel: On a suitable channel, use `rf!rename voice channel name after renaming`.
-The name of the created voice channel will include the ID of the person who created it, but this ID does not need to be included in the channel name when renaming it.
+The name of the created voice channel will include the ID of the person who created it, \
+but this ID does not need to be included in the channel name when renaming it.
 **#** How to delete
 Text channel: `rf!remove` on that free channel
 Voice channel: `rf!remove voice channel name` on an appropriate channel.
-The name of the created voice channel will include the ID of the person who created it, but this ID does not need to be included in the channel name when removing it."""
+The name of the created voice channel will include the ID of the person who created it, \
+but this ID does not need to be included in the channel name when removing it."""
         }
 
         footer = {"ja": f"一人{max_channel}個までチャンネルを作成可能です。",

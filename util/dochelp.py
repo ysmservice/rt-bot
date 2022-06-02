@@ -98,7 +98,12 @@ def make_new_hp(original):
         @wraps(decorator)
         def new_decorator(func):
             if func.__doc__ and "!lang en" in func.__doc__:
-                func.__doc__ = func.__doc__.replace("!lang en", f"Permissions\n        -----------\n        {make_permission_help(perms, lambda perm: PERMISSION_TEXTS.get(perm, perm))}\n\n        !lang en")
+                func.__doc__ = func.__doc__.replace(
+                    "!lang en",
+                    "Permissions\n        -----------\n        "
+                    f"{make_permission_help(perms, lambda perm: PERMISSION_TEXTS.get(perm, perm))}"
+                    "\n\n        !lang en"
+                )
                 func.__doc__ += f"\n\n        Permissions\n        -----------\n        {make_permission_help(perms)}"
                 if func.__name__ == "captcha":
                     print(func.__doc__)
