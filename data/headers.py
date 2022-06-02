@@ -11,7 +11,7 @@ TWITTERID_HEADERS = {
     "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
     "x-requested-with": "XMLHttpRequest",
     "sec-ch-ua-mobile": "?0",
-    "user-agent": USER_AGENT
+    "user-agent": USER_AGENT,
     "sec-ch-ua-platform": "^\\^Windows^\\^",
     "origin": "https://tweeterid.com",
     "sec-fetch-site": "same-origin",
@@ -20,6 +20,7 @@ TWITTERID_HEADERS = {
     "referer": "https://tweeterid.com/",
     "accept-language": "ja,en;q=0.9,en-GB;q=0.8,en-US;q=0.7",
 }
+
 
 YAHOO_SEARCH_HEADERS = {
     'User-Agent': USER_AGENT

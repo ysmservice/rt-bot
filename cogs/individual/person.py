@@ -17,6 +17,7 @@ from bs4 import BeautifulSoup
 from util import RT, Table
 from data.headers import YAHOO_SEARCH_HEADERS
 
+
 class Yahoo(Table):
     __allocation__ = "GuildID"
     onoff: bool
