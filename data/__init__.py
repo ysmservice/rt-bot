@@ -26,7 +26,12 @@ data = {
             "rf#", "りふちゃん ", "りふたん ", "りふ ",
             "りふちゃん　", "りふたん　", "りふ　", "Rf#", "RF#", "rF#"
         ],
-        "alpha": ["rf3!", "rf3>"]
+        "alpha": [
+            "rf3!", "rf3>"
+        ],
+        "orarange": [
+            "rfo^", "rfo:"
+        ]
     },
     "colors": {name: getattr(Colors, name) for name in dir(Colors)},
     "admins": [
