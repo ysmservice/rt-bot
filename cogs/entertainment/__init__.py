@@ -12,6 +12,7 @@ from jishaku.functools import executor_function
 from aiofiles.os import remove
 from bs4 import BeautifulSoup
 from PIL import Image
+import traceback
 
 from os import listdir
 
@@ -272,7 +273,7 @@ async def setup(bot):
             try:
                 await bot.load_extension(
                     f"cogs.entertainment.{name[:-3] if name.endswith('.py') else name}")
-            except Exception as e:
-                print(e)
+            except Exception:
+                traceback.print_exc()
             else:
                 bot.print("[Extension]", "Loaded", name)  # ロードログの出力

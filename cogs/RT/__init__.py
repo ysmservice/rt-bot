@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from traceback import TracebackException
+from traceback import TracebackException, print_exc
 from collections import defaultdict
 from inspect import cleandoc
 from itertools import chain
@@ -455,7 +455,7 @@ async def setup(bot):
             try:
                 await bot.load_extension(
                     f"cogs.RT.{name[:-3] if name.endswith('.py') else name}")
-            except Exception as e:
-                print(e)
+            except Exception:
+                print_exc()
             else:
                 bot.print("[Extension]", "Loaded", name)  # ロードログの出力

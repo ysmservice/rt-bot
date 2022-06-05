@@ -76,8 +76,8 @@ class UrlChecker(commands.Cog, DataManager):
     @commands.cooldown(1, 10, commands.BucketType.channel)
     @app_commands.describe(url="URL")
     async def securl(
-        self, ctx: commands.Context, *, url: str,
-            force: bool = "", author=None):
+        self, ctx: commands.Context, *, url: str
+    ):
         """!lang ja
         --------
         SecURLを使用して渡されたURLのスクリーンショットを撮り危険性をチェックします。
@@ -111,14 +111,13 @@ class UrlChecker(commands.Cog, DataManager):
         Aliases
         -------
         ss, check, uc, URLチェック"""
-        if ctx.author.id in self.runnings and not force:
+        if ctx.author.id in self.runnings:
             return await ctx.reply(
                 {"ja": "同時に実行することはできません。",
                  "en": "They cannot be run simultaneously."}
             )
-        if not force:
-            self.runnings.append(ctx.author.id)
-            await ctx.typing()
+        self.runnings.append(ctx.author.id)
+        await ctx.typing()
         try:
             data = await securl.check(self.bot.session, url)
         except ValueError:
@@ -158,15 +157,13 @@ class UrlChecker(commands.Cog, DataManager):
                     )
                 )
                 await ctx.reply(
-                    embed=embed, view=view,
-                    content=author.mention if force else None
+                    embed=embed, view=view
                 )
             else:
                 await ctx.reply(
                     f"ウェブページにアクセスできませんでした。\nステータスコード：{data['status']}"
                 )
-        if not force:
-            self.runnings.remove(ctx.author.id)
+        self.runnings.remove(ctx.author.id)
 
     @commands.hybrid_command(
         extras={

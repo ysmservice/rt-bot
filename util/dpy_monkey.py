@@ -64,7 +64,7 @@ def descriptor_sub(default):
                 kwargs["description"] = self.description
             else:
                 kwargs["description"] = "No description provided."
-        return default(*args, **kwargs)
+        return default(self, *args, **kwargs)
 
     return new_function
 

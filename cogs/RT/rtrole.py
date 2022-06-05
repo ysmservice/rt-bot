@@ -132,7 +132,7 @@ class RTRole(commands.Cog):
     @rtrole.command(aliases=["del", "rm", "remove", "削除"])
     @commands.has_permissions(administrator=True)
     @app_commands.describe(role="解除するロール")
-    async def delete(self, ctx, *, role: Union[discord.Role, str]):
+    async def delete(self, ctx, *, role: discord.Role):
         """!lang ja
         --------
         `rf!rtrole set`の逆です。
@@ -150,25 +150,15 @@ class RTRole(commands.Cog):
         --------
         ..."""
         if self.data[(gid := str(ctx.guild.id))]:
-            removed = False
-            if isinstance(role, str):
-                for rid in list(self.data[gid].keys()):
-                    if self.data[gid][rid].get("role_name", "") == role:
-                        del self.data[gid][rid]
-                        removed = True
+            try:
+                del self.data[gid][str(role.id)]
+            except KeyError:
+                await ctx.reply("その役職は設定されていません。")
             else:
-                try:
-                    del self.data[gid][str(role.id)]
-                except KeyError:
-                    pass
-                else:
-                    removed = True
-
-            if removed:
                 await self.save()
                 await ctx.reply("Ok")
-            else:
-                await ctx.reply("その役職は設定されていません。")
+        else:
+            await ctx.reply("このサーバーにはRTロールが設定されていません。")
 
 
 async def setup(bot: commands.AutoShardedBot):

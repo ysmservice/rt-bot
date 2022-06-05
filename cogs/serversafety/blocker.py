@@ -96,7 +96,7 @@ class DataManager(DatabaseManager):
         await self._update(cursor, guild_id, mode, [])
 
 
-Role = Union[discord.Role, discord.Object, Literal[0]]
+Role = discord.Role
 
 
 class Blocker(commands.Cog, DataManager):

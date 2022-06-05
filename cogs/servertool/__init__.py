@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from asyncio import TimeoutError, sleep
 from random import sample
 from os import listdir
+import traceback
 
 from discord.ext import commands
 from discord import app_commands
@@ -735,7 +736,7 @@ async def setup(bot):
             try:
                 await bot.load_extension(
                     f"cogs.servertool.{name[:-3] if name.endswith('.py') else name}")
-            except Exception as e:
-                print(e)
+            except Exception:
+                traceback.print_exc()
             else:
                 bot.print("[Extension]", "Loaded", name)  # ロードログの出力

@@ -5,6 +5,7 @@ README  : ./readme.md
 
 from os import listdir
 from sys import argv
+import traceback
 
 import discord
 
@@ -61,8 +62,8 @@ async def on_ready():
             try:
                 await bot.load_extension(
                     f"cogs.{name[:-3] if name.endswith('.py') else name}")
-            except Exception as e:
-                print(e)
+            except Exception:
+                traceback.print_exc()
             else:
                 bot.print("[Extension]", "Loaded", name)  # ロードログの出力
     await bot.unload_extension("cogs._first")
