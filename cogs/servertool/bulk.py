@@ -7,7 +7,7 @@ from discord import app_commands
 import discord
 
 
-GuildRole = Union[discord.Role, Literal["everyone"]]
+GuildRole = discord.Role
 Mode = Literal["add", "remove"]
 
 

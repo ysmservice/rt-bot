@@ -223,12 +223,10 @@ class RoleMessage(commands.Cog, DataManager):
             )
         )
 
-    ROLE = Union[discord.Role, discord.Object]
-
     @rolemessage.command(aliases=["a", "追加"])
     @app_commands.describe(role="対象のロール", mode="付与か剥奪か", content="送る内容")
     async def add(
-        self, ctx, role: ROLE, mode: Literal["add", "remove"], *, content
+        self, ctx, role: discord.Role, mode: Literal["add", "remove"], *, content
     ):
         """!lang ja
         -------
@@ -293,7 +291,7 @@ class RoleMessage(commands.Cog, DataManager):
     @rolemessage.command(aliases=["rm", "削除"])
     @app_commands.describe(role="対象のロール", mode="設定していたモード")
     async def remove(
-        self, ctx, role: ROLE, mode: Literal["add", "remove"]
+        self, ctx, role: discord.Role, mode: Literal["add", "remove"]
     ):
         """!lang ja
         --------
@@ -357,7 +355,7 @@ class RoleMessage(commands.Cog, DataManager):
     @ignore.command("add", aliases=["a", "追加"])
     @app_commands.describe(role="対象のロール", ignore_role="これが付与されていると無視されます。")
     async def add_ignore_(
-        self, ctx, role: ROLE, *, ignore_role: ROLE
+        self, ctx, role: discord.Role, *, ignore_role: discord.Role
     ):
         """!lang ja
         --------
@@ -396,7 +394,7 @@ class RoleMessage(commands.Cog, DataManager):
     @ignore.command("remove", aliases=["rm", "削除"])
     @app_commands.describe(role="対象のロール", ignore_role="例外に指定していたロール")
     async def remove_ignore_(
-        self, ctx, role: ROLE, *, ignore_role: ROLE
+        self, ctx, role: discord.Role, *, ignore_role: discord.Role
     ):
         """!lang ja
         --------

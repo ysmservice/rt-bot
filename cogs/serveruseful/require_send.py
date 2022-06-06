@@ -281,7 +281,7 @@ class RequireSend(commands.Cog, DataManager):
     @app_commands.describe(timeout="時間制限", channel="入力必須にするチャンネル")
     async def add(
         self, ctx: commands.Context, timeout: float, *,
-        channel: Union[discord.TextChannel, discord.Object] = commands.CurrentChannel
+        channel: discord.TextChannel = commands.CurrentChannel
     ):
         """!lang ja
         --------
@@ -337,7 +337,7 @@ class RequireSend(commands.Cog, DataManager):
 
     @requiresend.command(aliases=["rm", "削除"])
     async def remove(
-        self, ctx, channel: Union[discord.TextChannel, discord.Object] = commands.CurrentChannel
+        self, ctx, channel: discord.TextChannel = commands.CurrentChannel
     ):
         """!lang ja
         --------

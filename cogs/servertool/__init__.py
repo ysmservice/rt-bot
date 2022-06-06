@@ -53,7 +53,7 @@ class ServerTool(commands.Cog):
     @app_commands.describe(member="メンバーまたは役職")
     async def permission(
         self, ctx: commands.Context,
-        member: Union[discord.Member, discord.Role, str] = None
+        member: Union[discord.Member, discord.Role] = None
     ):
         """!lang ja
         -------
@@ -650,10 +650,7 @@ class ServerTool(commands.Cog):
     @app_commands.describe(channel="ロール、チャンネル、スレッドのどれか")
     @app_commands.rename(channel="target")
     async def members(
-        self, ctx, *, channel: Union[
-            discord.Role, discord.TextChannel,
-            discord.VoiceChannel, discord.Thread
-        ] = None
+        self, ctx, *, channel: discord.abc.GuildChannel = None
     ):
         """!lang ja
         --------

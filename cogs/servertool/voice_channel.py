@@ -171,10 +171,10 @@ class VCChannel(commands.Cog, DataManager):
     async def vcc(
         self, ctx: commands.Context,
         channel: Union[
-            discord.VoiceChannel, discord.StageChannel, discord.Object
+            discord.VoiceChannel, discord.StageChannel
         ], mode: Literal["tc", "vc"],
-        role: Union[discord.Role, Literal["null"]] = "null", *,
-        template: Union[bool, str] = "!name!'s channel"
+        role: discord.Role = None, *,
+        template: str = "!name!'s channel"
     ):
         """!lang ja
         --------

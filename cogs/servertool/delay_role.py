@@ -83,12 +83,12 @@ class DelayRole(commands.Cog, DataManager):
         self.check_queue_deadline.start()
 
     @commands.hybrid_group(
-        aliases=("dr", "遅延ロール", "ちろ"), extras={
+        aliases=("delayRole", "dr", "遅延ロール", "ちろ"), extras={
             "headding": {"ja": "遅延ロール自動付与機能", "en": "Automatic delayed roll assignment function"},
             "parent": "ServerTool"
         }
     )
-    async def delayRole(self, ctx: commands.Context):
+    async def delayrole(self, ctx: commands.Context):
         """!lang ja
         --------
         遅延ロール自動付与機能です。
@@ -136,7 +136,7 @@ class DelayRole(commands.Cog, DataManager):
                 "ja": "使用方法が違います。", "en": "This is a wrong way to use this command."
             })
 
-    @delayRole.command(aliases=("l", "一覧"))
+    @delayrole.command(aliases=("l", "一覧"))
     async def list(self, ctx: commands.Context):
         """!lang ja
         --------
@@ -161,7 +161,7 @@ class DelayRole(commands.Cog, DataManager):
             ), color=self.bot.Colors.normal
         ))
 
-    @delayRole.command(aliases=("s", "設定"))
+    @delayrole.command(aliases=("s", "設定"))
     @commands.has_guild_permissions(manage_roles=True)
     @app_commands.describe(delay="何秒遅延するか", role="付与するロール")
     async def set(self, ctx: commands.Context, delay: int, *, role: discord.Role):
@@ -211,7 +211,7 @@ class DelayRole(commands.Cog, DataManager):
         await self.write(ctx.guild.id, role.id, delay)
         await ctx.reply("Ok")
 
-    @delayRole.command(aliases=("del", "d", "削除"))
+    @delayrole.command(aliases=("del", "d", "削除"))
     @commands.has_guild_permissions(manage_roles=True)
     @app_commands.describe(role="設定解除するロール")
     async def delete(self, ctx: commands.Context, *, role: discord.Role):

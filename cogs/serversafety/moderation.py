@@ -19,7 +19,7 @@ class Moderation(commands.Cog):
         }, aliases=["バン", "ばん", "BAN"]
     )
     @commands.has_guild_permissions(ban_members=True)
-    @app_commands.describe(member="対象のメンバー")
+    @app_commands.describe(members="対象のメンバー")
     async def ban(
         self, ctx, *, members: str
     ):
@@ -74,7 +74,7 @@ class Moderation(commands.Cog):
             }, "parent": "ServerSafety"
         }, aliases=["キック", "きっく", "KICK"]
     )
-    @app_commands.describe(member="対象のメンバー")
+    @app_commands.describe(members="対象のメンバー")
     async def kick(self, ctx, *, members):
         """!lang ja
         --------

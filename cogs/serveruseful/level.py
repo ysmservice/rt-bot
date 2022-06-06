@@ -259,8 +259,8 @@ class Level(commands.Cog):
     )
     async def set(
         self, ctx: commands.Context, level: int,
-        role: Union[discord.Role, discord.Object], *,
-        replace_role: Union[discord.Role, discord.Object] = None
+        role: discord.Role, *,
+        replace_role: discord.Role = None
     ):
         """!lang ja
         --------
