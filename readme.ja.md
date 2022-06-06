@@ -1,4 +1,5 @@
-<!--[![Discord Bots](https://top.gg/api/widget/status/716496407212589087.svg)](https://top.gg/bot/716496407212589087) [![Discord Bots](https://top.gg/api/widget/servers/716496407212589087.svg)](https://top.gg/bot/716496407212589087) ![Discord](https://img.shields.io/discord/718641964672876614?label=suppoFree-rt&logo=discord)-->
+<!--[![Discord Bots](https://top.gg/api/widget/status/961521106227974174.svg)](https://top.gg/bot/716496407212589087) [![Discord Bots](https://top.gg/api/widget/servers/716496407212589087.svg)](https://top.gg/bot/716496407212589087) -->
+![Discord](https://img.shields.io/discord/961521739748212776?label=supportFree-rt&logo=discord)
 
 # Free RT Bot
 discordのBotであるRTのフリー版です。  
