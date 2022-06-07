@@ -44,11 +44,38 @@ class CustomPrefix(commands.Cog):
     @commands.hybrid_command(
         aliases=["p", "プレフィックス", "プリフィックス", "接頭辞"],
         extras={
-            "headding": {"ja": "プレフィックスを変更します。", "en": "Change prefix."},
+            "headding": {"ja": "カスタムプレフィックスを設定します。", "en": "Set custom prefix."},
             "parent": "RT"
         }
     )
     async def prefix(self, ctx, mode: Literal["server", "user"], new_prefix=None):
+        """!lang ja
+        --------
+        カスタムプレフィックスを登録・変更・削除します。
+        登録をしても元々の`rf!`でも動作します。
+
+        Parameters
+        ----------
+        mode: `server`か`user`
+            `server`だとサーバー全体で、`user`だと個人で設定できます。
+            どちらも設定されている場合はどちらでも動作します。
+        new_prefix: str, optional
+            新しく設定するプレフィックスです。
+            指定しなかった場合はカスタムプレフィックスを削除します。
+        
+        !lang en
+        --------
+        Set/Change/Delete custom prefix.
+        `rf!` will be still working ever if it is set.
+
+        Parameters
+        ----------
+        mode: `server` or `user`
+            If `server`, it sets to all the server members. If `user`, it sets to you only.
+        new_prefix: str, optional
+            Prefix that you want to set.
+            If none has passed, custom prefix will be deleted.
+        """
         # 未完成
         if new_prefix is None:
             await ctx.send({
@@ -56,8 +83,8 @@ class CustomPrefix(commands.Cog):
                 "en": "Deleted custom prefix."
             })
         await ctx.send({
-            "ja": f"プレフィックスを{new_prefix}に変更しました。",
-            "en": f"Changed prefix to {new_prefix}."
+            "ja": f"カスタムプレフィックスを{new_prefix}に変更しました。",
+            "en": f"Changed custom prefix to {new_prefix}."
         })
 
 
