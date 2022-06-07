@@ -1,6 +1,6 @@
 # Free RT - Global Ban
 
-from typing import Union, Optional
+from typing import Optional
 
 from random import choice
 

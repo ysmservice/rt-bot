@@ -1,6 +1,6 @@
 # Free RT - Bulk
 
-from typing import Union, Literal, List
+from typing import Literal, List
 
 from discord.ext import commands
 from discord import app_commands

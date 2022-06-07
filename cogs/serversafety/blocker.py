@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Union, Literal
+from typing import Literal
 
 from collections import defaultdict
 from collections.abc import Iterator

@@ -1,6 +1,6 @@
 # Free RT - Role Message
 
-from typing import TYPE_CHECKING, Optional, Union, Literal, Tuple, List
+from typing import TYPE_CHECKING, Optional, Literal, Tuple, List
 
 from discord.ext import commands
 from discord import app_commands

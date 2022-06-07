@@ -1,6 +1,6 @@
 # Free RT - Require Send
 
-from typing import TYPE_CHECKING, Union, Tuple, Dict, List
+from typing import TYPE_CHECKING, Tuple, Dict, List
 
 from discord.ext import commands, tasks
 from discord import app_commands
