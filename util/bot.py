@@ -9,10 +9,23 @@ from .dpy_monkey import _setup
 from . import mysql_manager as mysql
 from .db import add_db_manager
 
+from data import data
+
 
 class RT(commands.AutoShardedBot):
     def __init__(self, *args, **kwargs):
+        self.user_prefixes = {}
+        self.guild_prefixes = {}
+        kwargs["command_prefix"] = self.get_prefix
         return super().__init__(*args, **kwargs)
+
+    def get_prefix(self, message):
+        pr = data["prefixes"][argv[-1]]
+        if message.author.id in self.bot.user_prefixes:
+            pr.append(self.bot.user_prefix[message.author.id])
+        if message.guild.id in self.bot.guild_prefixes:
+            pr.append(self.bot.guild_prefix[message.guild.id])
+        return pr
 
     @property
     def session(self) -> ClientSession:

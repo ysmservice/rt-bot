@@ -11,15 +11,27 @@ class PrefixDB(db.DBManager):
     def __init__(self, bot):
         self.bot = bot
 
-    async def manager_load(self, cursor):
+    @db.command()
+    async def set_guild(self, cursor, id: int, prefix: str) -> None:
+        "サーバープレフィックスを設定します。"
+        pass
+
+    async def manager_load(self, cursor) -> None:
+        # テーブルの準備をし、データをメモリに保存しておく。
         await cursor.execute(
             """CREATE TABLE IF NOT EXISTS UserPrefix (
             UserID BIGINT, Prefix TEXT)"""
         )
+        await cursor.execute("SELECT * FROM UserPrefix")
+        self.bot.user_prefixes = dict(await cursor.fetchall())
+
+        # サーバーprefix
         await cursor.execute(
             """CREATE TABLE IF NOT EXISTS GuildPrefix (
             GuildID BIGINT, Prefix TEXT)"""
         )
+        await cursor.execute("SELECT * FROM GuildPrefix")
+        self.bot.guild_prefixes = dict(await cursor.fetchall())
 
 
 class CustomPrefix(commands.Cog):

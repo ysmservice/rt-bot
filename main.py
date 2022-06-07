@@ -28,7 +28,6 @@ intents.presences = True
 intents.message_content = True
 
 bot = RT(
-    data["prefixes"][argv[-1]],
     help_command=None,
     intents=intents,
     allowed_mentions=discord.AllowedMentions(
