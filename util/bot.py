@@ -4,6 +4,7 @@ from discord.ext import commands
 
 from aiohttp import ClientSession
 from ujson import dumps
+from sys import argv
 
 from .dpy_monkey import _setup
 from . import mysql_manager as mysql
@@ -16,6 +17,7 @@ class RT(commands.AutoShardedBot):
     def __init__(self, *args, **kwargs):
         self.user_prefixes = {}
         self.guild_prefixes = {}
+        # プレフィックスの設定。
         kwargs["command_prefix"] = self.get_prefix
         return super().__init__(*args, **kwargs)
 

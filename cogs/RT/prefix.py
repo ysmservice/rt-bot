@@ -62,7 +62,7 @@ class CustomPrefix(commands.Cog):
         new_prefix: str, optional
             新しく設定するプレフィックスです。
             指定しなかった場合はカスタムプレフィックスを削除します。
-        
+
         !lang en
         --------
         Set/Change/Delete custom prefix.
