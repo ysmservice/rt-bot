@@ -118,7 +118,7 @@ def command(**kwargs):
     return deco
 
 
-async def add_db_manager(bot: commands.Bot, manager: DBManager):
+async def add_db_manager(bot: commands.Bot, manager: DBManager) -> DBManager:
     "botにDBManagerを追加します。"
 
     if not isinstance(manager, DBManager):

@@ -3,21 +3,20 @@
 from typing import Literal
 
 from discord.ext import commands
+from discord import app_commands
 import discord
 
-from util import db
+from util import db, RT
 
 
 class PrefixDB(db.DBManager):
-    def __init__(self, bot):
+    def __init__(self, bot: RT):
         self.bot = bot
 
     @db.command()
     async def set_guild(self, cursor, id_: int, prefix: str) -> None:
         "サーバープレフィックスを設定します。"
-        await cursor.execute(
-            "SELECT * FROM GuildPrefix WHERE GuildID=%s", (id_,))
-        if await cursor.fetchone():
+        if id_ in self.bot.guild_prefixes:
             await cursor.execute(
                 "UPDATE GuildPrefix SET Prefix=%s WHERE GuildID=%s",
                 (prefix, id_,))
@@ -29,8 +28,7 @@ class PrefixDB(db.DBManager):
     @db.command()
     async def set_user(self, cursor, id_: int, prefix: str) -> None:
         "ユーザープレフィックスを設定します。"
-        await cursor.execute("SELECT * FROM UserPrefix WHERE UserID=%s", (id_,))
-        if await cursor.fetchone():
+        if id_ in self.bot.user_prefixes:
             await cursor.execute("UPDATE GuildPrefix SET Prefix=%s WHERE GuildID=%s",
                                  (prefix, id_,))
         else:
@@ -135,5 +133,5 @@ class CustomPrefix(commands.Cog):
         })
 
 
-async def setup(bot):
+async def setup(bot: RT):
     await bot.add_cog(CustomPrefix(bot))
