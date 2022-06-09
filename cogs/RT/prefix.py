@@ -3,6 +3,7 @@
 from typing import Literal
 
 from discord.ext import commands
+import discord
 
 from util import db
 
@@ -12,9 +13,30 @@ class PrefixDB(db.DBManager):
         self.bot = bot
 
     @db.command()
-    async def set_guild(self, cursor, id: int, prefix: str) -> None:
+    async def set_guild(self, cursor, id_: int, prefix: str) -> None:
         "サーバープレフィックスを設定します。"
-        pass
+        await cursor.execute(
+            "SELECT * FROM GuildPrefix WHERE GuildID=%s", (id_,))
+        if await cursor.fetchone():
+            await cursor.execute(
+                "UPDATE GuildPrefix SET Prefix=%s WHERE GuildID=%s",
+                (prefix, id_,))
+        else:
+            await cursor.execute("INSERT INTO GuildPrefix VALUES (%s, %s)", (id_, prefix,))
+
+        self.bot.guild_prefixes[id_] = prefix
+
+    @db.command()
+    async def set_user(self, cursor, id_: int, prefix: str) -> None:
+        "ユーザープレフィックスを設定します。"
+        await cursor.execute("SELECT * FROM UserPrefix WHERE UserID=%s", (id_,))
+        if await cursor.fetchone():
+            await cursor.execute("UPDATE GuildPrefix SET Prefix=%s WHERE GuildID=%s",
+                                 (prefix, id_,))
+        else:
+            await cursor.execute("INSERT INTO GuildPrefix VALUES (%s, %s)", (id_, prefix,))
+
+        self.bot.user_prefixes[id_] = prefix
 
     async def manager_load(self, cursor) -> None:
         # テーブルの準備をし、データをメモリに保存しておく。
@@ -48,20 +70,22 @@ class CustomPrefix(commands.Cog):
             "parent": "RT"
         }
     )
-    async def prefix(self, ctx, mode: Literal["server", "user"], new_prefix=None):
+    @app_commands.describe(mode="サーバーかユーザーか", new_prefix="設定する新しいプレフィックス")
+    async def prefix(self, ctx, mode: Literal["server", "user"] = None, new_prefix: str = ""):
         """!lang ja
         --------
-        カスタムプレフィックスを登録・変更・削除します。
+        カスタムプレフィックスの登録・変更・削除をします。
         登録をしても元々の`rf!`でも動作します。
+        また、サーバー用・ユーザー用カスタムプレフィックスが両方指定されている場合はどちらでも動作します。
 
         Parameters
         ----------
-        mode: `server`か`user`
+        mode: `server`か`user`, optional
             `server`だとサーバー全体で、`user`だと個人で設定できます。
-            どちらも設定されている場合はどちらでも動作します。
+            指定しない場合は現在の設定を見ることができます。
         new_prefix: str, optional
             新しく設定するプレフィックスです。
-            指定しなかった場合はカスタムプレフィックスを削除します。
+            modeを指定してここを指定しなかった場合はカスタムプレフィックスを削除します。
 
         !lang en
         --------
@@ -70,21 +94,44 @@ class CustomPrefix(commands.Cog):
 
         Parameters
         ----------
-        mode: `server` or `user`
+        mode: `server` or `user`, optional
             If `server`, it sets to all the server members. If `user`, it sets to you only.
+            If nothing here, you can view the custom prefix settings.
         new_prefix: str, optional
             Prefix that you want to set.
-            If none has passed, custom prefix will be deleted.
+            If mode is set and here is nothing, custom prefix will be deleted.
         """
-        # 未完成
-        if new_prefix is None:
+        modes_ja = {"server": "サーバー", "user": "ユーザー"}
+        if not mode:
+            # 現在の情報を表示する。
+            await ctx.send(
+                embed=discord.Embed(
+                    title={"ja": "現在のprefix設定を見る", "en": "View prefix settings"},
+                    description={
+                        k: f"{j[0]} : `{self.bot.guild_prefixes.get(ctx.guild.id, '')}`\n" if ctx.guild else ""
+                           + f"{j[1]} : `{self.bot.user_prefixes.get(ctx.author.id, '')}`"
+                        for k, j in {
+                            "ja": modes_ja.values(), "en": modes_ja.keys()
+                        }.items()
+                    }))
+
+        if mode == "server" and not ctx.guild:
+            raise commands.NoPrivateMessage()
+        if mode == "server" and not ctx.author.guild_permissions.administrator:
+            raise commands.MissingPermissions(["administrator"])
+
+        await getattr(self.manager, f"set_{mode}").run(
+            ctx.author.id if mode == "user" else ctx.guild.id,
+            new_prefix
+        )
+        if new_prefix == "":
             await ctx.send({
-                "ja": "カスタムプレフィックスを削除しました。",
-                "en": "Deleted custom prefix."
+                "ja": f"{modes_ja.get(mode)}のカスタムプレフィックスを削除しました。",
+                "en": f"Deleted {mode.upper()} custom prefix."
             })
         await ctx.send({
-            "ja": f"カスタムプレフィックスを{new_prefix}に変更しました。",
-            "en": f"Changed custom prefix to {new_prefix}."
+            "ja": f"{modes_ja.get(mode)}のカスタムプレフィックスを{new_prefix}に変更しました。",
+            "en": f"Changed {mode.upper()} custom prefix to {new_prefix}."
         })
 
 
