@@ -4,15 +4,30 @@ from discord.ext import commands
 
 from aiohttp import ClientSession
 from ujson import dumps
+from sys import argv
 
 from .dpy_monkey import _setup
 from . import mysql_manager as mysql
-from .db import add_db_manager
+from .db import add_db_manager, DBManager
+
+from data import data
 
 
 class RT(commands.AutoShardedBot):
     def __init__(self, *args, **kwargs):
+        self.user_prefixes: dict[int, str] = {}
+        self.guild_prefixes: dict[int, str] = {}
+        # プレフィックスの設定。
+        kwargs["command_prefix"] = self.get_prefix
         return super().__init__(*args, **kwargs)
+
+    def get_prefix(self, m):
+        pr = data["prefixes"][argv[-1]]
+        if m.author.id in self.user_prefixes and self.user_prefixes[m.author.id]:
+            pr.append(self.user_prefixes[m.author.id])
+        if m.guild.id in self.guild_prefixes and self.guild_prefixes[m.guild.id]:
+            pr.append(self.guild_prefixes[m.guild.id])
+        return pr
 
     @property
     def session(self) -> ClientSession:
@@ -63,21 +78,21 @@ class RT(commands.AutoShardedBot):
     def get_website_url(self) -> str:
         return "http://localhost/" if self.test else "https://free-rt.com/"
 
-    async def add_cog(self, cog, override: bool = True, **kwargs):
+    async def add_cog(self, cog: commands.Cog, override: bool = True, **kwargs):
         "add_cogの拡張。overrideがデフォルトでTrueなのと、OnCogAddに関する動作をする。"
         if "OnCogAdd" in self.cogs:
             self.cogs["OnCogAdd"]._add_cog(cog, **kwargs)
         return await super().add_cog(cog, override=override, **kwargs)
 
-    async def remove_cog(self, cog_name):
+    async def remove_cog(self, cog_name: str):
         "remove_cogの拡張。OnCogAddに関する動作をする。"
         if "OnCogAdd" in self.cogs:
             self.cogs["OnCogAdd"]._remove_cog(cog_name)
         return await super().remove_cog(cog_name)
 
-    async def setup(self, mode=()) -> None:
+    async def setup(self, mode: tuple = ()) -> None:
         "utilにある拡張cogをすべてもしくは指定されたものだけ読み込みます。"
         return await _setup(self, mode)
 
-    async def add_db_manager(self, manager):
+    async def add_db_manager(self, manager: DBManager) -> DBManager:
         return await add_db_manager(self, manager)
