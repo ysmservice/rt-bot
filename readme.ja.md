@@ -15,10 +15,6 @@ Free RTについて知らない人は[ここ](https://free-rt.com/)を見てみ�
 ## Contributing
 [contributing](https://github.com/Free-RT/rt-bot/blob/main/contributing)をご覧ください。
 
-## Free RT 開発状況
-導入サーバー数が100サーバーに到達したためbotの認証が必要になります。認証が終わるまではbotの導入ができないのでご迷惑をおかけしますがしばらくお待ちください...  
-_詳しくは公式サーバーのお知らせチャンネルやgithubのissues, discussionsを参照してください。_
-
 ## Installation
 ### Depedencies
 必要なものです。
