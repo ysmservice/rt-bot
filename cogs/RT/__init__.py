@@ -179,10 +179,11 @@ class BotGeneral(commands.Cog):
             value=f"{self._get_ping()}ms"
         )
         # Backendとの通信状況を調べる。
-        embed.add_field(
-            name="Backend Connection Latency",
-            value="%.1fms" % self.bot.cogs["RTLife"].data["backendLatency"][-1]
-        )
+# KeyErrorがおきるので。
+#        embed.add_field(
+#            name="Backend Connection Latency",
+#            value="%.1fms" % self.bot.cogs["RTLife"].data["backendLatency"][-1]
+#        )
         await ctx.reply(embed=embed)
 
     @executor_function
