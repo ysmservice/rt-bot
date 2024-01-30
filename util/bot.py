@@ -21,7 +21,7 @@ class RT(commands.AutoShardedBot):
         kwargs["command_prefix"] = self.get_prefix
         return super().__init__(*args, **kwargs)
 
-    def get_prefix(self, m):
+    async def get_prefix(self, m):
         pr = data["prefixes"][argv[-1]]
         if m.author.id in self.user_prefixes and self.user_prefixes[m.author.id]:
             pr.append(self.user_prefixes[m.author.id])
