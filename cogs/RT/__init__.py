@@ -140,7 +140,7 @@ class BotGeneral(commands.Cog):
         await self.bot.wait_until_ready()
         await self.bot.change_presence(
             activity=discord.Activity(
-                name=(now := self.STATUS_TEXTS[self._now_status_index])[0].format(self.bot.command_prefix()[0], now[1](self.bot)),
+                name=(now := self.STATUS_TEXTS[self._now_status_index])[0].format((await self.bot.command_prefix())[0], now[1](self.bot)),
                 type=discord.ActivityType.watching, state="Free-RT Bot",
                 details=f"PING：{self._get_ping()}\n絶賛稼働中...",
                 timestamps={"start": self._start_time},
