@@ -138,10 +138,9 @@ class BotGeneral(commands.Cog):
     async def status_updater(self) -> None:
         # RTのステータスを更新するループです。
         await self.bot.wait_until_ready()
-        now_text, now_function = self.STATUS_TEXTS[self._now_status_index]
         await self.bot.change_presence(
             activity=discord.Activity(
-                name=(now := now_text.format(self.bot.command_prefix[0], now_function(self.bot))),
+                name=(now := self.STATUS_TEXTS[self._now_status_index])[0].format(self.bot.command_prefix()[0], now[1](self.bot)),
                 type=discord.ActivityType.watching, state="Free-RT Bot",
                 details=f"PING：{self._get_ping()}\n絶賛稼働中...",
                 timestamps={"start": self._start_time},
