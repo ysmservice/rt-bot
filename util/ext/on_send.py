@@ -123,8 +123,8 @@ class OnSend(commands.Cog):
         discord.InteractionResponse.edit_message = self.wrap_send(
             discord.InteractionResponse.edit_message, "on_edit"
         )
-        discord.Interaction.edit_original_message = self.wrap_send(
-            discord.Interaction.edit_original_message, "on_edit"
+        discord.Interaction.edit_original_response = self.wrap_send(
+            discord.Interaction.edit_original_response, "on_edit"
         )
 
         discord.abc.Messageable.send = new_send

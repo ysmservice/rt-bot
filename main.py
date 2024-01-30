@@ -38,8 +38,11 @@ bot = RT(
     activity=discord.Game("起動準備"),
     status=discord.Status.dnd
 )  # RTオブジェクトはcommands.Botを継承している
-
-bot.test = argv[-1] != "production"  # argvの最後がproductionかどうか
+if len(argv) !=1:
+    bot.test = argv[-1] != "production"  # argvの最後がproductionかどうか
+else:
+    argv.append("production")
+    bot.test=False
 if not bot.test:
     websocket.WEBSOCKET_URI_BASE = "ws://60.158.90.139"
 bot.data = data  # 全データアクセス用、非推奨
@@ -53,7 +56,7 @@ bot.Colors = Colors  # botで使う基本色が入っているclass
 @bot.listen()
 async def on_ready():
     bot.print("Connected to discord")
-
+    
     # 拡張を読み込む
     await bot.setup()
     for name in listdir("cogs"):
