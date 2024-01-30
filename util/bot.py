@@ -64,7 +64,7 @@ class RT(commands.AutoShardedBot):
         return print("\033[32m[RT log]\033[0m", *temp, **kwargs)
 
     def get_ip(self) -> str:
-        return "localhost" if self.test else "60.158.90.139"
+        return "localhost" if self.test else "127.0.0.1"
 
     def get_url(self) -> str:
         return f"http://{self.get_ip()}"

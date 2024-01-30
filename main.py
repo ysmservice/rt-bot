@@ -44,7 +44,7 @@ else:
     argv.append("production")
     bot.test=False
 if not bot.test:
-    websocket.WEBSOCKET_URI_BASE = "ws://60.158.90.139"
+    websocket.WEBSOCKET_URI_BASE = "ws://127.0.0.1:8081"
 bot.data = data  # 全データアクセス用、非推奨
 bot.owner_ids = data["admins"]
 bot.secret = secret  # auth.jsonの内容を入れている
