@@ -21,12 +21,13 @@ class RT(commands.AutoShardedBot):
         kwargs["command_prefix"] = self.get_prefix
         return super().__init__(*args, **kwargs)
 
-    async def get_prefix(self, m):
+    async def get_prefix(self, m = None):
         pr = data["prefixes"][argv[-1]]
-        if m.author.id in self.user_prefixes and self.user_prefixes[m.author.id]:
-            pr.append(self.user_prefixes[m.author.id])
-        if m.guild.id in self.guild_prefixes and self.guild_prefixes[m.guild.id]:
-            pr.append(self.guild_prefixes[m.guild.id])
+        if not m == None:
+            if m.author.id in self.user_prefixes and self.user_prefixes[m.author.id]:
+                pr.append(self.user_prefixes[m.author.id])
+            if m.guild.id in self.guild_prefixes and self.guild_prefixes[m.guild.id]:
+                pr.append(self.guild_prefixes[m.guild.id])
         return pr
 
     @property
