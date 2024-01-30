@@ -58,7 +58,9 @@ class Level(commands.Cog):
     def __init__(self, bot: RT):
         self.bot = bot
         self.data = Data(LocalLevel(bot), GlobalLevel(bot))
-        self.bot.prefixes = tuple(self.bot.command_prefix)
+
+    async def cog_load(self):
+        self.bot.prefixes = tuple(await self.bot.command_prefix())
 
     def get_now(self, data: LevelData) -> str:
         return f"Level:`{data['level']}`, Exp:`{data['exp']}`"
