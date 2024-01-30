@@ -437,7 +437,7 @@ class AFK(commands.Cog, DataManager):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if (message.content.startswith(tuple(self.bot.command_prefix))
+        if (message.content.startswith(tuple(await self.bot.command_prefix()))
                 or not message.guild or message.author.bot):
             return
 
