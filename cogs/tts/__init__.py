@@ -395,7 +395,7 @@ class TTSCog(commands.Cog, name="TTS"):
 
     @routine.command("set", aliases=("s", "設定"))
     @app_commands.describe(voice="ネタ音声のURL", aliases="送信する文字列")
-    async def set_routine(self, ctx: UnionContext, voice: Union[Literal["up"], str], *, aliases):
+    async def set_routine(self, ctx: UnionContext, voice: Literal["up", str], *, aliases):
         """!lang ja
         --------
         ネタ音声を設定します。
