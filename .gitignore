@@ -32,3 +32,4 @@ eng2kana.json
 data/rtlife.json
 
 .python-version
+.venv/
