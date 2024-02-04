@@ -56,7 +56,7 @@ THANKYOU_TEMPLATE = cleandoc(
 
     **RT 情報**
     公式ウェブサイト：https://free-rt.com
-    サポートサーバー：https://discord.gg/KW4CZvYMJg
+    サポートサーバー：https://discord.gg/VZjZPKC6EV
     チュートリアル　：https://rt-team.github.io/ja/notes/tutorial
     プリフィックス　：`rf!`, `りふ！`, `RF!`, `rf.`, `Rf.`, `RF.`, `rF.`, `りふ.`, `Rf!`, `rF!`, `りふ!`
 
@@ -85,7 +85,7 @@ class EnglishThxTemplateView(discord.ui.View):
 
                 **free-RT Info**.
                 Official website: https://free-rt.com
-                Support server: https://discord.gg/VHwJ3CBuWw
+                Support server: https://discord.gg/VZjZPKC6EV
                 Tutorial: https://free-rt.github.io/en/notes/tutorial
                 Prefixes: `rf!`, `りふ！`, `RF!`, `rf.`, `Rf.`, `RF.`, `rF.`, `りふ.`, `Rf!`, `rF!`, `りふ!`
 
