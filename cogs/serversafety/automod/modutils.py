@@ -11,7 +11,7 @@ from time import time
 import discord
 
 from difflib import SequenceMatcher
-from emoji import emoji_lis
+from emoji import emoji_list as emoji_lis
 
 if TYPE_CHECKING:
     from .data_manager import GuildData
@@ -52,7 +52,7 @@ async def log(
             return await channel.send(
                 f"<t:{int(time())}>", embed=discord.Embed(
                     title="AutoMod",
-                    description=f"{cache.member.mention}を{reason}のため{subject}しました。"
+                    description=f"{cache.member.mention}を{reason}のため{subject}しました。" + 
                                 (f"\nですが権限がないので{subject}することができませんでした。" if error else ""),
                     color=cache.cog.COLORS["error" if error else "warn"]
                 )
