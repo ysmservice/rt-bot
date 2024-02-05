@@ -1,6 +1,7 @@
 # Free RT Dashboard - Setting
 
 from __future__ import annotations
+from json import dumps
 
 from typing import Union, Optional, Literal, overload, get_origin, get_args
 
@@ -34,6 +35,7 @@ class Context:
                 data[key] = int(value)
 
         # 変数を作っていく。
+        self.attachments: list = []
         self.data = data
         self.setting_manager = cog
         self.bot: "RT" = self.setting_manager.bot
@@ -188,6 +190,13 @@ class SettingManager(commands.Cog):
                     kwargs[parameter.name]["extra"] = get_args(parameter.annotation)
             # データに格納する。
             self.data[command.qualified_name] = CommandData(kwargs=kwargs)
+            try:
+                dumps(self.data[command.qualified_name])
+            except:
+                for arg in self.data[command.qualified_name]['kwargs'].keys():
+                    stred = str(self.data[command.qualified_name]['kwargs'][arg]["default"])
+                    if stred.startswith("<function") or stred.startswith("operator."):
+                        self.data[command.qualified_name]['kwargs'][arg]["default"] = None
             if command.parent is None:
                 self.data[command.qualified_name]["headding"] = command.extras.get("headding")
                 self.data[command.qualified_name]["category"] = category
@@ -213,7 +222,7 @@ class SettingManager(commands.Cog):
         ctx = None
         try:
             # コマンドのメッセージを組み立てる。
-            content = f"{self.bot.command_prefix[0]}{data['name']}"
+            content = f"{(await self.bot.command_prefix())[0]}{data['name']}"
             for parameter in self.commands[data["name"]].clean_params.values():
                 tentative = f' "{data["kwargs"].get(parameter.name, "")}"'
                 if parameter.kind == parameter.KEYWORD_ONLY:
