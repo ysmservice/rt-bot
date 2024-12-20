@@ -1,7 +1,7 @@
 # Free RT - Global Chat
 import ygclib
 import ujson
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from discord.ext import commands
 from discord import app_commands
