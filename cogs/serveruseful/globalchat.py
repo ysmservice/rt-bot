@@ -345,19 +345,13 @@ class GlobalChat(commands.Cog, DataManager):
                 channel = self.bot.get_channel(channel_id)
                 if channel:
                     try:
-                        await channel.send(
-                            message.clean_content, embeds=embeds, files=[
-                                await attachment.to_file()
-                                for attachment in message.attachments
-                            ]
-                        )
+                        if channel.guild.id not in self.ban_cache:
+                            async for entry in channel.guild.bans():
+                                self.ban_cache[channel.guild.id].append(
+                                    entry.user.id
+                                )
                     except Exception as e:
                         print("Error on global chat :", e)
-                    if channel.guild.id not in self.ban_cache:
-                        async for entry in channel.guild.bans():
-                            self.ban_cache[channel.guild.id].append(
-                                entry.user.id
-                            )
                     if all(
                         user_id != message.author.id
                         for user_id in self.ban_cache[channel.guild.id]
