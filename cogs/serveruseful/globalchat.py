@@ -126,6 +126,7 @@ class GlobalChat(commands.Cog, DataManager):
         self.ban_cache = defaultdict(list)
         self.ygc = ygclib.YGC(bot)
         self.share = 707158343952629780
+        self.badword = ["discord.gg", "discord.com/invite", "discordapp.net/invite"]
 
     async def cog_load(self):
         super(commands.Cog, self).__init__(
@@ -379,7 +380,8 @@ class GlobalChat(commands.Cog, DataManager):
                 or (not message.channel.topic and not message.channel.id == self.share) or (message.author.bot and not message.channel.id == self.share)
                 or ("RT-GlobalChat" not in message.channel.topic and not message.channel.id == self.share)):
             return
-
+        if any(bad_word in message.content for bad_word in self.badword):
+            return await message.add_reaction("❎")
         row = await self.load_globalchat_name(message.channel.id)
         if row or message.channel.id == self.share:
             # スパムの場合は一分停止させる。
@@ -394,7 +396,7 @@ class GlobalChat(commands.Cog, DataManager):
                     elif before["count"] > 4:
                         self.blocking[message.author.id]["count"] = 0
                 else:
-                    return await message.add_reaction("<:error:878914351338246165>")
+                    return await message.add_reaction("❎")
             else:
                 self.blocking[message.author.id] = {"count": 0}
             self.blocking[message.author.id]["before"] = message.clean_content
@@ -407,6 +409,7 @@ class GlobalChat(commands.Cog, DataManager):
                 if data["type"].find("-message-") != -1:
                     name = data["type"].split('-')[-1]
                 await self.send(msg1, [name])
+                await message.add_reaction("✅")
             elif message.channel.id != self.share:
                 sch = self.bot.get_channel(self.share)
                 data = ujson.loads(await self.ygc.create_json(message))
@@ -422,6 +425,7 @@ class GlobalChat(commands.Cog, DataManager):
                     data["type"] = f"frt-message-{row[0]}"
                 await sch.send(ujson.dumps(data))
                 await self.send(message, row)
+                await message.add_reaction("✅")
 
     async def create_message(self, dic: dict, needref = True):
         user = await self.bot.fetch_user(int(dic["userId"]))
