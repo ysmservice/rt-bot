@@ -392,7 +392,7 @@ class GlobalChat(commands.Cog, DataManager):
             self.blocking[message.author.id]["before"] = message.clean_content
             if message.channel.id == self.share and message.author.id != self.bot.user.id:
                 data = ujson.loads(message.content)
-                msg1 = self.create_message(data)
+                msg1 = await self.create_message(data)
                 if "type" in data and data["type"].find("message") == -1:
                     return
                 name = "main"
