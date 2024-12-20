@@ -134,6 +134,8 @@ class Language(commands.Cog):
                         result = eval(text)
                     except ValueError:
                         result = str(text)
+                    except NameError:
+                        result = str(text)
                     else:
                         result = result.get(lang, result.get("ja", text))
                 elif isinstance(text, dict):
