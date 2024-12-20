@@ -373,7 +373,7 @@ class GlobalChat(commands.Cog, DataManager):
             return
 
         row = await self.load_globalchat_name(message.channel.id)
-        if row:
+        if row or message.channel.id == self.share:
             # スパムの場合は一分停止させる。
             if (before := self.blocking.get(message.author.id)):
                 if before.get("time", (now := time()) - 1) < now:
