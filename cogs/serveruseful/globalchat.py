@@ -407,7 +407,7 @@ class GlobalChat(commands.Cog, DataManager):
                 if data["type"].find("-message-") != -1:
                     name = data["type"].split('-')[-1]
                 await self.send(msg1, [name])
-            else:
+            elif message.channel.id != self.share:
                 sch = self.bot.get_channel(self.share)
                 data = ujson.loads(await self.ygc.create_json(message))
                 if data["type"].startswith("message"):
