@@ -364,7 +364,7 @@ class GlobalChat(commands.Cog, DataManager):
                     ):
                         try:
                             await channel.webhook_send(
-                                username=f"{message.author.name} {message.author.id}",
+                                username=f"{message.author.name} {message.author.id} (mid:{message.id})",
                                 avatar_url=getattr(message.author.display_avatar, "url", ""),
                                 content=message.clean_content, embeds=embeds, files=[
                                     await attachment.to_file()
