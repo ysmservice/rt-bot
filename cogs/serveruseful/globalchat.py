@@ -1,4 +1,9 @@
 # Free RT - Global Chat
+import io
+import os
+import sys
+from urllib.parse import urlparse
+import aiohttp
 import ygclib
 import ujson
 from typing import TYPE_CHECKING, Optional
@@ -505,6 +510,31 @@ class GlobalChat(commands.Cog, DataManager):
         else:
             dic.pop("reference")
         return message1
+    
+    async def filefromurl(self, url: str, c: int):
+        async with aiohttp.ClientSession() as session:  # セッションを作成
+            async with session.get(url) as resp:  # URLからファイルを取得
+                if resp.status != 200:
+                    raise discord.HTTPException(resp, f'Failed to get asset from {url}')
+                
+                file_data = await resp.read()  # ファイルの内容を読み込む
+
+                # URLからファイル名を抽出
+                parsed_url = urlparse(url)
+                filename = os.path.basename(parsed_url.path)
+
+                with io.BytesIO(file_data) as file:
+                    # ファイル名をURLから取得したものに設定
+                    f = discord.File(file, filename)
+                    fd = f.to_dict(index=c)
+                    ap: AttachmentPayload = {
+                        "id": fd["id"],
+                        "size": sys.getsizeof(file),
+                        "filename": fd["filename"],
+                        "url": url,
+                        'proxy_url': url
+                    }
+                    return ap
 
 class CustmizedReference(discord.MessageReference):
     def __init__(self, *, message_id: int, channel_id: int, guild_id: Optional[int] = None, fail_if_not_exists: bool = True):
