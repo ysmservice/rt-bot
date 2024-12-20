@@ -369,7 +369,7 @@ class GlobalChat(commands.Cog, DataManager):
     async def on_message(self, message: discord.Message):
         if (not message.guild or isinstance(message.channel, discord.Thread)
                 or not message.channel.topic or (message.author.bot and not message.channel.id == self.share)
-                or "RT-GlobalChat" not in message.channel.topic):
+                or ("RT-GlobalChat" not in message.channel.topic and message.channel.id == self.share)):
             return
 
         row = await self.load_globalchat_name(message.channel.id)
