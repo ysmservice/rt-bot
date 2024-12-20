@@ -368,7 +368,7 @@ class GlobalChat(commands.Cog, DataManager):
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if (not message.guild or isinstance(message.channel, discord.Thread)
-                or not message.channel.topic or (message.author.bot and not message.channel.id == self.share)
+                or (not message.channel.topic and not message.channel.id == self.share) or (message.author.bot and not message.channel.id == self.share)
                 or ("RT-GlobalChat" not in message.channel.topic and not message.channel.id == self.share)):
             return
 
