@@ -1,5 +1,6 @@
 # Free RT - Global Chat
-
+import ygclib
+import ujson
 from typing import TYPE_CHECKING
 
 from discord.ext import commands
@@ -13,6 +14,7 @@ from time import time
 
 if TYPE_CHECKING:
     from util import Backend
+    from discord.types.message import Message as MessageType ,Attachment as AttachmentPayload
 
 
 class DataManager(DatabaseManager):
@@ -117,6 +119,8 @@ class GlobalChat(commands.Cog, DataManager):
         self.bot = bot
         self.blocking = {}
         self.ban_cache = defaultdict(list)
+        self.ygc = ygclib.YGC(bot)
+        self.share = 707158343952629780
 
     async def cog_load(self):
         super(commands.Cog, self).__init__(
@@ -208,7 +212,7 @@ class GlobalChat(commands.Cog, DataManager):
     @globalchat.command(aliases=["cong", "コネクト", "接続", "せつぞく"])
     @require_guild
     @app_commands.describe(name="グローバルチャットの名前")
-    async def connect(self, ctx, *, name):
+    async def connect(self, ctx, *, name="main"):
         """!lang ja
         --------
         グローバルチャットに接続します。
@@ -304,7 +308,9 @@ class GlobalChat(commands.Cog, DataManager):
             return
         embeds = []
         if message.reference:
-            if message.reference.cached_message:
+            if hasattr(message.reference, "cached_message1"):
+                original = message.reference.cached_message1
+            elif message.reference.cached_message:
                 original = message.reference.cached_message
             else:
                 ch = self.bot.get_channel(message.channel.id)
@@ -384,9 +390,128 @@ class GlobalChat(commands.Cog, DataManager):
             else:
                 self.blocking[message.author.id] = {"count": 0}
             self.blocking[message.author.id]["before"] = message.clean_content
+            if message.channel.id == self.share and message.author.id != self.bot.user.id:
+                data = ujson.loads(message.content)
+                msg1 = self.create_message(data)
+                if "type" in data and data["type"].find("message") == -1:
+                    return
+                name = "main"
+                if data["type"].find("-message-") != -1:
+                    name = data["type"].split('-')[-1]
+                await self.send(msg1, [name])
+            else:
+                sch = self.bot.get_channel(self.share)
+                data = ujson.loads(await self.ygc.create_json(message))
+                if data["type"].startswith("message"):
+                    data.setdefault("reference", "")
+                    if data["reference"] != "":
+                        data["reference"] = data["reference"]["messageId"]
+                    else:
+                        data.pop("reference")
+                if row[0] == "main":
+                    data["type"] = f"message"
+                else:
+                    data["type"] = f"frt-message-{row[0]}"
+                await sch.send(ujson.dumps(data))
+                await self.send(message, row)
 
-            await self.send(message, row)
+    async def create_message(self, dic: dict, needref = True):
+        user = await self.bot.fetch_user(int(dic["userId"]))
+        atch = list()
+        dic.setdefault("attachmentsUrl",list())
+        c = 0
+        if dic["attachmentsUrl"] != []:
+            for fb in dic["attachmentsUrl"]:
+                atch.append(await self.filefromurl(fb,c))
+                c = c + 1
+        dic.setdefault("embeds", list())
+        payload: MessageType = {
+        "id": dic["messageId"], "content": dic["content"], "tts": False,
+        "mention_everyone": False, "attachments": atch, "embeds":  dic["embeds"],
+        "author": {
+            "bot": user.bot, "id": user.id, "system": user.system,
+            "username": user.name, "discriminator": user.discriminator,
+            "avatar": user.display_avatar.url
+        },
+        "edited_timestamp": None, "type": 0, "pinned": False,
+        "mentions": [], "mention_roles": [], "channel_id": self.share, #このbotが入ってないサーバーからだとバグりそうなのでjsonチャンネルをセット
+        "timestamp": ""
+        }
+        channel = self.bot.get_channel(self.share)
+        if not channel or not isinstance(channel, discord.abc.Messageable):
+            raise ValueError("Unknown Channel Id.")
+        message1 = discord.Message(
+        data=payload, state=self.bot._get_state(), channel=channel
+        )
+        if channel.guild is not None:
+            message1.author = channel.guild.get_member(user.id)  # type: ignore
+            if message1.author == None:
+                message1.author = user
+        else:
+            message1.author = user
+        message1.id = dic["messageId"]
+        dic.setdefault("reference", "")
+        if dic["reference"] != "" and needref:
+            reference_mid = dic["reference"]
+            async for past_message in self.bot.get_channel(self.share).history(limit=1000):
+                try:
+                    past_dic = ujson.loads(past_message.content)
+                except:
+                    continue 
+                if "type" in past_dic and past_dic["type"] != "message":
+                    continue
+                if not "messageId" in past_dic:
+                    continue
+                if str(past_dic["messageId"]) == str(reference_mid):
+                    user = await self.bot.fetch_user(int(past_dic["userId"]))
+                    atch = list()
+                    c = 0
+                    past_dic.setdefault("attachmentsUrl", list())
+                    if past_dic["attachmentsUrl"] != []:
+                        for fb in past_dic["attachmentsUrl"]:
+                            atch.append(await self.filefromurl(fb,c))
+                            c = c + 1
+                    past_dic.setdefault("embeds", list())
+                    payload: MessageType = {
+                    "id": past_dic["messageId"], "content": past_dic["content"], "tts": False,
+                    "mention_everyone": False, "attachments": atch, "embeds":  past_dic["embeds"],
+                    "author": {
+                        "bot": user.bot, "id": user.id, "system": user.system,
+                        "username": user.name, "discriminator": user.discriminator,
+                        "avatar": user.display_avatar.url
+                    },
+                    "edited_timestamp": None, "type": 0, "pinned": False,
+                    "mentions": [], "mention_roles": [], "channel_id": self.share, #このbotが入ってないサーバーからだとバグりそうなのでjsonチャンネルをセット
+                    "timestamp": ""
+                    }
+                    channel = self.bot.get_channel(self.share)
+                    if not channel or not isinstance(channel, discord.abc.Messageable):
+                        raise ValueError("Unknown Channel Id.")
+                    message2 = discord.Message(
+                    data=payload, state=self.bot._get_state(), channel=channel
+                    )
+                    if channel.guild is not None:
+                        message2.author = channel.guild.get_member(user.id)  # type: ignore
+                        if message2.author == None:
+                            message2.author = user
+                    else:
+                        message2.author = user
+                    message2.id = past_dic["messageId"]
+                    message1.reference = CustmizedReference.from_message(message=message2)
+                    message1.reference.cached_message1 = message2
+        else:
+            dic.pop("reference")
+        return message1
 
+class CustmizedReference(discord.MessageReference):
+    def __init__(self, *, message_id: int, channel_id: int, guild_id: Optional[int] = None, fail_if_not_exists: bool = True):
+        self._state = None
+        self.resolved = None
+        self.message_id: Optional[int] = message_id
+        self.channel_id: int = channel_id
+        self.guild_id: Optional[int] = guild_id
+        self.fail_if_not_exists: bool = fail_if_not_exists
+        self.cached_message1 = None
 
 async def setup(bot):
     await bot.add_cog(GlobalChat(bot))
