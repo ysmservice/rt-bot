@@ -384,22 +384,27 @@ class GlobalChat(commands.Cog, DataManager):
             return await message.add_reaction("❎")
         row = await self.load_globalchat_name(message.channel.id)
         if row or message.channel.id == self.share:
+            if message.channel.id == self.share:
+                data = ujson.loads(message.content)
+                user = data["userId"]
+            else:
+                user = message.author.id
             # スパムの場合は一分停止させる。
-            if (before := self.blocking.get(message.author.id)):
+            if (before := self.blocking.get(user)):
                 if before.get("time", (now := time()) - 1) < now:
                     if self.similer(before["before"], message.clean_content):
-                        self.blocking[message.author.id]["count"] += 1
-                        if self.blocking[message.author.id]["count"] > 4:
-                            self.blocking[message.author.id].update(
+                        self.blocking[user]["count"] += 1
+                        if self.blocking[user]["count"] > 4:
+                            self.blocking[user].update(
                                 {"time": now + 60}
                             )
                     elif before["count"] > 4:
-                        self.blocking[message.author.id]["count"] = 0
+                        self.blocking[user]["count"] = 0
                 else:
                     return await message.add_reaction("❎")
             else:
-                self.blocking[message.author.id] = {"count": 0}
-            self.blocking[message.author.id]["before"] = message.clean_content
+                self.blocking[user] = {"count": 0}
+            self.blocking[user]["before"] = message.clean_content
             if message.channel.id == self.share and message.author.id != self.bot.user.id:
                 data = ujson.loads(message.content)
                 msg1 = await self.create_message(data)
