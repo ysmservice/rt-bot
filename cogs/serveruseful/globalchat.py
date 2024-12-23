@@ -125,7 +125,7 @@ class GlobalChat(commands.Cog, DataManager):
         self.blocking = {}
         self.ban_cache = defaultdict(list)
         self.ygc = ygclib.YGC(bot)
-        self.share = 707158343952629780
+        self.share = 707158257818664991
         self.badword = ["discord.gg", "discord.com/invite", "discordapp.net/invite"]
 
     async def cog_load(self):
