@@ -364,7 +364,7 @@ class GlobalChat(commands.Cog, DataManager):
                     ):
                         try:
                             await channel.webhook_send(
-                                username=f"{message.author.name} {message.author.id} (mid:{message.id})",
+                                username=f"{message.author.name} {message.author.id} (mID:{message.id})",
                                 avatar_url=getattr(message.author.display_avatar, "url", ""),
                                 content=message.clean_content, embeds=embeds, files=[
                                     await attachment.to_file()
@@ -383,16 +383,19 @@ class GlobalChat(commands.Cog, DataManager):
         if any(bad_word in message.content for bad_word in self.badword):
             return await message.add_reaction("❎")
         row = await self.load_globalchat_name(message.channel.id)
+        mc = ""
         if row or message.channel.id == self.share:
             if message.channel.id == self.share:
                 data = ujson.loads(message.content)
-                user = data["userId"]
+                user = int(data["userId"])
+                mc = data["content"]
             else:
                 user = message.author.id
+                mc = message.clean_content
             # スパムの場合は一分停止させる。
             if (before := self.blocking.get(user)):
                 if before.get("time", (now := time()) - 1) < now:
-                    if self.similer(before["before"], message.clean_content):
+                    if self.similer(before["before"], mc):
                         self.blocking[user]["count"] += 1
                         if self.blocking[user]["count"] > 4:
                             self.blocking[user].update(
@@ -404,7 +407,7 @@ class GlobalChat(commands.Cog, DataManager):
                     return await message.add_reaction("❎")
             else:
                 self.blocking[user] = {"count": 0}
-            self.blocking[user]["before"] = message.clean_content
+            self.blocking[user]["before"] = mc
             if message.channel.id == self.share and message.author.id != self.bot.user.id:
                 data = ujson.loads(message.content)
                 msg1 = await self.create_message(data)
