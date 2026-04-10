@@ -411,7 +411,19 @@ class GlobalChat(commands.Cog, DataManager):
             if message.channel.id == self.share and message.author.id != self.bot.user.id:
                 data = ujson.loads(message.content)
                 msg1 = await self.create_message(data)
-                if "type" in data and data["type"].find("message") == -1:
+                if "type" in data and data["type"] == "delete":
+                    rows = await self.load_globalchat_channels(row[0])
+                    for _, channel_id, _ in rows:
+                        channel = self.bot.get_channel(channel_id)
+                        if channel:
+                            try:
+                                wh = await channel.get_webhook("free-RT-Tool")
+                                if wh:
+                                    await self.ygc.delete_webhook_message(data["messageId"], channel, wh)
+                            except Exception as e:
+                                print("Error on global chat :", e)
+                    return
+                elif "type" in data and data["type"].find("message") == -1:
                     return
                 name = "main"
                 if data["type"].find("-message-") != -1:
