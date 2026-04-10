@@ -426,6 +426,7 @@ class GlobalChat(commands.Cog, DataManager):
                                     await self.ygc.delete_webhook_message(data["messageId"], channel, wh)
                             except Exception as e:
                                 print("Error on global chat :", e)
+                    await message.add_reaction('✅')
                     return
                 elif "type" in data and data["type"].find("message") == -1:
                     return
