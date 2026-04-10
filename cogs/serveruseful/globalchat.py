@@ -415,7 +415,7 @@ class GlobalChat(commands.Cog, DataManager):
             if message.channel.id == self.share and message.author.id != self.bot.user.id:
                 data = ujson.loads(message.content)
                 if "type" in data and data["type"] == "delete":
-                    rows = await self.load_globalchat_channels(row[0])
+                    rows = await self.load_globalchat_channels("main")
                     for _, channel_id, _ in rows:
                         channel = self.bot.get_channel(channel_id)
                         if channel:
