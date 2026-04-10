@@ -387,8 +387,12 @@ class GlobalChat(commands.Cog, DataManager):
         if row or message.channel.id == self.share:
             if message.channel.id == self.share:
                 data = ujson.loads(message.content)
-                user = int(data["userId"])
-                mc = data["content"]
+                if "type" in data and data["type"].find("message") != -1:
+                    user = int(data["userId"])
+                    mc = data["content"]
+                else:
+                    user = message.author.id
+                    mc = message.clean_content
             else:
                 user = message.author.id
                 mc = message.clean_content
