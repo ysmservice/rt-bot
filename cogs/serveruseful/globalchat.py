@@ -414,7 +414,6 @@ class GlobalChat(commands.Cog, DataManager):
             self.blocking[user]["before"] = mc
             if message.channel.id == self.share and message.author.id != self.bot.user.id:
                 data = ujson.loads(message.content)
-                msg1 = await self.create_message(data)
                 if "type" in data and data["type"] == "delete":
                     rows = await self.load_globalchat_channels(row[0])
                     for _, channel_id, _ in rows:
@@ -433,6 +432,7 @@ class GlobalChat(commands.Cog, DataManager):
                 name = "main"
                 if data["type"].find("-message-") != -1:
                     name = data["type"].split('-')[-1]
+                msg1 = await self.create_message(data)
                 await self.send(msg1, [name])
                 await message.add_reaction("✅")
             elif message.channel.id != self.share:
