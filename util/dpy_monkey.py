@@ -6,7 +6,7 @@ from __future__ import annotations
 from discord.ext import commands
 import discord
 
-from .webhooks import webhook_send
+from .webhooks import webhook_send, get_webhook
 from .cacher import CacherPool
 from .ext import componesy
 
@@ -30,6 +30,8 @@ async def _setup(self, mode: tuple[str, ...] = ()) -> None:
 # webhook_sendとcomponesyを新しく定義する。
 discord.abc.Messageable.webhook_send = webhook_send  # type: ignore
 discord.ext.commands.Context.webhook_send = webhook_send  # type: ignore
+discord.abc.Messageable.get_webhook = get_webhook  # type: ignore
+discord.ext.commands.Context.get_webhook = get_webhook  # type: ignore
 # componesyに関してはモンキーパッチ脱却予定なのでext.easyからのアクセスは非推奨。
 discord.ext.easy = componesy  # type: ignore
 
